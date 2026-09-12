@@ -38,7 +38,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 11489),
+            NodeId.parse("i=11489"),
             new QualifiedName(0, "GetMonitoredItems"),
             new LocalizedText("", "GetMonitoredItems"),
             LocalizedText.NULL_VALUE,
@@ -51,15 +51,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 11489), new NodeId(0, 46), new NodeId(0, 11490).expanded(), true));
+            NodeId.parse("i=11489"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=11490").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 11489), new NodeId(0, 46), new NodeId(0, 11491).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 11489), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=11489"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=11491").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 11489), new NodeId(0, 47), new NodeId(0, 2004).expanded(), false));
+            NodeId.parse("i=11489"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=11489"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=2004").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -67,7 +77,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 12871),
+            NodeId.parse("i=12871"),
             new QualifiedName(0, "ResendData"),
             new LocalizedText("", "ResendData"),
             LocalizedText.NULL_VALUE,
@@ -80,12 +90,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 12871), new NodeId(0, 46), new NodeId(0, 12872).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 12871), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=12871"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=12872").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 12871), new NodeId(0, 47), new NodeId(0, 2004).expanded(), false));
+            NodeId.parse("i=12871"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=12871"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=2004").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -93,7 +110,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 12746),
+            NodeId.parse("i=12746"),
             new QualifiedName(0, "SetSubscriptionDurable"),
             new LocalizedText("", "SetSubscriptionDurable"),
             LocalizedText.NULL_VALUE,
@@ -106,15 +123,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 12746), new NodeId(0, 46), new NodeId(0, 12747).expanded(), true));
+            NodeId.parse("i=12746"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=12747").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 12746), new NodeId(0, 46), new NodeId(0, 12748).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 12746), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=12746"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=12748").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 12746), new NodeId(0, 47), new NodeId(0, 2004).expanded(), false));
+            NodeId.parse("i=12746"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=12746"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=2004").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -122,7 +149,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 12883),
+            NodeId.parse("i=12883"),
             new QualifiedName(0, "RequestServerStateChange"),
             new LocalizedText("", "RequestServerStateChange"),
             LocalizedText.NULL_VALUE,
@@ -135,12 +162,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 12883), new NodeId(0, 46), new NodeId(0, 12884).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 12883), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=12883"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=12884").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 12883), new NodeId(0, 47), new NodeId(0, 2004).expanded(), false));
+            NodeId.parse("i=12883"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=12883"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=2004").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -148,7 +182,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16296),
+            NodeId.parse("i=16296"),
             new QualifiedName(0, "AddRole"),
             new LocalizedText("", "AddRole"),
             LocalizedText.NULL_VALUE,
@@ -161,15 +195,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16296), new NodeId(0, 46), new NodeId(0, 16297).expanded(), true));
+            NodeId.parse("i=16296"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16297").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16296), new NodeId(0, 46), new NodeId(0, 16298).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 16296), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=16296"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16298").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16296), new NodeId(0, 47), new NodeId(0, 16295).expanded(), false));
+            NodeId.parse("i=16296"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=16296"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=16295").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -177,7 +221,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16299),
+            NodeId.parse("i=16299"),
             new QualifiedName(0, "RemoveRole"),
             new LocalizedText("", "RemoveRole"),
             LocalizedText.NULL_VALUE,
@@ -190,12 +234,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16299), new NodeId(0, 46), new NodeId(0, 16300).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 16299), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=16299"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16300").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16299), new NodeId(0, 47), new NodeId(0, 16295).expanded(), false));
+            NodeId.parse("i=16299"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=16299"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=16295").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -203,7 +254,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 32416),
+            NodeId.parse("i=32416"),
             new QualifiedName(0, "Failover"),
             new LocalizedText("", "Failover"),
             LocalizedText.NULL_VALUE,
@@ -215,10 +266,14 @@ class MethodNodeLoader {
             true,
             true);
     node.addReference(
-        new Reference(new NodeId(0, 32416), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+        new Reference(
+            NodeId.parse("i=32416"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
     node.addReference(
         new Reference(
-            new NodeId(0, 32416), new NodeId(0, 47), new NodeId(0, 32411).expanded(), false));
+            NodeId.parse("i=32416"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=32411").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -226,7 +281,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 11580),
+            NodeId.parse("i=11580"),
             new QualifiedName(0, "Open"),
             new LocalizedText("", "Open"),
             LocalizedText.NULL_VALUE,
@@ -239,15 +294,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 11580), new NodeId(0, 46), new NodeId(0, 11581).expanded(), true));
+            NodeId.parse("i=11580"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=11581").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 11580), new NodeId(0, 46), new NodeId(0, 11582).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 11580), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=11580"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=11582").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 11580), new NodeId(0, 47), new NodeId(0, 11575).expanded(), false));
+            NodeId.parse("i=11580"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=11580"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=11575").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -255,7 +320,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 11583),
+            NodeId.parse("i=11583"),
             new QualifiedName(0, "Close"),
             new LocalizedText("", "Close"),
             LocalizedText.NULL_VALUE,
@@ -268,12 +333,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 11583), new NodeId(0, 46), new NodeId(0, 11584).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 11583), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=11583"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=11584").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 11583), new NodeId(0, 47), new NodeId(0, 11575).expanded(), false));
+            NodeId.parse("i=11583"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=11583"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=11575").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -281,7 +353,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 11585),
+            NodeId.parse("i=11585"),
             new QualifiedName(0, "Read"),
             new LocalizedText("", "Read"),
             LocalizedText.NULL_VALUE,
@@ -294,15 +366,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 11585), new NodeId(0, 46), new NodeId(0, 11586).expanded(), true));
+            NodeId.parse("i=11585"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=11586").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 11585), new NodeId(0, 46), new NodeId(0, 11587).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 11585), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=11585"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=11587").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 11585), new NodeId(0, 47), new NodeId(0, 11575).expanded(), false));
+            NodeId.parse("i=11585"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=11585"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=11575").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -310,7 +392,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 11588),
+            NodeId.parse("i=11588"),
             new QualifiedName(0, "Write"),
             new LocalizedText("", "Write"),
             LocalizedText.NULL_VALUE,
@@ -323,12 +405,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 11588), new NodeId(0, 46), new NodeId(0, 11589).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 11588), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=11588"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=11589").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 11588), new NodeId(0, 47), new NodeId(0, 11575).expanded(), false));
+            NodeId.parse("i=11588"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=11588"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=11575").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -336,7 +425,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 11590),
+            NodeId.parse("i=11590"),
             new QualifiedName(0, "GetPosition"),
             new LocalizedText("", "GetPosition"),
             LocalizedText.NULL_VALUE,
@@ -349,15 +438,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 11590), new NodeId(0, 46), new NodeId(0, 11591).expanded(), true));
+            NodeId.parse("i=11590"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=11591").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 11590), new NodeId(0, 46), new NodeId(0, 11592).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 11590), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=11590"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=11592").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 11590), new NodeId(0, 47), new NodeId(0, 11575).expanded(), false));
+            NodeId.parse("i=11590"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=11590"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=11575").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -365,7 +464,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 11593),
+            NodeId.parse("i=11593"),
             new QualifiedName(0, "SetPosition"),
             new LocalizedText("", "SetPosition"),
             LocalizedText.NULL_VALUE,
@@ -378,12 +477,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 11593), new NodeId(0, 46), new NodeId(0, 11594).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 11593), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=11593"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=11594").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 11593), new NodeId(0, 47), new NodeId(0, 11575).expanded(), false));
+            NodeId.parse("i=11593"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=11593"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=11575").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -391,7 +497,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 11615),
+            NodeId.parse("i=11615"),
             new QualifiedName(0, "ExportNamespace"),
             new LocalizedText("", "ExportNamespace"),
             LocalizedText.NULL_VALUE,
@@ -403,10 +509,14 @@ class MethodNodeLoader {
             true,
             true);
     node.addReference(
-        new Reference(new NodeId(0, 11615), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+        new Reference(
+            NodeId.parse("i=11615"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
     node.addReference(
         new Reference(
-            new NodeId(0, 11615), new NodeId(0, 47), new NodeId(0, 11595).expanded(), false));
+            NodeId.parse("i=11615"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=11595").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -414,7 +524,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 11629),
+            NodeId.parse("i=11629"),
             new QualifiedName(0, "Open"),
             new LocalizedText("", "Open"),
             LocalizedText.NULL_VALUE,
@@ -427,15 +537,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 11629), new NodeId(0, 46), new NodeId(0, 11630).expanded(), true));
+            NodeId.parse("i=11629"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=11630").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 11629), new NodeId(0, 46), new NodeId(0, 11631).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 11629), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=11629"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=11631").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 11629), new NodeId(0, 47), new NodeId(0, 11624).expanded(), false));
+            NodeId.parse("i=11629"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=11629"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=11624").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -443,7 +563,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 11632),
+            NodeId.parse("i=11632"),
             new QualifiedName(0, "Close"),
             new LocalizedText("", "Close"),
             LocalizedText.NULL_VALUE,
@@ -456,12 +576,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 11632), new NodeId(0, 46), new NodeId(0, 11633).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 11632), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=11632"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=11633").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 11632), new NodeId(0, 47), new NodeId(0, 11624).expanded(), false));
+            NodeId.parse("i=11632"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=11632"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=11624").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -469,7 +596,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 11634),
+            NodeId.parse("i=11634"),
             new QualifiedName(0, "Read"),
             new LocalizedText("", "Read"),
             LocalizedText.NULL_VALUE,
@@ -482,15 +609,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 11634), new NodeId(0, 46), new NodeId(0, 11635).expanded(), true));
+            NodeId.parse("i=11634"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=11635").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 11634), new NodeId(0, 46), new NodeId(0, 11636).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 11634), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=11634"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=11636").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 11634), new NodeId(0, 47), new NodeId(0, 11624).expanded(), false));
+            NodeId.parse("i=11634"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=11634"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=11624").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -498,7 +635,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 11637),
+            NodeId.parse("i=11637"),
             new QualifiedName(0, "Write"),
             new LocalizedText("", "Write"),
             LocalizedText.NULL_VALUE,
@@ -511,12 +648,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 11637), new NodeId(0, 46), new NodeId(0, 11638).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 11637), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=11637"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=11638").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 11637), new NodeId(0, 47), new NodeId(0, 11624).expanded(), false));
+            NodeId.parse("i=11637"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=11637"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=11624").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -524,7 +668,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 11639),
+            NodeId.parse("i=11639"),
             new QualifiedName(0, "GetPosition"),
             new LocalizedText("", "GetPosition"),
             LocalizedText.NULL_VALUE,
@@ -537,15 +681,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 11639), new NodeId(0, 46), new NodeId(0, 11640).expanded(), true));
+            NodeId.parse("i=11639"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=11640").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 11639), new NodeId(0, 46), new NodeId(0, 11641).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 11639), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=11639"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=11641").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 11639), new NodeId(0, 47), new NodeId(0, 11624).expanded(), false));
+            NodeId.parse("i=11639"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=11639"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=11624").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -553,7 +707,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 11642),
+            NodeId.parse("i=11642"),
             new QualifiedName(0, "SetPosition"),
             new LocalizedText("", "SetPosition"),
             LocalizedText.NULL_VALUE,
@@ -566,12 +720,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 11642), new NodeId(0, 46), new NodeId(0, 11643).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 11642), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=11642"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=11643").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 11642), new NodeId(0, 47), new NodeId(0, 11624).expanded(), false));
+            NodeId.parse("i=11642"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=11642"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=11624").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -579,7 +740,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16301),
+            NodeId.parse("i=16301"),
             new QualifiedName(0, "AddRole"),
             new LocalizedText("", "AddRole"),
             LocalizedText.NULL_VALUE,
@@ -587,7 +748,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -595,13 +756,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16301), new NodeId(0, 46), new NodeId(0, 16302).expanded(), true));
+            NodeId.parse("i=16301"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16302").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16301), new NodeId(0, 46), new NodeId(0, 16303).expanded(), true));
+            NodeId.parse("i=16301"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16303").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16301), new NodeId(0, 47), new NodeId(0, 15606).expanded(), false));
+            NodeId.parse("i=16301"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15606").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -609,7 +779,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16304),
+            NodeId.parse("i=16304"),
             new QualifiedName(0, "RemoveRole"),
             new LocalizedText("", "RemoveRole"),
             LocalizedText.NULL_VALUE,
@@ -617,7 +787,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -625,10 +795,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16304), new NodeId(0, 46), new NodeId(0, 16305).expanded(), true));
+            NodeId.parse("i=16304"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16305").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16304), new NodeId(0, 47), new NodeId(0, 15606).expanded(), false));
+            NodeId.parse("i=16304"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15606").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -636,7 +812,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 11492),
+            NodeId.parse("i=11492"),
             new QualifiedName(0, "GetMonitoredItems"),
             new LocalizedText("", "GetMonitoredItems"),
             LocalizedText.NULL_VALUE,
@@ -644,11 +820,11 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(4097))),
+                  NodeId.parse("i=15644"), new PermissionType(UInteger.valueOf(4097))),
               new RolePermissionType(
-                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(61455))),
+                  NodeId.parse("i=15716"), new PermissionType(UInteger.valueOf(61455))),
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
@@ -656,13 +832,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 11492), new NodeId(0, 46), new NodeId(0, 11493).expanded(), true));
+            NodeId.parse("i=11492"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=11493").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 11492), new NodeId(0, 46), new NodeId(0, 11494).expanded(), true));
+            NodeId.parse("i=11492"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=11494").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 11492), new NodeId(0, 47), new NodeId(0, 2253).expanded(), false));
+            NodeId.parse("i=11492"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=2253").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -670,7 +855,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 12873),
+            NodeId.parse("i=12873"),
             new QualifiedName(0, "ResendData"),
             new LocalizedText("", "ResendData"),
             LocalizedText.NULL_VALUE,
@@ -678,11 +863,11 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(4097))),
+                  NodeId.parse("i=15644"), new PermissionType(UInteger.valueOf(4097))),
               new RolePermissionType(
-                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(61455))),
+                  NodeId.parse("i=15716"), new PermissionType(UInteger.valueOf(61455))),
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
@@ -690,10 +875,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 12873), new NodeId(0, 46), new NodeId(0, 12874).expanded(), true));
+            NodeId.parse("i=12873"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=12874").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 12873), new NodeId(0, 47), new NodeId(0, 2253).expanded(), false));
+            NodeId.parse("i=12873"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=2253").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -701,7 +892,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 12749),
+            NodeId.parse("i=12749"),
             new QualifiedName(0, "SetSubscriptionDurable"),
             new LocalizedText("", "SetSubscriptionDurable"),
             LocalizedText.NULL_VALUE,
@@ -709,11 +900,11 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(4097))),
+                  NodeId.parse("i=15644"), new PermissionType(UInteger.valueOf(4097))),
               new RolePermissionType(
-                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(61455))),
+                  NodeId.parse("i=15716"), new PermissionType(UInteger.valueOf(61455))),
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
@@ -721,13 +912,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 12749), new NodeId(0, 46), new NodeId(0, 12750).expanded(), true));
+            NodeId.parse("i=12749"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=12750").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 12749), new NodeId(0, 46), new NodeId(0, 12751).expanded(), true));
+            NodeId.parse("i=12749"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=12751").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 12749), new NodeId(0, 47), new NodeId(0, 2253).expanded(), false));
+            NodeId.parse("i=12749"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=2253").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -735,7 +935,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 12886),
+            NodeId.parse("i=12886"),
             new QualifiedName(0, "RequestServerStateChange"),
             new LocalizedText("", "RequestServerStateChange"),
             LocalizedText.NULL_VALUE,
@@ -743,9 +943,9 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(61455))),
+                  NodeId.parse("i=15716"), new PermissionType(UInteger.valueOf(61455))),
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -753,10 +953,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 12886), new NodeId(0, 46), new NodeId(0, 12887).expanded(), true));
+            NodeId.parse("i=12886"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=12887").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 12886), new NodeId(0, 47), new NodeId(0, 2253).expanded(), false));
+            NodeId.parse("i=12886"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=2253").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -764,7 +970,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13355),
+            NodeId.parse("i=13355"),
             new QualifiedName(0, "CreateDirectory"),
             new LocalizedText("", "CreateDirectory"),
             LocalizedText.NULL_VALUE,
@@ -777,15 +983,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13355), new NodeId(0, 46), new NodeId(0, 13356).expanded(), true));
+            NodeId.parse("i=13355"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13356").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13355), new NodeId(0, 46), new NodeId(0, 13357).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13355), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13355"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13357").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13355), new NodeId(0, 47), new NodeId(0, 13354).expanded(), false));
+            NodeId.parse("i=13355"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13355"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13354").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -793,7 +1009,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13358),
+            NodeId.parse("i=13358"),
             new QualifiedName(0, "CreateFile"),
             new LocalizedText("", "CreateFile"),
             LocalizedText.NULL_VALUE,
@@ -806,15 +1022,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13358), new NodeId(0, 46), new NodeId(0, 13359).expanded(), true));
+            NodeId.parse("i=13358"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13359").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13358), new NodeId(0, 46), new NodeId(0, 13360).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13358), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13358"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13360").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13358), new NodeId(0, 47), new NodeId(0, 13354).expanded(), false));
+            NodeId.parse("i=13358"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13358"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13354").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -822,7 +1048,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 17718),
+            NodeId.parse("i=17718"),
             new QualifiedName(0, "Delete"),
             new LocalizedText("", "Delete"),
             LocalizedText.NULL_VALUE,
@@ -835,12 +1061,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 17718), new NodeId(0, 46), new NodeId(0, 17719).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 17718), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=17718"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=17719").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 17718), new NodeId(0, 47), new NodeId(0, 13354).expanded(), false));
+            NodeId.parse("i=17718"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=17718"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13354").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -848,7 +1081,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13363),
+            NodeId.parse("i=13363"),
             new QualifiedName(0, "MoveOrCopy"),
             new LocalizedText("", "MoveOrCopy"),
             LocalizedText.NULL_VALUE,
@@ -861,15 +1094,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13363), new NodeId(0, 46), new NodeId(0, 13364).expanded(), true));
+            NodeId.parse("i=13363"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13364").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13363), new NodeId(0, 46), new NodeId(0, 13365).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13363), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13363"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13365").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13363), new NodeId(0, 47), new NodeId(0, 13354).expanded(), false));
+            NodeId.parse("i=13363"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13363"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13354").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -877,7 +1120,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13372),
+            NodeId.parse("i=13372"),
             new QualifiedName(0, "Open"),
             new LocalizedText("", "Open"),
             LocalizedText.NULL_VALUE,
@@ -890,15 +1133,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13372), new NodeId(0, 46), new NodeId(0, 13373).expanded(), true));
+            NodeId.parse("i=13372"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13373").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13372), new NodeId(0, 46), new NodeId(0, 13374).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13372), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13372"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13374").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13372), new NodeId(0, 47), new NodeId(0, 13366).expanded(), false));
+            NodeId.parse("i=13372"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13372"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13366").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -906,7 +1159,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13375),
+            NodeId.parse("i=13375"),
             new QualifiedName(0, "Close"),
             new LocalizedText("", "Close"),
             LocalizedText.NULL_VALUE,
@@ -919,12 +1172,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13375), new NodeId(0, 46), new NodeId(0, 13376).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13375), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13375"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13376").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13375), new NodeId(0, 47), new NodeId(0, 13366).expanded(), false));
+            NodeId.parse("i=13375"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13375"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13366").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -932,7 +1192,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13377),
+            NodeId.parse("i=13377"),
             new QualifiedName(0, "Read"),
             new LocalizedText("", "Read"),
             LocalizedText.NULL_VALUE,
@@ -945,15 +1205,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13377), new NodeId(0, 46), new NodeId(0, 13378).expanded(), true));
+            NodeId.parse("i=13377"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13378").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13377), new NodeId(0, 46), new NodeId(0, 13379).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13377), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13377"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13379").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13377), new NodeId(0, 47), new NodeId(0, 13366).expanded(), false));
+            NodeId.parse("i=13377"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13377"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13366").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -961,7 +1231,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13380),
+            NodeId.parse("i=13380"),
             new QualifiedName(0, "Write"),
             new LocalizedText("", "Write"),
             LocalizedText.NULL_VALUE,
@@ -974,12 +1244,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13380), new NodeId(0, 46), new NodeId(0, 13381).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13380), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13380"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13381").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13380), new NodeId(0, 47), new NodeId(0, 13366).expanded(), false));
+            NodeId.parse("i=13380"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13380"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13366").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -987,7 +1264,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13382),
+            NodeId.parse("i=13382"),
             new QualifiedName(0, "GetPosition"),
             new LocalizedText("", "GetPosition"),
             LocalizedText.NULL_VALUE,
@@ -1000,15 +1277,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13382), new NodeId(0, 46), new NodeId(0, 13383).expanded(), true));
+            NodeId.parse("i=13382"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13383").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13382), new NodeId(0, 46), new NodeId(0, 13384).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13382), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13382"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13384").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13382), new NodeId(0, 47), new NodeId(0, 13366).expanded(), false));
+            NodeId.parse("i=13382"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13382"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13366").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1016,7 +1303,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13385),
+            NodeId.parse("i=13385"),
             new QualifiedName(0, "SetPosition"),
             new LocalizedText("", "SetPosition"),
             LocalizedText.NULL_VALUE,
@@ -1029,12 +1316,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13385), new NodeId(0, 46), new NodeId(0, 13386).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13385), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13385"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13386").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13385), new NodeId(0, 47), new NodeId(0, 13366).expanded(), false));
+            NodeId.parse("i=13385"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13385"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13366").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1042,7 +1336,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13387),
+            NodeId.parse("i=13387"),
             new QualifiedName(0, "CreateDirectory"),
             new LocalizedText("", "CreateDirectory"),
             LocalizedText.NULL_VALUE,
@@ -1055,15 +1349,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13387), new NodeId(0, 46), new NodeId(0, 13388).expanded(), true));
+            NodeId.parse("i=13387"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13388").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13387), new NodeId(0, 46), new NodeId(0, 13389).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13387), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13387"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13389").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13387), new NodeId(0, 47), new NodeId(0, 13353).expanded(), false));
+            NodeId.parse("i=13387"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13387"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13353").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1071,7 +1375,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13390),
+            NodeId.parse("i=13390"),
             new QualifiedName(0, "CreateFile"),
             new LocalizedText("", "CreateFile"),
             LocalizedText.NULL_VALUE,
@@ -1084,15 +1388,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13390), new NodeId(0, 46), new NodeId(0, 13391).expanded(), true));
+            NodeId.parse("i=13390"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13391").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13390), new NodeId(0, 46), new NodeId(0, 13392).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13390), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13390"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13392").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13390), new NodeId(0, 47), new NodeId(0, 13353).expanded(), false));
+            NodeId.parse("i=13390"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13390"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13353").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1100,7 +1414,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13393),
+            NodeId.parse("i=13393"),
             new QualifiedName(0, "Delete"),
             new LocalizedText("", "Delete"),
             LocalizedText.NULL_VALUE,
@@ -1113,12 +1427,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13393), new NodeId(0, 46), new NodeId(0, 13394).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13393), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13393"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13394").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13393), new NodeId(0, 47), new NodeId(0, 13353).expanded(), false));
+            NodeId.parse("i=13393"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13393"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13353").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1126,7 +1447,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13395),
+            NodeId.parse("i=13395"),
             new QualifiedName(0, "MoveOrCopy"),
             new LocalizedText("", "MoveOrCopy"),
             LocalizedText.NULL_VALUE,
@@ -1139,15 +1460,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13395), new NodeId(0, 46), new NodeId(0, 13396).expanded(), true));
+            NodeId.parse("i=13395"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13396").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13395), new NodeId(0, 46), new NodeId(0, 13397).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13395), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13395"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13397").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13395), new NodeId(0, 47), new NodeId(0, 13353).expanded(), false));
+            NodeId.parse("i=13395"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13395"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13353").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1155,7 +1486,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16348),
+            NodeId.parse("i=16348"),
             new QualifiedName(0, "CreateDirectory"),
             new LocalizedText("", "CreateDirectory"),
             LocalizedText.NULL_VALUE,
@@ -1168,13 +1499,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16348), new NodeId(0, 46), new NodeId(0, 16349).expanded(), true));
+            NodeId.parse("i=16348"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16349").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16348), new NodeId(0, 46), new NodeId(0, 16350).expanded(), true));
+            NodeId.parse("i=16348"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16350").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16348), new NodeId(0, 47), new NodeId(0, 16314).expanded(), false));
+            NodeId.parse("i=16348"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=16314").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1182,7 +1522,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16351),
+            NodeId.parse("i=16351"),
             new QualifiedName(0, "CreateFile"),
             new LocalizedText("", "CreateFile"),
             LocalizedText.NULL_VALUE,
@@ -1195,13 +1535,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16351), new NodeId(0, 46), new NodeId(0, 16352).expanded(), true));
+            NodeId.parse("i=16351"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16352").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16351), new NodeId(0, 46), new NodeId(0, 16353).expanded(), true));
+            NodeId.parse("i=16351"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16353").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16351), new NodeId(0, 47), new NodeId(0, 16314).expanded(), false));
+            NodeId.parse("i=16351"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=16314").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1209,7 +1558,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16354),
+            NodeId.parse("i=16354"),
             new QualifiedName(0, "Delete"),
             new LocalizedText("", "Delete"),
             LocalizedText.NULL_VALUE,
@@ -1222,10 +1571,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16354), new NodeId(0, 46), new NodeId(0, 16355).expanded(), true));
+            NodeId.parse("i=16354"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16355").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16354), new NodeId(0, 47), new NodeId(0, 16314).expanded(), false));
+            NodeId.parse("i=16354"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=16314").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1233,7 +1588,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16356),
+            NodeId.parse("i=16356"),
             new QualifiedName(0, "MoveOrCopy"),
             new LocalizedText("", "MoveOrCopy"),
             LocalizedText.NULL_VALUE,
@@ -1246,13 +1601,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16356), new NodeId(0, 46), new NodeId(0, 16357).expanded(), true));
+            NodeId.parse("i=16356"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16357").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16356), new NodeId(0, 46), new NodeId(0, 16358).expanded(), true));
+            NodeId.parse("i=16356"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16358").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16356), new NodeId(0, 47), new NodeId(0, 16314).expanded(), false));
+            NodeId.parse("i=16356"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=16314").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1260,7 +1624,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15746),
+            NodeId.parse("i=15746"),
             new QualifiedName(0, "GenerateFileForRead"),
             new LocalizedText("", "GenerateFileForRead"),
             LocalizedText.NULL_VALUE,
@@ -1273,15 +1637,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15746), new NodeId(0, 46), new NodeId(0, 15747).expanded(), true));
+            NodeId.parse("i=15746"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15747").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15746), new NodeId(0, 46), new NodeId(0, 15748).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 15746), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=15746"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15748").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15746), new NodeId(0, 47), new NodeId(0, 15744).expanded(), false));
+            NodeId.parse("i=15746"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=15746"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15744").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1289,7 +1663,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15749),
+            NodeId.parse("i=15749"),
             new QualifiedName(0, "GenerateFileForWrite"),
             new LocalizedText("", "GenerateFileForWrite"),
             LocalizedText.NULL_VALUE,
@@ -1302,15 +1676,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15749), new NodeId(0, 46), new NodeId(0, 16359).expanded(), true));
+            NodeId.parse("i=15749"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16359").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15749), new NodeId(0, 46), new NodeId(0, 15750).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 15749), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=15749"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15750").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15749), new NodeId(0, 47), new NodeId(0, 15744).expanded(), false));
+            NodeId.parse("i=15749"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=15749"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15744").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1318,7 +1702,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15751),
+            NodeId.parse("i=15751"),
             new QualifiedName(0, "CloseAndCommit"),
             new LocalizedText("", "CloseAndCommit"),
             LocalizedText.NULL_VALUE,
@@ -1331,15 +1715,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15751), new NodeId(0, 46), new NodeId(0, 15752).expanded(), true));
+            NodeId.parse("i=15751"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15752").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15751), new NodeId(0, 46), new NodeId(0, 15753).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 15751), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=15751"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15753").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15751), new NodeId(0, 47), new NodeId(0, 15744).expanded(), false));
+            NodeId.parse("i=15751"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=15751"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15744").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1347,7 +1741,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15794),
+            NodeId.parse("i=15794"),
             new QualifiedName(0, "Reset"),
             new LocalizedText("", "Reset"),
             LocalizedText.NULL_VALUE,
@@ -1359,10 +1753,14 @@ class MethodNodeLoader {
             true,
             true);
     node.addReference(
-        new Reference(new NodeId(0, 15794), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+        new Reference(
+            NodeId.parse("i=15794"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15794), new NodeId(0, 47), new NodeId(0, 15754).expanded(), false));
+            NodeId.parse("i=15794"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15754").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1370,7 +1768,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15843),
+            NodeId.parse("i=15843"),
             new QualifiedName(0, "Reset"),
             new LocalizedText("", "Reset"),
             LocalizedText.NULL_VALUE,
@@ -1382,10 +1780,14 @@ class MethodNodeLoader {
             true,
             true);
     node.addReference(
-        new Reference(new NodeId(0, 15843), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+        new Reference(
+            NodeId.parse("i=15843"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15843), new NodeId(0, 47), new NodeId(0, 15803).expanded(), false));
+            NodeId.parse("i=15843"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15803").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1393,7 +1795,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15997),
+            NodeId.parse("i=15997"),
             new QualifiedName(0, "AddRole"),
             new LocalizedText("", "AddRole"),
             LocalizedText.NULL_VALUE,
@@ -1406,15 +1808,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15997), new NodeId(0, 46), new NodeId(0, 15998).expanded(), true));
+            NodeId.parse("i=15997"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15998").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15997), new NodeId(0, 46), new NodeId(0, 15999).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 15997), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=15997"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15999").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15997), new NodeId(0, 47), new NodeId(0, 15607).expanded(), false));
+            NodeId.parse("i=15997"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=15997"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15607").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1422,7 +1834,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16000),
+            NodeId.parse("i=16000"),
             new QualifiedName(0, "RemoveRole"),
             new LocalizedText("", "RemoveRole"),
             LocalizedText.NULL_VALUE,
@@ -1435,12 +1847,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16000), new NodeId(0, 46), new NodeId(0, 16001).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 16000), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=16000"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16001").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16000), new NodeId(0, 47), new NodeId(0, 15607).expanded(), false));
+            NodeId.parse("i=16000"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=16000"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15607").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1448,7 +1867,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15624),
+            NodeId.parse("i=15624"),
             new QualifiedName(0, "AddIdentity"),
             new LocalizedText("", "AddIdentity"),
             LocalizedText.NULL_VALUE,
@@ -1461,12 +1880,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15624), new NodeId(0, 46), new NodeId(0, 15625).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 15624), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=15624"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15625").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15624), new NodeId(0, 47), new NodeId(0, 15620).expanded(), false));
+            NodeId.parse("i=15624"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=15624"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15620").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1474,7 +1900,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15626),
+            NodeId.parse("i=15626"),
             new QualifiedName(0, "RemoveIdentity"),
             new LocalizedText("", "RemoveIdentity"),
             LocalizedText.NULL_VALUE,
@@ -1487,12 +1913,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15626), new NodeId(0, 46), new NodeId(0, 15627).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 15626), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=15626"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15627").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15626), new NodeId(0, 47), new NodeId(0, 15620).expanded(), false));
+            NodeId.parse("i=15626"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=15626"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15620").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1500,7 +1933,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16176),
+            NodeId.parse("i=16176"),
             new QualifiedName(0, "AddApplication"),
             new LocalizedText("", "AddApplication"),
             LocalizedText.NULL_VALUE,
@@ -1513,12 +1946,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16176), new NodeId(0, 46), new NodeId(0, 16177).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 16176), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=16176"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16177").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16176), new NodeId(0, 47), new NodeId(0, 15620).expanded(), false));
+            NodeId.parse("i=16176"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=16176"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15620").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1526,7 +1966,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16178),
+            NodeId.parse("i=16178"),
             new QualifiedName(0, "RemoveApplication"),
             new LocalizedText("", "RemoveApplication"),
             LocalizedText.NULL_VALUE,
@@ -1539,12 +1979,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16178), new NodeId(0, 46), new NodeId(0, 16179).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 16178), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=16178"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16179").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16178), new NodeId(0, 47), new NodeId(0, 15620).expanded(), false));
+            NodeId.parse("i=16178"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=16178"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15620").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1552,7 +1999,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16180),
+            NodeId.parse("i=16180"),
             new QualifiedName(0, "AddEndpoint"),
             new LocalizedText("", "AddEndpoint"),
             LocalizedText.NULL_VALUE,
@@ -1565,12 +2012,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16180), new NodeId(0, 46), new NodeId(0, 16181).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 16180), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=16180"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16181").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16180), new NodeId(0, 47), new NodeId(0, 15620).expanded(), false));
+            NodeId.parse("i=16180"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=16180"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15620").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1578,7 +2032,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16182),
+            NodeId.parse("i=16182"),
             new QualifiedName(0, "RemoveEndpoint"),
             new LocalizedText("", "RemoveEndpoint"),
             LocalizedText.NULL_VALUE,
@@ -1591,12 +2045,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16182), new NodeId(0, 46), new NodeId(0, 16183).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 16182), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=16182"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16183").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16182), new NodeId(0, 47), new NodeId(0, 15620).expanded(), false));
+            NodeId.parse("i=16182"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=16182"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15620").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1604,7 +2065,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15672),
+            NodeId.parse("i=15672"),
             new QualifiedName(0, "AddIdentity"),
             new LocalizedText("", "AddIdentity"),
             LocalizedText.NULL_VALUE,
@@ -1612,7 +2073,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -1620,10 +2081,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15672), new NodeId(0, 46), new NodeId(0, 15673).expanded(), true));
+            NodeId.parse("i=15672"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15673").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15672), new NodeId(0, 47), new NodeId(0, 15668).expanded(), false));
+            NodeId.parse("i=15672"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15668").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1631,7 +2098,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15674),
+            NodeId.parse("i=15674"),
             new QualifiedName(0, "RemoveIdentity"),
             new LocalizedText("", "RemoveIdentity"),
             LocalizedText.NULL_VALUE,
@@ -1639,7 +2106,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -1647,10 +2114,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15674), new NodeId(0, 46), new NodeId(0, 15675).expanded(), true));
+            NodeId.parse("i=15674"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15675").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15674), new NodeId(0, 47), new NodeId(0, 15668).expanded(), false));
+            NodeId.parse("i=15674"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15668").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1658,7 +2131,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16217),
+            NodeId.parse("i=16217"),
             new QualifiedName(0, "AddApplication"),
             new LocalizedText("", "AddApplication"),
             LocalizedText.NULL_VALUE,
@@ -1666,7 +2139,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -1674,10 +2147,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16217), new NodeId(0, 46), new NodeId(0, 16218).expanded(), true));
+            NodeId.parse("i=16217"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16218").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16217), new NodeId(0, 47), new NodeId(0, 15668).expanded(), false));
+            NodeId.parse("i=16217"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15668").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1685,7 +2164,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16219),
+            NodeId.parse("i=16219"),
             new QualifiedName(0, "RemoveApplication"),
             new LocalizedText("", "RemoveApplication"),
             LocalizedText.NULL_VALUE,
@@ -1693,7 +2172,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -1701,10 +2180,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16219), new NodeId(0, 46), new NodeId(0, 16220).expanded(), true));
+            NodeId.parse("i=16219"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16220").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16219), new NodeId(0, 47), new NodeId(0, 15668).expanded(), false));
+            NodeId.parse("i=16219"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15668").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1712,7 +2197,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16221),
+            NodeId.parse("i=16221"),
             new QualifiedName(0, "AddEndpoint"),
             new LocalizedText("", "AddEndpoint"),
             LocalizedText.NULL_VALUE,
@@ -1720,7 +2205,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -1728,10 +2213,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16221), new NodeId(0, 46), new NodeId(0, 16222).expanded(), true));
+            NodeId.parse("i=16221"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16222").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16221), new NodeId(0, 47), new NodeId(0, 15668).expanded(), false));
+            NodeId.parse("i=16221"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15668").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1739,7 +2230,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16223),
+            NodeId.parse("i=16223"),
             new QualifiedName(0, "RemoveEndpoint"),
             new LocalizedText("", "RemoveEndpoint"),
             LocalizedText.NULL_VALUE,
@@ -1747,7 +2238,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -1755,10 +2246,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16223), new NodeId(0, 46), new NodeId(0, 16224).expanded(), true));
+            NodeId.parse("i=16223"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16224").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16223), new NodeId(0, 47), new NodeId(0, 15668).expanded(), false));
+            NodeId.parse("i=16223"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15668").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1766,7 +2263,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15684),
+            NodeId.parse("i=15684"),
             new QualifiedName(0, "AddIdentity"),
             new LocalizedText("", "AddIdentity"),
             LocalizedText.NULL_VALUE,
@@ -1774,7 +2271,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -1782,10 +2279,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15684), new NodeId(0, 46), new NodeId(0, 15685).expanded(), true));
+            NodeId.parse("i=15684"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15685").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15684), new NodeId(0, 47), new NodeId(0, 15680).expanded(), false));
+            NodeId.parse("i=15684"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15680").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1793,7 +2296,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15686),
+            NodeId.parse("i=15686"),
             new QualifiedName(0, "RemoveIdentity"),
             new LocalizedText("", "RemoveIdentity"),
             LocalizedText.NULL_VALUE,
@@ -1801,7 +2304,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -1809,10 +2312,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15686), new NodeId(0, 46), new NodeId(0, 15687).expanded(), true));
+            NodeId.parse("i=15686"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15687").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15686), new NodeId(0, 47), new NodeId(0, 15680).expanded(), false));
+            NodeId.parse("i=15686"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15680").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1820,7 +2329,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16228),
+            NodeId.parse("i=16228"),
             new QualifiedName(0, "AddApplication"),
             new LocalizedText("", "AddApplication"),
             LocalizedText.NULL_VALUE,
@@ -1828,7 +2337,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -1836,10 +2345,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16228), new NodeId(0, 46), new NodeId(0, 16229).expanded(), true));
+            NodeId.parse("i=16228"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16229").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16228), new NodeId(0, 47), new NodeId(0, 15680).expanded(), false));
+            NodeId.parse("i=16228"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15680").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1847,7 +2362,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16230),
+            NodeId.parse("i=16230"),
             new QualifiedName(0, "RemoveApplication"),
             new LocalizedText("", "RemoveApplication"),
             LocalizedText.NULL_VALUE,
@@ -1855,7 +2370,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -1863,10 +2378,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16230), new NodeId(0, 46), new NodeId(0, 16231).expanded(), true));
+            NodeId.parse("i=16230"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16231").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16230), new NodeId(0, 47), new NodeId(0, 15680).expanded(), false));
+            NodeId.parse("i=16230"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15680").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1874,7 +2395,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16232),
+            NodeId.parse("i=16232"),
             new QualifiedName(0, "AddEndpoint"),
             new LocalizedText("", "AddEndpoint"),
             LocalizedText.NULL_VALUE,
@@ -1882,7 +2403,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -1890,10 +2411,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16232), new NodeId(0, 46), new NodeId(0, 16233).expanded(), true));
+            NodeId.parse("i=16232"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16233").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16232), new NodeId(0, 47), new NodeId(0, 15680).expanded(), false));
+            NodeId.parse("i=16232"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15680").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1901,7 +2428,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16234),
+            NodeId.parse("i=16234"),
             new QualifiedName(0, "RemoveEndpoint"),
             new LocalizedText("", "RemoveEndpoint"),
             LocalizedText.NULL_VALUE,
@@ -1909,7 +2436,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -1917,10 +2444,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16234), new NodeId(0, 46), new NodeId(0, 16235).expanded(), true));
+            NodeId.parse("i=16234"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16235").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16234), new NodeId(0, 47), new NodeId(0, 15680).expanded(), false));
+            NodeId.parse("i=16234"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15680").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1928,7 +2461,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16041),
+            NodeId.parse("i=16041"),
             new QualifiedName(0, "AddIdentity"),
             new LocalizedText("", "AddIdentity"),
             LocalizedText.NULL_VALUE,
@@ -1936,7 +2469,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -1944,10 +2477,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16041), new NodeId(0, 46), new NodeId(0, 16042).expanded(), true));
+            NodeId.parse("i=16041"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16042").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16041), new NodeId(0, 47), new NodeId(0, 16036).expanded(), false));
+            NodeId.parse("i=16041"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=16036").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1955,7 +2494,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16043),
+            NodeId.parse("i=16043"),
             new QualifiedName(0, "RemoveIdentity"),
             new LocalizedText("", "RemoveIdentity"),
             LocalizedText.NULL_VALUE,
@@ -1963,7 +2502,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -1971,10 +2510,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16043), new NodeId(0, 46), new NodeId(0, 16044).expanded(), true));
+            NodeId.parse("i=16043"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16044").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16043), new NodeId(0, 47), new NodeId(0, 16036).expanded(), false));
+            NodeId.parse("i=16043"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=16036").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1982,7 +2527,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16239),
+            NodeId.parse("i=16239"),
             new QualifiedName(0, "AddApplication"),
             new LocalizedText("", "AddApplication"),
             LocalizedText.NULL_VALUE,
@@ -1990,7 +2535,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -1998,10 +2543,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16239), new NodeId(0, 46), new NodeId(0, 16240).expanded(), true));
+            NodeId.parse("i=16239"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16240").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16239), new NodeId(0, 47), new NodeId(0, 16036).expanded(), false));
+            NodeId.parse("i=16239"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=16036").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2009,7 +2560,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16241),
+            NodeId.parse("i=16241"),
             new QualifiedName(0, "RemoveApplication"),
             new LocalizedText("", "RemoveApplication"),
             LocalizedText.NULL_VALUE,
@@ -2017,7 +2568,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -2025,10 +2576,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16241), new NodeId(0, 46), new NodeId(0, 16242).expanded(), true));
+            NodeId.parse("i=16241"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16242").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16241), new NodeId(0, 47), new NodeId(0, 16036).expanded(), false));
+            NodeId.parse("i=16241"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=16036").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2036,7 +2593,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16243),
+            NodeId.parse("i=16243"),
             new QualifiedName(0, "AddEndpoint"),
             new LocalizedText("", "AddEndpoint"),
             LocalizedText.NULL_VALUE,
@@ -2044,7 +2601,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -2052,10 +2609,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16243), new NodeId(0, 46), new NodeId(0, 16244).expanded(), true));
+            NodeId.parse("i=16243"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16244").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16243), new NodeId(0, 47), new NodeId(0, 16036).expanded(), false));
+            NodeId.parse("i=16243"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=16036").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2063,7 +2626,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16245),
+            NodeId.parse("i=16245"),
             new QualifiedName(0, "RemoveEndpoint"),
             new LocalizedText("", "RemoveEndpoint"),
             LocalizedText.NULL_VALUE,
@@ -2071,7 +2634,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -2079,10 +2642,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16245), new NodeId(0, 46), new NodeId(0, 16246).expanded(), true));
+            NodeId.parse("i=16245"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16246").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16245), new NodeId(0, 47), new NodeId(0, 16036).expanded(), false));
+            NodeId.parse("i=16245"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=16036").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2090,7 +2659,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15696),
+            NodeId.parse("i=15696"),
             new QualifiedName(0, "AddIdentity"),
             new LocalizedText("", "AddIdentity"),
             LocalizedText.NULL_VALUE,
@@ -2098,7 +2667,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -2106,10 +2675,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15696), new NodeId(0, 46), new NodeId(0, 15697).expanded(), true));
+            NodeId.parse("i=15696"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15697").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15696), new NodeId(0, 47), new NodeId(0, 15692).expanded(), false));
+            NodeId.parse("i=15696"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15692").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2117,7 +2692,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15698),
+            NodeId.parse("i=15698"),
             new QualifiedName(0, "RemoveIdentity"),
             new LocalizedText("", "RemoveIdentity"),
             LocalizedText.NULL_VALUE,
@@ -2125,7 +2700,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -2133,10 +2708,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15698), new NodeId(0, 46), new NodeId(0, 15699).expanded(), true));
+            NodeId.parse("i=15698"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15699").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15698), new NodeId(0, 47), new NodeId(0, 15692).expanded(), false));
+            NodeId.parse("i=15698"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15692").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2144,7 +2725,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16250),
+            NodeId.parse("i=16250"),
             new QualifiedName(0, "AddApplication"),
             new LocalizedText("", "AddApplication"),
             LocalizedText.NULL_VALUE,
@@ -2152,7 +2733,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -2160,10 +2741,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16250), new NodeId(0, 46), new NodeId(0, 16251).expanded(), true));
+            NodeId.parse("i=16250"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16251").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16250), new NodeId(0, 47), new NodeId(0, 15692).expanded(), false));
+            NodeId.parse("i=16250"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15692").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2171,7 +2758,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16252),
+            NodeId.parse("i=16252"),
             new QualifiedName(0, "RemoveApplication"),
             new LocalizedText("", "RemoveApplication"),
             LocalizedText.NULL_VALUE,
@@ -2179,7 +2766,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -2187,10 +2774,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16252), new NodeId(0, 46), new NodeId(0, 16253).expanded(), true));
+            NodeId.parse("i=16252"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16253").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16252), new NodeId(0, 47), new NodeId(0, 15692).expanded(), false));
+            NodeId.parse("i=16252"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15692").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2198,7 +2791,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16254),
+            NodeId.parse("i=16254"),
             new QualifiedName(0, "AddEndpoint"),
             new LocalizedText("", "AddEndpoint"),
             LocalizedText.NULL_VALUE,
@@ -2206,7 +2799,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -2214,10 +2807,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16254), new NodeId(0, 46), new NodeId(0, 16255).expanded(), true));
+            NodeId.parse("i=16254"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16255").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16254), new NodeId(0, 47), new NodeId(0, 15692).expanded(), false));
+            NodeId.parse("i=16254"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15692").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2225,7 +2824,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16256),
+            NodeId.parse("i=16256"),
             new QualifiedName(0, "RemoveEndpoint"),
             new LocalizedText("", "RemoveEndpoint"),
             LocalizedText.NULL_VALUE,
@@ -2233,7 +2832,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -2241,10 +2840,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16256), new NodeId(0, 46), new NodeId(0, 16257).expanded(), true));
+            NodeId.parse("i=16256"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16257").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16256), new NodeId(0, 47), new NodeId(0, 15692).expanded(), false));
+            NodeId.parse("i=16256"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15692").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2252,7 +2857,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15720),
+            NodeId.parse("i=15720"),
             new QualifiedName(0, "AddIdentity"),
             new LocalizedText("", "AddIdentity"),
             LocalizedText.NULL_VALUE,
@@ -2260,7 +2865,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -2268,10 +2873,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15720), new NodeId(0, 46), new NodeId(0, 15721).expanded(), true));
+            NodeId.parse("i=15720"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15721").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15720), new NodeId(0, 47), new NodeId(0, 15716).expanded(), false));
+            NodeId.parse("i=15720"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15716").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2279,7 +2890,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15722),
+            NodeId.parse("i=15722"),
             new QualifiedName(0, "RemoveIdentity"),
             new LocalizedText("", "RemoveIdentity"),
             LocalizedText.NULL_VALUE,
@@ -2287,7 +2898,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -2295,10 +2906,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15722), new NodeId(0, 46), new NodeId(0, 15723).expanded(), true));
+            NodeId.parse("i=15722"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15723").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15722), new NodeId(0, 47), new NodeId(0, 15716).expanded(), false));
+            NodeId.parse("i=15722"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15716").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2306,7 +2923,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16272),
+            NodeId.parse("i=16272"),
             new QualifiedName(0, "AddApplication"),
             new LocalizedText("", "AddApplication"),
             LocalizedText.NULL_VALUE,
@@ -2314,7 +2931,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -2322,10 +2939,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16272), new NodeId(0, 46), new NodeId(0, 16273).expanded(), true));
+            NodeId.parse("i=16272"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16273").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16272), new NodeId(0, 47), new NodeId(0, 15716).expanded(), false));
+            NodeId.parse("i=16272"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15716").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2333,7 +2956,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16274),
+            NodeId.parse("i=16274"),
             new QualifiedName(0, "RemoveApplication"),
             new LocalizedText("", "RemoveApplication"),
             LocalizedText.NULL_VALUE,
@@ -2341,7 +2964,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -2349,10 +2972,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16274), new NodeId(0, 46), new NodeId(0, 16275).expanded(), true));
+            NodeId.parse("i=16274"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16275").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16274), new NodeId(0, 47), new NodeId(0, 15716).expanded(), false));
+            NodeId.parse("i=16274"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15716").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2360,7 +2989,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16276),
+            NodeId.parse("i=16276"),
             new QualifiedName(0, "AddEndpoint"),
             new LocalizedText("", "AddEndpoint"),
             LocalizedText.NULL_VALUE,
@@ -2368,7 +2997,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -2376,10 +3005,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16276), new NodeId(0, 46), new NodeId(0, 16277).expanded(), true));
+            NodeId.parse("i=16276"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16277").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16276), new NodeId(0, 47), new NodeId(0, 15716).expanded(), false));
+            NodeId.parse("i=16276"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15716").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2387,7 +3022,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16278),
+            NodeId.parse("i=16278"),
             new QualifiedName(0, "RemoveEndpoint"),
             new LocalizedText("", "RemoveEndpoint"),
             LocalizedText.NULL_VALUE,
@@ -2395,7 +3030,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -2403,10 +3038,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16278), new NodeId(0, 46), new NodeId(0, 16279).expanded(), true));
+            NodeId.parse("i=16278"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16279").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16278), new NodeId(0, 47), new NodeId(0, 15716).expanded(), false));
+            NodeId.parse("i=16278"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15716").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2414,7 +3055,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15708),
+            NodeId.parse("i=15708"),
             new QualifiedName(0, "AddIdentity"),
             new LocalizedText("", "AddIdentity"),
             LocalizedText.NULL_VALUE,
@@ -2422,7 +3063,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -2430,10 +3071,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15708), new NodeId(0, 46), new NodeId(0, 15709).expanded(), true));
+            NodeId.parse("i=15708"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15709").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15708), new NodeId(0, 47), new NodeId(0, 15704).expanded(), false));
+            NodeId.parse("i=15708"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15704").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2441,7 +3088,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15710),
+            NodeId.parse("i=15710"),
             new QualifiedName(0, "RemoveIdentity"),
             new LocalizedText("", "RemoveIdentity"),
             LocalizedText.NULL_VALUE,
@@ -2449,7 +3096,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -2457,10 +3104,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15710), new NodeId(0, 46), new NodeId(0, 15711).expanded(), true));
+            NodeId.parse("i=15710"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15711").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15710), new NodeId(0, 47), new NodeId(0, 15704).expanded(), false));
+            NodeId.parse("i=15710"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15704").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2468,7 +3121,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16261),
+            NodeId.parse("i=16261"),
             new QualifiedName(0, "AddApplication"),
             new LocalizedText("", "AddApplication"),
             LocalizedText.NULL_VALUE,
@@ -2476,7 +3129,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -2484,10 +3137,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16261), new NodeId(0, 46), new NodeId(0, 16262).expanded(), true));
+            NodeId.parse("i=16261"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16262").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16261), new NodeId(0, 47), new NodeId(0, 15704).expanded(), false));
+            NodeId.parse("i=16261"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15704").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2495,7 +3154,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16263),
+            NodeId.parse("i=16263"),
             new QualifiedName(0, "RemoveApplication"),
             new LocalizedText("", "RemoveApplication"),
             LocalizedText.NULL_VALUE,
@@ -2503,7 +3162,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -2511,10 +3170,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16263), new NodeId(0, 46), new NodeId(0, 16264).expanded(), true));
+            NodeId.parse("i=16263"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16264").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16263), new NodeId(0, 47), new NodeId(0, 15704).expanded(), false));
+            NodeId.parse("i=16263"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15704").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2522,7 +3187,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16265),
+            NodeId.parse("i=16265"),
             new QualifiedName(0, "AddEndpoint"),
             new LocalizedText("", "AddEndpoint"),
             LocalizedText.NULL_VALUE,
@@ -2530,7 +3195,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -2538,10 +3203,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16265), new NodeId(0, 46), new NodeId(0, 16266).expanded(), true));
+            NodeId.parse("i=16265"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16266").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16265), new NodeId(0, 47), new NodeId(0, 15704).expanded(), false));
+            NodeId.parse("i=16265"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15704").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2549,7 +3220,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16267),
+            NodeId.parse("i=16267"),
             new QualifiedName(0, "RemoveEndpoint"),
             new LocalizedText("", "RemoveEndpoint"),
             LocalizedText.NULL_VALUE,
@@ -2557,7 +3228,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -2565,10 +3236,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16267), new NodeId(0, 46), new NodeId(0, 16268).expanded(), true));
+            NodeId.parse("i=16267"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16268").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16267), new NodeId(0, 47), new NodeId(0, 15704).expanded(), false));
+            NodeId.parse("i=16267"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15704").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2576,7 +3253,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25572),
+            NodeId.parse("i=25572"),
             new QualifiedName(0, "AddIdentity"),
             new LocalizedText("", "AddIdentity"),
             LocalizedText.NULL_VALUE,
@@ -2584,7 +3261,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -2592,10 +3269,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25572), new NodeId(0, 46), new NodeId(0, 25573).expanded(), true));
+            NodeId.parse("i=25572"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25573").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25572), new NodeId(0, 47), new NodeId(0, 25565).expanded(), false));
+            NodeId.parse("i=25572"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25565").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2603,7 +3286,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25574),
+            NodeId.parse("i=25574"),
             new QualifiedName(0, "RemoveIdentity"),
             new LocalizedText("", "RemoveIdentity"),
             LocalizedText.NULL_VALUE,
@@ -2611,7 +3294,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -2619,10 +3302,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25574), new NodeId(0, 46), new NodeId(0, 25575).expanded(), true));
+            NodeId.parse("i=25574"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25575").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25574), new NodeId(0, 47), new NodeId(0, 25565).expanded(), false));
+            NodeId.parse("i=25574"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25565").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2630,7 +3319,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25576),
+            NodeId.parse("i=25576"),
             new QualifiedName(0, "AddApplication"),
             new LocalizedText("", "AddApplication"),
             LocalizedText.NULL_VALUE,
@@ -2638,7 +3327,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -2646,10 +3335,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25576), new NodeId(0, 46), new NodeId(0, 25577).expanded(), true));
+            NodeId.parse("i=25576"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25577").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25576), new NodeId(0, 47), new NodeId(0, 25565).expanded(), false));
+            NodeId.parse("i=25576"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25565").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2657,7 +3352,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25578),
+            NodeId.parse("i=25578"),
             new QualifiedName(0, "RemoveApplication"),
             new LocalizedText("", "RemoveApplication"),
             LocalizedText.NULL_VALUE,
@@ -2665,7 +3360,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -2673,10 +3368,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25578), new NodeId(0, 46), new NodeId(0, 25579).expanded(), true));
+            NodeId.parse("i=25578"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25579").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25578), new NodeId(0, 47), new NodeId(0, 25565).expanded(), false));
+            NodeId.parse("i=25578"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25565").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2684,7 +3385,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25580),
+            NodeId.parse("i=25580"),
             new QualifiedName(0, "AddEndpoint"),
             new LocalizedText("", "AddEndpoint"),
             LocalizedText.NULL_VALUE,
@@ -2692,7 +3393,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -2700,10 +3401,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25580), new NodeId(0, 46), new NodeId(0, 25581).expanded(), true));
+            NodeId.parse("i=25580"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25581").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25580), new NodeId(0, 47), new NodeId(0, 25565).expanded(), false));
+            NodeId.parse("i=25580"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25565").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2711,7 +3418,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25582),
+            NodeId.parse("i=25582"),
             new QualifiedName(0, "RemoveEndpoint"),
             new LocalizedText("", "RemoveEndpoint"),
             LocalizedText.NULL_VALUE,
@@ -2719,7 +3426,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -2727,10 +3434,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25582), new NodeId(0, 46), new NodeId(0, 25583).expanded(), true));
+            NodeId.parse("i=25582"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25583").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25582), new NodeId(0, 47), new NodeId(0, 25565).expanded(), false));
+            NodeId.parse("i=25582"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25565").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2738,7 +3451,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25610),
+            NodeId.parse("i=25610"),
             new QualifiedName(0, "AddIdentity"),
             new LocalizedText("", "AddIdentity"),
             LocalizedText.NULL_VALUE,
@@ -2746,7 +3459,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -2754,10 +3467,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25610), new NodeId(0, 46), new NodeId(0, 25611).expanded(), true));
+            NodeId.parse("i=25610"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25611").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25610), new NodeId(0, 47), new NodeId(0, 25603).expanded(), false));
+            NodeId.parse("i=25610"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25603").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2765,7 +3484,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25612),
+            NodeId.parse("i=25612"),
             new QualifiedName(0, "RemoveIdentity"),
             new LocalizedText("", "RemoveIdentity"),
             LocalizedText.NULL_VALUE,
@@ -2773,7 +3492,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -2781,10 +3500,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25612), new NodeId(0, 46), new NodeId(0, 25613).expanded(), true));
+            NodeId.parse("i=25612"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25613").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25612), new NodeId(0, 47), new NodeId(0, 25603).expanded(), false));
+            NodeId.parse("i=25612"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25603").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2792,7 +3517,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25614),
+            NodeId.parse("i=25614"),
             new QualifiedName(0, "AddApplication"),
             new LocalizedText("", "AddApplication"),
             LocalizedText.NULL_VALUE,
@@ -2800,7 +3525,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -2808,10 +3533,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25614), new NodeId(0, 46), new NodeId(0, 25615).expanded(), true));
+            NodeId.parse("i=25614"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25615").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25614), new NodeId(0, 47), new NodeId(0, 25603).expanded(), false));
+            NodeId.parse("i=25614"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25603").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2819,7 +3550,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25616),
+            NodeId.parse("i=25616"),
             new QualifiedName(0, "RemoveApplication"),
             new LocalizedText("", "RemoveApplication"),
             LocalizedText.NULL_VALUE,
@@ -2827,7 +3558,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -2835,10 +3566,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25616), new NodeId(0, 46), new NodeId(0, 25617).expanded(), true));
+            NodeId.parse("i=25616"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25617").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25616), new NodeId(0, 47), new NodeId(0, 25603).expanded(), false));
+            NodeId.parse("i=25616"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25603").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2846,7 +3583,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25618),
+            NodeId.parse("i=25618"),
             new QualifiedName(0, "AddEndpoint"),
             new LocalizedText("", "AddEndpoint"),
             LocalizedText.NULL_VALUE,
@@ -2854,7 +3591,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -2862,10 +3599,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25618), new NodeId(0, 46), new NodeId(0, 25619).expanded(), true));
+            NodeId.parse("i=25618"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25619").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25618), new NodeId(0, 47), new NodeId(0, 25603).expanded(), false));
+            NodeId.parse("i=25618"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25603").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2873,7 +3616,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25620),
+            NodeId.parse("i=25620"),
             new QualifiedName(0, "RemoveEndpoint"),
             new LocalizedText("", "RemoveEndpoint"),
             LocalizedText.NULL_VALUE,
@@ -2881,7 +3624,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -2889,10 +3632,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25620), new NodeId(0, 46), new NodeId(0, 25621).expanded(), true));
+            NodeId.parse("i=25620"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25621").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25620), new NodeId(0, 47), new NodeId(0, 25603).expanded(), false));
+            NodeId.parse("i=25620"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25603").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2900,7 +3649,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25591),
+            NodeId.parse("i=25591"),
             new QualifiedName(0, "AddIdentity"),
             new LocalizedText("", "AddIdentity"),
             LocalizedText.NULL_VALUE,
@@ -2908,7 +3657,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -2916,10 +3665,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25591), new NodeId(0, 46), new NodeId(0, 25592).expanded(), true));
+            NodeId.parse("i=25591"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25592").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25591), new NodeId(0, 47), new NodeId(0, 25584).expanded(), false));
+            NodeId.parse("i=25591"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25584").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2927,7 +3682,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25593),
+            NodeId.parse("i=25593"),
             new QualifiedName(0, "RemoveIdentity"),
             new LocalizedText("", "RemoveIdentity"),
             LocalizedText.NULL_VALUE,
@@ -2935,7 +3690,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -2943,10 +3698,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25593), new NodeId(0, 46), new NodeId(0, 25594).expanded(), true));
+            NodeId.parse("i=25593"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25594").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25593), new NodeId(0, 47), new NodeId(0, 25584).expanded(), false));
+            NodeId.parse("i=25593"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25584").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2954,7 +3715,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25595),
+            NodeId.parse("i=25595"),
             new QualifiedName(0, "AddApplication"),
             new LocalizedText("", "AddApplication"),
             LocalizedText.NULL_VALUE,
@@ -2962,7 +3723,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -2970,10 +3731,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25595), new NodeId(0, 46), new NodeId(0, 25596).expanded(), true));
+            NodeId.parse("i=25595"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25596").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25595), new NodeId(0, 47), new NodeId(0, 25584).expanded(), false));
+            NodeId.parse("i=25595"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25584").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2981,7 +3748,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25597),
+            NodeId.parse("i=25597"),
             new QualifiedName(0, "RemoveApplication"),
             new LocalizedText("", "RemoveApplication"),
             LocalizedText.NULL_VALUE,
@@ -2989,7 +3756,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -2997,10 +3764,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25597), new NodeId(0, 46), new NodeId(0, 25598).expanded(), true));
+            NodeId.parse("i=25597"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25598").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25597), new NodeId(0, 47), new NodeId(0, 25584).expanded(), false));
+            NodeId.parse("i=25597"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25584").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3008,7 +3781,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25599),
+            NodeId.parse("i=25599"),
             new QualifiedName(0, "AddEndpoint"),
             new LocalizedText("", "AddEndpoint"),
             LocalizedText.NULL_VALUE,
@@ -3016,7 +3789,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -3024,10 +3797,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25599), new NodeId(0, 46), new NodeId(0, 25600).expanded(), true));
+            NodeId.parse("i=25599"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25600").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25599), new NodeId(0, 47), new NodeId(0, 25584).expanded(), false));
+            NodeId.parse("i=25599"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25584").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3035,7 +3814,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25601),
+            NodeId.parse("i=25601"),
             new QualifiedName(0, "RemoveEndpoint"),
             new LocalizedText("", "RemoveEndpoint"),
             LocalizedText.NULL_VALUE,
@@ -3043,7 +3822,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -3051,10 +3830,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25601), new NodeId(0, 46), new NodeId(0, 25602).expanded(), true));
+            NodeId.parse("i=25601"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25602").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25601), new NodeId(0, 47), new NodeId(0, 25584).expanded(), false));
+            NodeId.parse("i=25601"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25584").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3062,7 +3847,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 9028),
+            NodeId.parse("i=9028"),
             new QualifiedName(0, "Disable"),
             new LocalizedText("", "Disable"),
             LocalizedText.NULL_VALUE,
@@ -3075,12 +3860,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 9028), new NodeId(0, 3065), new NodeId(0, 2803).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 9028), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=9028"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=2803").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 9028), new NodeId(0, 47), new NodeId(0, 2782).expanded(), false));
+            NodeId.parse("i=9028"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=9028"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=2782").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3088,7 +3880,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 9027),
+            NodeId.parse("i=9027"),
             new QualifiedName(0, "Enable"),
             new LocalizedText("", "Enable"),
             LocalizedText.NULL_VALUE,
@@ -3101,12 +3893,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 9027), new NodeId(0, 3065), new NodeId(0, 2803).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 9027), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=9027"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=2803").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 9027), new NodeId(0, 47), new NodeId(0, 2782).expanded(), false));
+            NodeId.parse("i=9027"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=9027"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=2782").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3114,7 +3913,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 9029),
+            NodeId.parse("i=9029"),
             new QualifiedName(0, "AddComment"),
             new LocalizedText("", "AddComment"),
             LocalizedText.NULL_VALUE,
@@ -3127,15 +3926,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 9029), new NodeId(0, 46), new NodeId(0, 9030).expanded(), true));
+            NodeId.parse("i=9029"), NodeId.parse("i=46"), NodeId.parse("i=9030").expanded(), true));
     node.addReference(
         new Reference(
-            new NodeId(0, 9029), new NodeId(0, 3065), new NodeId(0, 2829).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 9029), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=9029"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=2829").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 9029), new NodeId(0, 47), new NodeId(0, 2782).expanded(), false));
+            NodeId.parse("i=9029"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=9029"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=2782").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3143,7 +3949,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 3875),
+            NodeId.parse("i=3875"),
             new QualifiedName(0, "ConditionRefresh"),
             new LocalizedText("", "ConditionRefresh"),
             LocalizedText.NULL_VALUE,
@@ -3156,16 +3962,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 3875), new NodeId(0, 46), new NodeId(0, 3876).expanded(), true));
+            NodeId.parse("i=3875"), NodeId.parse("i=46"), NodeId.parse("i=3876").expanded(), true));
     node.addReference(
         new Reference(
-            new NodeId(0, 3875), new NodeId(0, 3065), new NodeId(0, 2787).expanded(), true));
+            NodeId.parse("i=3875"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=2787").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 3875), new NodeId(0, 3065), new NodeId(0, 2788).expanded(), true));
+            NodeId.parse("i=3875"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=2788").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 3875), new NodeId(0, 47), new NodeId(0, 2782).expanded(), false));
+            NodeId.parse("i=3875"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=2782").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3173,7 +3988,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 12912),
+            NodeId.parse("i=12912"),
             new QualifiedName(0, "ConditionRefresh2"),
             new LocalizedText("", "ConditionRefresh2"),
             LocalizedText.NULL_VALUE,
@@ -3186,16 +4001,28 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 12912), new NodeId(0, 46), new NodeId(0, 12913).expanded(), true));
+            NodeId.parse("i=12912"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=12913").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 12912), new NodeId(0, 3065), new NodeId(0, 2787).expanded(), true));
+            NodeId.parse("i=12912"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=2787").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 12912), new NodeId(0, 3065), new NodeId(0, 2788).expanded(), true));
+            NodeId.parse("i=12912"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=2788").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 12912), new NodeId(0, 47), new NodeId(0, 2782).expanded(), false));
+            NodeId.parse("i=12912"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=2782").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3203,7 +4030,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 9069),
+            NodeId.parse("i=9069"),
             new QualifiedName(0, "Respond"),
             new LocalizedText("", "Respond"),
             LocalizedText.NULL_VALUE,
@@ -3216,15 +4043,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 9069), new NodeId(0, 46), new NodeId(0, 9070).expanded(), true));
+            NodeId.parse("i=9069"), NodeId.parse("i=46"), NodeId.parse("i=9070").expanded(), true));
     node.addReference(
         new Reference(
-            new NodeId(0, 9069), new NodeId(0, 3065), new NodeId(0, 8927).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 9069), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=9069"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=8927").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 9069), new NodeId(0, 47), new NodeId(0, 2830).expanded(), false));
+            NodeId.parse("i=9069"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=9069"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=2830").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3232,7 +4066,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 24312),
+            NodeId.parse("i=24312"),
             new QualifiedName(0, "Respond2"),
             new LocalizedText("", "Respond2"),
             LocalizedText.NULL_VALUE,
@@ -3245,15 +4079,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 24312), new NodeId(0, 46), new NodeId(0, 24313).expanded(), true));
+            NodeId.parse("i=24312"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=24313").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 24312), new NodeId(0, 3065), new NodeId(0, 8927).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 24312), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=24312"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=8927").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 24312), new NodeId(0, 47), new NodeId(0, 2830).expanded(), false));
+            NodeId.parse("i=24312"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=24312"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=2830").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3261,7 +4105,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 9111),
+            NodeId.parse("i=9111"),
             new QualifiedName(0, "Acknowledge"),
             new LocalizedText("", "Acknowledge"),
             LocalizedText.NULL_VALUE,
@@ -3274,15 +4118,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 9111), new NodeId(0, 46), new NodeId(0, 9112).expanded(), true));
+            NodeId.parse("i=9111"), NodeId.parse("i=46"), NodeId.parse("i=9112").expanded(), true));
     node.addReference(
         new Reference(
-            new NodeId(0, 9111), new NodeId(0, 3065), new NodeId(0, 8944).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 9111), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=9111"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=8944").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 9111), new NodeId(0, 47), new NodeId(0, 2881).expanded(), false));
+            NodeId.parse("i=9111"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=9111"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=2881").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3290,7 +4141,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 9113),
+            NodeId.parse("i=9113"),
             new QualifiedName(0, "Confirm"),
             new LocalizedText("", "Confirm"),
             LocalizedText.NULL_VALUE,
@@ -3303,15 +4154,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 9113), new NodeId(0, 46), new NodeId(0, 9114).expanded(), true));
+            NodeId.parse("i=9113"), NodeId.parse("i=46"), NodeId.parse("i=9114").expanded(), true));
     node.addReference(
         new Reference(
-            new NodeId(0, 9113), new NodeId(0, 3065), new NodeId(0, 8961).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 9113), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=9113"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=8961").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 9113), new NodeId(0, 47), new NodeId(0, 2881).expanded(), false));
+            NodeId.parse("i=9113"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=9113"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=2881").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3319,7 +4177,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 9213),
+            NodeId.parse("i=9213"),
             new QualifiedName(0, "TimedShelve"),
             new LocalizedText("", "TimedShelve"),
             LocalizedText.NULL_VALUE,
@@ -3332,15 +4190,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 9213), new NodeId(0, 46), new NodeId(0, 9214).expanded(), true));
+            NodeId.parse("i=9213"), NodeId.parse("i=46"), NodeId.parse("i=9214").expanded(), true));
     node.addReference(
         new Reference(
-            new NodeId(0, 9213), new NodeId(0, 3065), new NodeId(0, 11093).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 9213), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=9213"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=11093").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 9213), new NodeId(0, 47), new NodeId(0, 9178).expanded(), false));
+            NodeId.parse("i=9213"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=9213"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=9178").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3348,7 +4213,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 9211),
+            NodeId.parse("i=9211"),
             new QualifiedName(0, "Unshelve"),
             new LocalizedText("", "Unshelve"),
             LocalizedText.NULL_VALUE,
@@ -3361,12 +4226,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 9211), new NodeId(0, 3065), new NodeId(0, 11093).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 9211), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=9211"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=11093").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 9211), new NodeId(0, 47), new NodeId(0, 9178).expanded(), false));
+            NodeId.parse("i=9211"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=9211"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=9178").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3374,7 +4246,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 9212),
+            NodeId.parse("i=9212"),
             new QualifiedName(0, "OneShotShelve"),
             new LocalizedText("", "OneShotShelve"),
             LocalizedText.NULL_VALUE,
@@ -3387,12 +4259,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 9212), new NodeId(0, 3065), new NodeId(0, 11093).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 9212), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=9212"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=11093").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 9212), new NodeId(0, 47), new NodeId(0, 9178).expanded(), false));
+            NodeId.parse("i=9212"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=9212"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=9178").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3400,7 +4279,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16402),
+            NodeId.parse("i=16402"),
             new QualifiedName(0, "Silence"),
             new LocalizedText("", "Silence"),
             LocalizedText.NULL_VALUE,
@@ -3413,12 +4292,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16402), new NodeId(0, 3065), new NodeId(0, 17242).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 16402), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=16402"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=17242").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16402), new NodeId(0, 47), new NodeId(0, 2915).expanded(), false));
+            NodeId.parse("i=16402"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=16402"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=2915").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3426,7 +4312,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16403),
+            NodeId.parse("i=16403"),
             new QualifiedName(0, "Suppress"),
             new LocalizedText("", "Suppress"),
             LocalizedText.NULL_VALUE,
@@ -3439,12 +4325,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16403), new NodeId(0, 3065), new NodeId(0, 17225).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 16403), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=16403"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=17225").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16403), new NodeId(0, 47), new NodeId(0, 2915).expanded(), false));
+            NodeId.parse("i=16403"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=16403"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=2915").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3452,7 +4345,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 24316),
+            NodeId.parse("i=24316"),
             new QualifiedName(0, "Suppress2"),
             new LocalizedText("", "Suppress2"),
             LocalizedText.NULL_VALUE,
@@ -3465,15 +4358,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 24316), new NodeId(0, 46), new NodeId(0, 24317).expanded(), true));
+            NodeId.parse("i=24316"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=24317").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 24316), new NodeId(0, 3065), new NodeId(0, 17225).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 24316), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=24316"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=17225").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 24316), new NodeId(0, 47), new NodeId(0, 2915).expanded(), false));
+            NodeId.parse("i=24316"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=24316"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=2915").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3481,7 +4384,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 17868),
+            NodeId.parse("i=17868"),
             new QualifiedName(0, "Unsuppress"),
             new LocalizedText("", "Unsuppress"),
             LocalizedText.NULL_VALUE,
@@ -3494,12 +4397,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 17868), new NodeId(0, 3065), new NodeId(0, 17225).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 17868), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=17868"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=17225").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 17868), new NodeId(0, 47), new NodeId(0, 2915).expanded(), false));
+            NodeId.parse("i=17868"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=17868"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=2915").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3507,7 +4417,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 24318),
+            NodeId.parse("i=24318"),
             new QualifiedName(0, "Unsuppress2"),
             new LocalizedText("", "Unsuppress2"),
             LocalizedText.NULL_VALUE,
@@ -3520,15 +4430,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 24318), new NodeId(0, 46), new NodeId(0, 24319).expanded(), true));
+            NodeId.parse("i=24318"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=24319").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 24318), new NodeId(0, 3065), new NodeId(0, 17225).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 24318), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=24318"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=17225").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 24318), new NodeId(0, 47), new NodeId(0, 2915).expanded(), false));
+            NodeId.parse("i=24318"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=24318"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=2915").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3536,7 +4456,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 17869),
+            NodeId.parse("i=17869"),
             new QualifiedName(0, "RemoveFromService"),
             new LocalizedText("", "RemoveFromService"),
             LocalizedText.NULL_VALUE,
@@ -3549,12 +4469,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 17869), new NodeId(0, 3065), new NodeId(0, 17259).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 17869), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=17869"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=17259").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 17869), new NodeId(0, 47), new NodeId(0, 2915).expanded(), false));
+            NodeId.parse("i=17869"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=17869"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=2915").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3562,7 +4489,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 24320),
+            NodeId.parse("i=24320"),
             new QualifiedName(0, "RemoveFromService2"),
             new LocalizedText("", "RemoveFromService2"),
             LocalizedText.NULL_VALUE,
@@ -3575,15 +4502,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 24320), new NodeId(0, 46), new NodeId(0, 24321).expanded(), true));
+            NodeId.parse("i=24320"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=24321").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 24320), new NodeId(0, 3065), new NodeId(0, 17259).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 24320), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=24320"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=17259").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 24320), new NodeId(0, 47), new NodeId(0, 2915).expanded(), false));
+            NodeId.parse("i=24320"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=24320"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=2915").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3591,7 +4528,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 17870),
+            NodeId.parse("i=17870"),
             new QualifiedName(0, "PlaceInService"),
             new LocalizedText("", "PlaceInService"),
             LocalizedText.NULL_VALUE,
@@ -3604,12 +4541,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 17870), new NodeId(0, 3065), new NodeId(0, 17259).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 17870), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=17870"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=17259").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 17870), new NodeId(0, 47), new NodeId(0, 2915).expanded(), false));
+            NodeId.parse("i=17870"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=17870"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=2915").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3617,7 +4561,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 24322),
+            NodeId.parse("i=24322"),
             new QualifiedName(0, "PlaceInService2"),
             new LocalizedText("", "PlaceInService2"),
             LocalizedText.NULL_VALUE,
@@ -3630,15 +4574,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 24322), new NodeId(0, 46), new NodeId(0, 24323).expanded(), true));
+            NodeId.parse("i=24322"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=24323").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 24322), new NodeId(0, 3065), new NodeId(0, 17259).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 24322), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=24322"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=17259").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 24322), new NodeId(0, 47), new NodeId(0, 2915).expanded(), false));
+            NodeId.parse("i=24322"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=24322"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=2915").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3646,7 +4600,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 18199),
+            NodeId.parse("i=18199"),
             new QualifiedName(0, "Reset"),
             new LocalizedText("", "Reset"),
             LocalizedText.NULL_VALUE,
@@ -3659,12 +4613,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 18199), new NodeId(0, 3065), new NodeId(0, 15013).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 18199), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=18199"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=15013").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 18199), new NodeId(0, 47), new NodeId(0, 2915).expanded(), false));
+            NodeId.parse("i=18199"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=18199"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=2915").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3672,7 +4633,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 24324),
+            NodeId.parse("i=24324"),
             new QualifiedName(0, "Reset2"),
             new LocalizedText("", "Reset2"),
             LocalizedText.NULL_VALUE,
@@ -3685,15 +4646,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 24324), new NodeId(0, 46), new NodeId(0, 24325).expanded(), true));
+            NodeId.parse("i=24324"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=24325").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 24324), new NodeId(0, 3065), new NodeId(0, 15013).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 24324), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=24324"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=15013").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 24324), new NodeId(0, 47), new NodeId(0, 2915).expanded(), false));
+            NodeId.parse("i=24324"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=24324"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=2915").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3701,7 +4672,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 24744),
+            NodeId.parse("i=24744"),
             new QualifiedName(0, "GetGroupMemberships"),
             new LocalizedText("", "GetGroupMemberships"),
             LocalizedText.NULL_VALUE,
@@ -3714,12 +4685,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 24744), new NodeId(0, 46), new NodeId(0, 25154).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 24744), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=24744"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25154").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 24744), new NodeId(0, 47), new NodeId(0, 2915).expanded(), false));
+            NodeId.parse("i=24744"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=24744"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=2915").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3727,7 +4705,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16439),
+            NodeId.parse("i=16439"),
             new QualifiedName(0, "Disable"),
             new LocalizedText("", "Disable"),
             LocalizedText.NULL_VALUE,
@@ -3740,12 +4718,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16439), new NodeId(0, 3065), new NodeId(0, 2803).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 16439), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=16439"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=2803").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16439), new NodeId(0, 47), new NodeId(0, 16406).expanded(), false));
+            NodeId.parse("i=16439"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=16439"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=16406").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3753,7 +4738,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16440),
+            NodeId.parse("i=16440"),
             new QualifiedName(0, "Enable"),
             new LocalizedText("", "Enable"),
             LocalizedText.NULL_VALUE,
@@ -3766,12 +4751,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16440), new NodeId(0, 3065), new NodeId(0, 2803).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 16440), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=16440"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=2803").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16440), new NodeId(0, 47), new NodeId(0, 16406).expanded(), false));
+            NodeId.parse("i=16440"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=16440"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=16406").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3779,7 +4771,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16441),
+            NodeId.parse("i=16441"),
             new QualifiedName(0, "AddComment"),
             new LocalizedText("", "AddComment"),
             LocalizedText.NULL_VALUE,
@@ -3792,15 +4784,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16441), new NodeId(0, 46), new NodeId(0, 16442).expanded(), true));
+            NodeId.parse("i=16441"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16442").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16441), new NodeId(0, 3065), new NodeId(0, 2829).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 16441), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=16441"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=2829").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16441), new NodeId(0, 47), new NodeId(0, 16406).expanded(), false));
+            NodeId.parse("i=16441"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=16441"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=16406").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3808,7 +4810,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16461),
+            NodeId.parse("i=16461"),
             new QualifiedName(0, "Acknowledge"),
             new LocalizedText("", "Acknowledge"),
             LocalizedText.NULL_VALUE,
@@ -3821,15 +4823,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16461), new NodeId(0, 46), new NodeId(0, 16462).expanded(), true));
+            NodeId.parse("i=16461"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16462").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16461), new NodeId(0, 3065), new NodeId(0, 8944).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 16461), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=16461"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=8944").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16461), new NodeId(0, 47), new NodeId(0, 16406).expanded(), false));
+            NodeId.parse("i=16461"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=16461"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=16406").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3837,7 +4849,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 20034),
+            NodeId.parse("i=20034"),
             new QualifiedName(0, "Disable"),
             new LocalizedText("", "Disable"),
             LocalizedText.NULL_VALUE,
@@ -3850,12 +4862,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 20034), new NodeId(0, 3065), new NodeId(0, 2803).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 20034), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=20034"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=2803").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 20034), new NodeId(0, 47), new NodeId(0, 19847).expanded(), false));
+            NodeId.parse("i=20034"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=20034"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=19847").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3863,7 +4882,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 20035),
+            NodeId.parse("i=20035"),
             new QualifiedName(0, "Enable"),
             new LocalizedText("", "Enable"),
             LocalizedText.NULL_VALUE,
@@ -3876,12 +4895,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 20035), new NodeId(0, 3065), new NodeId(0, 2803).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 20035), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=20035"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=2803").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 20035), new NodeId(0, 47), new NodeId(0, 19847).expanded(), false));
+            NodeId.parse("i=20035"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=20035"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=19847").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3889,7 +4915,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 20036),
+            NodeId.parse("i=20036"),
             new QualifiedName(0, "AddComment"),
             new LocalizedText("", "AddComment"),
             LocalizedText.NULL_VALUE,
@@ -3902,15 +4928,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 20036), new NodeId(0, 46), new NodeId(0, 20037).expanded(), true));
+            NodeId.parse("i=20036"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=20037").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 20036), new NodeId(0, 3065), new NodeId(0, 2829).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 20036), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=20036"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=2829").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 20036), new NodeId(0, 47), new NodeId(0, 19847).expanded(), false));
+            NodeId.parse("i=20036"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=20036"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=19847").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3918,7 +4954,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 23493),
+            NodeId.parse("i=23493"),
             new QualifiedName(0, "Acknowledge"),
             new LocalizedText("", "Acknowledge"),
             LocalizedText.NULL_VALUE,
@@ -3931,15 +4967,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 23493), new NodeId(0, 46), new NodeId(0, 23561).expanded(), true));
+            NodeId.parse("i=23493"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=23561").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 23493), new NodeId(0, 3065), new NodeId(0, 8944).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 23493), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=23493"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=8944").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 23493), new NodeId(0, 47), new NodeId(0, 19847).expanded(), false));
+            NodeId.parse("i=23493"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=23493"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=19847").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3947,7 +4993,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 2949),
+            NodeId.parse("i=2949"),
             new QualifiedName(0, "TimedShelve"),
             new LocalizedText("", "TimedShelve"),
             LocalizedText.NULL_VALUE,
@@ -3960,21 +5006,34 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 2949), new NodeId(0, 46), new NodeId(0, 2991).expanded(), true));
+            NodeId.parse("i=2949"), NodeId.parse("i=46"), NodeId.parse("i=2991").expanded(), true));
     node.addReference(
         new Reference(
-            new NodeId(0, 2949), new NodeId(0, 53), new NodeId(0, 2935).expanded(), false));
+            NodeId.parse("i=2949"),
+            NodeId.parse("i=53"),
+            NodeId.parse("i=2935").expanded(),
+            false));
     node.addReference(
         new Reference(
-            new NodeId(0, 2949), new NodeId(0, 53), new NodeId(0, 2945).expanded(), false));
+            NodeId.parse("i=2949"),
+            NodeId.parse("i=53"),
+            NodeId.parse("i=2945").expanded(),
+            false));
     node.addReference(
         new Reference(
-            new NodeId(0, 2949), new NodeId(0, 3065), new NodeId(0, 11093).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 2949), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=2949"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=11093").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 2949), new NodeId(0, 47), new NodeId(0, 2929).expanded(), false));
+            NodeId.parse("i=2949"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=2949"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=2929").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3982,7 +5041,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 24756),
+            NodeId.parse("i=24756"),
             new QualifiedName(0, "TimedShelve2"),
             new LocalizedText("", "TimedShelve2"),
             LocalizedText.NULL_VALUE,
@@ -3995,21 +5054,37 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 24756), new NodeId(0, 46), new NodeId(0, 24757).expanded(), true));
+            NodeId.parse("i=24756"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=24757").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 24756), new NodeId(0, 53), new NodeId(0, 2935).expanded(), false));
+            NodeId.parse("i=24756"),
+            NodeId.parse("i=53"),
+            NodeId.parse("i=2935").expanded(),
+            false));
     node.addReference(
         new Reference(
-            new NodeId(0, 24756), new NodeId(0, 53), new NodeId(0, 2945).expanded(), false));
+            NodeId.parse("i=24756"),
+            NodeId.parse("i=53"),
+            NodeId.parse("i=2945").expanded(),
+            false));
     node.addReference(
         new Reference(
-            new NodeId(0, 24756), new NodeId(0, 3065), new NodeId(0, 11093).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 24756), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=24756"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=11093").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 24756), new NodeId(0, 47), new NodeId(0, 2929).expanded(), false));
+            NodeId.parse("i=24756"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=24756"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=2929").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -4017,7 +5092,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 2947),
+            NodeId.parse("i=2947"),
             new QualifiedName(0, "Unshelve"),
             new LocalizedText("", "Unshelve"),
             LocalizedText.NULL_VALUE,
@@ -4030,18 +5105,31 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 2947), new NodeId(0, 53), new NodeId(0, 2940).expanded(), false));
+            NodeId.parse("i=2947"),
+            NodeId.parse("i=53"),
+            NodeId.parse("i=2940").expanded(),
+            false));
     node.addReference(
         new Reference(
-            new NodeId(0, 2947), new NodeId(0, 53), new NodeId(0, 2943).expanded(), false));
+            NodeId.parse("i=2947"),
+            NodeId.parse("i=53"),
+            NodeId.parse("i=2943").expanded(),
+            false));
     node.addReference(
         new Reference(
-            new NodeId(0, 2947), new NodeId(0, 3065), new NodeId(0, 11093).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 2947), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=2947"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=11093").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 2947), new NodeId(0, 47), new NodeId(0, 2929).expanded(), false));
+            NodeId.parse("i=2947"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=2947"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=2929").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -4049,7 +5137,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 24758),
+            NodeId.parse("i=24758"),
             new QualifiedName(0, "Unshelve2"),
             new LocalizedText("", "Unshelve2"),
             LocalizedText.NULL_VALUE,
@@ -4062,21 +5150,37 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 24758), new NodeId(0, 46), new NodeId(0, 24759).expanded(), true));
+            NodeId.parse("i=24758"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=24759").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 24758), new NodeId(0, 53), new NodeId(0, 2940).expanded(), false));
+            NodeId.parse("i=24758"),
+            NodeId.parse("i=53"),
+            NodeId.parse("i=2940").expanded(),
+            false));
     node.addReference(
         new Reference(
-            new NodeId(0, 24758), new NodeId(0, 53), new NodeId(0, 2943).expanded(), false));
+            NodeId.parse("i=24758"),
+            NodeId.parse("i=53"),
+            NodeId.parse("i=2943").expanded(),
+            false));
     node.addReference(
         new Reference(
-            new NodeId(0, 24758), new NodeId(0, 3065), new NodeId(0, 11093).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 24758), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=24758"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=11093").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 24758), new NodeId(0, 47), new NodeId(0, 2929).expanded(), false));
+            NodeId.parse("i=24758"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=24758"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=2929").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -4084,7 +5188,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 2948),
+            NodeId.parse("i=2948"),
             new QualifiedName(0, "OneShotShelve"),
             new LocalizedText("", "OneShotShelve"),
             LocalizedText.NULL_VALUE,
@@ -4097,18 +5201,31 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 2948), new NodeId(0, 53), new NodeId(0, 2936).expanded(), false));
+            NodeId.parse("i=2948"),
+            NodeId.parse("i=53"),
+            NodeId.parse("i=2936").expanded(),
+            false));
     node.addReference(
         new Reference(
-            new NodeId(0, 2948), new NodeId(0, 53), new NodeId(0, 2942).expanded(), false));
+            NodeId.parse("i=2948"),
+            NodeId.parse("i=53"),
+            NodeId.parse("i=2942").expanded(),
+            false));
     node.addReference(
         new Reference(
-            new NodeId(0, 2948), new NodeId(0, 3065), new NodeId(0, 11093).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 2948), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=2948"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=11093").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 2948), new NodeId(0, 47), new NodeId(0, 2929).expanded(), false));
+            NodeId.parse("i=2948"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=2948"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=2929").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -4116,7 +5233,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 24760),
+            NodeId.parse("i=24760"),
             new QualifiedName(0, "OneShotShelve2"),
             new LocalizedText("", "OneShotShelve2"),
             LocalizedText.NULL_VALUE,
@@ -4129,21 +5246,37 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 24760), new NodeId(0, 46), new NodeId(0, 24761).expanded(), true));
+            NodeId.parse("i=24760"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=24761").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 24760), new NodeId(0, 53), new NodeId(0, 2936).expanded(), false));
+            NodeId.parse("i=24760"),
+            NodeId.parse("i=53"),
+            NodeId.parse("i=2936").expanded(),
+            false));
     node.addReference(
         new Reference(
-            new NodeId(0, 24760), new NodeId(0, 53), new NodeId(0, 2942).expanded(), false));
+            NodeId.parse("i=24760"),
+            NodeId.parse("i=53"),
+            NodeId.parse("i=2942").expanded(),
+            false));
     node.addReference(
         new Reference(
-            new NodeId(0, 24760), new NodeId(0, 3065), new NodeId(0, 11093).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 24760), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=24760"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=11093").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 24760), new NodeId(0, 47), new NodeId(0, 2929).expanded(), false));
+            NodeId.parse("i=24760"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=24760"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=2929").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -4151,7 +5284,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 18666),
+            NodeId.parse("i=18666"),
             new QualifiedName(0, "Reset"),
             new LocalizedText("", "Reset"),
             LocalizedText.NULL_VALUE,
@@ -4164,12 +5297,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 18666), new NodeId(0, 3065), new NodeId(0, 2127).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 18666), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=18666"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=2127").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 18666), new NodeId(0, 47), new NodeId(0, 17279).expanded(), false));
+            NodeId.parse("i=18666"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=18666"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=17279").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -4177,7 +5317,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 2426),
+            NodeId.parse("i=2426"),
             new QualifiedName(0, "Start"),
             new LocalizedText("", "Start"),
             LocalizedText.NULL_VALUE,
@@ -4190,13 +5330,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 2426), new NodeId(0, 53), new NodeId(0, 2410).expanded(), false));
+            NodeId.parse("i=2426"),
+            NodeId.parse("i=53"),
+            NodeId.parse("i=2410").expanded(),
+            false));
     node.addReference(
         new Reference(
-            new NodeId(0, 2426), new NodeId(0, 37), new NodeId(0, 11508).expanded(), true));
+            NodeId.parse("i=2426"),
+            NodeId.parse("i=37"),
+            NodeId.parse("i=11508").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 2426), new NodeId(0, 47), new NodeId(0, 2391).expanded(), false));
+            NodeId.parse("i=2426"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=2391").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -4204,7 +5353,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 2427),
+            NodeId.parse("i=2427"),
             new QualifiedName(0, "Suspend"),
             new LocalizedText("", "Suspend"),
             LocalizedText.NULL_VALUE,
@@ -4217,13 +5366,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 2427), new NodeId(0, 53), new NodeId(0, 2416).expanded(), false));
+            NodeId.parse("i=2427"),
+            NodeId.parse("i=53"),
+            NodeId.parse("i=2416").expanded(),
+            false));
     node.addReference(
         new Reference(
-            new NodeId(0, 2427), new NodeId(0, 37), new NodeId(0, 11508).expanded(), true));
+            NodeId.parse("i=2427"),
+            NodeId.parse("i=37"),
+            NodeId.parse("i=11508").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 2427), new NodeId(0, 47), new NodeId(0, 2391).expanded(), false));
+            NodeId.parse("i=2427"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=2391").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -4231,7 +5389,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 2428),
+            NodeId.parse("i=2428"),
             new QualifiedName(0, "Resume"),
             new LocalizedText("", "Resume"),
             LocalizedText.NULL_VALUE,
@@ -4244,13 +5402,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 2428), new NodeId(0, 53), new NodeId(0, 2418).expanded(), false));
+            NodeId.parse("i=2428"),
+            NodeId.parse("i=53"),
+            NodeId.parse("i=2418").expanded(),
+            false));
     node.addReference(
         new Reference(
-            new NodeId(0, 2428), new NodeId(0, 37), new NodeId(0, 11508).expanded(), true));
+            NodeId.parse("i=2428"),
+            NodeId.parse("i=37"),
+            NodeId.parse("i=11508").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 2428), new NodeId(0, 47), new NodeId(0, 2391).expanded(), false));
+            NodeId.parse("i=2428"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=2391").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -4258,7 +5425,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 2429),
+            NodeId.parse("i=2429"),
             new QualifiedName(0, "Halt"),
             new LocalizedText("", "Halt"),
             LocalizedText.NULL_VALUE,
@@ -4271,19 +5438,34 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 2429), new NodeId(0, 53), new NodeId(0, 2412).expanded(), false));
+            NodeId.parse("i=2429"),
+            NodeId.parse("i=53"),
+            NodeId.parse("i=2412").expanded(),
+            false));
     node.addReference(
         new Reference(
-            new NodeId(0, 2429), new NodeId(0, 53), new NodeId(0, 2420).expanded(), false));
+            NodeId.parse("i=2429"),
+            NodeId.parse("i=53"),
+            NodeId.parse("i=2420").expanded(),
+            false));
     node.addReference(
         new Reference(
-            new NodeId(0, 2429), new NodeId(0, 53), new NodeId(0, 2424).expanded(), false));
+            NodeId.parse("i=2429"),
+            NodeId.parse("i=53"),
+            NodeId.parse("i=2424").expanded(),
+            false));
     node.addReference(
         new Reference(
-            new NodeId(0, 2429), new NodeId(0, 37), new NodeId(0, 11508).expanded(), true));
+            NodeId.parse("i=2429"),
+            NodeId.parse("i=37"),
+            NodeId.parse("i=11508").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 2429), new NodeId(0, 47), new NodeId(0, 2391).expanded(), false));
+            NodeId.parse("i=2429"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=2391").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -4291,7 +5473,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 2430),
+            NodeId.parse("i=2430"),
             new QualifiedName(0, "Reset"),
             new LocalizedText("", "Reset"),
             LocalizedText.NULL_VALUE,
@@ -4304,19 +5486,34 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 2430), new NodeId(0, 53), new NodeId(0, 2408).expanded(), false));
+            NodeId.parse("i=2430"),
+            NodeId.parse("i=53"),
+            NodeId.parse("i=2408").expanded(),
+            false));
     node.addReference(
         new Reference(
-            new NodeId(0, 2430), new NodeId(0, 53), new NodeId(0, 2420).expanded(), false));
+            NodeId.parse("i=2430"),
+            NodeId.parse("i=53"),
+            NodeId.parse("i=2420").expanded(),
+            false));
     node.addReference(
         new Reference(
-            new NodeId(0, 2430), new NodeId(0, 53), new NodeId(0, 2422).expanded(), false));
+            NodeId.parse("i=2430"),
+            NodeId.parse("i=53"),
+            NodeId.parse("i=2422").expanded(),
+            false));
     node.addReference(
         new Reference(
-            new NodeId(0, 2430), new NodeId(0, 37), new NodeId(0, 11508).expanded(), true));
+            NodeId.parse("i=2430"),
+            NodeId.parse("i=37"),
+            NodeId.parse("i=11508").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 2430), new NodeId(0, 47), new NodeId(0, 2391).expanded(), false));
+            NodeId.parse("i=2430"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=2391").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -4324,7 +5521,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 12543),
+            NodeId.parse("i=12543"),
             new QualifiedName(0, "OpenWithMasks"),
             new LocalizedText("", "OpenWithMasks"),
             LocalizedText.NULL_VALUE,
@@ -4337,15 +5534,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 12543), new NodeId(0, 46), new NodeId(0, 12544).expanded(), true));
+            NodeId.parse("i=12543"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=12544").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 12543), new NodeId(0, 46), new NodeId(0, 12545).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 12543), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=12543"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=12545").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 12543), new NodeId(0, 47), new NodeId(0, 12522).expanded(), false));
+            NodeId.parse("i=12543"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=12543"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=12522").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -4353,7 +5560,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 12546),
+            NodeId.parse("i=12546"),
             new QualifiedName(0, "CloseAndUpdate"),
             new LocalizedText("", "CloseAndUpdate"),
             LocalizedText.NULL_VALUE,
@@ -4366,15 +5573,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 12546), new NodeId(0, 46), new NodeId(0, 12705).expanded(), true));
+            NodeId.parse("i=12546"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=12705").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 12546), new NodeId(0, 46), new NodeId(0, 12547).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 12546), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=12546"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=12547").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 12546), new NodeId(0, 47), new NodeId(0, 12522).expanded(), false));
+            NodeId.parse("i=12546"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=12546"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=12522").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -4382,7 +5599,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 12548),
+            NodeId.parse("i=12548"),
             new QualifiedName(0, "AddCertificate"),
             new LocalizedText("", "AddCertificate"),
             LocalizedText.NULL_VALUE,
@@ -4395,12 +5612,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 12548), new NodeId(0, 46), new NodeId(0, 12549).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 12548), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=12548"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=12549").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 12548), new NodeId(0, 47), new NodeId(0, 12522).expanded(), false));
+            NodeId.parse("i=12548"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=12548"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=12522").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -4408,7 +5632,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 12550),
+            NodeId.parse("i=12550"),
             new QualifiedName(0, "RemoveCertificate"),
             new LocalizedText("", "RemoveCertificate"),
             LocalizedText.NULL_VALUE,
@@ -4421,12 +5645,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 12550), new NodeId(0, 46), new NodeId(0, 12551).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 12550), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=12550"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=12551").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 12550), new NodeId(0, 47), new NodeId(0, 12522).expanded(), false));
+            NodeId.parse("i=12550"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=12550"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=12522").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -4434,7 +5665,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13605),
+            NodeId.parse("i=13605"),
             new QualifiedName(0, "Open"),
             new LocalizedText("", "Open"),
             LocalizedText.NULL_VALUE,
@@ -4447,15 +5678,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13605), new NodeId(0, 46), new NodeId(0, 13606).expanded(), true));
+            NodeId.parse("i=13605"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13606").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13605), new NodeId(0, 46), new NodeId(0, 13607).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13605), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13605"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13607").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13605), new NodeId(0, 47), new NodeId(0, 13599).expanded(), false));
+            NodeId.parse("i=13605"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13605"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13599").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -4463,7 +5704,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13608),
+            NodeId.parse("i=13608"),
             new QualifiedName(0, "Close"),
             new LocalizedText("", "Close"),
             LocalizedText.NULL_VALUE,
@@ -4476,12 +5717,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13608), new NodeId(0, 46), new NodeId(0, 13609).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13608), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13608"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13609").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13608), new NodeId(0, 47), new NodeId(0, 13599).expanded(), false));
+            NodeId.parse("i=13608"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13608"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13599").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -4489,7 +5737,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13610),
+            NodeId.parse("i=13610"),
             new QualifiedName(0, "Read"),
             new LocalizedText("", "Read"),
             LocalizedText.NULL_VALUE,
@@ -4502,15 +5750,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13610), new NodeId(0, 46), new NodeId(0, 13611).expanded(), true));
+            NodeId.parse("i=13610"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13611").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13610), new NodeId(0, 46), new NodeId(0, 13612).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13610), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13610"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13612").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13610), new NodeId(0, 47), new NodeId(0, 13599).expanded(), false));
+            NodeId.parse("i=13610"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13610"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13599").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -4518,7 +5776,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13613),
+            NodeId.parse("i=13613"),
             new QualifiedName(0, "Write"),
             new LocalizedText("", "Write"),
             LocalizedText.NULL_VALUE,
@@ -4531,12 +5789,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13613), new NodeId(0, 46), new NodeId(0, 13614).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13613), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13613"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13614").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13613), new NodeId(0, 47), new NodeId(0, 13599).expanded(), false));
+            NodeId.parse("i=13613"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13613"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13599").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -4544,7 +5809,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13615),
+            NodeId.parse("i=13615"),
             new QualifiedName(0, "GetPosition"),
             new LocalizedText("", "GetPosition"),
             LocalizedText.NULL_VALUE,
@@ -4557,15 +5822,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13615), new NodeId(0, 46), new NodeId(0, 13616).expanded(), true));
+            NodeId.parse("i=13615"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13616").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13615), new NodeId(0, 46), new NodeId(0, 13617).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13615), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13615"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13617").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13615), new NodeId(0, 47), new NodeId(0, 13599).expanded(), false));
+            NodeId.parse("i=13615"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13615"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13599").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -4573,7 +5848,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13618),
+            NodeId.parse("i=13618"),
             new QualifiedName(0, "SetPosition"),
             new LocalizedText("", "SetPosition"),
             LocalizedText.NULL_VALUE,
@@ -4586,12 +5861,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13618), new NodeId(0, 46), new NodeId(0, 13619).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13618), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13618"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13619").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13618), new NodeId(0, 47), new NodeId(0, 13599).expanded(), false));
+            NodeId.parse("i=13618"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13618"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13599").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -4599,7 +5881,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13621),
+            NodeId.parse("i=13621"),
             new QualifiedName(0, "OpenWithMasks"),
             new LocalizedText("", "OpenWithMasks"),
             LocalizedText.NULL_VALUE,
@@ -4612,15 +5894,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13621), new NodeId(0, 46), new NodeId(0, 13622).expanded(), true));
+            NodeId.parse("i=13621"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13622").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13621), new NodeId(0, 46), new NodeId(0, 13623).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13621), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13621"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13623").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13621), new NodeId(0, 47), new NodeId(0, 13599).expanded(), false));
+            NodeId.parse("i=13621"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13621"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13599").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -4628,7 +5920,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13624),
+            NodeId.parse("i=13624"),
             new QualifiedName(0, "CloseAndUpdate"),
             new LocalizedText("", "CloseAndUpdate"),
             LocalizedText.NULL_VALUE,
@@ -4641,15 +5933,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13624), new NodeId(0, 46), new NodeId(0, 13625).expanded(), true));
+            NodeId.parse("i=13624"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13625").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13624), new NodeId(0, 46), new NodeId(0, 13626).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13624), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13624"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13626").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13624), new NodeId(0, 47), new NodeId(0, 13599).expanded(), false));
+            NodeId.parse("i=13624"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13624"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13599").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -4657,7 +5959,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13627),
+            NodeId.parse("i=13627"),
             new QualifiedName(0, "AddCertificate"),
             new LocalizedText("", "AddCertificate"),
             LocalizedText.NULL_VALUE,
@@ -4670,12 +5972,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13627), new NodeId(0, 46), new NodeId(0, 13628).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13627), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13627"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13628").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13627), new NodeId(0, 47), new NodeId(0, 13599).expanded(), false));
+            NodeId.parse("i=13627"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13627"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13599").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -4683,7 +5992,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13629),
+            NodeId.parse("i=13629"),
             new QualifiedName(0, "RemoveCertificate"),
             new LocalizedText("", "RemoveCertificate"),
             LocalizedText.NULL_VALUE,
@@ -4696,12 +6005,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13629), new NodeId(0, 46), new NodeId(0, 13630).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13629), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13629"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13630").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13629), new NodeId(0, 47), new NodeId(0, 13599).expanded(), false));
+            NodeId.parse("i=13629"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13629"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13599").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -4709,7 +6025,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 19483),
+            NodeId.parse("i=19483"),
             new QualifiedName(0, "Disable"),
             new LocalizedText("", "Disable"),
             LocalizedText.NULL_VALUE,
@@ -4722,12 +6038,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 19483), new NodeId(0, 3065), new NodeId(0, 2803).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 19483), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=19483"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=2803").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 19483), new NodeId(0, 47), new NodeId(0, 19450).expanded(), false));
+            NodeId.parse("i=19483"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=19483"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=19450").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -4735,7 +6058,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 19484),
+            NodeId.parse("i=19484"),
             new QualifiedName(0, "Enable"),
             new LocalizedText("", "Enable"),
             LocalizedText.NULL_VALUE,
@@ -4748,12 +6071,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 19484), new NodeId(0, 3065), new NodeId(0, 2803).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 19484), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=19484"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=2803").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 19484), new NodeId(0, 47), new NodeId(0, 19450).expanded(), false));
+            NodeId.parse("i=19484"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=19484"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=19450").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -4761,7 +6091,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 19485),
+            NodeId.parse("i=19485"),
             new QualifiedName(0, "AddComment"),
             new LocalizedText("", "AddComment"),
             LocalizedText.NULL_VALUE,
@@ -4774,15 +6104,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 19485), new NodeId(0, 46), new NodeId(0, 19486).expanded(), true));
+            NodeId.parse("i=19485"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=19486").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 19485), new NodeId(0, 3065), new NodeId(0, 2829).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 19485), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=19485"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=2829").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 19485), new NodeId(0, 47), new NodeId(0, 19450).expanded(), false));
+            NodeId.parse("i=19485"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=19485"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=19450").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -4790,7 +6130,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 19505),
+            NodeId.parse("i=19505"),
             new QualifiedName(0, "Acknowledge"),
             new LocalizedText("", "Acknowledge"),
             LocalizedText.NULL_VALUE,
@@ -4803,15 +6143,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 19505), new NodeId(0, 46), new NodeId(0, 19506).expanded(), true));
+            NodeId.parse("i=19505"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=19506").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 19505), new NodeId(0, 3065), new NodeId(0, 8944).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 19505), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=19505"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=8944").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 19505), new NodeId(0, 47), new NodeId(0, 19450).expanded(), false));
+            NodeId.parse("i=19505"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=19505"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=19450").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -4819,7 +6169,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 20176),
+            NodeId.parse("i=20176"),
             new QualifiedName(0, "Disable"),
             new LocalizedText("", "Disable"),
             LocalizedText.NULL_VALUE,
@@ -4832,12 +6182,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 20176), new NodeId(0, 3065), new NodeId(0, 2803).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 20176), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=20176"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=2803").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 20176), new NodeId(0, 47), new NodeId(0, 20143).expanded(), false));
+            NodeId.parse("i=20176"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=20176"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=20143").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -4845,7 +6202,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 20177),
+            NodeId.parse("i=20177"),
             new QualifiedName(0, "Enable"),
             new LocalizedText("", "Enable"),
             LocalizedText.NULL_VALUE,
@@ -4858,12 +6215,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 20177), new NodeId(0, 3065), new NodeId(0, 2803).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 20177), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=20177"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=2803").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 20177), new NodeId(0, 47), new NodeId(0, 20143).expanded(), false));
+            NodeId.parse("i=20177"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=20177"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=20143").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -4871,7 +6235,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 20178),
+            NodeId.parse("i=20178"),
             new QualifiedName(0, "AddComment"),
             new LocalizedText("", "AddComment"),
             LocalizedText.NULL_VALUE,
@@ -4884,15 +6248,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 20178), new NodeId(0, 46), new NodeId(0, 20179).expanded(), true));
+            NodeId.parse("i=20178"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=20179").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 20178), new NodeId(0, 3065), new NodeId(0, 2829).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 20178), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=20178"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=2829").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 20178), new NodeId(0, 47), new NodeId(0, 20143).expanded(), false));
+            NodeId.parse("i=20178"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=20178"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=20143").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -4900,7 +6274,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 20198),
+            NodeId.parse("i=20198"),
             new QualifiedName(0, "Acknowledge"),
             new LocalizedText("", "Acknowledge"),
             LocalizedText.NULL_VALUE,
@@ -4913,15 +6287,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 20198), new NodeId(0, 46), new NodeId(0, 20199).expanded(), true));
+            NodeId.parse("i=20198"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=20199").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 20198), new NodeId(0, 3065), new NodeId(0, 8944).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 20198), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=20198"),
+            NodeId.parse("i=3065"),
+            NodeId.parse("i=8944").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 20198), new NodeId(0, 47), new NodeId(0, 20143).expanded(), false));
+            NodeId.parse("i=20198"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=20198"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=20143").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -4929,7 +6313,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 23526),
+            NodeId.parse("i=23526"),
             new QualifiedName(0, "GetRejectedList"),
             new LocalizedText("", "GetRejectedList"),
             LocalizedText.NULL_VALUE,
@@ -4942,12 +6326,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 23526), new NodeId(0, 46), new NodeId(0, 23527).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 23526), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=23526"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=23527").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 23526), new NodeId(0, 47), new NodeId(0, 12555).expanded(), false));
+            NodeId.parse("i=23526"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=23526"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=12555").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -4955,7 +6346,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13821),
+            NodeId.parse("i=13821"),
             new QualifiedName(0, "Open"),
             new LocalizedText("", "Open"),
             LocalizedText.NULL_VALUE,
@@ -4968,15 +6359,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13821), new NodeId(0, 46), new NodeId(0, 13822).expanded(), true));
+            NodeId.parse("i=13821"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13822").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13821), new NodeId(0, 46), new NodeId(0, 13823).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13821), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13821"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13823").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13821), new NodeId(0, 47), new NodeId(0, 13815).expanded(), false));
+            NodeId.parse("i=13821"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13821"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13815").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -4984,7 +6385,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13824),
+            NodeId.parse("i=13824"),
             new QualifiedName(0, "Close"),
             new LocalizedText("", "Close"),
             LocalizedText.NULL_VALUE,
@@ -4997,12 +6398,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13824), new NodeId(0, 46), new NodeId(0, 13825).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13824), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13824"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13825").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13824), new NodeId(0, 47), new NodeId(0, 13815).expanded(), false));
+            NodeId.parse("i=13824"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13824"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13815").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -5010,7 +6418,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13826),
+            NodeId.parse("i=13826"),
             new QualifiedName(0, "Read"),
             new LocalizedText("", "Read"),
             LocalizedText.NULL_VALUE,
@@ -5023,15 +6431,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13826), new NodeId(0, 46), new NodeId(0, 13827).expanded(), true));
+            NodeId.parse("i=13826"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13827").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13826), new NodeId(0, 46), new NodeId(0, 13828).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13826), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13826"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13828").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13826), new NodeId(0, 47), new NodeId(0, 13815).expanded(), false));
+            NodeId.parse("i=13826"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13826"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13815").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -5039,7 +6457,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13829),
+            NodeId.parse("i=13829"),
             new QualifiedName(0, "Write"),
             new LocalizedText("", "Write"),
             LocalizedText.NULL_VALUE,
@@ -5052,12 +6470,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13829), new NodeId(0, 46), new NodeId(0, 13830).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13829), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13829"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13830").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13829), new NodeId(0, 47), new NodeId(0, 13815).expanded(), false));
+            NodeId.parse("i=13829"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13829"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13815").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -5065,7 +6490,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13831),
+            NodeId.parse("i=13831"),
             new QualifiedName(0, "GetPosition"),
             new LocalizedText("", "GetPosition"),
             LocalizedText.NULL_VALUE,
@@ -5078,15 +6503,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13831), new NodeId(0, 46), new NodeId(0, 13832).expanded(), true));
+            NodeId.parse("i=13831"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13832").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13831), new NodeId(0, 46), new NodeId(0, 13833).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13831), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13831"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13833").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13831), new NodeId(0, 47), new NodeId(0, 13815).expanded(), false));
+            NodeId.parse("i=13831"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13831"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13815").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -5094,7 +6529,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13834),
+            NodeId.parse("i=13834"),
             new QualifiedName(0, "SetPosition"),
             new LocalizedText("", "SetPosition"),
             LocalizedText.NULL_VALUE,
@@ -5107,12 +6542,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13834), new NodeId(0, 46), new NodeId(0, 13835).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13834), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13834"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13835").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13834), new NodeId(0, 47), new NodeId(0, 13815).expanded(), false));
+            NodeId.parse("i=13834"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13834"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13815").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -5120,7 +6562,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13837),
+            NodeId.parse("i=13837"),
             new QualifiedName(0, "OpenWithMasks"),
             new LocalizedText("", "OpenWithMasks"),
             LocalizedText.NULL_VALUE,
@@ -5133,15 +6575,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13837), new NodeId(0, 46), new NodeId(0, 13838).expanded(), true));
+            NodeId.parse("i=13837"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13838").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13837), new NodeId(0, 46), new NodeId(0, 13839).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13837), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13837"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13839").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13837), new NodeId(0, 47), new NodeId(0, 13815).expanded(), false));
+            NodeId.parse("i=13837"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13837"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13815").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -5149,7 +6601,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13840),
+            NodeId.parse("i=13840"),
             new QualifiedName(0, "CloseAndUpdate"),
             new LocalizedText("", "CloseAndUpdate"),
             LocalizedText.NULL_VALUE,
@@ -5162,15 +6614,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13840), new NodeId(0, 46), new NodeId(0, 13841).expanded(), true));
+            NodeId.parse("i=13840"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13841").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13840), new NodeId(0, 46), new NodeId(0, 13842).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13840), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13840"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13842").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13840), new NodeId(0, 47), new NodeId(0, 13815).expanded(), false));
+            NodeId.parse("i=13840"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13840"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13815").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -5178,7 +6640,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13843),
+            NodeId.parse("i=13843"),
             new QualifiedName(0, "AddCertificate"),
             new LocalizedText("", "AddCertificate"),
             LocalizedText.NULL_VALUE,
@@ -5191,12 +6653,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13843), new NodeId(0, 46), new NodeId(0, 13844).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13843), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13843"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13844").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13843), new NodeId(0, 47), new NodeId(0, 13815).expanded(), false));
+            NodeId.parse("i=13843"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13843"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13815").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -5204,7 +6673,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13845),
+            NodeId.parse("i=13845"),
             new QualifiedName(0, "RemoveCertificate"),
             new LocalizedText("", "RemoveCertificate"),
             LocalizedText.NULL_VALUE,
@@ -5217,12 +6686,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13845), new NodeId(0, 46), new NodeId(0, 13846).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13845), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13845"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13846").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13845), new NodeId(0, 47), new NodeId(0, 13815).expanded(), false));
+            NodeId.parse("i=13845"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13845"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13815").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -5230,7 +6706,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13855),
+            NodeId.parse("i=13855"),
             new QualifiedName(0, "Open"),
             new LocalizedText("", "Open"),
             LocalizedText.NULL_VALUE,
@@ -5243,15 +6719,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13855), new NodeId(0, 46), new NodeId(0, 13856).expanded(), true));
+            NodeId.parse("i=13855"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13856").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13855), new NodeId(0, 46), new NodeId(0, 13857).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13855), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13855"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13857").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13855), new NodeId(0, 47), new NodeId(0, 13849).expanded(), false));
+            NodeId.parse("i=13855"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13855"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13849").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -5259,7 +6745,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13858),
+            NodeId.parse("i=13858"),
             new QualifiedName(0, "Close"),
             new LocalizedText("", "Close"),
             LocalizedText.NULL_VALUE,
@@ -5272,12 +6758,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13858), new NodeId(0, 46), new NodeId(0, 13859).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13858), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13858"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13859").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13858), new NodeId(0, 47), new NodeId(0, 13849).expanded(), false));
+            NodeId.parse("i=13858"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13858"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13849").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -5285,7 +6778,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13860),
+            NodeId.parse("i=13860"),
             new QualifiedName(0, "Read"),
             new LocalizedText("", "Read"),
             LocalizedText.NULL_VALUE,
@@ -5298,15 +6791,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13860), new NodeId(0, 46), new NodeId(0, 13861).expanded(), true));
+            NodeId.parse("i=13860"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13861").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13860), new NodeId(0, 46), new NodeId(0, 13862).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13860), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13860"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13862").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13860), new NodeId(0, 47), new NodeId(0, 13849).expanded(), false));
+            NodeId.parse("i=13860"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13860"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13849").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -5314,7 +6817,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13863),
+            NodeId.parse("i=13863"),
             new QualifiedName(0, "Write"),
             new LocalizedText("", "Write"),
             LocalizedText.NULL_VALUE,
@@ -5327,12 +6830,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13863), new NodeId(0, 46), new NodeId(0, 13864).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13863), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13863"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13864").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13863), new NodeId(0, 47), new NodeId(0, 13849).expanded(), false));
+            NodeId.parse("i=13863"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13863"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13849").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -5340,7 +6850,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13865),
+            NodeId.parse("i=13865"),
             new QualifiedName(0, "GetPosition"),
             new LocalizedText("", "GetPosition"),
             LocalizedText.NULL_VALUE,
@@ -5353,15 +6863,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13865), new NodeId(0, 46), new NodeId(0, 13866).expanded(), true));
+            NodeId.parse("i=13865"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13866").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13865), new NodeId(0, 46), new NodeId(0, 13867).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13865), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13865"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13867").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13865), new NodeId(0, 47), new NodeId(0, 13849).expanded(), false));
+            NodeId.parse("i=13865"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13865"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13849").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -5369,7 +6889,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13868),
+            NodeId.parse("i=13868"),
             new QualifiedName(0, "SetPosition"),
             new LocalizedText("", "SetPosition"),
             LocalizedText.NULL_VALUE,
@@ -5382,12 +6902,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13868), new NodeId(0, 46), new NodeId(0, 13869).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13868), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13868"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13869").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13868), new NodeId(0, 47), new NodeId(0, 13849).expanded(), false));
+            NodeId.parse("i=13868"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13868"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13849").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -5395,7 +6922,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13871),
+            NodeId.parse("i=13871"),
             new QualifiedName(0, "OpenWithMasks"),
             new LocalizedText("", "OpenWithMasks"),
             LocalizedText.NULL_VALUE,
@@ -5408,15 +6935,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13871), new NodeId(0, 46), new NodeId(0, 13872).expanded(), true));
+            NodeId.parse("i=13871"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13872").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13871), new NodeId(0, 46), new NodeId(0, 13873).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13871), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13871"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13873").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13871), new NodeId(0, 47), new NodeId(0, 13849).expanded(), false));
+            NodeId.parse("i=13871"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13871"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13849").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -5424,7 +6961,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13874),
+            NodeId.parse("i=13874"),
             new QualifiedName(0, "CloseAndUpdate"),
             new LocalizedText("", "CloseAndUpdate"),
             LocalizedText.NULL_VALUE,
@@ -5437,15 +6974,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13874), new NodeId(0, 46), new NodeId(0, 13875).expanded(), true));
+            NodeId.parse("i=13874"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13875").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13874), new NodeId(0, 46), new NodeId(0, 13876).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13874), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13874"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13876").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13874), new NodeId(0, 47), new NodeId(0, 13849).expanded(), false));
+            NodeId.parse("i=13874"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13874"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13849").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -5453,7 +7000,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13877),
+            NodeId.parse("i=13877"),
             new QualifiedName(0, "AddCertificate"),
             new LocalizedText("", "AddCertificate"),
             LocalizedText.NULL_VALUE,
@@ -5466,12 +7013,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13877), new NodeId(0, 46), new NodeId(0, 13878).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13877), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13877"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13878").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13877), new NodeId(0, 47), new NodeId(0, 13849).expanded(), false));
+            NodeId.parse("i=13877"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13877"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13849").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -5479,7 +7033,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13879),
+            NodeId.parse("i=13879"),
             new QualifiedName(0, "RemoveCertificate"),
             new LocalizedText("", "RemoveCertificate"),
             LocalizedText.NULL_VALUE,
@@ -5492,12 +7046,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13879), new NodeId(0, 46), new NodeId(0, 13880).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13879), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13879"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13880").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13879), new NodeId(0, 47), new NodeId(0, 13849).expanded(), false));
+            NodeId.parse("i=13879"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13879"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13849").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -5505,7 +7066,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13889),
+            NodeId.parse("i=13889"),
             new QualifiedName(0, "Open"),
             new LocalizedText("", "Open"),
             LocalizedText.NULL_VALUE,
@@ -5518,15 +7079,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13889), new NodeId(0, 46), new NodeId(0, 13890).expanded(), true));
+            NodeId.parse("i=13889"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13890").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13889), new NodeId(0, 46), new NodeId(0, 13891).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13889), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13889"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13891").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13889), new NodeId(0, 47), new NodeId(0, 13883).expanded(), false));
+            NodeId.parse("i=13889"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13889"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13883").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -5534,7 +7105,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13892),
+            NodeId.parse("i=13892"),
             new QualifiedName(0, "Close"),
             new LocalizedText("", "Close"),
             LocalizedText.NULL_VALUE,
@@ -5547,12 +7118,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13892), new NodeId(0, 46), new NodeId(0, 13893).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13892), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13892"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13893").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13892), new NodeId(0, 47), new NodeId(0, 13883).expanded(), false));
+            NodeId.parse("i=13892"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13892"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13883").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -5560,7 +7138,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13894),
+            NodeId.parse("i=13894"),
             new QualifiedName(0, "Read"),
             new LocalizedText("", "Read"),
             LocalizedText.NULL_VALUE,
@@ -5573,15 +7151,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13894), new NodeId(0, 46), new NodeId(0, 13895).expanded(), true));
+            NodeId.parse("i=13894"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13895").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13894), new NodeId(0, 46), new NodeId(0, 13896).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13894), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13894"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13896").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13894), new NodeId(0, 47), new NodeId(0, 13883).expanded(), false));
+            NodeId.parse("i=13894"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13894"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13883").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -5589,7 +7177,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13897),
+            NodeId.parse("i=13897"),
             new QualifiedName(0, "Write"),
             new LocalizedText("", "Write"),
             LocalizedText.NULL_VALUE,
@@ -5602,12 +7190,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13897), new NodeId(0, 46), new NodeId(0, 13898).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13897), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13897"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13898").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13897), new NodeId(0, 47), new NodeId(0, 13883).expanded(), false));
+            NodeId.parse("i=13897"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13897"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13883").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -5615,7 +7210,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13899),
+            NodeId.parse("i=13899"),
             new QualifiedName(0, "GetPosition"),
             new LocalizedText("", "GetPosition"),
             LocalizedText.NULL_VALUE,
@@ -5628,15 +7223,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13899), new NodeId(0, 46), new NodeId(0, 13900).expanded(), true));
+            NodeId.parse("i=13899"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13900").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13899), new NodeId(0, 46), new NodeId(0, 13901).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13899), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13899"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13901").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13899), new NodeId(0, 47), new NodeId(0, 13883).expanded(), false));
+            NodeId.parse("i=13899"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13899"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13883").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -5644,7 +7249,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13902),
+            NodeId.parse("i=13902"),
             new QualifiedName(0, "SetPosition"),
             new LocalizedText("", "SetPosition"),
             LocalizedText.NULL_VALUE,
@@ -5657,12 +7262,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13902), new NodeId(0, 46), new NodeId(0, 13903).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13902), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13902"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13903").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13902), new NodeId(0, 47), new NodeId(0, 13883).expanded(), false));
+            NodeId.parse("i=13902"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13902"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13883").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -5670,7 +7282,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13905),
+            NodeId.parse("i=13905"),
             new QualifiedName(0, "OpenWithMasks"),
             new LocalizedText("", "OpenWithMasks"),
             LocalizedText.NULL_VALUE,
@@ -5683,15 +7295,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13905), new NodeId(0, 46), new NodeId(0, 13906).expanded(), true));
+            NodeId.parse("i=13905"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13906").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13905), new NodeId(0, 46), new NodeId(0, 13907).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13905), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13905"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13907").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13905), new NodeId(0, 47), new NodeId(0, 13883).expanded(), false));
+            NodeId.parse("i=13905"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13905"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13883").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -5699,7 +7321,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13908),
+            NodeId.parse("i=13908"),
             new QualifiedName(0, "CloseAndUpdate"),
             new LocalizedText("", "CloseAndUpdate"),
             LocalizedText.NULL_VALUE,
@@ -5712,15 +7334,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13908), new NodeId(0, 46), new NodeId(0, 13909).expanded(), true));
+            NodeId.parse("i=13908"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13909").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13908), new NodeId(0, 46), new NodeId(0, 13910).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13908), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13908"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13910").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13908), new NodeId(0, 47), new NodeId(0, 13883).expanded(), false));
+            NodeId.parse("i=13908"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13908"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13883").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -5728,7 +7360,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13911),
+            NodeId.parse("i=13911"),
             new QualifiedName(0, "AddCertificate"),
             new LocalizedText("", "AddCertificate"),
             LocalizedText.NULL_VALUE,
@@ -5741,12 +7373,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13911), new NodeId(0, 46), new NodeId(0, 13912).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13911), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13911"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13912").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13911), new NodeId(0, 47), new NodeId(0, 13883).expanded(), false));
+            NodeId.parse("i=13911"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13911"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13883").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -5754,7 +7393,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13913),
+            NodeId.parse("i=13913"),
             new QualifiedName(0, "RemoveCertificate"),
             new LocalizedText("", "RemoveCertificate"),
             LocalizedText.NULL_VALUE,
@@ -5767,12 +7406,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13913), new NodeId(0, 46), new NodeId(0, 13914).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13913), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13913"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13914").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13913), new NodeId(0, 47), new NodeId(0, 13883).expanded(), false));
+            NodeId.parse("i=13913"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13913"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13883").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -5780,7 +7426,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13923),
+            NodeId.parse("i=13923"),
             new QualifiedName(0, "Open"),
             new LocalizedText("", "Open"),
             LocalizedText.NULL_VALUE,
@@ -5793,15 +7439,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13923), new NodeId(0, 46), new NodeId(0, 13924).expanded(), true));
+            NodeId.parse("i=13923"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13924").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13923), new NodeId(0, 46), new NodeId(0, 13925).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13923), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13923"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13925").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13923), new NodeId(0, 47), new NodeId(0, 13917).expanded(), false));
+            NodeId.parse("i=13923"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13923"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13917").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -5809,7 +7465,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13926),
+            NodeId.parse("i=13926"),
             new QualifiedName(0, "Close"),
             new LocalizedText("", "Close"),
             LocalizedText.NULL_VALUE,
@@ -5822,12 +7478,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13926), new NodeId(0, 46), new NodeId(0, 13927).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13926), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13926"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13927").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13926), new NodeId(0, 47), new NodeId(0, 13917).expanded(), false));
+            NodeId.parse("i=13926"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13926"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13917").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -5835,7 +7498,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13928),
+            NodeId.parse("i=13928"),
             new QualifiedName(0, "Read"),
             new LocalizedText("", "Read"),
             LocalizedText.NULL_VALUE,
@@ -5848,15 +7511,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13928), new NodeId(0, 46), new NodeId(0, 13929).expanded(), true));
+            NodeId.parse("i=13928"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13929").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13928), new NodeId(0, 46), new NodeId(0, 13930).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13928), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13928"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13930").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13928), new NodeId(0, 47), new NodeId(0, 13917).expanded(), false));
+            NodeId.parse("i=13928"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13928"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13917").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -5864,7 +7537,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13931),
+            NodeId.parse("i=13931"),
             new QualifiedName(0, "Write"),
             new LocalizedText("", "Write"),
             LocalizedText.NULL_VALUE,
@@ -5877,12 +7550,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13931), new NodeId(0, 46), new NodeId(0, 13932).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13931), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13931"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13932").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13931), new NodeId(0, 47), new NodeId(0, 13917).expanded(), false));
+            NodeId.parse("i=13931"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13931"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13917").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -5890,7 +7570,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13933),
+            NodeId.parse("i=13933"),
             new QualifiedName(0, "GetPosition"),
             new LocalizedText("", "GetPosition"),
             LocalizedText.NULL_VALUE,
@@ -5903,15 +7583,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13933), new NodeId(0, 46), new NodeId(0, 13934).expanded(), true));
+            NodeId.parse("i=13933"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13934").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13933), new NodeId(0, 46), new NodeId(0, 13935).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13933), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13933"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13935").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13933), new NodeId(0, 47), new NodeId(0, 13917).expanded(), false));
+            NodeId.parse("i=13933"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13933"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13917").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -5919,7 +7609,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13936),
+            NodeId.parse("i=13936"),
             new QualifiedName(0, "SetPosition"),
             new LocalizedText("", "SetPosition"),
             LocalizedText.NULL_VALUE,
@@ -5932,12 +7622,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13936), new NodeId(0, 46), new NodeId(0, 13937).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13936), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13936"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13937").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13936), new NodeId(0, 47), new NodeId(0, 13917).expanded(), false));
+            NodeId.parse("i=13936"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13936"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13917").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -5945,7 +7642,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13939),
+            NodeId.parse("i=13939"),
             new QualifiedName(0, "OpenWithMasks"),
             new LocalizedText("", "OpenWithMasks"),
             LocalizedText.NULL_VALUE,
@@ -5958,15 +7655,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13939), new NodeId(0, 46), new NodeId(0, 13940).expanded(), true));
+            NodeId.parse("i=13939"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13940").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13939), new NodeId(0, 46), new NodeId(0, 13941).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13939), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13939"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13941").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13939), new NodeId(0, 47), new NodeId(0, 13917).expanded(), false));
+            NodeId.parse("i=13939"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13939"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13917").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -5974,7 +7681,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13942),
+            NodeId.parse("i=13942"),
             new QualifiedName(0, "CloseAndUpdate"),
             new LocalizedText("", "CloseAndUpdate"),
             LocalizedText.NULL_VALUE,
@@ -5987,15 +7694,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13942), new NodeId(0, 46), new NodeId(0, 13943).expanded(), true));
+            NodeId.parse("i=13942"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13943").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13942), new NodeId(0, 46), new NodeId(0, 13944).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13942), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13942"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13944").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13942), new NodeId(0, 47), new NodeId(0, 13917).expanded(), false));
+            NodeId.parse("i=13942"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13942"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13917").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -6003,7 +7720,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13945),
+            NodeId.parse("i=13945"),
             new QualifiedName(0, "AddCertificate"),
             new LocalizedText("", "AddCertificate"),
             LocalizedText.NULL_VALUE,
@@ -6016,12 +7733,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13945), new NodeId(0, 46), new NodeId(0, 13946).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13945), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13945"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13946").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13945), new NodeId(0, 47), new NodeId(0, 13917).expanded(), false));
+            NodeId.parse("i=13945"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13945"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13917").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -6029,7 +7753,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13947),
+            NodeId.parse("i=13947"),
             new QualifiedName(0, "RemoveCertificate"),
             new LocalizedText("", "RemoveCertificate"),
             LocalizedText.NULL_VALUE,
@@ -6042,12 +7766,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13947), new NodeId(0, 46), new NodeId(0, 13948).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13947), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13947"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13948").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13947), new NodeId(0, 47), new NodeId(0, 13917).expanded(), false));
+            NodeId.parse("i=13947"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13947"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13917").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -6055,7 +7786,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15508),
+            NodeId.parse("i=15508"),
             new QualifiedName(0, "ConfirmUpdate"),
             new LocalizedText("", "ConfirmUpdate"),
             LocalizedText.NULL_VALUE,
@@ -6068,12 +7799,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15508), new NodeId(0, 46), new NodeId(0, 15511).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 15508), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=15508"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15511").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15508), new NodeId(0, 47), new NodeId(0, 15437).expanded(), false));
+            NodeId.parse("i=15508"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=15508"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15437").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -6081,7 +7819,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15505),
+            NodeId.parse("i=15505"),
             new QualifiedName(0, "CloseAndUpdate"),
             new LocalizedText("", "CloseAndUpdate"),
             LocalizedText.NULL_VALUE,
@@ -6094,15 +7832,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15505), new NodeId(0, 46), new NodeId(0, 15506).expanded(), true));
+            NodeId.parse("i=15505"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15506").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15505), new NodeId(0, 46), new NodeId(0, 15507).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 15505), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=15505"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15507").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15505), new NodeId(0, 47), new NodeId(0, 15437).expanded(), false));
+            NodeId.parse("i=15505"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=15505"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15437").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -6110,7 +7858,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 18533),
+            NodeId.parse("i=18533"),
             new QualifiedName(0, "UpdateCertificate"),
             new LocalizedText("", "UpdateCertificate"),
             LocalizedText.NULL_VALUE,
@@ -6123,15 +7871,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 18533), new NodeId(0, 46), new NodeId(0, 18534).expanded(), true));
+            NodeId.parse("i=18533"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=18534").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 18533), new NodeId(0, 46), new NodeId(0, 18535).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 18533), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=18533"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=18535").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 18533), new NodeId(0, 47), new NodeId(0, 16663).expanded(), false));
+            NodeId.parse("i=18533"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=18533"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=16663").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -6139,7 +7897,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 18539),
+            NodeId.parse("i=18539"),
             new QualifiedName(0, "ApplyChanges"),
             new LocalizedText("", "ApplyChanges"),
             LocalizedText.NULL_VALUE,
@@ -6151,10 +7909,14 @@ class MethodNodeLoader {
             true,
             true);
     node.addReference(
-        new Reference(new NodeId(0, 18539), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+        new Reference(
+            NodeId.parse("i=18539"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
     node.addReference(
         new Reference(
-            new NodeId(0, 18539), new NodeId(0, 47), new NodeId(0, 16663).expanded(), false));
+            NodeId.parse("i=18539"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=16663").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -6162,7 +7924,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 18541),
+            NodeId.parse("i=18541"),
             new QualifiedName(0, "CreateSigningRequest"),
             new LocalizedText("", "CreateSigningRequest"),
             LocalizedText.NULL_VALUE,
@@ -6175,15 +7937,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 18541), new NodeId(0, 46), new NodeId(0, 18542).expanded(), true));
+            NodeId.parse("i=18541"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=18542").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 18541), new NodeId(0, 46), new NodeId(0, 18543).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 18541), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=18541"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=18543").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 18541), new NodeId(0, 47), new NodeId(0, 16663).expanded(), false));
+            NodeId.parse("i=18541"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=18541"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=16663").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -6191,7 +7963,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 18544),
+            NodeId.parse("i=18544"),
             new QualifiedName(0, "GetRejectedList"),
             new LocalizedText("", "GetRejectedList"),
             LocalizedText.NULL_VALUE,
@@ -6204,12 +7976,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 18544), new NodeId(0, 46), new NodeId(0, 18545).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 18544), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=18544"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=18545").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 18544), new NodeId(0, 47), new NodeId(0, 16663).expanded(), false));
+            NodeId.parse("i=18544"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=18544"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=16663").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -6217,7 +7996,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16717),
+            NodeId.parse("i=16717"),
             new QualifiedName(0, "Open"),
             new LocalizedText("", "Open"),
             LocalizedText.NULL_VALUE,
@@ -6230,15 +8009,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16717), new NodeId(0, 46), new NodeId(0, 16722).expanded(), true));
+            NodeId.parse("i=16717"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16722").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16717), new NodeId(0, 46), new NodeId(0, 16723).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 16717), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=16717"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16723").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16717), new NodeId(0, 47), new NodeId(0, 16709).expanded(), false));
+            NodeId.parse("i=16717"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=16717"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=16709").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -6246,7 +8035,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16724),
+            NodeId.parse("i=16724"),
             new QualifiedName(0, "Close"),
             new LocalizedText("", "Close"),
             LocalizedText.NULL_VALUE,
@@ -6259,12 +8048,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16724), new NodeId(0, 46), new NodeId(0, 16725).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 16724), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=16724"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16725").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16724), new NodeId(0, 47), new NodeId(0, 16709).expanded(), false));
+            NodeId.parse("i=16724"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=16724"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=16709").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -6272,7 +8068,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16726),
+            NodeId.parse("i=16726"),
             new QualifiedName(0, "Read"),
             new LocalizedText("", "Read"),
             LocalizedText.NULL_VALUE,
@@ -6285,15 +8081,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16726), new NodeId(0, 46), new NodeId(0, 16727).expanded(), true));
+            NodeId.parse("i=16726"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16727").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16726), new NodeId(0, 46), new NodeId(0, 16728).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 16726), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=16726"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16728").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16726), new NodeId(0, 47), new NodeId(0, 16709).expanded(), false));
+            NodeId.parse("i=16726"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=16726"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=16709").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -6301,7 +8107,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16729),
+            NodeId.parse("i=16729"),
             new QualifiedName(0, "Write"),
             new LocalizedText("", "Write"),
             LocalizedText.NULL_VALUE,
@@ -6314,12 +8120,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16729), new NodeId(0, 46), new NodeId(0, 16730).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 16729), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=16729"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16730").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16729), new NodeId(0, 47), new NodeId(0, 16709).expanded(), false));
+            NodeId.parse("i=16729"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=16729"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=16709").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -6327,7 +8140,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16732),
+            NodeId.parse("i=16732"),
             new QualifiedName(0, "GetPosition"),
             new LocalizedText("", "GetPosition"),
             LocalizedText.NULL_VALUE,
@@ -6340,15 +8153,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16732), new NodeId(0, 46), new NodeId(0, 16733).expanded(), true));
+            NodeId.parse("i=16732"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16733").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16732), new NodeId(0, 46), new NodeId(0, 16734).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 16732), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=16732"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16734").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16732), new NodeId(0, 47), new NodeId(0, 16709).expanded(), false));
+            NodeId.parse("i=16732"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=16732"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=16709").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -6356,7 +8179,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16735),
+            NodeId.parse("i=16735"),
             new QualifiedName(0, "SetPosition"),
             new LocalizedText("", "SetPosition"),
             LocalizedText.NULL_VALUE,
@@ -6369,12 +8192,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16735), new NodeId(0, 46), new NodeId(0, 16736).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 16735), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=16735"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16736").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16735), new NodeId(0, 47), new NodeId(0, 16709).expanded(), false));
+            NodeId.parse("i=16735"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=16735"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=16709").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -6382,7 +8212,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16741),
+            NodeId.parse("i=16741"),
             new QualifiedName(0, "OpenWithMasks"),
             new LocalizedText("", "OpenWithMasks"),
             LocalizedText.NULL_VALUE,
@@ -6395,15 +8225,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16741), new NodeId(0, 46), new NodeId(0, 16742).expanded(), true));
+            NodeId.parse("i=16741"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16742").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16741), new NodeId(0, 46), new NodeId(0, 16743).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 16741), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=16741"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16743").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16741), new NodeId(0, 47), new NodeId(0, 16709).expanded(), false));
+            NodeId.parse("i=16741"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=16741"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=16709").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -6411,7 +8251,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16744),
+            NodeId.parse("i=16744"),
             new QualifiedName(0, "CloseAndUpdate"),
             new LocalizedText("", "CloseAndUpdate"),
             LocalizedText.NULL_VALUE,
@@ -6424,15 +8264,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16744), new NodeId(0, 46), new NodeId(0, 16745).expanded(), true));
+            NodeId.parse("i=16744"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16745").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16744), new NodeId(0, 46), new NodeId(0, 16746).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 16744), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=16744"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16746").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16744), new NodeId(0, 47), new NodeId(0, 16709).expanded(), false));
+            NodeId.parse("i=16744"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=16744"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=16709").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -6440,7 +8290,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16747),
+            NodeId.parse("i=16747"),
             new QualifiedName(0, "AddCertificate"),
             new LocalizedText("", "AddCertificate"),
             LocalizedText.NULL_VALUE,
@@ -6453,12 +8303,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16747), new NodeId(0, 46), new NodeId(0, 16748).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 16747), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=16747"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16748").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16747), new NodeId(0, 47), new NodeId(0, 16709).expanded(), false));
+            NodeId.parse("i=16747"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=16747"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=16709").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -6466,7 +8323,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16749),
+            NodeId.parse("i=16749"),
             new QualifiedName(0, "RemoveCertificate"),
             new LocalizedText("", "RemoveCertificate"),
             LocalizedText.NULL_VALUE,
@@ -6479,12 +8336,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16749), new NodeId(0, 46), new NodeId(0, 16750).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 16749), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=16749"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16750").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16749), new NodeId(0, 47), new NodeId(0, 16709).expanded(), false));
+            NodeId.parse("i=16749"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=16749"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=16709").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -6492,7 +8356,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 12616),
+            NodeId.parse("i=12616"),
             new QualifiedName(0, "UpdateCertificate"),
             new LocalizedText("", "UpdateCertificate"),
             LocalizedText.NULL_VALUE,
@@ -6505,15 +8369,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 12616), new NodeId(0, 46), new NodeId(0, 12617).expanded(), true));
+            NodeId.parse("i=12616"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=12617").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 12616), new NodeId(0, 46), new NodeId(0, 12618).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 12616), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=12616"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=12618").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 12616), new NodeId(0, 47), new NodeId(0, 12581).expanded(), false));
+            NodeId.parse("i=12616"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=12616"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=12581").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -6521,7 +8395,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 19337),
+            NodeId.parse("i=19337"),
             new QualifiedName(0, "CreateSelfSignedCertificate"),
             new LocalizedText("", "CreateSelfSignedCertificate"),
             LocalizedText.NULL_VALUE,
@@ -6534,15 +8408,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 19337), new NodeId(0, 46), new NodeId(0, 19338).expanded(), true));
+            NodeId.parse("i=19337"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=19338").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 19337), new NodeId(0, 46), new NodeId(0, 19339).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 19337), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=19337"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=19339").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 19337), new NodeId(0, 47), new NodeId(0, 12581).expanded(), false));
+            NodeId.parse("i=19337"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=19337"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=12581").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -6550,7 +8434,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 19340),
+            NodeId.parse("i=19340"),
             new QualifiedName(0, "DeleteCertificate"),
             new LocalizedText("", "DeleteCertificate"),
             LocalizedText.NULL_VALUE,
@@ -6563,12 +8447,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 19340), new NodeId(0, 46), new NodeId(0, 19341).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 19340), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=19340"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=19341").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 19340), new NodeId(0, 47), new NodeId(0, 12581).expanded(), false));
+            NodeId.parse("i=19340"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=19340"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=12581").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -6576,7 +8467,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 32296),
+            NodeId.parse("i=32296"),
             new QualifiedName(0, "GetCertificates"),
             new LocalizedText("", "GetCertificates"),
             LocalizedText.NULL_VALUE,
@@ -6589,15 +8480,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 32296), new NodeId(0, 46), new NodeId(0, 32297).expanded(), true));
+            NodeId.parse("i=32296"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=32297").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 32296), new NodeId(0, 46), new NodeId(0, 32298).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 32296), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=32296"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=32298").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 32296), new NodeId(0, 47), new NodeId(0, 12581).expanded(), false));
+            NodeId.parse("i=32296"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=32296"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=12581").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -6605,7 +8506,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 12734),
+            NodeId.parse("i=12734"),
             new QualifiedName(0, "ApplyChanges"),
             new LocalizedText("", "ApplyChanges"),
             LocalizedText.NULL_VALUE,
@@ -6617,10 +8518,14 @@ class MethodNodeLoader {
             true,
             true);
     node.addReference(
-        new Reference(new NodeId(0, 12734), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+        new Reference(
+            NodeId.parse("i=12734"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
     node.addReference(
         new Reference(
-            new NodeId(0, 12734), new NodeId(0, 47), new NodeId(0, 12581).expanded(), false));
+            NodeId.parse("i=12734"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=12581").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -6628,7 +8533,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25698),
+            NodeId.parse("i=25698"),
             new QualifiedName(0, "CancelChanges"),
             new LocalizedText("", "CancelChanges"),
             LocalizedText.NULL_VALUE,
@@ -6640,10 +8545,14 @@ class MethodNodeLoader {
             true,
             true);
     node.addReference(
-        new Reference(new NodeId(0, 25698), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+        new Reference(
+            NodeId.parse("i=25698"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25698), new NodeId(0, 47), new NodeId(0, 12581).expanded(), false));
+            NodeId.parse("i=25698"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=12581").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -6651,7 +8560,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 12731),
+            NodeId.parse("i=12731"),
             new QualifiedName(0, "CreateSigningRequest"),
             new LocalizedText("", "CreateSigningRequest"),
             LocalizedText.NULL_VALUE,
@@ -6664,15 +8573,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 12731), new NodeId(0, 46), new NodeId(0, 12732).expanded(), true));
+            NodeId.parse("i=12731"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=12732").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 12731), new NodeId(0, 46), new NodeId(0, 12733).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 12731), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=12731"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=12733").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 12731), new NodeId(0, 47), new NodeId(0, 12581).expanded(), false));
+            NodeId.parse("i=12731"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=12731"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=12581").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -6680,7 +8599,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 12775),
+            NodeId.parse("i=12775"),
             new QualifiedName(0, "GetRejectedList"),
             new LocalizedText("", "GetRejectedList"),
             LocalizedText.NULL_VALUE,
@@ -6693,12 +8612,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 12775), new NodeId(0, 46), new NodeId(0, 12776).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 12775), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=12775"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=12776").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 12775), new NodeId(0, 47), new NodeId(0, 12581).expanded(), false));
+            NodeId.parse("i=12775"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=12775"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=12581").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -6706,7 +8632,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25699),
+            NodeId.parse("i=25699"),
             new QualifiedName(0, "ResetToServerDefaults"),
             new LocalizedText("", "ResetToServerDefaults"),
             LocalizedText.NULL_VALUE,
@@ -6718,10 +8644,14 @@ class MethodNodeLoader {
             true,
             true);
     node.addReference(
-        new Reference(new NodeId(0, 25699), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+        new Reference(
+            NodeId.parse("i=25699"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25699), new NodeId(0, 47), new NodeId(0, 12581).expanded(), false));
+            NodeId.parse("i=25699"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=12581").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -6729,7 +8659,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13958),
+            NodeId.parse("i=13958"),
             new QualifiedName(0, "Open"),
             new LocalizedText("", "Open"),
             LocalizedText.NULL_VALUE,
@@ -6742,15 +8672,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13958), new NodeId(0, 46), new NodeId(0, 13959).expanded(), true));
+            NodeId.parse("i=13958"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13959").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13958), new NodeId(0, 46), new NodeId(0, 13960).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13958), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13958"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13960").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13958), new NodeId(0, 47), new NodeId(0, 13952).expanded(), false));
+            NodeId.parse("i=13958"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13958"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13952").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -6758,7 +8698,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13961),
+            NodeId.parse("i=13961"),
             new QualifiedName(0, "Close"),
             new LocalizedText("", "Close"),
             LocalizedText.NULL_VALUE,
@@ -6771,12 +8711,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13961), new NodeId(0, 46), new NodeId(0, 13962).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13961), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13961"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13962").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13961), new NodeId(0, 47), new NodeId(0, 13952).expanded(), false));
+            NodeId.parse("i=13961"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13961"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13952").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -6784,7 +8731,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13963),
+            NodeId.parse("i=13963"),
             new QualifiedName(0, "Read"),
             new LocalizedText("", "Read"),
             LocalizedText.NULL_VALUE,
@@ -6797,15 +8744,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13963), new NodeId(0, 46), new NodeId(0, 13964).expanded(), true));
+            NodeId.parse("i=13963"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13964").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13963), new NodeId(0, 46), new NodeId(0, 13965).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13963), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13963"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13965").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13963), new NodeId(0, 47), new NodeId(0, 13952).expanded(), false));
+            NodeId.parse("i=13963"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13963"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13952").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -6813,7 +8770,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13966),
+            NodeId.parse("i=13966"),
             new QualifiedName(0, "Write"),
             new LocalizedText("", "Write"),
             LocalizedText.NULL_VALUE,
@@ -6826,12 +8783,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13966), new NodeId(0, 46), new NodeId(0, 13967).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13966), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13966"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13967").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13966), new NodeId(0, 47), new NodeId(0, 13952).expanded(), false));
+            NodeId.parse("i=13966"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13966"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13952").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -6839,7 +8803,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13968),
+            NodeId.parse("i=13968"),
             new QualifiedName(0, "GetPosition"),
             new LocalizedText("", "GetPosition"),
             LocalizedText.NULL_VALUE,
@@ -6852,15 +8816,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13968), new NodeId(0, 46), new NodeId(0, 13969).expanded(), true));
+            NodeId.parse("i=13968"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13969").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13968), new NodeId(0, 46), new NodeId(0, 13970).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13968), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13968"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13970").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13968), new NodeId(0, 47), new NodeId(0, 13952).expanded(), false));
+            NodeId.parse("i=13968"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13968"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13952").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -6868,7 +8842,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13971),
+            NodeId.parse("i=13971"),
             new QualifiedName(0, "SetPosition"),
             new LocalizedText("", "SetPosition"),
             LocalizedText.NULL_VALUE,
@@ -6881,12 +8855,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13971), new NodeId(0, 46), new NodeId(0, 13972).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13971), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13971"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13972").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13971), new NodeId(0, 47), new NodeId(0, 13952).expanded(), false));
+            NodeId.parse("i=13971"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13971"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13952").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -6894,7 +8875,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13974),
+            NodeId.parse("i=13974"),
             new QualifiedName(0, "OpenWithMasks"),
             new LocalizedText("", "OpenWithMasks"),
             LocalizedText.NULL_VALUE,
@@ -6907,15 +8888,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13974), new NodeId(0, 46), new NodeId(0, 13975).expanded(), true));
+            NodeId.parse("i=13974"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13975").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13974), new NodeId(0, 46), new NodeId(0, 13976).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13974), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13974"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13976").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13974), new NodeId(0, 47), new NodeId(0, 13952).expanded(), false));
+            NodeId.parse("i=13974"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13974"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13952").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -6923,7 +8914,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13977),
+            NodeId.parse("i=13977"),
             new QualifiedName(0, "CloseAndUpdate"),
             new LocalizedText("", "CloseAndUpdate"),
             LocalizedText.NULL_VALUE,
@@ -6936,15 +8927,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13977), new NodeId(0, 46), new NodeId(0, 13978).expanded(), true));
+            NodeId.parse("i=13977"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13978").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13977), new NodeId(0, 46), new NodeId(0, 13979).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13977), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13977"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13979").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13977), new NodeId(0, 47), new NodeId(0, 13952).expanded(), false));
+            NodeId.parse("i=13977"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13977"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13952").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -6952,7 +8953,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13980),
+            NodeId.parse("i=13980"),
             new QualifiedName(0, "AddCertificate"),
             new LocalizedText("", "AddCertificate"),
             LocalizedText.NULL_VALUE,
@@ -6965,12 +8966,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13980), new NodeId(0, 46), new NodeId(0, 13981).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13980), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13980"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13981").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13980), new NodeId(0, 47), new NodeId(0, 13952).expanded(), false));
+            NodeId.parse("i=13980"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13980"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13952").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -6978,7 +8986,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13982),
+            NodeId.parse("i=13982"),
             new QualifiedName(0, "RemoveCertificate"),
             new LocalizedText("", "RemoveCertificate"),
             LocalizedText.NULL_VALUE,
@@ -6991,12 +8999,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13982), new NodeId(0, 46), new NodeId(0, 13983).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 13982), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=13982"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13983").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13982), new NodeId(0, 47), new NodeId(0, 13952).expanded(), false));
+            NodeId.parse("i=13982"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=13982"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=13952").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -7004,7 +9019,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15572),
+            NodeId.parse("i=15572"),
             new QualifiedName(0, "Open"),
             new LocalizedText("", "Open"),
             LocalizedText.NULL_VALUE,
@@ -7017,15 +9032,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15572), new NodeId(0, 46), new NodeId(0, 15573).expanded(), true));
+            NodeId.parse("i=15572"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15573").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15572), new NodeId(0, 46), new NodeId(0, 15574).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 15572), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=15572"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15574").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15572), new NodeId(0, 47), new NodeId(0, 15564).expanded(), false));
+            NodeId.parse("i=15572"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=15572"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15564").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -7033,7 +9058,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15575),
+            NodeId.parse("i=15575"),
             new QualifiedName(0, "Close"),
             new LocalizedText("", "Close"),
             LocalizedText.NULL_VALUE,
@@ -7046,12 +9071,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15575), new NodeId(0, 46), new NodeId(0, 15790).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 15575), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=15575"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15790").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15575), new NodeId(0, 47), new NodeId(0, 15564).expanded(), false));
+            NodeId.parse("i=15575"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=15575"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15564").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -7059,7 +9091,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15791),
+            NodeId.parse("i=15791"),
             new QualifiedName(0, "Read"),
             new LocalizedText("", "Read"),
             LocalizedText.NULL_VALUE,
@@ -7072,15 +9104,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15791), new NodeId(0, 46), new NodeId(0, 15792).expanded(), true));
+            NodeId.parse("i=15791"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15792").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15791), new NodeId(0, 46), new NodeId(0, 15804).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 15791), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=15791"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15804").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15791), new NodeId(0, 47), new NodeId(0, 15564).expanded(), false));
+            NodeId.parse("i=15791"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=15791"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15564").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -7088,7 +9130,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15805),
+            NodeId.parse("i=15805"),
             new QualifiedName(0, "Write"),
             new LocalizedText("", "Write"),
             LocalizedText.NULL_VALUE,
@@ -7101,12 +9143,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15805), new NodeId(0, 46), new NodeId(0, 15806).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 15805), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=15805"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15806").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15805), new NodeId(0, 47), new NodeId(0, 15564).expanded(), false));
+            NodeId.parse("i=15805"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=15805"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15564").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -7114,7 +9163,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15807),
+            NodeId.parse("i=15807"),
             new QualifiedName(0, "GetPosition"),
             new LocalizedText("", "GetPosition"),
             LocalizedText.NULL_VALUE,
@@ -7127,15 +9176,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15807), new NodeId(0, 46), new NodeId(0, 15808).expanded(), true));
+            NodeId.parse("i=15807"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15808").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15807), new NodeId(0, 46), new NodeId(0, 15809).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 15807), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=15807"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15809").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15807), new NodeId(0, 47), new NodeId(0, 15564).expanded(), false));
+            NodeId.parse("i=15807"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=15807"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15564").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -7143,7 +9202,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15810),
+            NodeId.parse("i=15810"),
             new QualifiedName(0, "SetPosition"),
             new LocalizedText("", "SetPosition"),
             LocalizedText.NULL_VALUE,
@@ -7156,12 +9215,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15810), new NodeId(0, 46), new NodeId(0, 15811).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 15810), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=15810"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15811").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15810), new NodeId(0, 47), new NodeId(0, 15564).expanded(), false));
+            NodeId.parse("i=15810"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=15810"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15564").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -7169,7 +9235,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15863),
+            NodeId.parse("i=15863"),
             new QualifiedName(0, "ConfirmUpdate"),
             new LocalizedText("", "ConfirmUpdate"),
             LocalizedText.NULL_VALUE,
@@ -7182,12 +9248,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15863), new NodeId(0, 46), new NodeId(0, 15864).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 15863), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=15863"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15864").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15863), new NodeId(0, 47), new NodeId(0, 15564).expanded(), false));
+            NodeId.parse("i=15863"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=15863"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15564").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -7195,7 +9268,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15849),
+            NodeId.parse("i=15849"),
             new QualifiedName(0, "CloseAndUpdate"),
             new LocalizedText("", "CloseAndUpdate"),
             LocalizedText.NULL_VALUE,
@@ -7208,15 +9281,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15849), new NodeId(0, 46), new NodeId(0, 15850).expanded(), true));
+            NodeId.parse("i=15849"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15850").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15849), new NodeId(0, 46), new NodeId(0, 15851).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 15849), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=15849"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15851").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15849), new NodeId(0, 47), new NodeId(0, 15564).expanded(), false));
+            NodeId.parse("i=15849"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=15849"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15564").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -7224,7 +9307,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 13737),
+            NodeId.parse("i=13737"),
             new QualifiedName(0, "UpdateCertificate"),
             new LocalizedText("", "UpdateCertificate"),
             LocalizedText.NULL_VALUE,
@@ -7232,7 +9315,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -7240,13 +9323,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 13737), new NodeId(0, 46), new NodeId(0, 13738).expanded(), true));
+            NodeId.parse("i=13737"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13738").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13737), new NodeId(0, 46), new NodeId(0, 13739).expanded(), true));
+            NodeId.parse("i=13737"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=13739").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13737), new NodeId(0, 47), new NodeId(0, 12637).expanded(), false));
+            NodeId.parse("i=13737"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=12637").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -7254,7 +9346,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 12740),
+            NodeId.parse("i=12740"),
             new QualifiedName(0, "ApplyChanges"),
             new LocalizedText("", "ApplyChanges"),
             LocalizedText.NULL_VALUE,
@@ -7262,7 +9354,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(5)),
@@ -7270,7 +9362,10 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 12740), new NodeId(0, 47), new NodeId(0, 12637).expanded(), false));
+            NodeId.parse("i=12740"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=12637").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -7278,7 +9373,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25708),
+            NodeId.parse("i=25708"),
             new QualifiedName(0, "CancelChanges"),
             new LocalizedText("", "CancelChanges"),
             LocalizedText.NULL_VALUE,
@@ -7286,7 +9381,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(5)),
@@ -7294,7 +9389,10 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25708), new NodeId(0, 47), new NodeId(0, 12637).expanded(), false));
+            NodeId.parse("i=25708"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=12637").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -7302,7 +9400,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 12737),
+            NodeId.parse("i=12737"),
             new QualifiedName(0, "CreateSigningRequest"),
             new LocalizedText("", "CreateSigningRequest"),
             LocalizedText.NULL_VALUE,
@@ -7310,7 +9408,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -7318,13 +9416,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 12737), new NodeId(0, 46), new NodeId(0, 12738).expanded(), true));
+            NodeId.parse("i=12737"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=12738").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 12737), new NodeId(0, 46), new NodeId(0, 12739).expanded(), true));
+            NodeId.parse("i=12737"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=12739").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 12737), new NodeId(0, 47), new NodeId(0, 12637).expanded(), false));
+            NodeId.parse("i=12737"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=12637").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -7332,7 +9439,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 12777),
+            NodeId.parse("i=12777"),
             new QualifiedName(0, "GetRejectedList"),
             new LocalizedText("", "GetRejectedList"),
             LocalizedText.NULL_VALUE,
@@ -7340,7 +9447,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -7348,10 +9455,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 12777), new NodeId(0, 46), new NodeId(0, 12778).expanded(), true));
+            NodeId.parse("i=12777"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=12778").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 12777), new NodeId(0, 47), new NodeId(0, 12637).expanded(), false));
+            NodeId.parse("i=12777"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=12637").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -7359,7 +9472,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25709),
+            NodeId.parse("i=25709"),
             new QualifiedName(0, "ResetToServerDefaults"),
             new LocalizedText("", "ResetToServerDefaults"),
             LocalizedText.NULL_VALUE,
@@ -7367,7 +9480,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -7375,7 +9488,10 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25709), new NodeId(0, 47), new NodeId(0, 12637).expanded(), false));
+            NodeId.parse("i=25709"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=12637").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -7383,7 +9499,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 12647),
+            NodeId.parse("i=12647"),
             new QualifiedName(0, "Open"),
             new LocalizedText("", "Open"),
             LocalizedText.NULL_VALUE,
@@ -7391,7 +9507,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -7399,13 +9515,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 12647), new NodeId(0, 46), new NodeId(0, 12648).expanded(), true));
+            NodeId.parse("i=12647"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=12648").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 12647), new NodeId(0, 46), new NodeId(0, 12649).expanded(), true));
+            NodeId.parse("i=12647"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=12649").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 12647), new NodeId(0, 47), new NodeId(0, 12642).expanded(), false));
+            NodeId.parse("i=12647"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=12642").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -7413,7 +9538,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 12650),
+            NodeId.parse("i=12650"),
             new QualifiedName(0, "Close"),
             new LocalizedText("", "Close"),
             LocalizedText.NULL_VALUE,
@@ -7421,7 +9546,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -7429,10 +9554,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 12650), new NodeId(0, 46), new NodeId(0, 12651).expanded(), true));
+            NodeId.parse("i=12650"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=12651").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 12650), new NodeId(0, 47), new NodeId(0, 12642).expanded(), false));
+            NodeId.parse("i=12650"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=12642").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -7440,7 +9571,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 12652),
+            NodeId.parse("i=12652"),
             new QualifiedName(0, "Read"),
             new LocalizedText("", "Read"),
             LocalizedText.NULL_VALUE,
@@ -7448,7 +9579,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -7456,13 +9587,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 12652), new NodeId(0, 46), new NodeId(0, 12653).expanded(), true));
+            NodeId.parse("i=12652"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=12653").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 12652), new NodeId(0, 46), new NodeId(0, 12654).expanded(), true));
+            NodeId.parse("i=12652"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=12654").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 12652), new NodeId(0, 47), new NodeId(0, 12642).expanded(), false));
+            NodeId.parse("i=12652"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=12642").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -7470,7 +9610,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 12655),
+            NodeId.parse("i=12655"),
             new QualifiedName(0, "Write"),
             new LocalizedText("", "Write"),
             LocalizedText.NULL_VALUE,
@@ -7478,7 +9618,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -7486,10 +9626,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 12655), new NodeId(0, 46), new NodeId(0, 12656).expanded(), true));
+            NodeId.parse("i=12655"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=12656").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 12655), new NodeId(0, 47), new NodeId(0, 12642).expanded(), false));
+            NodeId.parse("i=12655"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=12642").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -7497,7 +9643,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 12657),
+            NodeId.parse("i=12657"),
             new QualifiedName(0, "GetPosition"),
             new LocalizedText("", "GetPosition"),
             LocalizedText.NULL_VALUE,
@@ -7505,7 +9651,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -7513,13 +9659,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 12657), new NodeId(0, 46), new NodeId(0, 12658).expanded(), true));
+            NodeId.parse("i=12657"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=12658").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 12657), new NodeId(0, 46), new NodeId(0, 12659).expanded(), true));
+            NodeId.parse("i=12657"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=12659").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 12657), new NodeId(0, 47), new NodeId(0, 12642).expanded(), false));
+            NodeId.parse("i=12657"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=12642").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -7527,7 +9682,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 12660),
+            NodeId.parse("i=12660"),
             new QualifiedName(0, "SetPosition"),
             new LocalizedText("", "SetPosition"),
             LocalizedText.NULL_VALUE,
@@ -7535,7 +9690,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -7543,10 +9698,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 12660), new NodeId(0, 46), new NodeId(0, 12661).expanded(), true));
+            NodeId.parse("i=12660"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=12661").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 12660), new NodeId(0, 47), new NodeId(0, 12642).expanded(), false));
+            NodeId.parse("i=12660"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=12642").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -7554,7 +9715,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 12663),
+            NodeId.parse("i=12663"),
             new QualifiedName(0, "OpenWithMasks"),
             new LocalizedText("", "OpenWithMasks"),
             LocalizedText.NULL_VALUE,
@@ -7562,7 +9723,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -7570,13 +9731,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 12663), new NodeId(0, 46), new NodeId(0, 12664).expanded(), true));
+            NodeId.parse("i=12663"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=12664").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 12663), new NodeId(0, 46), new NodeId(0, 12665).expanded(), true));
+            NodeId.parse("i=12663"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=12665").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 12663), new NodeId(0, 47), new NodeId(0, 12642).expanded(), false));
+            NodeId.parse("i=12663"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=12642").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -7584,7 +9754,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 12666),
+            NodeId.parse("i=12666"),
             new QualifiedName(0, "CloseAndUpdate"),
             new LocalizedText("", "CloseAndUpdate"),
             LocalizedText.NULL_VALUE,
@@ -7592,7 +9762,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -7600,13 +9770,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 12666), new NodeId(0, 46), new NodeId(0, 14160).expanded(), true));
+            NodeId.parse("i=12666"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14160").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 12666), new NodeId(0, 46), new NodeId(0, 12667).expanded(), true));
+            NodeId.parse("i=12666"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=12667").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 12666), new NodeId(0, 47), new NodeId(0, 12642).expanded(), false));
+            NodeId.parse("i=12666"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=12642").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -7614,7 +9793,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 12668),
+            NodeId.parse("i=12668"),
             new QualifiedName(0, "AddCertificate"),
             new LocalizedText("", "AddCertificate"),
             LocalizedText.NULL_VALUE,
@@ -7622,7 +9801,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -7630,10 +9809,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 12668), new NodeId(0, 46), new NodeId(0, 12669).expanded(), true));
+            NodeId.parse("i=12668"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=12669").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 12668), new NodeId(0, 47), new NodeId(0, 12642).expanded(), false));
+            NodeId.parse("i=12668"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=12642").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -7641,7 +9826,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 12670),
+            NodeId.parse("i=12670"),
             new QualifiedName(0, "RemoveCertificate"),
             new LocalizedText("", "RemoveCertificate"),
             LocalizedText.NULL_VALUE,
@@ -7649,7 +9834,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -7657,10 +9842,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 12670), new NodeId(0, 46), new NodeId(0, 12671).expanded(), true));
+            NodeId.parse("i=12670"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=12671").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 12670), new NodeId(0, 47), new NodeId(0, 12642).expanded(), false));
+            NodeId.parse("i=12670"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=12642").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -7668,7 +9859,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 14095),
+            NodeId.parse("i=14095"),
             new QualifiedName(0, "Open"),
             new LocalizedText("", "Open"),
             LocalizedText.NULL_VALUE,
@@ -7676,7 +9867,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -7684,13 +9875,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 14095), new NodeId(0, 46), new NodeId(0, 14096).expanded(), true));
+            NodeId.parse("i=14095"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14096").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14095), new NodeId(0, 46), new NodeId(0, 14097).expanded(), true));
+            NodeId.parse("i=14095"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14097").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14095), new NodeId(0, 47), new NodeId(0, 14089).expanded(), false));
+            NodeId.parse("i=14095"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14089").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -7698,7 +9898,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 14098),
+            NodeId.parse("i=14098"),
             new QualifiedName(0, "Close"),
             new LocalizedText("", "Close"),
             LocalizedText.NULL_VALUE,
@@ -7706,7 +9906,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -7714,10 +9914,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 14098), new NodeId(0, 46), new NodeId(0, 14099).expanded(), true));
+            NodeId.parse("i=14098"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14099").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14098), new NodeId(0, 47), new NodeId(0, 14089).expanded(), false));
+            NodeId.parse("i=14098"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14089").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -7725,7 +9931,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 14100),
+            NodeId.parse("i=14100"),
             new QualifiedName(0, "Read"),
             new LocalizedText("", "Read"),
             LocalizedText.NULL_VALUE,
@@ -7733,7 +9939,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -7741,13 +9947,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 14100), new NodeId(0, 46), new NodeId(0, 14101).expanded(), true));
+            NodeId.parse("i=14100"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14101").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14100), new NodeId(0, 46), new NodeId(0, 14102).expanded(), true));
+            NodeId.parse("i=14100"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14102").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14100), new NodeId(0, 47), new NodeId(0, 14089).expanded(), false));
+            NodeId.parse("i=14100"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14089").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -7755,7 +9970,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 14103),
+            NodeId.parse("i=14103"),
             new QualifiedName(0, "Write"),
             new LocalizedText("", "Write"),
             LocalizedText.NULL_VALUE,
@@ -7763,7 +9978,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -7771,10 +9986,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 14103), new NodeId(0, 46), new NodeId(0, 14104).expanded(), true));
+            NodeId.parse("i=14103"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14104").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14103), new NodeId(0, 47), new NodeId(0, 14089).expanded(), false));
+            NodeId.parse("i=14103"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14089").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -7782,7 +10003,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 14105),
+            NodeId.parse("i=14105"),
             new QualifiedName(0, "GetPosition"),
             new LocalizedText("", "GetPosition"),
             LocalizedText.NULL_VALUE,
@@ -7790,7 +10011,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -7798,13 +10019,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 14105), new NodeId(0, 46), new NodeId(0, 14106).expanded(), true));
+            NodeId.parse("i=14105"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14106").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14105), new NodeId(0, 46), new NodeId(0, 14107).expanded(), true));
+            NodeId.parse("i=14105"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14107").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14105), new NodeId(0, 47), new NodeId(0, 14089).expanded(), false));
+            NodeId.parse("i=14105"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14089").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -7812,7 +10042,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 14108),
+            NodeId.parse("i=14108"),
             new QualifiedName(0, "SetPosition"),
             new LocalizedText("", "SetPosition"),
             LocalizedText.NULL_VALUE,
@@ -7820,7 +10050,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -7828,10 +10058,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 14108), new NodeId(0, 46), new NodeId(0, 14109).expanded(), true));
+            NodeId.parse("i=14108"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14109").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14108), new NodeId(0, 47), new NodeId(0, 14089).expanded(), false));
+            NodeId.parse("i=14108"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14089").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -7839,7 +10075,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 14111),
+            NodeId.parse("i=14111"),
             new QualifiedName(0, "OpenWithMasks"),
             new LocalizedText("", "OpenWithMasks"),
             LocalizedText.NULL_VALUE,
@@ -7847,7 +10083,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -7855,13 +10091,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 14111), new NodeId(0, 46), new NodeId(0, 14112).expanded(), true));
+            NodeId.parse("i=14111"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14112").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14111), new NodeId(0, 46), new NodeId(0, 14113).expanded(), true));
+            NodeId.parse("i=14111"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14113").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14111), new NodeId(0, 47), new NodeId(0, 14089).expanded(), false));
+            NodeId.parse("i=14111"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14089").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -7869,7 +10114,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 14114),
+            NodeId.parse("i=14114"),
             new QualifiedName(0, "CloseAndUpdate"),
             new LocalizedText("", "CloseAndUpdate"),
             LocalizedText.NULL_VALUE,
@@ -7877,7 +10122,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -7885,13 +10130,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 14114), new NodeId(0, 46), new NodeId(0, 14115).expanded(), true));
+            NodeId.parse("i=14114"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14115").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14114), new NodeId(0, 46), new NodeId(0, 14116).expanded(), true));
+            NodeId.parse("i=14114"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14116").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14114), new NodeId(0, 47), new NodeId(0, 14089).expanded(), false));
+            NodeId.parse("i=14114"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14089").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -7899,7 +10153,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 14117),
+            NodeId.parse("i=14117"),
             new QualifiedName(0, "AddCertificate"),
             new LocalizedText("", "AddCertificate"),
             LocalizedText.NULL_VALUE,
@@ -7907,7 +10161,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -7915,10 +10169,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 14117), new NodeId(0, 46), new NodeId(0, 14118).expanded(), true));
+            NodeId.parse("i=14117"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14118").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14117), new NodeId(0, 47), new NodeId(0, 14089).expanded(), false));
+            NodeId.parse("i=14117"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14089").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -7926,7 +10186,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 14119),
+            NodeId.parse("i=14119"),
             new QualifiedName(0, "RemoveCertificate"),
             new LocalizedText("", "RemoveCertificate"),
             LocalizedText.NULL_VALUE,
@@ -7934,7 +10194,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -7942,10 +10202,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 14119), new NodeId(0, 46), new NodeId(0, 14120).expanded(), true));
+            NodeId.parse("i=14119"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14120").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14119), new NodeId(0, 47), new NodeId(0, 14089).expanded(), false));
+            NodeId.parse("i=14119"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14089").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -7953,7 +10219,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 14129),
+            NodeId.parse("i=14129"),
             new QualifiedName(0, "Open"),
             new LocalizedText("", "Open"),
             LocalizedText.NULL_VALUE,
@@ -7961,7 +10227,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -7969,13 +10235,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 14129), new NodeId(0, 46), new NodeId(0, 14130).expanded(), true));
+            NodeId.parse("i=14129"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14130").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14129), new NodeId(0, 46), new NodeId(0, 14131).expanded(), true));
+            NodeId.parse("i=14129"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14131").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14129), new NodeId(0, 47), new NodeId(0, 14123).expanded(), false));
+            NodeId.parse("i=14129"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14123").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -7983,7 +10258,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 14132),
+            NodeId.parse("i=14132"),
             new QualifiedName(0, "Close"),
             new LocalizedText("", "Close"),
             LocalizedText.NULL_VALUE,
@@ -7991,7 +10266,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -7999,10 +10274,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 14132), new NodeId(0, 46), new NodeId(0, 14133).expanded(), true));
+            NodeId.parse("i=14132"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14133").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14132), new NodeId(0, 47), new NodeId(0, 14123).expanded(), false));
+            NodeId.parse("i=14132"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14123").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -8010,7 +10291,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 14134),
+            NodeId.parse("i=14134"),
             new QualifiedName(0, "Read"),
             new LocalizedText("", "Read"),
             LocalizedText.NULL_VALUE,
@@ -8018,7 +10299,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -8026,13 +10307,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 14134), new NodeId(0, 46), new NodeId(0, 14135).expanded(), true));
+            NodeId.parse("i=14134"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14135").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14134), new NodeId(0, 46), new NodeId(0, 14136).expanded(), true));
+            NodeId.parse("i=14134"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14136").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14134), new NodeId(0, 47), new NodeId(0, 14123).expanded(), false));
+            NodeId.parse("i=14134"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14123").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -8040,7 +10330,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 14137),
+            NodeId.parse("i=14137"),
             new QualifiedName(0, "Write"),
             new LocalizedText("", "Write"),
             LocalizedText.NULL_VALUE,
@@ -8048,7 +10338,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -8056,10 +10346,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 14137), new NodeId(0, 46), new NodeId(0, 14138).expanded(), true));
+            NodeId.parse("i=14137"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14138").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14137), new NodeId(0, 47), new NodeId(0, 14123).expanded(), false));
+            NodeId.parse("i=14137"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14123").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -8067,7 +10363,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 14139),
+            NodeId.parse("i=14139"),
             new QualifiedName(0, "GetPosition"),
             new LocalizedText("", "GetPosition"),
             LocalizedText.NULL_VALUE,
@@ -8075,7 +10371,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -8083,13 +10379,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 14139), new NodeId(0, 46), new NodeId(0, 14140).expanded(), true));
+            NodeId.parse("i=14139"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14140").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14139), new NodeId(0, 46), new NodeId(0, 14141).expanded(), true));
+            NodeId.parse("i=14139"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14141").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14139), new NodeId(0, 47), new NodeId(0, 14123).expanded(), false));
+            NodeId.parse("i=14139"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14123").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -8097,7 +10402,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 14142),
+            NodeId.parse("i=14142"),
             new QualifiedName(0, "SetPosition"),
             new LocalizedText("", "SetPosition"),
             LocalizedText.NULL_VALUE,
@@ -8105,7 +10410,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -8113,10 +10418,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 14142), new NodeId(0, 46), new NodeId(0, 14143).expanded(), true));
+            NodeId.parse("i=14142"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14143").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14142), new NodeId(0, 47), new NodeId(0, 14123).expanded(), false));
+            NodeId.parse("i=14142"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14123").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -8124,7 +10435,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 14145),
+            NodeId.parse("i=14145"),
             new QualifiedName(0, "OpenWithMasks"),
             new LocalizedText("", "OpenWithMasks"),
             LocalizedText.NULL_VALUE,
@@ -8132,7 +10443,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -8140,13 +10451,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 14145), new NodeId(0, 46), new NodeId(0, 14146).expanded(), true));
+            NodeId.parse("i=14145"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14146").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14145), new NodeId(0, 46), new NodeId(0, 14147).expanded(), true));
+            NodeId.parse("i=14145"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14147").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14145), new NodeId(0, 47), new NodeId(0, 14123).expanded(), false));
+            NodeId.parse("i=14145"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14123").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -8154,7 +10474,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 14148),
+            NodeId.parse("i=14148"),
             new QualifiedName(0, "CloseAndUpdate"),
             new LocalizedText("", "CloseAndUpdate"),
             LocalizedText.NULL_VALUE,
@@ -8162,7 +10482,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -8170,13 +10490,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 14148), new NodeId(0, 46), new NodeId(0, 14149).expanded(), true));
+            NodeId.parse("i=14148"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14149").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14148), new NodeId(0, 46), new NodeId(0, 14150).expanded(), true));
+            NodeId.parse("i=14148"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14150").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14148), new NodeId(0, 47), new NodeId(0, 14123).expanded(), false));
+            NodeId.parse("i=14148"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14123").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -8184,7 +10513,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 14151),
+            NodeId.parse("i=14151"),
             new QualifiedName(0, "AddCertificate"),
             new LocalizedText("", "AddCertificate"),
             LocalizedText.NULL_VALUE,
@@ -8192,7 +10521,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -8200,10 +10529,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 14151), new NodeId(0, 46), new NodeId(0, 14152).expanded(), true));
+            NodeId.parse("i=14151"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14152").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14151), new NodeId(0, 47), new NodeId(0, 14123).expanded(), false));
+            NodeId.parse("i=14151"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14123").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -8211,7 +10546,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 14153),
+            NodeId.parse("i=14153"),
             new QualifiedName(0, "RemoveCertificate"),
             new LocalizedText("", "RemoveCertificate"),
             LocalizedText.NULL_VALUE,
@@ -8219,7 +10554,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -8227,10 +10562,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 14153), new NodeId(0, 46), new NodeId(0, 14154).expanded(), true));
+            NodeId.parse("i=14153"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14154").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14153), new NodeId(0, 47), new NodeId(0, 14123).expanded(), false));
+            NodeId.parse("i=14153"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14123").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -8238,7 +10579,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16013),
+            NodeId.parse("i=16013"),
             new QualifiedName(0, "Open"),
             new LocalizedText("", "Open"),
             LocalizedText.NULL_VALUE,
@@ -8246,7 +10587,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -8254,13 +10595,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16013), new NodeId(0, 46), new NodeId(0, 16020).expanded(), true));
+            NodeId.parse("i=16013"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16020").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16013), new NodeId(0, 46), new NodeId(0, 16059).expanded(), true));
+            NodeId.parse("i=16013"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16059").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16013), new NodeId(0, 47), new NodeId(0, 15892).expanded(), false));
+            NodeId.parse("i=16013"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15892").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -8268,7 +10618,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16060),
+            NodeId.parse("i=16060"),
             new QualifiedName(0, "Close"),
             new LocalizedText("", "Close"),
             LocalizedText.NULL_VALUE,
@@ -8276,7 +10626,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -8284,10 +10634,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16060), new NodeId(0, 46), new NodeId(0, 16061).expanded(), true));
+            NodeId.parse("i=16060"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16061").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16060), new NodeId(0, 47), new NodeId(0, 15892).expanded(), false));
+            NodeId.parse("i=16060"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15892").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -8295,7 +10651,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16074),
+            NodeId.parse("i=16074"),
             new QualifiedName(0, "Read"),
             new LocalizedText("", "Read"),
             LocalizedText.NULL_VALUE,
@@ -8303,7 +10659,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -8311,13 +10667,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16074), new NodeId(0, 46), new NodeId(0, 16075).expanded(), true));
+            NodeId.parse("i=16074"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16075").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16074), new NodeId(0, 46), new NodeId(0, 16076).expanded(), true));
+            NodeId.parse("i=16074"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16076").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16074), new NodeId(0, 47), new NodeId(0, 15892).expanded(), false));
+            NodeId.parse("i=16074"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15892").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -8325,7 +10690,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16101),
+            NodeId.parse("i=16101"),
             new QualifiedName(0, "Write"),
             new LocalizedText("", "Write"),
             LocalizedText.NULL_VALUE,
@@ -8333,7 +10698,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -8341,10 +10706,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16101), new NodeId(0, 46), new NodeId(0, 16102).expanded(), true));
+            NodeId.parse("i=16101"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16102").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16101), new NodeId(0, 47), new NodeId(0, 15892).expanded(), false));
+            NodeId.parse("i=16101"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15892").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -8352,7 +10723,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16103),
+            NodeId.parse("i=16103"),
             new QualifiedName(0, "GetPosition"),
             new LocalizedText("", "GetPosition"),
             LocalizedText.NULL_VALUE,
@@ -8360,7 +10731,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -8368,13 +10739,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16103), new NodeId(0, 46), new NodeId(0, 16122).expanded(), true));
+            NodeId.parse("i=16103"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16122").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16103), new NodeId(0, 46), new NodeId(0, 16123).expanded(), true));
+            NodeId.parse("i=16103"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16123").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16103), new NodeId(0, 47), new NodeId(0, 15892).expanded(), false));
+            NodeId.parse("i=16103"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15892").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -8382,7 +10762,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16124),
+            NodeId.parse("i=16124"),
             new QualifiedName(0, "SetPosition"),
             new LocalizedText("", "SetPosition"),
             LocalizedText.NULL_VALUE,
@@ -8390,7 +10770,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -8398,10 +10778,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16124), new NodeId(0, 46), new NodeId(0, 16160).expanded(), true));
+            NodeId.parse("i=16124"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16160").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16124), new NodeId(0, 47), new NodeId(0, 15892).expanded(), false));
+            NodeId.parse("i=16124"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15892").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -8409,7 +10795,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16320),
+            NodeId.parse("i=16320"),
             new QualifiedName(0, "ConfirmUpdate"),
             new LocalizedText("", "ConfirmUpdate"),
             LocalizedText.NULL_VALUE,
@@ -8417,7 +10803,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -8425,10 +10811,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16320), new NodeId(0, 46), new NodeId(0, 16321).expanded(), true));
+            NodeId.parse("i=16320"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16321").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16320), new NodeId(0, 47), new NodeId(0, 15892).expanded(), false));
+            NodeId.parse("i=16320"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15892").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -8436,7 +10828,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16317),
+            NodeId.parse("i=16317"),
             new QualifiedName(0, "CloseAndUpdate"),
             new LocalizedText("", "CloseAndUpdate"),
             LocalizedText.NULL_VALUE,
@@ -8444,7 +10836,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -8452,13 +10844,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16317), new NodeId(0, 46), new NodeId(0, 16318).expanded(), true));
+            NodeId.parse("i=16317"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16318").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16317), new NodeId(0, 46), new NodeId(0, 16319).expanded(), true));
+            NodeId.parse("i=16317"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16319").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16317), new NodeId(0, 47), new NodeId(0, 15892).expanded(), false));
+            NodeId.parse("i=16317"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15892").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -8466,7 +10867,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 17522),
+            NodeId.parse("i=17522"),
             new QualifiedName(0, "CreateCredential"),
             new LocalizedText("", "CreateCredential"),
             LocalizedText.NULL_VALUE,
@@ -8479,15 +10880,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 17522), new NodeId(0, 46), new NodeId(0, 17523).expanded(), true));
+            NodeId.parse("i=17522"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=17523").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 17522), new NodeId(0, 46), new NodeId(0, 17524).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 17522), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=17522"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=17524").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 17522), new NodeId(0, 47), new NodeId(0, 17496).expanded(), false));
+            NodeId.parse("i=17522"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=17522"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=17496").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -8495,7 +10906,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 17528),
+            NodeId.parse("i=17528"),
             new QualifiedName(0, "CreateCredential"),
             new LocalizedText("", "CreateCredential"),
             LocalizedText.NULL_VALUE,
@@ -8503,7 +10914,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -8511,13 +10922,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 17528), new NodeId(0, 46), new NodeId(0, 17529).expanded(), true));
+            NodeId.parse("i=17528"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=17529").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 17528), new NodeId(0, 46), new NodeId(0, 17530).expanded(), true));
+            NodeId.parse("i=17528"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=17530").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 17528), new NodeId(0, 47), new NodeId(0, 18155).expanded(), false));
+            NodeId.parse("i=17528"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=18155").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -8525,7 +10945,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 17534),
+            NodeId.parse("i=17534"),
             new QualifiedName(0, "GetEncryptingKey"),
             new LocalizedText("", "GetEncryptingKey"),
             LocalizedText.NULL_VALUE,
@@ -8538,15 +10958,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 17534), new NodeId(0, 46), new NodeId(0, 17535).expanded(), true));
+            NodeId.parse("i=17534"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=17535").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 17534), new NodeId(0, 46), new NodeId(0, 17536).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 17534), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=17534"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=17536").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 17534), new NodeId(0, 47), new NodeId(0, 18001).expanded(), false));
+            NodeId.parse("i=17534"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=17534"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=18001").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -8554,7 +10984,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 18006),
+            NodeId.parse("i=18006"),
             new QualifiedName(0, "UpdateCredential"),
             new LocalizedText("", "UpdateCredential"),
             LocalizedText.NULL_VALUE,
@@ -8567,12 +10997,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 18006), new NodeId(0, 46), new NodeId(0, 18007).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 18006), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=18006"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=18007").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 18006), new NodeId(0, 47), new NodeId(0, 18001).expanded(), false));
+            NodeId.parse("i=18006"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=18006"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=18001").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -8580,7 +11017,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 18008),
+            NodeId.parse("i=18008"),
             new QualifiedName(0, "DeleteCredential"),
             new LocalizedText("", "DeleteCredential"),
             LocalizedText.NULL_VALUE,
@@ -8592,10 +11029,14 @@ class MethodNodeLoader {
             true,
             true);
     node.addReference(
-        new Reference(new NodeId(0, 18008), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+        new Reference(
+            NodeId.parse("i=18008"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
     node.addReference(
         new Reference(
-            new NodeId(0, 18008), new NodeId(0, 47), new NodeId(0, 18001).expanded(), false));
+            NodeId.parse("i=18008"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=18001").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -8603,7 +11044,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15907),
+            NodeId.parse("i=15907"),
             new QualifiedName(0, "GetSecurityKeys"),
             new LocalizedText("", "GetSecurityKeys"),
             LocalizedText.NULL_VALUE,
@@ -8616,15 +11057,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15907), new NodeId(0, 46), new NodeId(0, 15908).expanded(), true));
+            NodeId.parse("i=15907"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15908").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15907), new NodeId(0, 46), new NodeId(0, 15909).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 15907), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=15907"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15909").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15907), new NodeId(0, 47), new NodeId(0, 15906).expanded(), false));
+            NodeId.parse("i=15907"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=15907"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15906").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -8632,7 +11083,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15910),
+            NodeId.parse("i=15910"),
             new QualifiedName(0, "GetSecurityGroup"),
             new LocalizedText("", "GetSecurityGroup"),
             LocalizedText.NULL_VALUE,
@@ -8645,15 +11096,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15910), new NodeId(0, 46), new NodeId(0, 15911).expanded(), true));
+            NodeId.parse("i=15910"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15911").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15910), new NodeId(0, 46), new NodeId(0, 15912).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 15910), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=15910"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15912").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15910), new NodeId(0, 47), new NodeId(0, 15906).expanded(), false));
+            NodeId.parse("i=15910"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=15910"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15906").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -8661,7 +11122,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15914),
+            NodeId.parse("i=15914"),
             new QualifiedName(0, "AddSecurityGroup"),
             new LocalizedText("", "AddSecurityGroup"),
             LocalizedText.NULL_VALUE,
@@ -8674,15 +11135,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15914), new NodeId(0, 46), new NodeId(0, 15915).expanded(), true));
+            NodeId.parse("i=15914"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15915").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15914), new NodeId(0, 46), new NodeId(0, 15916).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 15914), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=15914"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15916").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15914), new NodeId(0, 47), new NodeId(0, 15913).expanded(), false));
+            NodeId.parse("i=15914"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=15914"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15913").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -8690,7 +11161,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15917),
+            NodeId.parse("i=15917"),
             new QualifiedName(0, "RemoveSecurityGroup"),
             new LocalizedText("", "RemoveSecurityGroup"),
             LocalizedText.NULL_VALUE,
@@ -8703,12 +11174,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15917), new NodeId(0, 46), new NodeId(0, 15918).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 15917), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=15917"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15918").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15917), new NodeId(0, 47), new NodeId(0, 15913).expanded(), false));
+            NodeId.parse("i=15917"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=15917"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15913").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -8716,7 +11194,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25278),
+            NodeId.parse("i=25278"),
             new QualifiedName(0, "AddPushTarget"),
             new LocalizedText("", "AddPushTarget"),
             LocalizedText.NULL_VALUE,
@@ -8729,15 +11207,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25278), new NodeId(0, 46), new NodeId(0, 25279).expanded(), true));
+            NodeId.parse("i=25278"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25279").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25278), new NodeId(0, 46), new NodeId(0, 25280).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 25278), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=25278"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25280").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25278), new NodeId(0, 47), new NodeId(0, 25277).expanded(), false));
+            NodeId.parse("i=25278"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=25278"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25277").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -8745,7 +11233,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25281),
+            NodeId.parse("i=25281"),
             new QualifiedName(0, "RemovePushTarget"),
             new LocalizedText("", "RemovePushTarget"),
             LocalizedText.NULL_VALUE,
@@ -8758,12 +11246,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25281), new NodeId(0, 46), new NodeId(0, 25282).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 25281), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=25281"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25282").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25281), new NodeId(0, 47), new NodeId(0, 25277).expanded(), false));
+            NodeId.parse("i=25281"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=25281"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25277").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -8771,7 +11266,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15454),
+            NodeId.parse("i=15454"),
             new QualifiedName(0, "AddSecurityGroup"),
             new LocalizedText("", "AddSecurityGroup"),
             LocalizedText.NULL_VALUE,
@@ -8784,15 +11279,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15454), new NodeId(0, 46), new NodeId(0, 15455).expanded(), true));
+            NodeId.parse("i=15454"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15455").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15454), new NodeId(0, 46), new NodeId(0, 15456).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 15454), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=15454"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15456").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15454), new NodeId(0, 47), new NodeId(0, 15453).expanded(), false));
+            NodeId.parse("i=15454"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=15454"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15453").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -8800,7 +11305,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15457),
+            NodeId.parse("i=15457"),
             new QualifiedName(0, "RemoveSecurityGroup"),
             new LocalizedText("", "RemoveSecurityGroup"),
             LocalizedText.NULL_VALUE,
@@ -8813,12 +11318,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15457), new NodeId(0, 46), new NodeId(0, 15458).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 15457), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=15457"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15458").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15457), new NodeId(0, 47), new NodeId(0, 15453).expanded(), false));
+            NodeId.parse("i=15457"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=15457"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15453").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -8826,7 +11338,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25293),
+            NodeId.parse("i=25293"),
             new QualifiedName(0, "AddSecurityGroupFolder"),
             new LocalizedText("", "AddSecurityGroupFolder"),
             LocalizedText.NULL_VALUE,
@@ -8839,15 +11351,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25293), new NodeId(0, 46), new NodeId(0, 25294).expanded(), true));
+            NodeId.parse("i=25293"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25294").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25293), new NodeId(0, 46), new NodeId(0, 25295).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 25293), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=25293"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25295").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25293), new NodeId(0, 47), new NodeId(0, 15453).expanded(), false));
+            NodeId.parse("i=25293"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=25293"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15453").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -8855,7 +11377,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25296),
+            NodeId.parse("i=25296"),
             new QualifiedName(0, "RemoveSecurityGroupFolder"),
             new LocalizedText("", "RemoveSecurityGroupFolder"),
             LocalizedText.NULL_VALUE,
@@ -8868,12 +11390,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25296), new NodeId(0, 46), new NodeId(0, 25297).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 25296), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=25296"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25297").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25296), new NodeId(0, 47), new NodeId(0, 15453).expanded(), false));
+            NodeId.parse("i=25296"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=25296"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15453").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -8881,7 +11410,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15461),
+            NodeId.parse("i=15461"),
             new QualifiedName(0, "AddSecurityGroup"),
             new LocalizedText("", "AddSecurityGroup"),
             LocalizedText.NULL_VALUE,
@@ -8894,15 +11423,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15461), new NodeId(0, 46), new NodeId(0, 15462).expanded(), true));
+            NodeId.parse("i=15461"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15462").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15461), new NodeId(0, 46), new NodeId(0, 15463).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 15461), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=15461"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15463").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15461), new NodeId(0, 47), new NodeId(0, 15452).expanded(), false));
+            NodeId.parse("i=15461"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=15461"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15452").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -8910,7 +11449,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15464),
+            NodeId.parse("i=15464"),
             new QualifiedName(0, "RemoveSecurityGroup"),
             new LocalizedText("", "RemoveSecurityGroup"),
             LocalizedText.NULL_VALUE,
@@ -8923,12 +11462,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15464), new NodeId(0, 46), new NodeId(0, 15465).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 15464), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=15464"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15465").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15464), new NodeId(0, 47), new NodeId(0, 15452).expanded(), false));
+            NodeId.parse("i=15464"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=15464"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15452").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -8936,7 +11482,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25312),
+            NodeId.parse("i=25312"),
             new QualifiedName(0, "AddSecurityGroupFolder"),
             new LocalizedText("", "AddSecurityGroupFolder"),
             LocalizedText.NULL_VALUE,
@@ -8949,15 +11495,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25312), new NodeId(0, 46), new NodeId(0, 25313).expanded(), true));
+            NodeId.parse("i=25312"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25313").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25312), new NodeId(0, 46), new NodeId(0, 25314).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 25312), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=25312"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25314").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25312), new NodeId(0, 47), new NodeId(0, 15452).expanded(), false));
+            NodeId.parse("i=25312"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=25312"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15452").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -8965,7 +11521,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25315),
+            NodeId.parse("i=25315"),
             new QualifiedName(0, "RemoveSecurityGroupFolder"),
             new LocalizedText("", "RemoveSecurityGroupFolder"),
             LocalizedText.NULL_VALUE,
@@ -8978,12 +11534,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25315), new NodeId(0, 46), new NodeId(0, 25316).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 25315), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=25315"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25316").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25315), new NodeId(0, 47), new NodeId(0, 15452).expanded(), false));
+            NodeId.parse("i=25315"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=25315"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15452").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -8991,7 +11554,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25624),
+            NodeId.parse("i=25624"),
             new QualifiedName(0, "InvalidateKeys"),
             new LocalizedText("", "InvalidateKeys"),
             LocalizedText.NULL_VALUE,
@@ -9003,10 +11566,14 @@ class MethodNodeLoader {
             true,
             true);
     node.addReference(
-        new Reference(new NodeId(0, 25624), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+        new Reference(
+            NodeId.parse("i=25624"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25624), new NodeId(0, 47), new NodeId(0, 15471).expanded(), false));
+            NodeId.parse("i=25624"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15471").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -9014,7 +11581,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25625),
+            NodeId.parse("i=25625"),
             new QualifiedName(0, "ForceKeyRotation"),
             new LocalizedText("", "ForceKeyRotation"),
             LocalizedText.NULL_VALUE,
@@ -9026,10 +11593,14 @@ class MethodNodeLoader {
             true,
             true);
     node.addReference(
-        new Reference(new NodeId(0, 25625), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+        new Reference(
+            NodeId.parse("i=25625"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25625), new NodeId(0, 47), new NodeId(0, 15471).expanded(), false));
+            NodeId.parse("i=25625"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15471").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -9037,7 +11608,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25641),
+            NodeId.parse("i=25641"),
             new QualifiedName(0, "ConnectSecurityGroups"),
             new LocalizedText("", "ConnectSecurityGroups"),
             LocalizedText.NULL_VALUE,
@@ -9050,15 +11621,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25641), new NodeId(0, 46), new NodeId(0, 25642).expanded(), true));
+            NodeId.parse("i=25641"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25642").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25641), new NodeId(0, 46), new NodeId(0, 25643).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 25641), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=25641"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25643").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25641), new NodeId(0, 47), new NodeId(0, 25337).expanded(), false));
+            NodeId.parse("i=25641"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=25641"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25337").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -9066,7 +11647,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25644),
+            NodeId.parse("i=25644"),
             new QualifiedName(0, "DisconnectSecurityGroups"),
             new LocalizedText("", "DisconnectSecurityGroups"),
             LocalizedText.NULL_VALUE,
@@ -9079,15 +11660,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25644), new NodeId(0, 46), new NodeId(0, 25645).expanded(), true));
+            NodeId.parse("i=25644"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25645").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25644), new NodeId(0, 46), new NodeId(0, 25646).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 25644), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=25644"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25646").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25644), new NodeId(0, 47), new NodeId(0, 25337).expanded(), false));
+            NodeId.parse("i=25644"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=25644"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25337").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -9095,7 +11686,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25647),
+            NodeId.parse("i=25647"),
             new QualifiedName(0, "TriggerKeyUpdate"),
             new LocalizedText("", "TriggerKeyUpdate"),
             LocalizedText.NULL_VALUE,
@@ -9107,10 +11698,14 @@ class MethodNodeLoader {
             true,
             true);
     node.addReference(
-        new Reference(new NodeId(0, 25647), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+        new Reference(
+            NodeId.parse("i=25647"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25647), new NodeId(0, 47), new NodeId(0, 25337).expanded(), false));
+            NodeId.parse("i=25647"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25337").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -9118,7 +11713,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25348),
+            NodeId.parse("i=25348"),
             new QualifiedName(0, "AddPushTarget"),
             new LocalizedText("", "AddPushTarget"),
             LocalizedText.NULL_VALUE,
@@ -9131,15 +11726,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25348), new NodeId(0, 46), new NodeId(0, 25349).expanded(), true));
+            NodeId.parse("i=25348"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25349").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25348), new NodeId(0, 46), new NodeId(0, 25350).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 25348), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=25348"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25350").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25348), new NodeId(0, 47), new NodeId(0, 25347).expanded(), false));
+            NodeId.parse("i=25348"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=25348"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25347").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -9147,7 +11752,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25351),
+            NodeId.parse("i=25351"),
             new QualifiedName(0, "RemovePushTarget"),
             new LocalizedText("", "RemovePushTarget"),
             LocalizedText.NULL_VALUE,
@@ -9160,12 +11765,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25351), new NodeId(0, 46), new NodeId(0, 25352).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 25351), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=25351"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25352").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25351), new NodeId(0, 47), new NodeId(0, 25347).expanded(), false));
+            NodeId.parse("i=25351"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=25351"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25347").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -9173,7 +11785,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25353),
+            NodeId.parse("i=25353"),
             new QualifiedName(0, "AddPushTargetFolder"),
             new LocalizedText("", "AddPushTargetFolder"),
             LocalizedText.NULL_VALUE,
@@ -9186,15 +11798,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25353), new NodeId(0, 46), new NodeId(0, 25354).expanded(), true));
+            NodeId.parse("i=25353"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25354").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25353), new NodeId(0, 46), new NodeId(0, 25355).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 25353), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=25353"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25355").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25353), new NodeId(0, 47), new NodeId(0, 25347).expanded(), false));
+            NodeId.parse("i=25353"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=25353"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25347").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -9202,7 +11824,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25356),
+            NodeId.parse("i=25356"),
             new QualifiedName(0, "RemovePushTargetFolder"),
             new LocalizedText("", "RemovePushTargetFolder"),
             LocalizedText.NULL_VALUE,
@@ -9215,12 +11837,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25356), new NodeId(0, 46), new NodeId(0, 25357).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 25356), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=25356"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25357").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25356), new NodeId(0, 47), new NodeId(0, 25347).expanded(), false));
+            NodeId.parse("i=25356"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=25356"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25347").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -9228,7 +11857,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25655),
+            NodeId.parse("i=25655"),
             new QualifiedName(0, "ConnectSecurityGroups"),
             new LocalizedText("", "ConnectSecurityGroups"),
             LocalizedText.NULL_VALUE,
@@ -9241,15 +11870,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25655), new NodeId(0, 46), new NodeId(0, 25656).expanded(), true));
+            NodeId.parse("i=25655"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25656").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25655), new NodeId(0, 46), new NodeId(0, 25657).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 25655), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=25655"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25657").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25655), new NodeId(0, 47), new NodeId(0, 25358).expanded(), false));
+            NodeId.parse("i=25655"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=25655"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25358").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -9257,7 +11896,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25658),
+            NodeId.parse("i=25658"),
             new QualifiedName(0, "DisconnectSecurityGroups"),
             new LocalizedText("", "DisconnectSecurityGroups"),
             LocalizedText.NULL_VALUE,
@@ -9270,15 +11909,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25658), new NodeId(0, 46), new NodeId(0, 25659).expanded(), true));
+            NodeId.parse("i=25658"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25659").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25658), new NodeId(0, 46), new NodeId(0, 25660).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 25658), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=25658"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25660").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25658), new NodeId(0, 47), new NodeId(0, 25358).expanded(), false));
+            NodeId.parse("i=25658"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=25658"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25358").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -9286,7 +11935,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25661),
+            NodeId.parse("i=25661"),
             new QualifiedName(0, "TriggerKeyUpdate"),
             new LocalizedText("", "TriggerKeyUpdate"),
             LocalizedText.NULL_VALUE,
@@ -9298,10 +11947,14 @@ class MethodNodeLoader {
             true,
             true);
     node.addReference(
-        new Reference(new NodeId(0, 25661), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+        new Reference(
+            NodeId.parse("i=25661"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25661), new NodeId(0, 47), new NodeId(0, 25358).expanded(), false));
+            NodeId.parse("i=25661"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25358").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -9309,7 +11962,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25366),
+            NodeId.parse("i=25366"),
             new QualifiedName(0, "AddPushTarget"),
             new LocalizedText("", "AddPushTarget"),
             LocalizedText.NULL_VALUE,
@@ -9322,15 +11975,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25366), new NodeId(0, 46), new NodeId(0, 25367).expanded(), true));
+            NodeId.parse("i=25366"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25367").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25366), new NodeId(0, 46), new NodeId(0, 25368).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 25366), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=25366"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25368").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25366), new NodeId(0, 47), new NodeId(0, 25346).expanded(), false));
+            NodeId.parse("i=25366"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=25366"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25346").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -9338,7 +12001,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25369),
+            NodeId.parse("i=25369"),
             new QualifiedName(0, "RemovePushTarget"),
             new LocalizedText("", "RemovePushTarget"),
             LocalizedText.NULL_VALUE,
@@ -9351,12 +12014,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25369), new NodeId(0, 46), new NodeId(0, 25370).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 25369), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=25369"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25370").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25369), new NodeId(0, 47), new NodeId(0, 25346).expanded(), false));
+            NodeId.parse("i=25369"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=25369"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25346").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -9364,7 +12034,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25371),
+            NodeId.parse("i=25371"),
             new QualifiedName(0, "AddPushTargetFolder"),
             new LocalizedText("", "AddPushTargetFolder"),
             LocalizedText.NULL_VALUE,
@@ -9377,15 +12047,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25371), new NodeId(0, 46), new NodeId(0, 25372).expanded(), true));
+            NodeId.parse("i=25371"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25372").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25371), new NodeId(0, 46), new NodeId(0, 25373).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 25371), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=25371"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25373").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25371), new NodeId(0, 47), new NodeId(0, 25346).expanded(), false));
+            NodeId.parse("i=25371"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=25371"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25346").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -9393,7 +12073,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25374),
+            NodeId.parse("i=25374"),
             new QualifiedName(0, "RemovePushTargetFolder"),
             new LocalizedText("", "RemovePushTargetFolder"),
             LocalizedText.NULL_VALUE,
@@ -9406,12 +12086,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25374), new NodeId(0, 46), new NodeId(0, 25375).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 25374), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=25374"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25375").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25374), new NodeId(0, 47), new NodeId(0, 25346).expanded(), false));
+            NodeId.parse("i=25374"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=25374"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25346").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -9419,7 +12106,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 17296),
+            NodeId.parse("i=17296"),
             new QualifiedName(0, "SetSecurityKeys"),
             new LocalizedText("", "SetSecurityKeys"),
             LocalizedText.NULL_VALUE,
@@ -9432,12 +12119,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 17296), new NodeId(0, 46), new NodeId(0, 17297).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 17296), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=17296"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=17297").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 17296), new NodeId(0, 47), new NodeId(0, 14416).expanded(), false));
+            NodeId.parse("i=17296"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=17296"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14416").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -9445,7 +12139,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16598),
+            NodeId.parse("i=16598"),
             new QualifiedName(0, "AddConnection"),
             new LocalizedText("", "AddConnection"),
             LocalizedText.NULL_VALUE,
@@ -9458,15 +12152,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16598), new NodeId(0, 46), new NodeId(0, 16599).expanded(), true));
+            NodeId.parse("i=16598"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16599").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16598), new NodeId(0, 46), new NodeId(0, 16600).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 16598), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=16598"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16600").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16598), new NodeId(0, 47), new NodeId(0, 14416).expanded(), false));
+            NodeId.parse("i=16598"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=16598"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14416").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -9474,7 +12178,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 14432),
+            NodeId.parse("i=14432"),
             new QualifiedName(0, "RemoveConnection"),
             new LocalizedText("", "RemoveConnection"),
             LocalizedText.NULL_VALUE,
@@ -9487,12 +12191,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 14432), new NodeId(0, 46), new NodeId(0, 14433).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 14432), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=14432"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14433").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14432), new NodeId(0, 47), new NodeId(0, 14416).expanded(), false));
+            NodeId.parse("i=14432"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=14432"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14416").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -9500,7 +12211,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25411),
+            NodeId.parse("i=25411"),
             new QualifiedName(0, "Open"),
             new LocalizedText("", "Open"),
             LocalizedText.NULL_VALUE,
@@ -9513,15 +12224,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25411), new NodeId(0, 46), new NodeId(0, 25412).expanded(), true));
+            NodeId.parse("i=25411"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25412").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25411), new NodeId(0, 46), new NodeId(0, 25413).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 25411), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=25411"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25413").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25411), new NodeId(0, 47), new NodeId(0, 25403).expanded(), false));
+            NodeId.parse("i=25411"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=25411"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25403").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -9529,7 +12250,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25414),
+            NodeId.parse("i=25414"),
             new QualifiedName(0, "Close"),
             new LocalizedText("", "Close"),
             LocalizedText.NULL_VALUE,
@@ -9542,12 +12263,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25414), new NodeId(0, 46), new NodeId(0, 25415).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 25414), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=25414"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25415").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25414), new NodeId(0, 47), new NodeId(0, 25403).expanded(), false));
+            NodeId.parse("i=25414"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=25414"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25403").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -9555,7 +12283,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25416),
+            NodeId.parse("i=25416"),
             new QualifiedName(0, "Read"),
             new LocalizedText("", "Read"),
             LocalizedText.NULL_VALUE,
@@ -9568,15 +12296,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25416), new NodeId(0, 46), new NodeId(0, 25417).expanded(), true));
+            NodeId.parse("i=25416"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25417").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25416), new NodeId(0, 46), new NodeId(0, 25418).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 25416), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=25416"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25418").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25416), new NodeId(0, 47), new NodeId(0, 25403).expanded(), false));
+            NodeId.parse("i=25416"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=25416"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25403").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -9584,7 +12322,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25419),
+            NodeId.parse("i=25419"),
             new QualifiedName(0, "Write"),
             new LocalizedText("", "Write"),
             LocalizedText.NULL_VALUE,
@@ -9597,12 +12335,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25419), new NodeId(0, 46), new NodeId(0, 25420).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 25419), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=25419"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25420").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25419), new NodeId(0, 47), new NodeId(0, 25403).expanded(), false));
+            NodeId.parse("i=25419"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=25419"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25403").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -9610,7 +12355,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25421),
+            NodeId.parse("i=25421"),
             new QualifiedName(0, "GetPosition"),
             new LocalizedText("", "GetPosition"),
             LocalizedText.NULL_VALUE,
@@ -9623,15 +12368,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25421), new NodeId(0, 46), new NodeId(0, 25422).expanded(), true));
+            NodeId.parse("i=25421"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25422").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25421), new NodeId(0, 46), new NodeId(0, 25423).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 25421), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=25421"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25423").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25421), new NodeId(0, 47), new NodeId(0, 25403).expanded(), false));
+            NodeId.parse("i=25421"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=25421"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25403").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -9639,7 +12394,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25424),
+            NodeId.parse("i=25424"),
             new QualifiedName(0, "SetPosition"),
             new LocalizedText("", "SetPosition"),
             LocalizedText.NULL_VALUE,
@@ -9652,12 +12407,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25424), new NodeId(0, 46), new NodeId(0, 25425).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 25424), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=25424"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25425").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25424), new NodeId(0, 47), new NodeId(0, 25403).expanded(), false));
+            NodeId.parse("i=25424"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=25424"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25403").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -9665,7 +12427,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25426),
+            NodeId.parse("i=25426"),
             new QualifiedName(0, "ReserveIds"),
             new LocalizedText("", "ReserveIds"),
             LocalizedText.NULL_VALUE,
@@ -9678,15 +12440,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25426), new NodeId(0, 46), new NodeId(0, 25427).expanded(), true));
+            NodeId.parse("i=25426"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25427").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25426), new NodeId(0, 46), new NodeId(0, 25428).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 25426), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=25426"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25428").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25426), new NodeId(0, 47), new NodeId(0, 25403).expanded(), false));
+            NodeId.parse("i=25426"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=25426"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25403").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -9694,7 +12466,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25429),
+            NodeId.parse("i=25429"),
             new QualifiedName(0, "CloseAndUpdate"),
             new LocalizedText("", "CloseAndUpdate"),
             LocalizedText.NULL_VALUE,
@@ -9707,15 +12479,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25429), new NodeId(0, 46), new NodeId(0, 25430).expanded(), true));
+            NodeId.parse("i=25429"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25430").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25429), new NodeId(0, 46), new NodeId(0, 25431).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 25429), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=25429"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25431").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25429), new NodeId(0, 47), new NodeId(0, 25403).expanded(), false));
+            NodeId.parse("i=25429"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=25429"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25403").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -9723,7 +12505,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 18727),
+            NodeId.parse("i=18727"),
             new QualifiedName(0, "Reset"),
             new LocalizedText("", "Reset"),
             LocalizedText.NULL_VALUE,
@@ -9735,10 +12517,14 @@ class MethodNodeLoader {
             true,
             true);
     node.addReference(
-        new Reference(new NodeId(0, 18727), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+        new Reference(
+            NodeId.parse("i=18727"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
     node.addReference(
         new Reference(
-            new NodeId(0, 18727), new NodeId(0, 47), new NodeId(0, 18715).expanded(), false));
+            NodeId.parse("i=18727"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=18715").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -9746,7 +12532,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15215),
+            NodeId.parse("i=15215"),
             new QualifiedName(0, "GetSecurityKeys"),
             new LocalizedText("", "GetSecurityKeys"),
             LocalizedText.NULL_VALUE,
@@ -9754,9 +12540,9 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(4097))),
+                  NodeId.parse("i=15644"), new PermissionType(UInteger.valueOf(4097))),
               new RolePermissionType(
-                  new NodeId(0, 25565), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=25565"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -9764,13 +12550,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15215), new NodeId(0, 46), new NodeId(0, 15216).expanded(), true));
+            NodeId.parse("i=15215"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15216").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15215), new NodeId(0, 46), new NodeId(0, 15217).expanded(), true));
+            NodeId.parse("i=15215"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15217").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15215), new NodeId(0, 47), new NodeId(0, 14443).expanded(), false));
+            NodeId.parse("i=15215"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14443").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -9778,7 +12573,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15440),
+            NodeId.parse("i=15440"),
             new QualifiedName(0, "GetSecurityGroup"),
             new LocalizedText("", "GetSecurityGroup"),
             LocalizedText.NULL_VALUE,
@@ -9786,9 +12581,9 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(4097))),
+                  NodeId.parse("i=15644"), new PermissionType(UInteger.valueOf(4097))),
               new RolePermissionType(
-                  new NodeId(0, 25565), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=25565"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -9796,13 +12591,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15440), new NodeId(0, 46), new NodeId(0, 15441).expanded(), true));
+            NodeId.parse("i=15440"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15441").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15440), new NodeId(0, 46), new NodeId(0, 15442).expanded(), true));
+            NodeId.parse("i=15440"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15442").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15440), new NodeId(0, 47), new NodeId(0, 14443).expanded(), false));
+            NodeId.parse("i=15440"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14443").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -9810,7 +12614,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15444),
+            NodeId.parse("i=15444"),
             new QualifiedName(0, "AddSecurityGroup"),
             new LocalizedText("", "AddSecurityGroup"),
             LocalizedText.NULL_VALUE,
@@ -9818,7 +12622,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 25565), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=25565"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -9826,13 +12630,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15444), new NodeId(0, 46), new NodeId(0, 15445).expanded(), true));
+            NodeId.parse("i=15444"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15445").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15444), new NodeId(0, 46), new NodeId(0, 15446).expanded(), true));
+            NodeId.parse("i=15444"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15446").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15444), new NodeId(0, 47), new NodeId(0, 15443).expanded(), false));
+            NodeId.parse("i=15444"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15443").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -9840,7 +12653,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15447),
+            NodeId.parse("i=15447"),
             new QualifiedName(0, "RemoveSecurityGroup"),
             new LocalizedText("", "RemoveSecurityGroup"),
             LocalizedText.NULL_VALUE,
@@ -9848,7 +12661,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 25565), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=25565"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -9856,10 +12669,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15447), new NodeId(0, 46), new NodeId(0, 15448).expanded(), true));
+            NodeId.parse("i=15447"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15448").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15447), new NodeId(0, 47), new NodeId(0, 15443).expanded(), false));
+            NodeId.parse("i=15447"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15443").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -9867,7 +12686,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25441),
+            NodeId.parse("i=25441"),
             new QualifiedName(0, "AddPushTarget"),
             new LocalizedText("", "AddPushTarget"),
             LocalizedText.NULL_VALUE,
@@ -9875,7 +12694,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 25565), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=25565"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -9883,13 +12702,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25441), new NodeId(0, 46), new NodeId(0, 25442).expanded(), true));
+            NodeId.parse("i=25441"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25442").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25441), new NodeId(0, 46), new NodeId(0, 25443).expanded(), true));
+            NodeId.parse("i=25441"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25443").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25441), new NodeId(0, 47), new NodeId(0, 25440).expanded(), false));
+            NodeId.parse("i=25441"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25440").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -9897,7 +12725,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25444),
+            NodeId.parse("i=25444"),
             new QualifiedName(0, "RemovePushTarget"),
             new LocalizedText("", "RemovePushTarget"),
             LocalizedText.NULL_VALUE,
@@ -9905,7 +12733,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 25565), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=25565"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(1)),
@@ -9913,10 +12741,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25444), new NodeId(0, 46), new NodeId(0, 25445).expanded(), true));
+            NodeId.parse("i=25444"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25445").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25444), new NodeId(0, 47), new NodeId(0, 25440).expanded(), false));
+            NodeId.parse("i=25444"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25440").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -9924,18 +12758,19 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 17364),
+            NodeId.parse("i=17364"),
             new QualifiedName(0, "SetSecurityKeys"),
             new LocalizedText("", "SetSecurityKeys"),
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             new RolePermissionType[] {
-              new RolePermissionType(new NodeId(0, 15644), new PermissionType(UInteger.valueOf(1))),
               new RolePermissionType(
-                  new NodeId(0, 25584), new PermissionType(UInteger.valueOf(61455))),
+                  NodeId.parse("i=15644"), new PermissionType(UInteger.valueOf(1))),
               new RolePermissionType(
-                  new NodeId(0, 25565), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=25584"), new PermissionType(UInteger.valueOf(61455))),
+              new RolePermissionType(
+                  NodeId.parse("i=25565"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -9943,10 +12778,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 17364), new NodeId(0, 46), new NodeId(0, 17365).expanded(), true));
+            NodeId.parse("i=17364"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=17365").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 17364), new NodeId(0, 47), new NodeId(0, 14443).expanded(), false));
+            NodeId.parse("i=17364"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14443").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -9954,7 +12795,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 17366),
+            NodeId.parse("i=17366"),
             new QualifiedName(0, "AddConnection"),
             new LocalizedText("", "AddConnection"),
             LocalizedText.NULL_VALUE,
@@ -9962,7 +12803,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15716"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
@@ -9970,13 +12811,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 17366), new NodeId(0, 46), new NodeId(0, 17367).expanded(), true));
+            NodeId.parse("i=17366"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=17367").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 17366), new NodeId(0, 46), new NodeId(0, 17368).expanded(), true));
+            NodeId.parse("i=17366"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=17368").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 17366), new NodeId(0, 47), new NodeId(0, 14443).expanded(), false));
+            NodeId.parse("i=17366"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14443").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -9984,7 +12834,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 17369),
+            NodeId.parse("i=17369"),
             new QualifiedName(0, "RemoveConnection"),
             new LocalizedText("", "RemoveConnection"),
             LocalizedText.NULL_VALUE,
@@ -9992,7 +12842,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15716"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
@@ -10000,10 +12850,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 17369), new NodeId(0, 46), new NodeId(0, 17370).expanded(), true));
+            NodeId.parse("i=17369"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=17370").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 17369), new NodeId(0, 47), new NodeId(0, 14443).expanded(), false));
+            NodeId.parse("i=17369"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14443").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -10011,7 +12867,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25459),
+            NodeId.parse("i=25459"),
             new QualifiedName(0, "Open"),
             new LocalizedText("", "Open"),
             LocalizedText.NULL_VALUE,
@@ -10019,9 +12875,9 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(4097))),
+                  NodeId.parse("i=15644"), new PermissionType(UInteger.valueOf(4097))),
               new RolePermissionType(
-                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15716"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
@@ -10029,13 +12885,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25459), new NodeId(0, 46), new NodeId(0, 25460).expanded(), true));
+            NodeId.parse("i=25459"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25460").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25459), new NodeId(0, 46), new NodeId(0, 25461).expanded(), true));
+            NodeId.parse("i=25459"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25461").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25459), new NodeId(0, 47), new NodeId(0, 25451).expanded(), false));
+            NodeId.parse("i=25459"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25451").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -10043,7 +12908,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25462),
+            NodeId.parse("i=25462"),
             new QualifiedName(0, "Close"),
             new LocalizedText("", "Close"),
             LocalizedText.NULL_VALUE,
@@ -10051,9 +12916,9 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(4097))),
+                  NodeId.parse("i=15644"), new PermissionType(UInteger.valueOf(4097))),
               new RolePermissionType(
-                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15716"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
@@ -10061,10 +12926,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25462), new NodeId(0, 46), new NodeId(0, 25463).expanded(), true));
+            NodeId.parse("i=25462"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25463").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25462), new NodeId(0, 47), new NodeId(0, 25451).expanded(), false));
+            NodeId.parse("i=25462"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25451").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -10072,7 +12943,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25464),
+            NodeId.parse("i=25464"),
             new QualifiedName(0, "Read"),
             new LocalizedText("", "Read"),
             LocalizedText.NULL_VALUE,
@@ -10080,9 +12951,9 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(4097))),
+                  NodeId.parse("i=15644"), new PermissionType(UInteger.valueOf(4097))),
               new RolePermissionType(
-                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15716"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
@@ -10090,13 +12961,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25464), new NodeId(0, 46), new NodeId(0, 25465).expanded(), true));
+            NodeId.parse("i=25464"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25465").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25464), new NodeId(0, 46), new NodeId(0, 25466).expanded(), true));
+            NodeId.parse("i=25464"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25466").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25464), new NodeId(0, 47), new NodeId(0, 25451).expanded(), false));
+            NodeId.parse("i=25464"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25451").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -10104,7 +12984,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25467),
+            NodeId.parse("i=25467"),
             new QualifiedName(0, "Write"),
             new LocalizedText("", "Write"),
             LocalizedText.NULL_VALUE,
@@ -10112,7 +12992,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15716"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
@@ -10120,10 +13000,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25467), new NodeId(0, 46), new NodeId(0, 25468).expanded(), true));
+            NodeId.parse("i=25467"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25468").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25467), new NodeId(0, 47), new NodeId(0, 25451).expanded(), false));
+            NodeId.parse("i=25467"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25451").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -10131,7 +13017,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25469),
+            NodeId.parse("i=25469"),
             new QualifiedName(0, "GetPosition"),
             new LocalizedText("", "GetPosition"),
             LocalizedText.NULL_VALUE,
@@ -10139,9 +13025,9 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(4097))),
+                  NodeId.parse("i=15644"), new PermissionType(UInteger.valueOf(4097))),
               new RolePermissionType(
-                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15716"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
@@ -10149,13 +13035,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25469), new NodeId(0, 46), new NodeId(0, 25470).expanded(), true));
+            NodeId.parse("i=25469"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25470").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25469), new NodeId(0, 46), new NodeId(0, 25471).expanded(), true));
+            NodeId.parse("i=25469"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25471").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25469), new NodeId(0, 47), new NodeId(0, 25451).expanded(), false));
+            NodeId.parse("i=25469"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25451").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -10163,7 +13058,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25472),
+            NodeId.parse("i=25472"),
             new QualifiedName(0, "SetPosition"),
             new LocalizedText("", "SetPosition"),
             LocalizedText.NULL_VALUE,
@@ -10171,9 +13066,9 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(4097))),
+                  NodeId.parse("i=15644"), new PermissionType(UInteger.valueOf(4097))),
               new RolePermissionType(
-                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15716"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
@@ -10181,10 +13076,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25472), new NodeId(0, 46), new NodeId(0, 25473).expanded(), true));
+            NodeId.parse("i=25472"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25473").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25472), new NodeId(0, 47), new NodeId(0, 25451).expanded(), false));
+            NodeId.parse("i=25472"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25451").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -10192,7 +13093,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25474),
+            NodeId.parse("i=25474"),
             new QualifiedName(0, "ReserveIds"),
             new LocalizedText("", "ReserveIds"),
             LocalizedText.NULL_VALUE,
@@ -10200,7 +13101,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15716"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
@@ -10208,13 +13109,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25474), new NodeId(0, 46), new NodeId(0, 25475).expanded(), true));
+            NodeId.parse("i=25474"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25475").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25474), new NodeId(0, 46), new NodeId(0, 25476).expanded(), true));
+            NodeId.parse("i=25474"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25476").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25474), new NodeId(0, 47), new NodeId(0, 25451).expanded(), false));
+            NodeId.parse("i=25474"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25451").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -10222,7 +13132,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25477),
+            NodeId.parse("i=25477"),
             new QualifiedName(0, "CloseAndUpdate"),
             new LocalizedText("", "CloseAndUpdate"),
             LocalizedText.NULL_VALUE,
@@ -10230,7 +13140,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15716"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
@@ -10238,13 +13148,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25477), new NodeId(0, 46), new NodeId(0, 25478).expanded(), true));
+            NodeId.parse("i=25477"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25478").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25477), new NodeId(0, 46), new NodeId(0, 25479).expanded(), true));
+            NodeId.parse("i=25477"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25479").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25477), new NodeId(0, 47), new NodeId(0, 25451).expanded(), false));
+            NodeId.parse("i=25477"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25451").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -10252,7 +13171,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 17421),
+            NodeId.parse("i=17421"),
             new QualifiedName(0, "Reset"),
             new LocalizedText("", "Reset"),
             LocalizedText.NULL_VALUE,
@@ -10260,7 +13179,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15716"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
@@ -10268,7 +13187,10 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 17421), new NodeId(0, 47), new NodeId(0, 17409).expanded(), false));
+            NodeId.parse("i=17421"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=17409").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -10276,7 +13198,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25505),
+            NodeId.parse("i=25505"),
             new QualifiedName(0, "ReserveIds"),
             new LocalizedText("", "ReserveIds"),
             LocalizedText.NULL_VALUE,
@@ -10289,15 +13211,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25505), new NodeId(0, 46), new NodeId(0, 25506).expanded(), true));
+            NodeId.parse("i=25505"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25506").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25505), new NodeId(0, 46), new NodeId(0, 25507).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 25505), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=25505"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25507").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25505), new NodeId(0, 47), new NodeId(0, 25482).expanded(), false));
+            NodeId.parse("i=25505"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=25505"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25482").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -10305,7 +13237,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25508),
+            NodeId.parse("i=25508"),
             new QualifiedName(0, "CloseAndUpdate"),
             new LocalizedText("", "CloseAndUpdate"),
             LocalizedText.NULL_VALUE,
@@ -10318,15 +13250,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25508), new NodeId(0, 46), new NodeId(0, 25509).expanded(), true));
+            NodeId.parse("i=25508"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25509").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25508), new NodeId(0, 46), new NodeId(0, 25510).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 25508), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=25508"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25510").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25508), new NodeId(0, 47), new NodeId(0, 25482).expanded(), false));
+            NodeId.parse("i=25508"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=25508"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25482").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -10334,7 +13276,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15482),
+            NodeId.parse("i=15482"),
             new QualifiedName(0, "AddExtensionField"),
             new LocalizedText("", "AddExtensionField"),
             LocalizedText.NULL_VALUE,
@@ -10347,15 +13289,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15482), new NodeId(0, 46), new NodeId(0, 15483).expanded(), true));
+            NodeId.parse("i=15482"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15483").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15482), new NodeId(0, 46), new NodeId(0, 15484).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 15482), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=15482"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15484").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15482), new NodeId(0, 47), new NodeId(0, 15481).expanded(), false));
+            NodeId.parse("i=15482"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=15482"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15481").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -10363,7 +13315,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15485),
+            NodeId.parse("i=15485"),
             new QualifiedName(0, "RemoveExtensionField"),
             new LocalizedText("", "RemoveExtensionField"),
             LocalizedText.NULL_VALUE,
@@ -10376,12 +13328,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15485), new NodeId(0, 46), new NodeId(0, 15486).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 15485), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=15485"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15486").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15485), new NodeId(0, 47), new NodeId(0, 15481).expanded(), false));
+            NodeId.parse("i=15485"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=15485"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15481").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -10389,7 +13348,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15491),
+            NodeId.parse("i=15491"),
             new QualifiedName(0, "AddExtensionField"),
             new LocalizedText("", "AddExtensionField"),
             LocalizedText.NULL_VALUE,
@@ -10402,15 +13361,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15491), new NodeId(0, 46), new NodeId(0, 15492).expanded(), true));
+            NodeId.parse("i=15491"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15492").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15491), new NodeId(0, 46), new NodeId(0, 15493).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 15491), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=15491"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15493").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15491), new NodeId(0, 47), new NodeId(0, 15489).expanded(), false));
+            NodeId.parse("i=15491"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=15491"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15489").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -10418,7 +13387,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15494),
+            NodeId.parse("i=15494"),
             new QualifiedName(0, "RemoveExtensionField"),
             new LocalizedText("", "RemoveExtensionField"),
             LocalizedText.NULL_VALUE,
@@ -10431,12 +13400,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15494), new NodeId(0, 46), new NodeId(0, 15495).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 15494), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=15494"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15495").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15494), new NodeId(0, 47), new NodeId(0, 15489).expanded(), false));
+            NodeId.parse("i=15494"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=15494"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15489").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -10444,7 +13420,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 14555),
+            NodeId.parse("i=14555"),
             new QualifiedName(0, "AddVariables"),
             new LocalizedText("", "AddVariables"),
             LocalizedText.NULL_VALUE,
@@ -10457,15 +13433,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 14555), new NodeId(0, 46), new NodeId(0, 14556).expanded(), true));
+            NodeId.parse("i=14555"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14556").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14555), new NodeId(0, 46), new NodeId(0, 14557).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 14555), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=14555"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14557").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14555), new NodeId(0, 47), new NodeId(0, 14534).expanded(), false));
+            NodeId.parse("i=14555"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=14555"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14534").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -10473,7 +13459,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 14558),
+            NodeId.parse("i=14558"),
             new QualifiedName(0, "RemoveVariables"),
             new LocalizedText("", "RemoveVariables"),
             LocalizedText.NULL_VALUE,
@@ -10486,15 +13472,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 14558), new NodeId(0, 46), new NodeId(0, 14559).expanded(), true));
+            NodeId.parse("i=14558"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14559").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14558), new NodeId(0, 46), new NodeId(0, 14560).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 14558), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=14558"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14560").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14558), new NodeId(0, 47), new NodeId(0, 14534).expanded(), false));
+            NodeId.parse("i=14558"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=14558"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14534").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -10502,7 +13498,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15052),
+            NodeId.parse("i=15052"),
             new QualifiedName(0, "ModifyFieldSelection"),
             new LocalizedText("", "ModifyFieldSelection"),
             LocalizedText.NULL_VALUE,
@@ -10515,15 +13511,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15052), new NodeId(0, 46), new NodeId(0, 15053).expanded(), true));
+            NodeId.parse("i=15052"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15053").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15052), new NodeId(0, 46), new NodeId(0, 15517).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 15052), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=15052"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15517").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15052), new NodeId(0, 47), new NodeId(0, 14572).expanded(), false));
+            NodeId.parse("i=15052"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=15052"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14572").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -10531,7 +13537,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 14479),
+            NodeId.parse("i=14479"),
             new QualifiedName(0, "AddPublishedDataItems"),
             new LocalizedText("", "AddPublishedDataItems"),
             LocalizedText.NULL_VALUE,
@@ -10544,15 +13550,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 14479), new NodeId(0, 46), new NodeId(0, 14480).expanded(), true));
+            NodeId.parse("i=14479"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14480").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14479), new NodeId(0, 46), new NodeId(0, 14481).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 14479), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=14479"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14481").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14479), new NodeId(0, 47), new NodeId(0, 14478).expanded(), false));
+            NodeId.parse("i=14479"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=14479"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14478").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -10560,7 +13576,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 14482),
+            NodeId.parse("i=14482"),
             new QualifiedName(0, "AddPublishedEvents"),
             new LocalizedText("", "AddPublishedEvents"),
             LocalizedText.NULL_VALUE,
@@ -10573,15 +13589,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 14482), new NodeId(0, 46), new NodeId(0, 14483).expanded(), true));
+            NodeId.parse("i=14482"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14483").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14482), new NodeId(0, 46), new NodeId(0, 14484).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 14482), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=14482"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14484").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14482), new NodeId(0, 47), new NodeId(0, 14478).expanded(), false));
+            NodeId.parse("i=14482"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=14482"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14478").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -10589,7 +13615,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16842),
+            NodeId.parse("i=16842"),
             new QualifiedName(0, "AddPublishedDataItemsTemplate"),
             new LocalizedText("", "AddPublishedDataItemsTemplate"),
             LocalizedText.NULL_VALUE,
@@ -10602,15 +13628,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16842), new NodeId(0, 46), new NodeId(0, 16843).expanded(), true));
+            NodeId.parse("i=16842"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16843").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16842), new NodeId(0, 46), new NodeId(0, 16853).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 16842), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=16842"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16853").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16842), new NodeId(0, 47), new NodeId(0, 14478).expanded(), false));
+            NodeId.parse("i=16842"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=16842"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14478").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -10618,7 +13654,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16881),
+            NodeId.parse("i=16881"),
             new QualifiedName(0, "AddPublishedEventsTemplate"),
             new LocalizedText("", "AddPublishedEventsTemplate"),
             LocalizedText.NULL_VALUE,
@@ -10631,15 +13667,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16881), new NodeId(0, 46), new NodeId(0, 16882).expanded(), true));
+            NodeId.parse("i=16881"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16882").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16881), new NodeId(0, 46), new NodeId(0, 16883).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 16881), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=16881"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16883").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16881), new NodeId(0, 47), new NodeId(0, 14478).expanded(), false));
+            NodeId.parse("i=16881"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=16881"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14478").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -10647,7 +13693,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 14485),
+            NodeId.parse("i=14485"),
             new QualifiedName(0, "RemovePublishedDataSet"),
             new LocalizedText("", "RemovePublishedDataSet"),
             LocalizedText.NULL_VALUE,
@@ -10660,12 +13706,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 14485), new NodeId(0, 46), new NodeId(0, 14486).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 14485), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=14485"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14486").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14485), new NodeId(0, 47), new NodeId(0, 14478).expanded(), false));
+            NodeId.parse("i=14485"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=14485"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14478").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -10673,7 +13726,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16884),
+            NodeId.parse("i=16884"),
             new QualifiedName(0, "AddDataSetFolder"),
             new LocalizedText("", "AddDataSetFolder"),
             LocalizedText.NULL_VALUE,
@@ -10686,15 +13739,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16884), new NodeId(0, 46), new NodeId(0, 16894).expanded(), true));
+            NodeId.parse("i=16884"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16894").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16884), new NodeId(0, 46), new NodeId(0, 16922).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 16884), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=16884"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16922").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16884), new NodeId(0, 47), new NodeId(0, 14478).expanded(), false));
+            NodeId.parse("i=16884"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=16884"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14478").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -10702,7 +13765,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16923),
+            NodeId.parse("i=16923"),
             new QualifiedName(0, "RemoveDataSetFolder"),
             new LocalizedText("", "RemoveDataSetFolder"),
             LocalizedText.NULL_VALUE,
@@ -10715,12 +13778,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16923), new NodeId(0, 46), new NodeId(0, 16924).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 16923), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=16923"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16924").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16923), new NodeId(0, 47), new NodeId(0, 14478).expanded(), false));
+            NodeId.parse("i=16923"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=16923"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14478").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -10728,7 +13798,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 14493),
+            NodeId.parse("i=14493"),
             new QualifiedName(0, "AddPublishedDataItems"),
             new LocalizedText("", "AddPublishedDataItems"),
             LocalizedText.NULL_VALUE,
@@ -10741,15 +13811,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 14493), new NodeId(0, 46), new NodeId(0, 14494).expanded(), true));
+            NodeId.parse("i=14493"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14494").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14493), new NodeId(0, 46), new NodeId(0, 14495).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 14493), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=14493"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14495").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14493), new NodeId(0, 47), new NodeId(0, 14477).expanded(), false));
+            NodeId.parse("i=14493"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=14493"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14477").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -10757,7 +13837,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 14496),
+            NodeId.parse("i=14496"),
             new QualifiedName(0, "AddPublishedEvents"),
             new LocalizedText("", "AddPublishedEvents"),
             LocalizedText.NULL_VALUE,
@@ -10770,15 +13850,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 14496), new NodeId(0, 46), new NodeId(0, 14497).expanded(), true));
+            NodeId.parse("i=14496"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14497").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14496), new NodeId(0, 46), new NodeId(0, 14498).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 14496), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=14496"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14498").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14496), new NodeId(0, 47), new NodeId(0, 14477).expanded(), false));
+            NodeId.parse("i=14496"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=14496"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14477").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -10786,7 +13876,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16935),
+            NodeId.parse("i=16935"),
             new QualifiedName(0, "AddPublishedDataItemsTemplate"),
             new LocalizedText("", "AddPublishedDataItemsTemplate"),
             LocalizedText.NULL_VALUE,
@@ -10799,15 +13889,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16935), new NodeId(0, 46), new NodeId(0, 16958).expanded(), true));
+            NodeId.parse("i=16935"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16958").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16935), new NodeId(0, 46), new NodeId(0, 16959).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 16935), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=16935"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16959").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16935), new NodeId(0, 47), new NodeId(0, 14477).expanded(), false));
+            NodeId.parse("i=16935"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=16935"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14477").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -10815,7 +13915,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16960),
+            NodeId.parse("i=16960"),
             new QualifiedName(0, "AddPublishedEventsTemplate"),
             new LocalizedText("", "AddPublishedEventsTemplate"),
             LocalizedText.NULL_VALUE,
@@ -10828,15 +13928,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16960), new NodeId(0, 46), new NodeId(0, 16961).expanded(), true));
+            NodeId.parse("i=16960"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16961").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16960), new NodeId(0, 46), new NodeId(0, 16971).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 16960), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=16960"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16971").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16960), new NodeId(0, 47), new NodeId(0, 14477).expanded(), false));
+            NodeId.parse("i=16960"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=16960"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14477").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -10844,7 +13954,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 14499),
+            NodeId.parse("i=14499"),
             new QualifiedName(0, "RemovePublishedDataSet"),
             new LocalizedText("", "RemovePublishedDataSet"),
             LocalizedText.NULL_VALUE,
@@ -10857,12 +13967,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 14499), new NodeId(0, 46), new NodeId(0, 14500).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 14499), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=14499"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14500").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14499), new NodeId(0, 47), new NodeId(0, 14477).expanded(), false));
+            NodeId.parse("i=14499"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=14499"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14477").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -10870,7 +13987,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16994),
+            NodeId.parse("i=16994"),
             new QualifiedName(0, "AddDataSetFolder"),
             new LocalizedText("", "AddDataSetFolder"),
             LocalizedText.NULL_VALUE,
@@ -10883,15 +14000,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16994), new NodeId(0, 46), new NodeId(0, 16995).expanded(), true));
+            NodeId.parse("i=16994"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16995").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16994), new NodeId(0, 46), new NodeId(0, 16996).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 16994), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=16994"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=16996").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16994), new NodeId(0, 47), new NodeId(0, 14477).expanded(), false));
+            NodeId.parse("i=16994"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=16994"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14477").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -10899,7 +14026,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 16997),
+            NodeId.parse("i=16997"),
             new QualifiedName(0, "RemoveDataSetFolder"),
             new LocalizedText("", "RemoveDataSetFolder"),
             LocalizedText.NULL_VALUE,
@@ -10912,12 +14039,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 16997), new NodeId(0, 46), new NodeId(0, 17007).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 16997), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=16997"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=17007").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 16997), new NodeId(0, 47), new NodeId(0, 14477).expanded(), false));
+            NodeId.parse("i=16997"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=16997"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14477").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -10925,7 +14059,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 19253),
+            NodeId.parse("i=19253"),
             new QualifiedName(0, "Reset"),
             new LocalizedText("", "Reset"),
             LocalizedText.NULL_VALUE,
@@ -10937,10 +14071,14 @@ class MethodNodeLoader {
             true,
             true);
     node.addReference(
-        new Reference(new NodeId(0, 19253), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+        new Reference(
+            NodeId.parse("i=19253"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
     node.addReference(
         new Reference(
-            new NodeId(0, 19253), new NodeId(0, 47), new NodeId(0, 19241).expanded(), false));
+            NodeId.parse("i=19253"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=19241").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -10948,7 +14086,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 17427),
+            NodeId.parse("i=17427"),
             new QualifiedName(0, "AddWriterGroup"),
             new LocalizedText("", "AddWriterGroup"),
             LocalizedText.NULL_VALUE,
@@ -10961,15 +14099,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 17427), new NodeId(0, 46), new NodeId(0, 17428).expanded(), true));
+            NodeId.parse("i=17427"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=17428").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 17427), new NodeId(0, 46), new NodeId(0, 17456).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 17427), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=17427"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=17456").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 17427), new NodeId(0, 47), new NodeId(0, 14209).expanded(), false));
+            NodeId.parse("i=17427"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=17427"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14209").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -10977,7 +14125,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 17465),
+            NodeId.parse("i=17465"),
             new QualifiedName(0, "AddReaderGroup"),
             new LocalizedText("", "AddReaderGroup"),
             LocalizedText.NULL_VALUE,
@@ -10990,15 +14138,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 17465), new NodeId(0, 46), new NodeId(0, 17507).expanded(), true));
+            NodeId.parse("i=17465"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=17507").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 17465), new NodeId(0, 46), new NodeId(0, 17508).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 17465), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=17465"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=17508").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 17465), new NodeId(0, 47), new NodeId(0, 14209).expanded(), false));
+            NodeId.parse("i=17465"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=17465"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14209").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -11006,7 +14164,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 14225),
+            NodeId.parse("i=14225"),
             new QualifiedName(0, "RemoveGroup"),
             new LocalizedText("", "RemoveGroup"),
             LocalizedText.NULL_VALUE,
@@ -11019,12 +14177,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 14225), new NodeId(0, 46), new NodeId(0, 14226).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 14225), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=14225"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14226").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14225), new NodeId(0, 47), new NodeId(0, 14209).expanded(), false));
+            NodeId.parse("i=14225"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=14225"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14209").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -11032,7 +14197,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 17824),
+            NodeId.parse("i=17824"),
             new QualifiedName(0, "Reset"),
             new LocalizedText("", "Reset"),
             LocalizedText.NULL_VALUE,
@@ -11044,10 +14209,14 @@ class MethodNodeLoader {
             true,
             true);
     node.addReference(
-        new Reference(new NodeId(0, 17824), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+        new Reference(
+            NodeId.parse("i=17824"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
     node.addReference(
         new Reference(
-            new NodeId(0, 17824), new NodeId(0, 47), new NodeId(0, 17812).expanded(), false));
+            NodeId.parse("i=17824"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=17812").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -11055,7 +14224,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 17969),
+            NodeId.parse("i=17969"),
             new QualifiedName(0, "AddDataSetWriter"),
             new LocalizedText("", "AddDataSetWriter"),
             LocalizedText.NULL_VALUE,
@@ -11068,15 +14237,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 17969), new NodeId(0, 46), new NodeId(0, 17976).expanded(), true));
+            NodeId.parse("i=17969"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=17976").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 17969), new NodeId(0, 46), new NodeId(0, 17987).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 17969), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=17969"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=17987").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 17969), new NodeId(0, 47), new NodeId(0, 17725).expanded(), false));
+            NodeId.parse("i=17969"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=17969"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=17725").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -11084,7 +14263,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 17992),
+            NodeId.parse("i=17992"),
             new QualifiedName(0, "RemoveDataSetWriter"),
             new LocalizedText("", "RemoveDataSetWriter"),
             LocalizedText.NULL_VALUE,
@@ -11097,12 +14276,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 17992), new NodeId(0, 46), new NodeId(0, 17993).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 17992), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=17992"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=17993").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 17992), new NodeId(0, 47), new NodeId(0, 17725).expanded(), false));
+            NodeId.parse("i=17992"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=17992"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=17725").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -11110,7 +14296,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 21027),
+            NodeId.parse("i=21027"),
             new QualifiedName(0, "Reset"),
             new LocalizedText("", "Reset"),
             LocalizedText.NULL_VALUE,
@@ -11122,10 +14308,14 @@ class MethodNodeLoader {
             true,
             true);
     node.addReference(
-        new Reference(new NodeId(0, 21027), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+        new Reference(
+            NodeId.parse("i=21027"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
     node.addReference(
         new Reference(
-            new NodeId(0, 21027), new NodeId(0, 47), new NodeId(0, 21015).expanded(), false));
+            NodeId.parse("i=21027"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=21015").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -11133,7 +14323,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 21082),
+            NodeId.parse("i=21082"),
             new QualifiedName(0, "AddDataSetReader"),
             new LocalizedText("", "AddDataSetReader"),
             LocalizedText.NULL_VALUE,
@@ -11146,15 +14336,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 21082), new NodeId(0, 46), new NodeId(0, 21083).expanded(), true));
+            NodeId.parse("i=21082"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=21083").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 21082), new NodeId(0, 46), new NodeId(0, 21084).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 21082), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=21082"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=21084").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 21082), new NodeId(0, 47), new NodeId(0, 17999).expanded(), false));
+            NodeId.parse("i=21082"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=21082"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=17999").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -11162,7 +14362,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 21085),
+            NodeId.parse("i=21085"),
             new QualifiedName(0, "RemoveDataSetReader"),
             new LocalizedText("", "RemoveDataSetReader"),
             LocalizedText.NULL_VALUE,
@@ -11175,12 +14375,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 21085), new NodeId(0, 46), new NodeId(0, 21086).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 21085), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=21085"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=21086").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 21085), new NodeId(0, 47), new NodeId(0, 17999).expanded(), false));
+            NodeId.parse("i=21085"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=21085"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=17999").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -11188,7 +14395,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 19562),
+            NodeId.parse("i=19562"),
             new QualifiedName(0, "Reset"),
             new LocalizedText("", "Reset"),
             LocalizedText.NULL_VALUE,
@@ -11200,10 +14407,14 @@ class MethodNodeLoader {
             true,
             true);
     node.addReference(
-        new Reference(new NodeId(0, 19562), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+        new Reference(
+            NodeId.parse("i=19562"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
     node.addReference(
         new Reference(
-            new NodeId(0, 19562), new NodeId(0, 47), new NodeId(0, 19550).expanded(), false));
+            NodeId.parse("i=19562"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=19550").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -11211,7 +14422,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 19621),
+            NodeId.parse("i=19621"),
             new QualifiedName(0, "Reset"),
             new LocalizedText("", "Reset"),
             LocalizedText.NULL_VALUE,
@@ -11223,10 +14434,14 @@ class MethodNodeLoader {
             true,
             true);
     node.addReference(
-        new Reference(new NodeId(0, 19621), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+        new Reference(
+            NodeId.parse("i=19621"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
     node.addReference(
         new Reference(
-            new NodeId(0, 19621), new NodeId(0, 47), new NodeId(0, 19609).expanded(), false));
+            NodeId.parse("i=19621"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=19609").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -11234,7 +14449,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 17386),
+            NodeId.parse("i=17386"),
             new QualifiedName(0, "CreateTargetVariables"),
             new LocalizedText("", "CreateTargetVariables"),
             LocalizedText.NULL_VALUE,
@@ -11247,15 +14462,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 17386), new NodeId(0, 46), new NodeId(0, 17387).expanded(), true));
+            NodeId.parse("i=17386"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=17387").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 17386), new NodeId(0, 46), new NodeId(0, 17388).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 17386), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=17386"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=17388").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 17386), new NodeId(0, 47), new NodeId(0, 15306).expanded(), false));
+            NodeId.parse("i=17386"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=17386"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15306").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -11263,7 +14488,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 17389),
+            NodeId.parse("i=17389"),
             new QualifiedName(0, "CreateDataSetMirror"),
             new LocalizedText("", "CreateDataSetMirror"),
             LocalizedText.NULL_VALUE,
@@ -11276,15 +14501,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 17389), new NodeId(0, 46), new NodeId(0, 17390).expanded(), true));
+            NodeId.parse("i=17389"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=17390").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 17389), new NodeId(0, 46), new NodeId(0, 17391).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 17389), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=17389"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=17391").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 17389), new NodeId(0, 47), new NodeId(0, 15306).expanded(), false));
+            NodeId.parse("i=17389"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=17389"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15306").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -11292,7 +14527,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15115),
+            NodeId.parse("i=15115"),
             new QualifiedName(0, "AddTargetVariables"),
             new LocalizedText("", "AddTargetVariables"),
             LocalizedText.NULL_VALUE,
@@ -11305,15 +14540,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15115), new NodeId(0, 46), new NodeId(0, 15116).expanded(), true));
+            NodeId.parse("i=15115"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15116").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15115), new NodeId(0, 46), new NodeId(0, 15117).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 15115), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=15115"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15117").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15115), new NodeId(0, 47), new NodeId(0, 15111).expanded(), false));
+            NodeId.parse("i=15115"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=15115"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15111").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -11321,7 +14566,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 15118),
+            NodeId.parse("i=15118"),
             new QualifiedName(0, "RemoveTargetVariables"),
             new LocalizedText("", "RemoveTargetVariables"),
             LocalizedText.NULL_VALUE,
@@ -11334,15 +14579,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 15118), new NodeId(0, 46), new NodeId(0, 15119).expanded(), true));
+            NodeId.parse("i=15118"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15119").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15118), new NodeId(0, 46), new NodeId(0, 15120).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 15118), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=15118"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15120").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15118), new NodeId(0, 47), new NodeId(0, 15111).expanded(), false));
+            NodeId.parse("i=15118"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=15118"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=15111").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -11350,7 +14605,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 23797),
+            NodeId.parse("i=23797"),
             new QualifiedName(0, "AddSubscribedDataSet"),
             new LocalizedText("", "AddSubscribedDataSet"),
             LocalizedText.NULL_VALUE,
@@ -11363,15 +14618,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 23797), new NodeId(0, 46), new NodeId(0, 23798).expanded(), true));
+            NodeId.parse("i=23797"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=23798").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 23797), new NodeId(0, 46), new NodeId(0, 23799).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 23797), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=23797"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=23799").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 23797), new NodeId(0, 47), new NodeId(0, 23796).expanded(), false));
+            NodeId.parse("i=23797"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=23797"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=23796").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -11379,7 +14644,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 23800),
+            NodeId.parse("i=23800"),
             new QualifiedName(0, "RemoveSubscribedDataSet"),
             new LocalizedText("", "RemoveSubscribedDataSet"),
             LocalizedText.NULL_VALUE,
@@ -11392,12 +14657,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 23800), new NodeId(0, 46), new NodeId(0, 23801).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 23800), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=23800"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=23801").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 23800), new NodeId(0, 47), new NodeId(0, 23796).expanded(), false));
+            NodeId.parse("i=23800"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=23800"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=23796").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -11405,7 +14677,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 23802),
+            NodeId.parse("i=23802"),
             new QualifiedName(0, "AddDataSetFolder"),
             new LocalizedText("", "AddDataSetFolder"),
             LocalizedText.NULL_VALUE,
@@ -11418,15 +14690,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 23802), new NodeId(0, 46), new NodeId(0, 23803).expanded(), true));
+            NodeId.parse("i=23802"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=23803").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 23802), new NodeId(0, 46), new NodeId(0, 23804).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 23802), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=23802"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=23804").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 23802), new NodeId(0, 47), new NodeId(0, 23796).expanded(), false));
+            NodeId.parse("i=23802"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=23802"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=23796").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -11434,7 +14716,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 23805),
+            NodeId.parse("i=23805"),
             new QualifiedName(0, "RemoveDataSetFolder"),
             new LocalizedText("", "RemoveDataSetFolder"),
             LocalizedText.NULL_VALUE,
@@ -11447,12 +14729,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 23805), new NodeId(0, 46), new NodeId(0, 23806).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 23805), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=23805"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=23806").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 23805), new NodeId(0, 47), new NodeId(0, 23796).expanded(), false));
+            NodeId.parse("i=23805"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=23805"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=23796").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -11460,7 +14749,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 23811),
+            NodeId.parse("i=23811"),
             new QualifiedName(0, "AddSubscribedDataSet"),
             new LocalizedText("", "AddSubscribedDataSet"),
             LocalizedText.NULL_VALUE,
@@ -11473,15 +14762,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 23811), new NodeId(0, 46), new NodeId(0, 23812).expanded(), true));
+            NodeId.parse("i=23811"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=23812").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 23811), new NodeId(0, 46), new NodeId(0, 23813).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 23811), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=23811"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=23813").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 23811), new NodeId(0, 47), new NodeId(0, 23795).expanded(), false));
+            NodeId.parse("i=23811"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=23811"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=23795").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -11489,7 +14788,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 23814),
+            NodeId.parse("i=23814"),
             new QualifiedName(0, "RemoveSubscribedDataSet"),
             new LocalizedText("", "RemoveSubscribedDataSet"),
             LocalizedText.NULL_VALUE,
@@ -11502,12 +14801,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 23814), new NodeId(0, 46), new NodeId(0, 23815).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 23814), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=23814"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=23815").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 23814), new NodeId(0, 47), new NodeId(0, 23795).expanded(), false));
+            NodeId.parse("i=23814"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=23814"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=23795").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -11515,7 +14821,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 23816),
+            NodeId.parse("i=23816"),
             new QualifiedName(0, "AddDataSetFolder"),
             new LocalizedText("", "AddDataSetFolder"),
             LocalizedText.NULL_VALUE,
@@ -11528,15 +14834,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 23816), new NodeId(0, 46), new NodeId(0, 23817).expanded(), true));
+            NodeId.parse("i=23816"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=23817").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 23816), new NodeId(0, 46), new NodeId(0, 23818).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 23816), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=23816"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=23818").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 23816), new NodeId(0, 47), new NodeId(0, 23795).expanded(), false));
+            NodeId.parse("i=23816"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=23816"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=23795").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -11544,7 +14860,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 23819),
+            NodeId.parse("i=23819"),
             new QualifiedName(0, "RemoveDataSetFolder"),
             new LocalizedText("", "RemoveDataSetFolder"),
             LocalizedText.NULL_VALUE,
@@ -11557,12 +14873,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 23819), new NodeId(0, 46), new NodeId(0, 23820).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 23819), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=23819"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=23820").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 23819), new NodeId(0, 47), new NodeId(0, 23795).expanded(), false));
+            NodeId.parse("i=23819"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=23819"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=23795").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -11570,7 +14893,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 14645),
+            NodeId.parse("i=14645"),
             new QualifiedName(0, "Enable"),
             new LocalizedText("", "Enable"),
             LocalizedText.NULL_VALUE,
@@ -11582,10 +14905,14 @@ class MethodNodeLoader {
             true,
             true);
     node.addReference(
-        new Reference(new NodeId(0, 14645), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+        new Reference(
+            NodeId.parse("i=14645"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14645), new NodeId(0, 47), new NodeId(0, 14643).expanded(), false));
+            NodeId.parse("i=14645"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14643").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -11593,7 +14920,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 14646),
+            NodeId.parse("i=14646"),
             new QualifiedName(0, "Disable"),
             new LocalizedText("", "Disable"),
             LocalizedText.NULL_VALUE,
@@ -11605,10 +14932,14 @@ class MethodNodeLoader {
             true,
             true);
     node.addReference(
-        new Reference(new NodeId(0, 14646), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+        new Reference(
+            NodeId.parse("i=14646"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14646), new NodeId(0, 47), new NodeId(0, 14643).expanded(), false));
+            NodeId.parse("i=14646"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=14643").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -11616,7 +14947,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 19689),
+            NodeId.parse("i=19689"),
             new QualifiedName(0, "Reset"),
             new LocalizedText("", "Reset"),
             LocalizedText.NULL_VALUE,
@@ -11628,10 +14959,14 @@ class MethodNodeLoader {
             true,
             true);
     node.addReference(
-        new Reference(new NodeId(0, 19689), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+        new Reference(
+            NodeId.parse("i=19689"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
     node.addReference(
         new Reference(
-            new NodeId(0, 19689), new NodeId(0, 47), new NodeId(0, 19677).expanded(), false));
+            NodeId.parse("i=19689"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=19677").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -11639,7 +14974,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 23459),
+            NodeId.parse("i=23459"),
             new QualifiedName(0, "FindAlias"),
             new LocalizedText("", "FindAlias"),
             LocalizedText.NULL_VALUE,
@@ -11652,15 +14987,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 23459), new NodeId(0, 46), new NodeId(0, 23460).expanded(), true));
+            NodeId.parse("i=23459"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=23460").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 23459), new NodeId(0, 46), new NodeId(0, 23461).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 23459), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=23459"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=23461").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 23459), new NodeId(0, 47), new NodeId(0, 23458).expanded(), false));
+            NodeId.parse("i=23459"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=23459"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=23458").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -11668,7 +15013,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 23930),
+            NodeId.parse("i=23930"),
             new QualifiedName(0, "FindAliasVerbose"),
             new LocalizedText("", "FindAliasVerbose"),
             LocalizedText.NULL_VALUE,
@@ -11681,15 +15026,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 23930), new NodeId(0, 46), new NodeId(0, 23931).expanded(), true));
+            NodeId.parse("i=23930"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=23931").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 23930), new NodeId(0, 46), new NodeId(0, 23935).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 23930), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=23930"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=23935").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 23930), new NodeId(0, 47), new NodeId(0, 23458).expanded(), false));
+            NodeId.parse("i=23930"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=23930"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=23458").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -11697,7 +15052,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 23936),
+            NodeId.parse("i=23936"),
             new QualifiedName(0, "AddAliasesToCategory"),
             new LocalizedText("", "AddAliasesToCategory"),
             LocalizedText.NULL_VALUE,
@@ -11710,15 +15065,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 23936), new NodeId(0, 46), new NodeId(0, 23937).expanded(), true));
+            NodeId.parse("i=23936"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=23937").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 23936), new NodeId(0, 46), new NodeId(0, 23959).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 23936), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=23936"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=23959").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 23936), new NodeId(0, 47), new NodeId(0, 23458).expanded(), false));
+            NodeId.parse("i=23936"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=23936"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=23458").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -11726,7 +15091,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 23960),
+            NodeId.parse("i=23960"),
             new QualifiedName(0, "DeleteAliasesFromCategory"),
             new LocalizedText("", "DeleteAliasesFromCategory"),
             LocalizedText.NULL_VALUE,
@@ -11739,15 +15104,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 23960), new NodeId(0, 46), new NodeId(0, 23961).expanded(), true));
+            NodeId.parse("i=23960"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=23961").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 23960), new NodeId(0, 46), new NodeId(0, 23962).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 23960), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=23960"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=23962").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 23960), new NodeId(0, 47), new NodeId(0, 23458).expanded(), false));
+            NodeId.parse("i=23960"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=23960"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=23458").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -11755,7 +15130,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 23462),
+            NodeId.parse("i=23462"),
             new QualifiedName(0, "FindAlias"),
             new LocalizedText("", "FindAlias"),
             LocalizedText.NULL_VALUE,
@@ -11768,15 +15143,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 23462), new NodeId(0, 46), new NodeId(0, 23463).expanded(), true));
+            NodeId.parse("i=23462"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=23463").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 23462), new NodeId(0, 46), new NodeId(0, 23464).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 23462), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=23462"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=23464").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 23462), new NodeId(0, 47), new NodeId(0, 23456).expanded(), false));
+            NodeId.parse("i=23462"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=23462"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=23456").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -11784,7 +15169,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 23963),
+            NodeId.parse("i=23963"),
             new QualifiedName(0, "FindAliasVerbose"),
             new LocalizedText("", "FindAliasVerbose"),
             LocalizedText.NULL_VALUE,
@@ -11797,15 +15182,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 23963), new NodeId(0, 46), new NodeId(0, 23964).expanded(), true));
+            NodeId.parse("i=23963"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=23964").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 23963), new NodeId(0, 46), new NodeId(0, 23971).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 23963), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=23963"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=23971").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 23963), new NodeId(0, 47), new NodeId(0, 23456).expanded(), false));
+            NodeId.parse("i=23963"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=23963"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=23456").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -11813,7 +15208,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 23972),
+            NodeId.parse("i=23972"),
             new QualifiedName(0, "AddAliasesToCategory"),
             new LocalizedText("", "AddAliasesToCategory"),
             LocalizedText.NULL_VALUE,
@@ -11826,15 +15221,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 23972), new NodeId(0, 46), new NodeId(0, 23973).expanded(), true));
+            NodeId.parse("i=23972"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=23973").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 23972), new NodeId(0, 46), new NodeId(0, 23974).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 23972), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=23972"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=23974").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 23972), new NodeId(0, 47), new NodeId(0, 23456).expanded(), false));
+            NodeId.parse("i=23972"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=23972"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=23456").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -11842,7 +15247,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 23975),
+            NodeId.parse("i=23975"),
             new QualifiedName(0, "DeleteAliasesFromCategory"),
             new LocalizedText("", "DeleteAliasesFromCategory"),
             LocalizedText.NULL_VALUE,
@@ -11855,15 +15260,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 23975), new NodeId(0, 46), new NodeId(0, 23976).expanded(), true));
+            NodeId.parse("i=23975"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=23976").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 23975), new NodeId(0, 46), new NodeId(0, 23986).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 23975), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=23975"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=23986").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 23975), new NodeId(0, 47), new NodeId(0, 23456).expanded(), false));
+            NodeId.parse("i=23975"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=23975"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=23456").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -11871,7 +15286,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 23476),
+            NodeId.parse("i=23476"),
             new QualifiedName(0, "FindAlias"),
             new LocalizedText("", "FindAlias"),
             LocalizedText.NULL_VALUE,
@@ -11884,13 +15299,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 23476), new NodeId(0, 46), new NodeId(0, 23477).expanded(), true));
+            NodeId.parse("i=23476"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=23477").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 23476), new NodeId(0, 46), new NodeId(0, 23478).expanded(), true));
+            NodeId.parse("i=23476"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=23478").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 23476), new NodeId(0, 47), new NodeId(0, 23470).expanded(), false));
+            NodeId.parse("i=23476"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=23470").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -11898,7 +15322,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 23485),
+            NodeId.parse("i=23485"),
             new QualifiedName(0, "FindAlias"),
             new LocalizedText("", "FindAlias"),
             LocalizedText.NULL_VALUE,
@@ -11911,13 +15335,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 23485), new NodeId(0, 46), new NodeId(0, 23486).expanded(), true));
+            NodeId.parse("i=23485"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=23486").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 23485), new NodeId(0, 46), new NodeId(0, 23487).expanded(), true));
+            NodeId.parse("i=23485"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=23487").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 23485), new NodeId(0, 47), new NodeId(0, 23479).expanded(), false));
+            NodeId.parse("i=23485"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=23479").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -11925,7 +15358,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 23494),
+            NodeId.parse("i=23494"),
             new QualifiedName(0, "FindAlias"),
             new LocalizedText("", "FindAlias"),
             LocalizedText.NULL_VALUE,
@@ -11938,13 +15371,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 23494), new NodeId(0, 46), new NodeId(0, 23495).expanded(), true));
+            NodeId.parse("i=23494"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=23495").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 23494), new NodeId(0, 46), new NodeId(0, 23496).expanded(), true));
+            NodeId.parse("i=23494"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=23496").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 23494), new NodeId(0, 47), new NodeId(0, 23488).expanded(), false));
+            NodeId.parse("i=23494"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=23488").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -11952,7 +15394,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 24269),
+            NodeId.parse("i=24269"),
             new QualifiedName(0, "AddUser"),
             new LocalizedText("", "AddUser"),
             LocalizedText.NULL_VALUE,
@@ -11965,12 +15407,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 24269), new NodeId(0, 46), new NodeId(0, 24270).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 24269), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=24269"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=24270").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 24269), new NodeId(0, 47), new NodeId(0, 24264).expanded(), false));
+            NodeId.parse("i=24269"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=24269"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=24264").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -11978,7 +15427,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 24271),
+            NodeId.parse("i=24271"),
             new QualifiedName(0, "ModifyUser"),
             new LocalizedText("", "ModifyUser"),
             LocalizedText.NULL_VALUE,
@@ -11991,12 +15440,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 24271), new NodeId(0, 46), new NodeId(0, 24272).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 24271), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=24271"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=24272").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 24271), new NodeId(0, 47), new NodeId(0, 24264).expanded(), false));
+            NodeId.parse("i=24271"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=24271"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=24264").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -12004,7 +15460,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 24273),
+            NodeId.parse("i=24273"),
             new QualifiedName(0, "RemoveUser"),
             new LocalizedText("", "RemoveUser"),
             LocalizedText.NULL_VALUE,
@@ -12017,12 +15473,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 24273), new NodeId(0, 46), new NodeId(0, 24274).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 24273), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=24273"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=24274").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 24273), new NodeId(0, 47), new NodeId(0, 24264).expanded(), false));
+            NodeId.parse("i=24273"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=24273"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=24264").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -12030,7 +15493,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 24275),
+            NodeId.parse("i=24275"),
             new QualifiedName(0, "ChangePassword"),
             new LocalizedText("", "ChangePassword"),
             LocalizedText.NULL_VALUE,
@@ -12043,12 +15506,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 24275), new NodeId(0, 46), new NodeId(0, 24276).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 24275), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=24275"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=24276").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 24275), new NodeId(0, 47), new NodeId(0, 24264).expanded(), false));
+            NodeId.parse("i=24275"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=24275"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=24264").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -12056,7 +15526,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 24304),
+            NodeId.parse("i=24304"),
             new QualifiedName(0, "AddUser"),
             new LocalizedText("", "AddUser"),
             LocalizedText.NULL_VALUE,
@@ -12064,7 +15534,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -12072,10 +15542,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 24304), new NodeId(0, 46), new NodeId(0, 24305).expanded(), true));
+            NodeId.parse("i=24304"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=24305").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 24304), new NodeId(0, 47), new NodeId(0, 24290).expanded(), false));
+            NodeId.parse("i=24304"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=24290").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -12083,7 +15559,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 24306),
+            NodeId.parse("i=24306"),
             new QualifiedName(0, "ModifyUser"),
             new LocalizedText("", "ModifyUser"),
             LocalizedText.NULL_VALUE,
@@ -12091,7 +15567,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -12099,10 +15575,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 24306), new NodeId(0, 46), new NodeId(0, 24307).expanded(), true));
+            NodeId.parse("i=24306"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=24307").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 24306), new NodeId(0, 47), new NodeId(0, 24290).expanded(), false));
+            NodeId.parse("i=24306"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=24290").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -12110,7 +15592,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 24308),
+            NodeId.parse("i=24308"),
             new QualifiedName(0, "RemoveUser"),
             new LocalizedText("", "RemoveUser"),
             LocalizedText.NULL_VALUE,
@@ -12118,7 +15600,7 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -12126,10 +15608,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 24308), new NodeId(0, 46), new NodeId(0, 24309).expanded(), true));
+            NodeId.parse("i=24308"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=24309").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 24308), new NodeId(0, 47), new NodeId(0, 24290).expanded(), false));
+            NodeId.parse("i=24308"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=24290").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -12137,7 +15625,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 24310),
+            NodeId.parse("i=24310"),
             new QualifiedName(0, "ChangePassword"),
             new LocalizedText("", "ChangePassword"),
             LocalizedText.NULL_VALUE,
@@ -12145,9 +15633,9 @@ class MethodNodeLoader {
             UInteger.valueOf(0),
             new RolePermissionType[] {
               new RolePermissionType(
-                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(4097))),
+                  NodeId.parse("i=15644"), new PermissionType(UInteger.valueOf(4097))),
               new RolePermissionType(
-                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+                  NodeId.parse("i=15704"), new PermissionType(UInteger.valueOf(61455)))
             },
             null,
             new AccessRestrictionType(UShort.valueOf(3)),
@@ -12155,10 +15643,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 24310), new NodeId(0, 46), new NodeId(0, 24311).expanded(), true));
+            NodeId.parse("i=24310"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=24311").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 24310), new NodeId(0, 47), new NodeId(0, 24290).expanded(), false));
+            NodeId.parse("i=24310"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=24290").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -12166,7 +15660,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 26873),
+            NodeId.parse("i=26873"),
             new QualifiedName(0, "RequestTickets"),
             new LocalizedText("", "RequestTickets"),
             LocalizedText.NULL_VALUE,
@@ -12179,12 +15673,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 26873), new NodeId(0, 46), new NodeId(0, 26874).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 26873), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=26873"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=26874").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 26873), new NodeId(0, 47), new NodeId(0, 26871).expanded(), false));
+            NodeId.parse("i=26873"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=26873"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=26871").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -12192,7 +15693,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 26875),
+            NodeId.parse("i=26875"),
             new QualifiedName(0, "SetRegistrarEndpoints"),
             new LocalizedText("", "SetRegistrarEndpoints"),
             LocalizedText.NULL_VALUE,
@@ -12205,12 +15706,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 26875), new NodeId(0, 46), new NodeId(0, 26876).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 26875), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=26875"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=26876").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 26875), new NodeId(0, 47), new NodeId(0, 26871).expanded(), false));
+            NodeId.parse("i=26875"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=26875"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=26871").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -12218,7 +15726,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 28005),
+            NodeId.parse("i=28005"),
             new QualifiedName(0, "UpdateCertificate"),
             new LocalizedText("", "UpdateCertificate"),
             LocalizedText.NULL_VALUE,
@@ -12231,15 +15739,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 28005), new NodeId(0, 46), new NodeId(0, 28006).expanded(), true));
+            NodeId.parse("i=28005"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=28006").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 28005), new NodeId(0, 46), new NodeId(0, 28007).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 28005), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=28005"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=28007").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 28005), new NodeId(0, 47), new NodeId(0, 26878).expanded(), false));
+            NodeId.parse("i=28005"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=28005"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=26878").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -12247,7 +15765,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 28008),
+            NodeId.parse("i=28008"),
             new QualifiedName(0, "ApplyChanges"),
             new LocalizedText("", "ApplyChanges"),
             LocalizedText.NULL_VALUE,
@@ -12259,10 +15777,14 @@ class MethodNodeLoader {
             true,
             true);
     node.addReference(
-        new Reference(new NodeId(0, 28008), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+        new Reference(
+            NodeId.parse("i=28008"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
     node.addReference(
         new Reference(
-            new NodeId(0, 28008), new NodeId(0, 47), new NodeId(0, 26878).expanded(), false));
+            NodeId.parse("i=28008"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=26878").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -12270,7 +15792,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 28010),
+            NodeId.parse("i=28010"),
             new QualifiedName(0, "CreateSigningRequest"),
             new LocalizedText("", "CreateSigningRequest"),
             LocalizedText.NULL_VALUE,
@@ -12283,15 +15805,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 28010), new NodeId(0, 46), new NodeId(0, 28011).expanded(), true));
+            NodeId.parse("i=28010"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=28011").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 28010), new NodeId(0, 46), new NodeId(0, 28012).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 28010), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=28010"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=28012").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 28010), new NodeId(0, 47), new NodeId(0, 26878).expanded(), false));
+            NodeId.parse("i=28010"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=28010"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=26878").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -12299,7 +15831,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 28013),
+            NodeId.parse("i=28013"),
             new QualifiedName(0, "GetRejectedList"),
             new LocalizedText("", "GetRejectedList"),
             LocalizedText.NULL_VALUE,
@@ -12312,12 +15844,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 28013), new NodeId(0, 46), new NodeId(0, 28014).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 28013), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=28013"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=28014").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 28013), new NodeId(0, 47), new NodeId(0, 26878).expanded(), false));
+            NodeId.parse("i=28013"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=28013"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=26878").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -12325,7 +15864,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 26889),
+            NodeId.parse("i=26889"),
             new QualifiedName(0, "Open"),
             new LocalizedText("", "Open"),
             LocalizedText.NULL_VALUE,
@@ -12338,15 +15877,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 26889), new NodeId(0, 46), new NodeId(0, 26890).expanded(), true));
+            NodeId.parse("i=26889"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=26890").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 26889), new NodeId(0, 46), new NodeId(0, 26891).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 26889), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=26889"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=26891").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 26889), new NodeId(0, 47), new NodeId(0, 26881).expanded(), false));
+            NodeId.parse("i=26889"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=26889"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=26881").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -12354,7 +15903,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 26892),
+            NodeId.parse("i=26892"),
             new QualifiedName(0, "Close"),
             new LocalizedText("", "Close"),
             LocalizedText.NULL_VALUE,
@@ -12367,12 +15916,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 26892), new NodeId(0, 46), new NodeId(0, 26893).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 26892), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=26892"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=26893").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 26892), new NodeId(0, 47), new NodeId(0, 26881).expanded(), false));
+            NodeId.parse("i=26892"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=26892"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=26881").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -12380,7 +15936,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 26894),
+            NodeId.parse("i=26894"),
             new QualifiedName(0, "Read"),
             new LocalizedText("", "Read"),
             LocalizedText.NULL_VALUE,
@@ -12393,15 +15949,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 26894), new NodeId(0, 46), new NodeId(0, 26895).expanded(), true));
+            NodeId.parse("i=26894"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=26895").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 26894), new NodeId(0, 46), new NodeId(0, 26896).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 26894), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=26894"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=26896").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 26894), new NodeId(0, 47), new NodeId(0, 26881).expanded(), false));
+            NodeId.parse("i=26894"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=26894"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=26881").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -12409,7 +15975,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 26897),
+            NodeId.parse("i=26897"),
             new QualifiedName(0, "Write"),
             new LocalizedText("", "Write"),
             LocalizedText.NULL_VALUE,
@@ -12422,12 +15988,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 26897), new NodeId(0, 46), new NodeId(0, 26898).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 26897), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=26897"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=26898").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 26897), new NodeId(0, 47), new NodeId(0, 26881).expanded(), false));
+            NodeId.parse("i=26897"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=26897"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=26881").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -12435,7 +16008,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 26899),
+            NodeId.parse("i=26899"),
             new QualifiedName(0, "GetPosition"),
             new LocalizedText("", "GetPosition"),
             LocalizedText.NULL_VALUE,
@@ -12448,15 +16021,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 26899), new NodeId(0, 46), new NodeId(0, 26900).expanded(), true));
+            NodeId.parse("i=26899"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=26900").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 26899), new NodeId(0, 46), new NodeId(0, 26901).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 26899), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=26899"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=26901").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 26899), new NodeId(0, 47), new NodeId(0, 26881).expanded(), false));
+            NodeId.parse("i=26899"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=26899"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=26881").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -12464,7 +16047,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 26902),
+            NodeId.parse("i=26902"),
             new QualifiedName(0, "SetPosition"),
             new LocalizedText("", "SetPosition"),
             LocalizedText.NULL_VALUE,
@@ -12477,12 +16060,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 26902), new NodeId(0, 46), new NodeId(0, 26903).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 26902), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=26902"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=26903").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 26902), new NodeId(0, 47), new NodeId(0, 26881).expanded(), false));
+            NodeId.parse("i=26902"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=26902"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=26881").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -12490,7 +16080,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 26907),
+            NodeId.parse("i=26907"),
             new QualifiedName(0, "OpenWithMasks"),
             new LocalizedText("", "OpenWithMasks"),
             LocalizedText.NULL_VALUE,
@@ -12503,15 +16093,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 26907), new NodeId(0, 46), new NodeId(0, 26908).expanded(), true));
+            NodeId.parse("i=26907"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=26908").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 26907), new NodeId(0, 46), new NodeId(0, 26909).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 26907), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=26907"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=26909").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 26907), new NodeId(0, 47), new NodeId(0, 26881).expanded(), false));
+            NodeId.parse("i=26907"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=26907"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=26881").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -12519,7 +16119,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 26910),
+            NodeId.parse("i=26910"),
             new QualifiedName(0, "CloseAndUpdate"),
             new LocalizedText("", "CloseAndUpdate"),
             LocalizedText.NULL_VALUE,
@@ -12532,15 +16132,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 26910), new NodeId(0, 46), new NodeId(0, 26911).expanded(), true));
+            NodeId.parse("i=26910"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=26911").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 26910), new NodeId(0, 46), new NodeId(0, 26912).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 26910), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=26910"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=26912").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 26910), new NodeId(0, 47), new NodeId(0, 26881).expanded(), false));
+            NodeId.parse("i=26910"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=26910"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=26881").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -12548,7 +16158,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 26913),
+            NodeId.parse("i=26913"),
             new QualifiedName(0, "AddCertificate"),
             new LocalizedText("", "AddCertificate"),
             LocalizedText.NULL_VALUE,
@@ -12561,12 +16171,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 26913), new NodeId(0, 46), new NodeId(0, 26914).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 26913), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=26913"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=26914").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 26913), new NodeId(0, 47), new NodeId(0, 26881).expanded(), false));
+            NodeId.parse("i=26913"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=26913"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=26881").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -12574,7 +16191,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 26915),
+            NodeId.parse("i=26915"),
             new QualifiedName(0, "RemoveCertificate"),
             new LocalizedText("", "RemoveCertificate"),
             LocalizedText.NULL_VALUE,
@@ -12587,12 +16204,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 26915), new NodeId(0, 46), new NodeId(0, 26916).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 26915), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=26915"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=26916").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 26915), new NodeId(0, 47), new NodeId(0, 26881).expanded(), false));
+            NodeId.parse("i=26915"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=26915"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=26881").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -12600,7 +16224,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 29880),
+            NodeId.parse("i=29880"),
             new QualifiedName(0, "RequestTickets"),
             new LocalizedText("", "RequestTickets"),
             LocalizedText.NULL_VALUE,
@@ -12613,10 +16237,16 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 29880), new NodeId(0, 46), new NodeId(0, 29881).expanded(), true));
+            NodeId.parse("i=29880"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=29881").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 29880), new NodeId(0, 47), new NodeId(0, 29878).expanded(), false));
+            NodeId.parse("i=29880"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=29878").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -12624,7 +16254,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25229),
+            NodeId.parse("i=25229"),
             new QualifiedName(0, "AddPriorityMappingEntry"),
             new LocalizedText("", "AddPriorityMappingEntry"),
             LocalizedText.NULL_VALUE,
@@ -12637,12 +16267,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25229), new NodeId(0, 46), new NodeId(0, 25230).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 25229), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=25229"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25230").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25229), new NodeId(0, 47), new NodeId(0, 25227).expanded(), false));
+            NodeId.parse("i=25229"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=25229"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25227").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -12650,7 +16287,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 25231),
+            NodeId.parse("i=25231"),
             new QualifiedName(0, "DeletePriorityMappingEntry"),
             new LocalizedText("", "DeletePriorityMappingEntry"),
             LocalizedText.NULL_VALUE,
@@ -12663,12 +16300,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 25231), new NodeId(0, 46), new NodeId(0, 25232).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 25231), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=25231"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25232").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 25231), new NodeId(0, 47), new NodeId(0, 25227).expanded(), false));
+            NodeId.parse("i=25231"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=25231"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=25227").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -12676,7 +16320,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 19839),
+            NodeId.parse("i=19839"),
             new QualifiedName(0, "ConfigureSerialization"),
             new LocalizedText("", "ConfigureSerialization"),
             LocalizedText.NULL_VALUE,
@@ -12689,15 +16333,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 19839), new NodeId(0, 46), new NodeId(0, 19840).expanded(), true));
+            NodeId.parse("i=19839"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=19840").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 19839), new NodeId(0, 46), new NodeId(0, 19841).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 19839), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=19839"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=19841").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 19839), new NodeId(0, 47), new NodeId(0, 19824).expanded(), false));
+            NodeId.parse("i=19839"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=19839"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=19824").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -12705,7 +16359,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 19353),
+            NodeId.parse("i=19353"),
             new QualifiedName(0, "GetRecords"),
             new LocalizedText("", "GetRecords"),
             LocalizedText.NULL_VALUE,
@@ -12718,15 +16372,25 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 19353), new NodeId(0, 46), new NodeId(0, 19354).expanded(), true));
+            NodeId.parse("i=19353"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=19354").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 19353), new NodeId(0, 46), new NodeId(0, 19355).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 19353), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+            NodeId.parse("i=19353"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=19355").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 19353), new NodeId(0, 47), new NodeId(0, 19352).expanded(), false));
+            NodeId.parse("i=19353"), NodeId.parse("i=37"), NodeId.parse("i=78").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=19353"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=19352").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -12734,7 +16398,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 24372),
+            NodeId.parse("i=24372"),
             new QualifiedName(0, "ReleaseContinuationPoint"),
             new LocalizedText("", "ReleaseContinuationPoint"),
             LocalizedText.NULL_VALUE,
@@ -12747,12 +16411,19 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 24372), new NodeId(0, 46), new NodeId(0, 24373).expanded(), true));
-    node.addReference(
-        new Reference(new NodeId(0, 24372), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+            NodeId.parse("i=24372"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=24373").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 24372), new NodeId(0, 47), new NodeId(0, 19352).expanded(), false));
+            NodeId.parse("i=24372"), NodeId.parse("i=37"), NodeId.parse("i=80").expanded(), true));
+    node.addReference(
+        new Reference(
+            NodeId.parse("i=24372"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=19352").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -12760,7 +16431,7 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
-            new NodeId(0, 19373),
+            NodeId.parse("i=19373"),
             new QualifiedName(0, "GetRecords"),
             new LocalizedText("", "GetRecords"),
             LocalizedText.NULL_VALUE,
@@ -12773,13 +16444,22 @@ class MethodNodeLoader {
             true);
     node.addReference(
         new Reference(
-            new NodeId(0, 19373), new NodeId(0, 46), new NodeId(0, 19374).expanded(), true));
+            NodeId.parse("i=19373"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=19374").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 19373), new NodeId(0, 46), new NodeId(0, 19375).expanded(), true));
+            NodeId.parse("i=19373"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=19375").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 19373), new NodeId(0, 47), new NodeId(0, 19372).expanded(), false));
+            NodeId.parse("i=19373"),
+            NodeId.parse("i=47"),
+            NodeId.parse("i=19372").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 

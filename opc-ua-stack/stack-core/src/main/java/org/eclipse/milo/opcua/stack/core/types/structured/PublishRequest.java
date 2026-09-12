@@ -112,14 +112,14 @@ public class PublishRequest extends Structure implements UaRequestMessageType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 826),
-        new NodeId(0, 22),
+        NodeId.parse("i=826"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "RequestHeader",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 389),
+              NodeId.parse("i=389"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -127,7 +127,7 @@ public class PublishRequest extends Structure implements UaRequestMessageType {
           new StructureField(
               "SubscriptionAcknowledgements",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 821),
+              NodeId.parse("i=821"),
               1,
               null,
               UInteger.valueOf(0),

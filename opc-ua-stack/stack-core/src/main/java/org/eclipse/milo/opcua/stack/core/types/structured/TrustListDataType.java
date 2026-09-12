@@ -144,14 +144,14 @@ public class TrustListDataType extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 12680),
-        new NodeId(0, 22),
+        NodeId.parse("i=12680"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "SpecifiedLists",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -159,7 +159,7 @@ public class TrustListDataType extends Structure implements UaStructuredType {
           new StructureField(
               "TrustedCertificates",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15),
+              NodeId.parse("i=15"),
               1,
               null,
               UInteger.valueOf(0),
@@ -167,7 +167,7 @@ public class TrustListDataType extends Structure implements UaStructuredType {
           new StructureField(
               "TrustedCrls",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15),
+              NodeId.parse("i=15"),
               1,
               null,
               UInteger.valueOf(0),
@@ -175,7 +175,7 @@ public class TrustListDataType extends Structure implements UaStructuredType {
           new StructureField(
               "IssuerCertificates",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15),
+              NodeId.parse("i=15"),
               1,
               null,
               UInteger.valueOf(0),
@@ -183,7 +183,7 @@ public class TrustListDataType extends Structure implements UaStructuredType {
           new StructureField(
               "IssuerCrls",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15),
+              NodeId.parse("i=15"),
               1,
               null,
               UInteger.valueOf(0),

@@ -200,14 +200,14 @@ public class CreateSessionResponse extends Structure implements UaResponseMessag
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 464),
-        new NodeId(0, 22),
+        NodeId.parse("i=464"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "ResponseHeader",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 392),
+              NodeId.parse("i=392"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -215,7 +215,7 @@ public class CreateSessionResponse extends Structure implements UaResponseMessag
           new StructureField(
               "SessionId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -223,7 +223,7 @@ public class CreateSessionResponse extends Structure implements UaResponseMessag
           new StructureField(
               "AuthenticationToken",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 388),
+              NodeId.parse("i=388"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -231,7 +231,7 @@ public class CreateSessionResponse extends Structure implements UaResponseMessag
           new StructureField(
               "RevisedSessionTimeout",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 290),
+              NodeId.parse("i=290"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -239,7 +239,7 @@ public class CreateSessionResponse extends Structure implements UaResponseMessag
           new StructureField(
               "ServerNonce",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15),
+              NodeId.parse("i=15"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -247,7 +247,7 @@ public class CreateSessionResponse extends Structure implements UaResponseMessag
           new StructureField(
               "ServerCertificate",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 311),
+              NodeId.parse("i=311"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -255,7 +255,7 @@ public class CreateSessionResponse extends Structure implements UaResponseMessag
           new StructureField(
               "ServerEndpoints",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 312),
+              NodeId.parse("i=312"),
               1,
               null,
               UInteger.valueOf(0),
@@ -263,7 +263,7 @@ public class CreateSessionResponse extends Structure implements UaResponseMessag
           new StructureField(
               "ServerSoftwareCertificates",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 344),
+              NodeId.parse("i=344"),
               1,
               null,
               UInteger.valueOf(0),
@@ -271,7 +271,7 @@ public class CreateSessionResponse extends Structure implements UaResponseMessag
           new StructureField(
               "ServerSignature",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 456),
+              NodeId.parse("i=456"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -279,7 +279,7 @@ public class CreateSessionResponse extends Structure implements UaResponseMessag
           new StructureField(
               "MaxRequestMessageSize",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),

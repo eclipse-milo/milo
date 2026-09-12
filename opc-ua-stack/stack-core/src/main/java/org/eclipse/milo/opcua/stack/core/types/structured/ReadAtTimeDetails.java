@@ -109,14 +109,14 @@ public class ReadAtTimeDetails extends HistoryReadDetails implements UaStructure
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 655),
-        new NodeId(0, 641),
+        NodeId.parse("i=655"),
+        NodeId.parse("i=641"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "ReqTimes",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 294),
+              NodeId.parse("i=294"),
               1,
               null,
               UInteger.valueOf(0),
@@ -124,7 +124,7 @@ public class ReadAtTimeDetails extends HistoryReadDetails implements UaStructure
           new StructureField(
               "UseSimpleBounds",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),

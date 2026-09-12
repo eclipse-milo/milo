@@ -27,11 +27,8 @@ import org.eclipse.milo.opcua.sdk.server.items.DataItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredDataItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredItem;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
-import org.eclipse.milo.opcua.sdk.server.methods.Out;
-import org.eclipse.milo.opcua.sdk.server.model.objects.ConditionType;
 import org.eclipse.milo.opcua.sdk.server.model.objects.OperationLimitsTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ServerCapabilitiesTypeNode;
-import org.eclipse.milo.opcua.sdk.server.model.objects.ServerType;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ServerTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.ServerStatusTypeNode;
 import org.eclipse.milo.opcua.sdk.server.namespaces.loader.NodeLoader;
@@ -53,6 +50,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.RedundancySupport;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ServerState;
+import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.types.structured.BuildInfo;
 import org.eclipse.milo.opcua.stack.core.types.structured.ServerStatusDataType;
 import org.eclipse.milo.opcua.stack.core.util.Namespaces;
@@ -321,7 +319,7 @@ public class OpcUaNamespace extends ManagedNamespaceWithLifecycle {
     methodNode.bindInvocationHandler(f.apply(methodNode));
   }
 
-  private static class ConditionRefreshMethodImpl extends ConditionType.ConditionRefreshMethod {
+  private static class ConditionRefreshMethodImpl extends AbstractMethodInvocationHandler {
 
     private final OpcUaServer server;
 
@@ -332,15 +330,36 @@ public class OpcUaNamespace extends ManagedNamespaceWithLifecycle {
     }
 
     @Override
-    protected void invoke(InvocationContext context, UInteger subscriptionId) throws UaException {
+    public Argument[] getInputArguments() {
+      return new Argument[] {
+        new Argument(
+            "SubscriptionId",
+            NodeIds.IntegerId,
+            -1,
+            null,
+            new LocalizedText("", "The identifier for the subscription to refresh."))
+      };
+    }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return new Argument[0];
+    }
+
+    @Override
+    protected Variant[] invoke(InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      UInteger subscriptionId = (UInteger) inputValues[0].value();
+
       Session session =
           context.getSession().orElseThrow(() -> new UaException(StatusCodes.Bad_UserAccessDenied));
 
       server.getConditionManager().conditionRefresh(session, subscriptionId);
+      return new Variant[0];
     }
   }
 
-  private static class ConditionRefresh2MethodImpl extends ConditionType.ConditionRefresh2Method {
+  private static class ConditionRefresh2MethodImpl extends AbstractMethodInvocationHandler {
 
     private final OpcUaServer server;
 
@@ -351,18 +370,43 @@ public class OpcUaNamespace extends ManagedNamespaceWithLifecycle {
     }
 
     @Override
-    protected void invoke(
-        InvocationContext context, UInteger subscriptionId, UInteger monitoredItemId)
+    public Argument[] getInputArguments() {
+      return new Argument[] {
+        new Argument(
+            "SubscriptionId",
+            NodeIds.IntegerId,
+            -1,
+            null,
+            new LocalizedText("", "The identifier for the subscription to refresh.")),
+        new Argument(
+            "MonitoredItemId",
+            NodeIds.IntegerId,
+            -1,
+            null,
+            new LocalizedText("", "The identifier for the monitored item to refresh."))
+      };
+    }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return new Argument[0];
+    }
+
+    @Override
+    protected Variant[] invoke(InvocationContext context, Variant[] inputValues)
         throws UaException {
+      UInteger subscriptionId = (UInteger) inputValues[0].value();
+      UInteger monitoredItemId = (UInteger) inputValues[1].value();
 
       Session session =
           context.getSession().orElseThrow(() -> new UaException(StatusCodes.Bad_UserAccessDenied));
 
       server.getConditionManager().conditionRefresh2(session, subscriptionId, monitoredItemId);
+      return new Variant[0];
     }
   }
 
-  private static class GetMonitoredItemsMethodImpl extends ServerType.GetMonitoredItemsMethod {
+  private static class GetMonitoredItemsMethodImpl extends AbstractMethodInvocationHandler {
 
     private final OpcUaServer server;
 
@@ -373,12 +417,34 @@ public class OpcUaNamespace extends ManagedNamespaceWithLifecycle {
     }
 
     @Override
-    protected void invoke(
-        InvocationContext context,
-        UInteger subscriptionId,
-        Out<UInteger[]> serverHandles,
-        Out<UInteger[]> clientHandles)
+    public Argument[] getInputArguments() {
+      return new Argument[] {
+        new Argument("SubscriptionId", NodeIds.UInt32, -1, null, new LocalizedText("", ""))
+      };
+    }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return new Argument[] {
+        new Argument(
+            "ServerHandles",
+            NodeIds.UInt32,
+            1,
+            new UInteger[] {UInteger.valueOf(0)},
+            new LocalizedText("", "")),
+        new Argument(
+            "ClientHandles",
+            NodeIds.UInt32,
+            1,
+            new UInteger[] {UInteger.valueOf(0)},
+            new LocalizedText("", ""))
+      };
+    }
+
+    @Override
+    protected Variant[] invoke(InvocationContext context, Variant[] inputValues)
         throws UaException {
+      UInteger subscriptionId = (UInteger) inputValues[0].value();
 
       Session session =
           context.getSession().orElseThrow(() -> new UaException(StatusCodes.Bad_SessionIdInvalid));
@@ -401,19 +467,36 @@ public class OpcUaNamespace extends ManagedNamespaceWithLifecycle {
         clientHandleList.add(uint(item.getClientHandle()));
       }
 
-      serverHandles.set(serverHandleList.toArray(new UInteger[0]));
-      clientHandles.set(clientHandleList.toArray(new UInteger[0]));
+      return new Variant[] {
+        new Variant(serverHandleList.toArray(new UInteger[0])),
+        new Variant(clientHandleList.toArray(new UInteger[0]))
+      };
     }
   }
 
-  private static class ResendDataMethodImpl extends ServerType.ResendDataMethod {
+  private static class ResendDataMethodImpl extends AbstractMethodInvocationHandler {
 
     ResendDataMethodImpl(UaMethodNode node) {
       super(node);
     }
 
     @Override
-    protected void invoke(InvocationContext context, UInteger subscriptionId) throws UaException {
+    public Argument[] getInputArguments() {
+      return new Argument[] {
+        new Argument("SubscriptionId", NodeIds.UInt32, -1, null, new LocalizedText("", ""))
+      };
+    }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return new Argument[0];
+    }
+
+    @Override
+    protected Variant[] invoke(InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      UInteger subscriptionId = (UInteger) inputValues[0].value();
+
       Session session = context.getSession().orElse(null);
 
       if (session != null) {
@@ -437,6 +520,7 @@ public class OpcUaNamespace extends ManagedNamespaceWithLifecycle {
       } else {
         throw new UaException(StatusCodes.Bad_UserAccessDenied);
       }
+      return new Variant[0];
     }
   }
 }

@@ -103,14 +103,14 @@ public class HistoryModifiedData extends HistoryData implements UaStructuredType
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 11227),
-        new NodeId(0, 656),
+        NodeId.parse("i=11227"),
+        NodeId.parse("i=656"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "DataValues",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 23),
+              NodeId.parse("i=23"),
               1,
               null,
               UInteger.valueOf(0),
@@ -118,7 +118,7 @@ public class HistoryModifiedData extends HistoryData implements UaStructuredType
           new StructureField(
               "ModificationInfos",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 11216),
+              NodeId.parse("i=11216"),
               1,
               null,
               UInteger.valueOf(0),

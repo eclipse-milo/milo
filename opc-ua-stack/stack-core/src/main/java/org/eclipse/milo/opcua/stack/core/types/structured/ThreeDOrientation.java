@@ -122,14 +122,14 @@ public class ThreeDOrientation extends Orientation implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 18821),
-        new NodeId(0, 18811),
+        NodeId.parse("i=18821"),
+        NodeId.parse("i=18811"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "A",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 11),
+              NodeId.parse("i=11"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -137,7 +137,7 @@ public class ThreeDOrientation extends Orientation implements UaStructuredType {
           new StructureField(
               "B",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 11),
+              NodeId.parse("i=11"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -145,7 +145,7 @@ public class ThreeDOrientation extends Orientation implements UaStructuredType {
           new StructureField(
               "C",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 11),
+              NodeId.parse("i=11"),
               -1,
               null,
               UInteger.valueOf(0),

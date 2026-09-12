@@ -123,14 +123,14 @@ public class NotificationMessage extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 805),
-        new NodeId(0, 22),
+        NodeId.parse("i=805"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "SequenceNumber",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 289),
+              NodeId.parse("i=289"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -138,7 +138,7 @@ public class NotificationMessage extends Structure implements UaStructuredType {
           new StructureField(
               "PublishTime",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 294),
+              NodeId.parse("i=294"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -146,7 +146,7 @@ public class NotificationMessage extends Structure implements UaStructuredType {
           new StructureField(
               "NotificationData",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 22),
+              NodeId.parse("i=22"),
               1,
               null,
               UInteger.valueOf(0),

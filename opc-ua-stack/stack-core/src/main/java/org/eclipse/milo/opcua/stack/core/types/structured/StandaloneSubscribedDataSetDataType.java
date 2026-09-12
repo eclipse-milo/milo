@@ -136,14 +136,14 @@ public class StandaloneSubscribedDataSetDataType extends SubscribedDataSetDataTy
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 23852),
-        new NodeId(0, 15630),
+        NodeId.parse("i=23852"),
+        NodeId.parse("i=15630"),
         StructureType.StructureWithSubtypedValues,
         new StructureField[] {
           new StructureField(
               "Name",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -151,7 +151,7 @@ public class StandaloneSubscribedDataSetDataType extends SubscribedDataSetDataTy
           new StructureField(
               "DataSetFolder",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               1,
               null,
               UInteger.valueOf(0),
@@ -159,7 +159,7 @@ public class StandaloneSubscribedDataSetDataType extends SubscribedDataSetDataTy
           new StructureField(
               "DataSetMetaData",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 14523),
+              NodeId.parse("i=14523"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -167,7 +167,7 @@ public class StandaloneSubscribedDataSetDataType extends SubscribedDataSetDataTy
           new StructureField(
               "SubscribedDataSet",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15630),
+              NodeId.parse("i=15630"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -196,7 +196,8 @@ public class StandaloneSubscribedDataSetDataType extends SubscribedDataSetDataTy
               decoder.decodeStruct("DataSetMetaData", DataSetMetaDataType.TYPE_ID);
       {
         ExtensionObject xo = decoder.decodeExtensionObject("SubscribedDataSet");
-        subscribedDataSet = (SubscribedDataSetDataType) xo.decode(context);
+        subscribedDataSet =
+            xo == null || xo.isNull() ? null : (SubscribedDataSetDataType) xo.decode(context);
       }
       return new StandaloneSubscribedDataSetDataType(
           name, dataSetFolder, dataSetMetaData, subscribedDataSet);
@@ -210,7 +211,9 @@ public class StandaloneSubscribedDataSetDataType extends SubscribedDataSetDataTy
       encoder.encodeStruct(
           "DataSetMetaData", value.getDataSetMetaData(), DataSetMetaDataType.TYPE_ID);
       {
-        ExtensionObject xo = ExtensionObject.encode(context, value.getSubscribedDataSet());
+        SubscribedDataSetDataType fieldValue = value.getSubscribedDataSet();
+        ExtensionObject xo =
+            fieldValue == null ? null : ExtensionObject.encode(context, fieldValue);
         encoder.encodeExtensionObject("SubscribedDataSet", xo);
       }
     }

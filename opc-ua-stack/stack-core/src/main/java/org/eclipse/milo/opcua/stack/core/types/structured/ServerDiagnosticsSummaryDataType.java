@@ -220,14 +220,14 @@ public class ServerDiagnosticsSummaryDataType extends Structure implements UaStr
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 861),
-        new NodeId(0, 22),
+        NodeId.parse("i=861"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "ServerViewCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -235,7 +235,7 @@ public class ServerDiagnosticsSummaryDataType extends Structure implements UaStr
           new StructureField(
               "CurrentSessionCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -243,7 +243,7 @@ public class ServerDiagnosticsSummaryDataType extends Structure implements UaStr
           new StructureField(
               "CumulatedSessionCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -251,7 +251,7 @@ public class ServerDiagnosticsSummaryDataType extends Structure implements UaStr
           new StructureField(
               "SecurityRejectedSessionCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -259,7 +259,7 @@ public class ServerDiagnosticsSummaryDataType extends Structure implements UaStr
           new StructureField(
               "RejectedSessionCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -267,7 +267,7 @@ public class ServerDiagnosticsSummaryDataType extends Structure implements UaStr
           new StructureField(
               "SessionTimeoutCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -275,7 +275,7 @@ public class ServerDiagnosticsSummaryDataType extends Structure implements UaStr
           new StructureField(
               "SessionAbortCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -283,7 +283,7 @@ public class ServerDiagnosticsSummaryDataType extends Structure implements UaStr
           new StructureField(
               "CurrentSubscriptionCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -291,7 +291,7 @@ public class ServerDiagnosticsSummaryDataType extends Structure implements UaStr
           new StructureField(
               "CumulatedSubscriptionCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -299,7 +299,7 @@ public class ServerDiagnosticsSummaryDataType extends Structure implements UaStr
           new StructureField(
               "PublishingIntervalCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -307,7 +307,7 @@ public class ServerDiagnosticsSummaryDataType extends Structure implements UaStr
           new StructureField(
               "SecurityRejectedRequestsCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -315,7 +315,7 @@ public class ServerDiagnosticsSummaryDataType extends Structure implements UaStr
           new StructureField(
               "RejectedRequestsCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),

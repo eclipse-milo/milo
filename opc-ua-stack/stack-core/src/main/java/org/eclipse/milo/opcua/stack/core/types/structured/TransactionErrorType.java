@@ -118,14 +118,14 @@ public class TransactionErrorType extends Structure implements UaStructuredType 
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 32382),
-        new NodeId(0, 22),
+        NodeId.parse("i=32382"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "TargetId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -133,7 +133,7 @@ public class TransactionErrorType extends Structure implements UaStructuredType 
           new StructureField(
               "Error",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 19),
+              NodeId.parse("i=19"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -141,7 +141,7 @@ public class TransactionErrorType extends Structure implements UaStructuredType 
           new StructureField(
               "Message",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 21),
+              NodeId.parse("i=21"),
               -1,
               null,
               UInteger.valueOf(0),

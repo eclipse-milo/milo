@@ -101,14 +101,14 @@ public class NetworkAddressUrlDataType extends NetworkAddressDataType implements
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 21152),
-        new NodeId(0, 15502),
+        NodeId.parse("i=21152"),
+        NodeId.parse("i=15502"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "NetworkInterface",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -116,7 +116,7 @@ public class NetworkAddressUrlDataType extends NetworkAddressDataType implements
           new StructureField(
               "Url",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),

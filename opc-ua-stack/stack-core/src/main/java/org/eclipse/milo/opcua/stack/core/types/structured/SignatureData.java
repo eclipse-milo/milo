@@ -109,14 +109,14 @@ public class SignatureData extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 458),
-        new NodeId(0, 22),
+        NodeId.parse("i=458"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "Algorithm",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -124,7 +124,7 @@ public class SignatureData extends Structure implements UaStructuredType {
           new StructureField(
               "Signature",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15),
+              NodeId.parse("i=15"),
               -1,
               null,
               UInteger.valueOf(0),

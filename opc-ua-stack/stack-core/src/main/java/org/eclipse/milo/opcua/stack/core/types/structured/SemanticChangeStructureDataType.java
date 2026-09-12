@@ -108,14 +108,14 @@ public class SemanticChangeStructureDataType extends Structure implements UaStru
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 899),
-        new NodeId(0, 22),
+        NodeId.parse("i=899"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "Affected",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -123,7 +123,7 @@ public class SemanticChangeStructureDataType extends Structure implements UaStru
           new StructureField(
               "AffectedType",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),

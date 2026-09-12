@@ -101,14 +101,14 @@ public class DatagramConnectionTransportDataType extends ConnectionTransportData
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 17468),
-        new NodeId(0, 15618),
+        NodeId.parse("i=17468"),
+        NodeId.parse("i=15618"),
         StructureType.StructureWithSubtypedValues,
         new StructureField[] {
           new StructureField(
               "DiscoveryAddress",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15502),
+              NodeId.parse("i=15502"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -129,7 +129,8 @@ public class DatagramConnectionTransportDataType extends ConnectionTransportData
       final NetworkAddressDataType discoveryAddress;
       {
         ExtensionObject xo = decoder.decodeExtensionObject("DiscoveryAddress");
-        discoveryAddress = (NetworkAddressDataType) xo.decode(context);
+        discoveryAddress =
+            xo == null || xo.isNull() ? null : (NetworkAddressDataType) xo.decode(context);
       }
       return new DatagramConnectionTransportDataType(discoveryAddress);
     }
@@ -138,7 +139,9 @@ public class DatagramConnectionTransportDataType extends ConnectionTransportData
     public void encodeType(
         EncodingContext context, UaEncoder encoder, DatagramConnectionTransportDataType value) {
       {
-        ExtensionObject xo = ExtensionObject.encode(context, value.getDiscoveryAddress());
+        NetworkAddressDataType fieldValue = value.getDiscoveryAddress();
+        ExtensionObject xo =
+            fieldValue == null ? null : ExtensionObject.encode(context, fieldValue);
         encoder.encodeExtensionObject("DiscoveryAddress", xo);
       }
     }

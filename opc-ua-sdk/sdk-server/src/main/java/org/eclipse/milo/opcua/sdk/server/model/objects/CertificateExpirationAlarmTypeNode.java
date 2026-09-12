@@ -10,19 +10,29 @@
 
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
+import java.util.LinkedHashMap;
 import java.util.Optional;
 import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
+import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.jspecify.annotations.Nullable;
 
 public class CertificateExpirationAlarmTypeNode extends SystemOffNormalAlarmTypeNode
     implements CertificateExpirationAlarmType {
@@ -77,70 +87,537 @@ public class CertificateExpirationAlarmTypeNode extends SystemOffNormalAlarmType
   }
 
   @Override
+  public Optional<VariableNode> getPropertyNode(QualifiedName browseName) {
+    return findNode(
+            browseName,
+            n -> n instanceof VariableNode,
+            r ->
+                r.isForward()
+                    && (r.getReferenceTypeId().equals(NodeIds.HasProperty)
+                        || getNodeContext()
+                            .getServer()
+                            .getReferenceTypeTree()
+                            .isSubtypeOf(r.getReferenceTypeId(), NodeIds.HasProperty)))
+        .map(n -> (VariableNode) n);
+  }
+
+  @Override
   public PropertyTypeNode getExpirationDateNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(CertificateExpirationAlarmType.EXPIRATION_DATE);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:ExpirationDate (declaration i=13325, owner i=13225)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "ExpirationDate");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:ExpirationDate (declaration"
+                    + " i=13325, owner i=13225) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:ExpirationDate (declaration i=13325, owner i=13225)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:ExpirationDate (declaration i=13325, owner i=13225)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:ExpirationDate (declaration i=13325, owner i=13225)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:ExpirationDate (declaration i=13325, owner i=13225)"
+                + " on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:ExpirationDate (declaration i=13325, owner i=13225)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:ExpirationDate (declaration i=13325, owner i=13225)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof PropertyTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:ExpirationDate (declaration i=13325, owner i=13225)"
+              + " on "
+              + getNodeId());
+    }
+    return (PropertyTypeNode) parent;
   }
 
   @Override
-  public DateTime getExpirationDate() {
-    return getProperty(CertificateExpirationAlarmType.EXPIRATION_DATE).orElse(null);
+  public @Nullable DateTime getExpirationDate() {
+    var node = getExpirationDateNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:ExpirationDate (declaration i=13325, owner i=13225)"
+              + " on "
+              + getNodeId());
+    }
+    return (DateTime) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setExpirationDate(DateTime value) {
-    setProperty(CertificateExpirationAlarmType.EXPIRATION_DATE, value);
+  public void setExpirationDate(@Nullable DateTime value) {
+    var node = getExpirationDateNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:ExpirationDate (declaration i=13325, owner i=13225)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
-  public PropertyTypeNode getExpirationLimitNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(CertificateExpirationAlarmType.EXPIRATION_LIMIT);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable PropertyTypeNode getExpirationLimitNode() {
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:ExpirationLimit (declaration i=14900, owner i=13225)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "ExpirationLimit");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:ExpirationLimit (declaration"
+                    + " i=14900, owner i=13225) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:ExpirationLimit (declaration i=14900, owner i=13225)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:ExpirationLimit (declaration i=14900, owner i=13225)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:ExpirationLimit (declaration i=14900, owner i=13225)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        return null;
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:ExpirationLimit (declaration i=14900, owner i=13225)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:ExpirationLimit (declaration i=14900, owner i=13225)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof PropertyTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:ExpirationLimit (declaration i=14900, owner i=13225)"
+              + " on "
+              + getNodeId());
+    }
+    return (PropertyTypeNode) parent;
   }
 
   @Override
-  public Double getExpirationLimit() {
-    return getProperty(CertificateExpirationAlarmType.EXPIRATION_LIMIT).orElse(null);
+  public @Nullable Double getExpirationLimit() {
+    var node = getExpirationLimitNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:ExpirationLimit (declaration i=14900, owner i=13225)"
+              + " on "
+              + getNodeId());
+    }
+    return (Double) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setExpirationLimit(Double value) {
-    setProperty(CertificateExpirationAlarmType.EXPIRATION_LIMIT, value);
+  public void setExpirationLimit(@Nullable Double value) {
+    var node = getExpirationLimitNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:ExpirationLimit (declaration i=14900, owner i=13225)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public PropertyTypeNode getCertificateTypeNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(CertificateExpirationAlarmType.CERTIFICATE_TYPE);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:CertificateType (declaration i=13326, owner i=13225)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "CertificateType");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:CertificateType (declaration"
+                    + " i=13326, owner i=13225) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:CertificateType (declaration i=13326, owner i=13225)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:CertificateType (declaration i=13326, owner i=13225)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:CertificateType (declaration i=13326, owner i=13225)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:CertificateType (declaration i=13326, owner i=13225)"
+                + " on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:CertificateType (declaration i=13326, owner i=13225)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:CertificateType (declaration i=13326, owner i=13225)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof PropertyTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:CertificateType (declaration i=13326, owner i=13225)"
+              + " on "
+              + getNodeId());
+    }
+    return (PropertyTypeNode) parent;
   }
 
   @Override
-  public NodeId getCertificateType() {
-    return getProperty(CertificateExpirationAlarmType.CERTIFICATE_TYPE).orElse(null);
+  public @Nullable NodeId getCertificateType() {
+    var node = getCertificateTypeNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:CertificateType (declaration i=13326, owner i=13225)"
+              + " on "
+              + getNodeId());
+    }
+    return (NodeId) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setCertificateType(NodeId value) {
-    setProperty(CertificateExpirationAlarmType.CERTIFICATE_TYPE, value);
+  public void setCertificateType(@Nullable NodeId value) {
+    var node = getCertificateTypeNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:CertificateType (declaration i=13326, owner i=13225)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public PropertyTypeNode getCertificateNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(CertificateExpirationAlarmType.CERTIFICATE);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:Certificate (declaration i=13327, owner i=13225)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "Certificate");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:Certificate (declaration"
+                    + " i=13327, owner i=13225) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:Certificate (declaration i=13327, owner i=13225)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:Certificate (declaration i=13327, owner i=13225)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:Certificate (declaration i=13327, owner i=13225)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:Certificate (declaration i=13327, owner i=13225)"
+                + " on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:Certificate (declaration i=13327, owner i=13225)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:Certificate (declaration i=13327, owner i=13225)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof PropertyTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:Certificate (declaration i=13327, owner i=13225)"
+              + " on "
+              + getNodeId());
+    }
+    return (PropertyTypeNode) parent;
   }
 
   @Override
-  public ByteString getCertificate() {
-    return getProperty(CertificateExpirationAlarmType.CERTIFICATE).orElse(null);
+  public @Nullable ByteString getCertificate() {
+    var node = getCertificateNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:Certificate (declaration i=13327, owner i=13225)"
+              + " on "
+              + getNodeId());
+    }
+    return (ByteString) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setCertificate(ByteString value) {
-    setProperty(CertificateExpirationAlarmType.CERTIFICATE, value);
+  public void setCertificate(@Nullable ByteString value) {
+    var node = getCertificateNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:Certificate (declaration i=13327, owner i=13225)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 }

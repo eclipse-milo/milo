@@ -12,6 +12,8 @@ package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -145,14 +147,14 @@ public class HistoryReadRequest extends Structure implements UaRequestMessageTyp
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 664),
-        new NodeId(0, 22),
+        NodeId.parse("i=664"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "RequestHeader",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 389),
+              NodeId.parse("i=389"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -160,7 +162,7 @@ public class HistoryReadRequest extends Structure implements UaRequestMessageTyp
           new StructureField(
               "HistoryReadDetails",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 22),
+              NodeId.parse("i=22"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -168,7 +170,7 @@ public class HistoryReadRequest extends Structure implements UaRequestMessageTyp
           new StructureField(
               "TimestampsToReturn",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 625),
+              NodeId.parse("i=625"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -176,7 +178,7 @@ public class HistoryReadRequest extends Structure implements UaRequestMessageTyp
           new StructureField(
               "ReleaseContinuationPoints",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -184,7 +186,7 @@ public class HistoryReadRequest extends Structure implements UaRequestMessageTyp
           new StructureField(
               "NodesToRead",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 635),
+              NodeId.parse("i=635"),
               1,
               null,
               UInteger.valueOf(0),
@@ -207,7 +209,28 @@ public class HistoryReadRequest extends Structure implements UaRequestMessageTyp
       final HistoryReadValueId[] nodesToRead;
       requestHeader = (RequestHeader) decoder.decodeStruct("RequestHeader", RequestHeader.TYPE_ID);
       historyReadDetails = decoder.decodeExtensionObject("HistoryReadDetails");
-      timestampsToReturn = TimestampsToReturn.from(decoder.decodeEnum("TimestampsToReturn"));
+      {
+        Integer enumValue = decoder.decodeEnum("TimestampsToReturn");
+        if (enumValue != null && !((Object) enumValue instanceof TimestampsToReturn)) {
+          if (!(enumValue instanceof Integer)) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_TypeMismatch,
+                "TimestampsToReturn: expected"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn or"
+                    + " Int32, got "
+                    + enumValue);
+          }
+          if (TimestampsToReturn.from((Integer) enumValue) == null) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_OutOfRange,
+                "TimestampsToReturn: unknown"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn value"
+                    + " "
+                    + enumValue);
+          }
+        }
+        timestampsToReturn = enumValue == null ? null : TimestampsToReturn.from(enumValue);
+      }
       releaseContinuationPoints = decoder.decodeBoolean("ReleaseContinuationPoints");
       nodesToRead =
           (HistoryReadValueId[])

@@ -12,6 +12,8 @@ package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -177,14 +179,14 @@ public class RegisteredServer extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 434),
-        new NodeId(0, 22),
+        NodeId.parse("i=434"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "ServerUri",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -192,7 +194,7 @@ public class RegisteredServer extends Structure implements UaStructuredType {
           new StructureField(
               "ProductUri",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -200,7 +202,7 @@ public class RegisteredServer extends Structure implements UaStructuredType {
           new StructureField(
               "ServerNames",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 21),
+              NodeId.parse("i=21"),
               1,
               null,
               UInteger.valueOf(0),
@@ -208,7 +210,7 @@ public class RegisteredServer extends Structure implements UaStructuredType {
           new StructureField(
               "ServerType",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 307),
+              NodeId.parse("i=307"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -216,7 +218,7 @@ public class RegisteredServer extends Structure implements UaStructuredType {
           new StructureField(
               "GatewayServerUri",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -224,7 +226,7 @@ public class RegisteredServer extends Structure implements UaStructuredType {
           new StructureField(
               "DiscoveryUrls",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               1,
               null,
               UInteger.valueOf(0),
@@ -232,7 +234,7 @@ public class RegisteredServer extends Structure implements UaStructuredType {
           new StructureField(
               "SemaphoreFilePath",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -240,7 +242,7 @@ public class RegisteredServer extends Structure implements UaStructuredType {
           new StructureField(
               "IsOnline",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -267,7 +269,27 @@ public class RegisteredServer extends Structure implements UaStructuredType {
       serverUri = decoder.decodeString("ServerUri");
       productUri = decoder.decodeString("ProductUri");
       serverNames = decoder.decodeLocalizedTextArray("ServerNames");
-      serverType = ApplicationType.from(decoder.decodeEnum("ServerType"));
+      {
+        Integer enumValue = decoder.decodeEnum("ServerType");
+        if (enumValue != null && !((Object) enumValue instanceof ApplicationType)) {
+          if (!(enumValue instanceof Integer)) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_TypeMismatch,
+                "ServerType: expected"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType or"
+                    + " Int32, got "
+                    + enumValue);
+          }
+          if (ApplicationType.from((Integer) enumValue) == null) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_OutOfRange,
+                "ServerType: unknown"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType value "
+                    + enumValue);
+          }
+        }
+        serverType = enumValue == null ? null : ApplicationType.from(enumValue);
+      }
       gatewayServerUri = decoder.decodeString("GatewayServerUri");
       discoveryUrls = decoder.decodeStringArray("DiscoveryUrls");
       semaphoreFilePath = decoder.decodeString("SemaphoreFilePath");

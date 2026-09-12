@@ -125,14 +125,14 @@ public class ChannelSecurityToken extends Structure implements UaStructuredType 
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 443),
-        new NodeId(0, 22),
+        NodeId.parse("i=443"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "ChannelId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -140,7 +140,7 @@ public class ChannelSecurityToken extends Structure implements UaStructuredType 
           new StructureField(
               "TokenId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -148,7 +148,7 @@ public class ChannelSecurityToken extends Structure implements UaStructuredType 
           new StructureField(
               "CreatedAt",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 294),
+              NodeId.parse("i=294"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -156,7 +156,7 @@ public class ChannelSecurityToken extends Structure implements UaStructuredType 
           new StructureField(
               "RevisedLifetime",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),

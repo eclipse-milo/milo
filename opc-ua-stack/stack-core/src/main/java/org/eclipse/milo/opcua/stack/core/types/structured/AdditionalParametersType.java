@@ -98,14 +98,14 @@ public class AdditionalParametersType extends Structure implements UaStructuredT
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 17537),
-        new NodeId(0, 22),
+        NodeId.parse("i=17537"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "Parameters",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 14533),
+              NodeId.parse("i=14533"),
               1,
               null,
               UInteger.valueOf(0),

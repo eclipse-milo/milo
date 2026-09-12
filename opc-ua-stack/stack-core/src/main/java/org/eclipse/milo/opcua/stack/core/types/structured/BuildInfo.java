@@ -155,14 +155,14 @@ public class BuildInfo extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 340),
-        new NodeId(0, 22),
+        NodeId.parse("i=340"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "ProductUri",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -170,7 +170,7 @@ public class BuildInfo extends Structure implements UaStructuredType {
           new StructureField(
               "ManufacturerName",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -178,7 +178,7 @@ public class BuildInfo extends Structure implements UaStructuredType {
           new StructureField(
               "ProductName",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -186,7 +186,7 @@ public class BuildInfo extends Structure implements UaStructuredType {
           new StructureField(
               "SoftwareVersion",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -194,7 +194,7 @@ public class BuildInfo extends Structure implements UaStructuredType {
           new StructureField(
               "BuildNumber",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -202,7 +202,7 @@ public class BuildInfo extends Structure implements UaStructuredType {
           new StructureField(
               "BuildDate",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 294),
+              NodeId.parse("i=294"),
               -1,
               null,
               UInteger.valueOf(0),

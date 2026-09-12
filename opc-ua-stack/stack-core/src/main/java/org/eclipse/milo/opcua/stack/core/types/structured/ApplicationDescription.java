@@ -12,6 +12,8 @@ package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -166,14 +168,14 @@ public class ApplicationDescription extends Structure implements UaStructuredTyp
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 310),
-        new NodeId(0, 22),
+        NodeId.parse("i=310"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "ApplicationUri",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -181,7 +183,7 @@ public class ApplicationDescription extends Structure implements UaStructuredTyp
           new StructureField(
               "ProductUri",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -189,7 +191,7 @@ public class ApplicationDescription extends Structure implements UaStructuredTyp
           new StructureField(
               "ApplicationName",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 21),
+              NodeId.parse("i=21"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -197,7 +199,7 @@ public class ApplicationDescription extends Structure implements UaStructuredTyp
           new StructureField(
               "ApplicationType",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 307),
+              NodeId.parse("i=307"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -205,7 +207,7 @@ public class ApplicationDescription extends Structure implements UaStructuredTyp
           new StructureField(
               "GatewayServerUri",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -213,7 +215,7 @@ public class ApplicationDescription extends Structure implements UaStructuredTyp
           new StructureField(
               "DiscoveryProfileUri",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -221,7 +223,7 @@ public class ApplicationDescription extends Structure implements UaStructuredTyp
           new StructureField(
               "DiscoveryUrls",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               1,
               null,
               UInteger.valueOf(0),
@@ -247,7 +249,27 @@ public class ApplicationDescription extends Structure implements UaStructuredTyp
       applicationUri = decoder.decodeString("ApplicationUri");
       productUri = decoder.decodeString("ProductUri");
       applicationName = decoder.decodeLocalizedText("ApplicationName");
-      applicationType = ApplicationType.from(decoder.decodeEnum("ApplicationType"));
+      {
+        Integer enumValue = decoder.decodeEnum("ApplicationType");
+        if (enumValue != null && !((Object) enumValue instanceof ApplicationType)) {
+          if (!(enumValue instanceof Integer)) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_TypeMismatch,
+                "ApplicationType: expected"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType or"
+                    + " Int32, got "
+                    + enumValue);
+          }
+          if (ApplicationType.from((Integer) enumValue) == null) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_OutOfRange,
+                "ApplicationType: unknown"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType value "
+                    + enumValue);
+          }
+        }
+        applicationType = enumValue == null ? null : ApplicationType.from(enumValue);
+      }
       gatewayServerUri = decoder.decodeString("GatewayServerUri");
       discoveryProfileUri = decoder.decodeString("DiscoveryProfileUri");
       discoveryUrls = decoder.decodeStringArray("DiscoveryUrls");

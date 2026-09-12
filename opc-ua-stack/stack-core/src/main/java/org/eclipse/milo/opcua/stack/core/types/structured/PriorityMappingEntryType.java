@@ -133,14 +133,14 @@ public class PriorityMappingEntryType extends Structure implements UaStructuredT
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 25239),
-        new NodeId(0, 22),
+        NodeId.parse("i=25239"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "MappingUri",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -148,7 +148,7 @@ public class PriorityMappingEntryType extends Structure implements UaStructuredT
           new StructureField(
               "PriorityLabel",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -156,7 +156,7 @@ public class PriorityMappingEntryType extends Structure implements UaStructuredT
           new StructureField(
               "PriorityValue_PCP",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 3),
+              NodeId.parse("i=3"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -164,7 +164,7 @@ public class PriorityMappingEntryType extends Structure implements UaStructuredT
           new StructureField(
               "PriorityValue_DSCP",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),

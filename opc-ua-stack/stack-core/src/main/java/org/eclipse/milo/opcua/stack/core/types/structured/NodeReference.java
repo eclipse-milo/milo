@@ -128,14 +128,14 @@ public class NodeReference extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 582),
-        new NodeId(0, 22),
+        NodeId.parse("i=582"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "NodeId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -143,7 +143,7 @@ public class NodeReference extends Structure implements UaStructuredType {
           new StructureField(
               "ReferenceTypeId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -151,7 +151,7 @@ public class NodeReference extends Structure implements UaStructuredType {
           new StructureField(
               "IsForward",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -159,7 +159,7 @@ public class NodeReference extends Structure implements UaStructuredType {
           new StructureField(
               "ReferencedNodeIds",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               1,
               null,
               UInteger.valueOf(0),

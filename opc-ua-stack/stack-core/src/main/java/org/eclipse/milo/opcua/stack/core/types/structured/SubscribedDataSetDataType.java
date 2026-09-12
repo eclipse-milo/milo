@@ -60,6 +60,9 @@ public abstract class SubscribedDataSetDataType extends Structure implements UaS
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 15707), new NodeId(0, 22), StructureType.Structure, new StructureField[] {});
+        NodeId.parse("i=15707"),
+        NodeId.parse("i=22"),
+        StructureType.Structure,
+        new StructureField[] {});
   }
 }

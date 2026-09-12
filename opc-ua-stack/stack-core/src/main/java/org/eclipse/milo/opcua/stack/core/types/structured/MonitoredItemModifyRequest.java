@@ -109,14 +109,14 @@ public class MonitoredItemModifyRequest extends Structure implements UaStructure
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 757),
-        new NodeId(0, 22),
+        NodeId.parse("i=757"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "MonitoredItemId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 288),
+              NodeId.parse("i=288"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -124,7 +124,7 @@ public class MonitoredItemModifyRequest extends Structure implements UaStructure
           new StructureField(
               "RequestedParameters",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 740),
+              NodeId.parse("i=740"),
               -1,
               null,
               UInteger.valueOf(0),

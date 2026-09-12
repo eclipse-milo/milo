@@ -16,6 +16,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.structured.SignedSoftwareCertificate;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserIdentityToken;
+import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
@@ -54,27 +55,159 @@ public interface AuditActivateSessionEventType extends AuditSessionEventType {
           1,
           NodeId[].class);
 
-  SignedSoftwareCertificate[] getClientSoftwareCertificates();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable SignedSoftwareCertificate @Nullable [] getClientSoftwareCertificates();
 
-  void setClientSoftwareCertificates(SignedSoftwareCertificate[] value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setClientSoftwareCertificates(@Nullable SignedSoftwareCertificate @Nullable [] value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   PropertyType getClientSoftwareCertificatesNode();
 
-  UserIdentityToken getUserIdentityToken();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable UserIdentityToken getUserIdentityToken();
 
-  void setUserIdentityToken(UserIdentityToken value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setUserIdentityToken(@Nullable UserIdentityToken value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   PropertyType getUserIdentityTokenNode();
 
-  String getSecureChannelId();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable String getSecureChannelId();
 
-  void setSecureChannelId(String value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setSecureChannelId(@Nullable String value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   PropertyType getSecureChannelIdNode();
 
-  NodeId[] getCurrentRoleIds();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable NodeId @Nullable [] getCurrentRoleIds();
 
-  void setCurrentRoleIds(NodeId[] value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setCurrentRoleIds(@Nullable NodeId @Nullable [] value);
 
-  PropertyType getCurrentRoleIdsNode();
+  /**
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  @Nullable PropertyType getCurrentRoleIdsNode();
 }

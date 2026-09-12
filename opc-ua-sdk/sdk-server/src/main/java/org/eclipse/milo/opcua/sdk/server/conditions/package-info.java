@@ -49,6 +49,12 @@
  * Condition through the ConditionManager, leaving the shared node and any application-installed
  * handler unchanged.
  *
+ * <p>The unbound Method adapters declare fixed standard argument metadata and use {@link
+ * org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler} for input validation
+ * before a behavior callback runs. ConditionManager retains dispatch and lifetime ownership,
+ * including the original calling session and ObjectId; these adapters do not register a second
+ * dispatcher on shared Methods.
+ *
  * <p>The default manager resolves shared shelving Methods through either the ConditionId or the
  * nested ShelvingState ObjectId. Unregistering retires handlers installed on copied Methods only
  * while they still belong to that behavior, preserving later application or replacement handlers.
@@ -75,6 +81,13 @@
  * and subtype-specific members. Creation and adoption add the standard optional {@code
  * ActiveState/EffectiveTransitionTime} member for limit alarms; attaching a complete instance
  * preserves its existing optional-member shape.
+ *
+ * <p>Initialization explicitly uses {@code UaNode.setProperty} when behavior requires a missing
+ * property, including {@code SupportsFilteredRetain} (which has no modelling rule) and optional
+ * transition timestamps. This lower-level Milo operation constructs the PropertyType node with the
+ * generated QualifiedProperty metadata. Generated setters only update existing members. Optional
+ * reads check the generated node getter before invoking the typed value getter, so absent
+ * configuration retains its default without suppressing lookup or decoding failures.
  *
  * <p>Subtype-specific state cannot currently be written atomically with the private standard limit
  * transition. Custom fields that must share the same transition and event boundary therefore need a

@@ -104,14 +104,14 @@ public abstract class DataTypeDescription extends Structure implements UaStructu
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 125),
-        new NodeId(0, 22),
+        NodeId.parse("i=125"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "DataTypeId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -119,7 +119,7 @@ public abstract class DataTypeDescription extends Structure implements UaStructu
           new StructureField(
               "Name",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 20),
+              NodeId.parse("i=20"),
               -1,
               null,
               UInteger.valueOf(0),

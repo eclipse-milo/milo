@@ -12,6 +12,8 @@ package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -121,14 +123,14 @@ public class RedundantServerDataType extends Structure implements UaStructuredTy
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 855),
-        new NodeId(0, 22),
+        NodeId.parse("i=855"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "ServerId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -136,7 +138,7 @@ public class RedundantServerDataType extends Structure implements UaStructuredTy
           new StructureField(
               "ServiceLevel",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 3),
+              NodeId.parse("i=3"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -144,7 +146,7 @@ public class RedundantServerDataType extends Structure implements UaStructuredTy
           new StructureField(
               "ServerState",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 852),
+              NodeId.parse("i=852"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -165,7 +167,27 @@ public class RedundantServerDataType extends Structure implements UaStructuredTy
       final ServerState serverState;
       serverId = decoder.decodeString("ServerId");
       serviceLevel = decoder.decodeByte("ServiceLevel");
-      serverState = ServerState.from(decoder.decodeEnum("ServerState"));
+      {
+        Integer enumValue = decoder.decodeEnum("ServerState");
+        if (enumValue != null && !((Object) enumValue instanceof ServerState)) {
+          if (!(enumValue instanceof Integer)) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_TypeMismatch,
+                "ServerState: expected"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.ServerState or Int32,"
+                    + " got "
+                    + enumValue);
+          }
+          if (ServerState.from((Integer) enumValue) == null) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_OutOfRange,
+                "ServerState: unknown"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.ServerState value "
+                    + enumValue);
+          }
+        }
+        serverState = enumValue == null ? null : ServerState.from(enumValue);
+      }
       return new RedundantServerDataType(serverId, serviceLevel, serverState);
     }
 

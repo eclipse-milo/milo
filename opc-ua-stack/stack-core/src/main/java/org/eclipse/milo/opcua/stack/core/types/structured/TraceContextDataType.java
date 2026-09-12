@@ -114,14 +114,14 @@ public class TraceContextDataType extends SpanContextDataType implements UaStruc
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 19755),
-        new NodeId(0, 19746),
+        NodeId.parse("i=19755"),
+        NodeId.parse("i=19746"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "TraceId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 14),
+              NodeId.parse("i=14"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -129,7 +129,7 @@ public class TraceContextDataType extends SpanContextDataType implements UaStruc
           new StructureField(
               "SpanId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 9),
+              NodeId.parse("i=9"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -137,7 +137,7 @@ public class TraceContextDataType extends SpanContextDataType implements UaStruc
           new StructureField(
               "ParentSpanId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 9),
+              NodeId.parse("i=9"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -145,7 +145,7 @@ public class TraceContextDataType extends SpanContextDataType implements UaStruc
           new StructureField(
               "ParentIdentifier",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),

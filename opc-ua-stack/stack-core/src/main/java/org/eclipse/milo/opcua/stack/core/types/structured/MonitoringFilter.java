@@ -64,7 +64,10 @@ public class MonitoringFilter extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 721), new NodeId(0, 22), StructureType.Structure, new StructureField[] {});
+        NodeId.parse("i=721"),
+        NodeId.parse("i=22"),
+        StructureType.Structure,
+        new StructureField[] {});
   }
 
   public static final class Codec extends GenericDataTypeCodec<MonitoringFilter> {

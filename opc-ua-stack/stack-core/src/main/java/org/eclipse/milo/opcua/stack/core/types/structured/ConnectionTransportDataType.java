@@ -61,6 +61,9 @@ public abstract class ConnectionTransportDataType extends Structure implements U
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 15695), new NodeId(0, 22), StructureType.Structure, new StructureField[] {});
+        NodeId.parse("i=15695"),
+        NodeId.parse("i=22"),
+        StructureType.Structure,
+        new StructureField[] {});
   }
 }

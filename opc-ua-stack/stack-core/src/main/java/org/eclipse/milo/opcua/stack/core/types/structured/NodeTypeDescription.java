@@ -121,14 +121,14 @@ public class NodeTypeDescription extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 575),
-        new NodeId(0, 22),
+        NodeId.parse("i=575"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "TypeDefinitionNode",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 18),
+              NodeId.parse("i=18"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -136,7 +136,7 @@ public class NodeTypeDescription extends Structure implements UaStructuredType {
           new StructureField(
               "IncludeSubTypes",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -144,7 +144,7 @@ public class NodeTypeDescription extends Structure implements UaStructuredType {
           new StructureField(
               "DataToReturn",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 570),
+              NodeId.parse("i=570"),
               1,
               null,
               UInteger.valueOf(0),

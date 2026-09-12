@@ -143,14 +143,14 @@ public class AttributeOperand extends FilterOperand implements UaStructuredType 
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 600),
-        new NodeId(0, 589),
+        NodeId.parse("i=600"),
+        NodeId.parse("i=589"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "NodeId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -158,7 +158,7 @@ public class AttributeOperand extends FilterOperand implements UaStructuredType 
           new StructureField(
               "Alias",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -166,7 +166,7 @@ public class AttributeOperand extends FilterOperand implements UaStructuredType 
           new StructureField(
               "BrowsePath",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 540),
+              NodeId.parse("i=540"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -174,7 +174,7 @@ public class AttributeOperand extends FilterOperand implements UaStructuredType 
           new StructureField(
               "AttributeId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 288),
+              NodeId.parse("i=288"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -182,7 +182,7 @@ public class AttributeOperand extends FilterOperand implements UaStructuredType 
           new StructureField(
               "IndexRange",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 291),
+              NodeId.parse("i=291"),
               -1,
               null,
               UInteger.valueOf(0),

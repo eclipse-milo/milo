@@ -128,14 +128,14 @@ public class LinearConversionDataType extends Structure implements UaStructuredT
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 32561),
-        new NodeId(0, 22),
+        NodeId.parse("i=32561"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "InitialAddend",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 10),
+              NodeId.parse("i=10"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -143,7 +143,7 @@ public class LinearConversionDataType extends Structure implements UaStructuredT
           new StructureField(
               "Multiplicand",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 10),
+              NodeId.parse("i=10"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -151,7 +151,7 @@ public class LinearConversionDataType extends Structure implements UaStructuredT
           new StructureField(
               "Divisor",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 10),
+              NodeId.parse("i=10"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -159,7 +159,7 @@ public class LinearConversionDataType extends Structure implements UaStructuredT
           new StructureField(
               "FinalAddend",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 10),
+              NodeId.parse("i=10"),
               -1,
               null,
               UInteger.valueOf(0),

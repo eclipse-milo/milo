@@ -133,14 +133,14 @@ public class MonitoredItemModifyResult extends Structure implements UaStructured
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 760),
-        new NodeId(0, 22),
+        NodeId.parse("i=760"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "StatusCode",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 19),
+              NodeId.parse("i=19"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -148,7 +148,7 @@ public class MonitoredItemModifyResult extends Structure implements UaStructured
           new StructureField(
               "RevisedSamplingInterval",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 290),
+              NodeId.parse("i=290"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -156,7 +156,7 @@ public class MonitoredItemModifyResult extends Structure implements UaStructured
           new StructureField(
               "RevisedQueueSize",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 289),
+              NodeId.parse("i=289"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -164,7 +164,7 @@ public class MonitoredItemModifyResult extends Structure implements UaStructured
           new StructureField(
               "FilterResult",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 22),
+              NodeId.parse("i=22"),
               -1,
               null,
               UInteger.valueOf(0),

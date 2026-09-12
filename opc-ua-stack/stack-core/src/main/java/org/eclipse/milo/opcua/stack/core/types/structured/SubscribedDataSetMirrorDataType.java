@@ -111,14 +111,14 @@ public class SubscribedDataSetMirrorDataType extends SubscribedDataSetDataType
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 15713),
-        new NodeId(0, 15630),
+        NodeId.parse("i=15713"),
+        NodeId.parse("i=15630"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "ParentNodeName",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -126,7 +126,7 @@ public class SubscribedDataSetMirrorDataType extends SubscribedDataSetDataType
           new StructureField(
               "RolePermissions",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 96),
+              NodeId.parse("i=96"),
               1,
               null,
               UInteger.valueOf(0),

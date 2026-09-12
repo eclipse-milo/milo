@@ -14,6 +14,7 @@ import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
@@ -116,75 +117,471 @@ public interface OperationLimitsType extends FolderType {
           -1,
           UInteger.class);
 
-  UInteger getMaxNodesPerRead();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable UInteger getMaxNodesPerRead();
 
-  void setMaxNodesPerRead(UInteger value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setMaxNodesPerRead(@Nullable UInteger value);
 
-  PropertyType getMaxNodesPerReadNode();
+  /**
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  @Nullable PropertyType getMaxNodesPerReadNode();
 
-  UInteger getMaxNodesPerHistoryReadData();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable UInteger getMaxNodesPerHistoryReadData();
 
-  void setMaxNodesPerHistoryReadData(UInteger value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setMaxNodesPerHistoryReadData(@Nullable UInteger value);
 
-  PropertyType getMaxNodesPerHistoryReadDataNode();
+  /**
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  @Nullable PropertyType getMaxNodesPerHistoryReadDataNode();
 
-  UInteger getMaxNodesPerHistoryReadEvents();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable UInteger getMaxNodesPerHistoryReadEvents();
 
-  void setMaxNodesPerHistoryReadEvents(UInteger value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setMaxNodesPerHistoryReadEvents(@Nullable UInteger value);
 
-  PropertyType getMaxNodesPerHistoryReadEventsNode();
+  /**
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  @Nullable PropertyType getMaxNodesPerHistoryReadEventsNode();
 
-  UInteger getMaxNodesPerWrite();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable UInteger getMaxNodesPerWrite();
 
-  void setMaxNodesPerWrite(UInteger value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setMaxNodesPerWrite(@Nullable UInteger value);
 
-  PropertyType getMaxNodesPerWriteNode();
+  /**
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  @Nullable PropertyType getMaxNodesPerWriteNode();
 
-  UInteger getMaxNodesPerHistoryUpdateData();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable UInteger getMaxNodesPerHistoryUpdateData();
 
-  void setMaxNodesPerHistoryUpdateData(UInteger value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setMaxNodesPerHistoryUpdateData(@Nullable UInteger value);
 
-  PropertyType getMaxNodesPerHistoryUpdateDataNode();
+  /**
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  @Nullable PropertyType getMaxNodesPerHistoryUpdateDataNode();
 
-  UInteger getMaxNodesPerHistoryUpdateEvents();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable UInteger getMaxNodesPerHistoryUpdateEvents();
 
-  void setMaxNodesPerHistoryUpdateEvents(UInteger value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setMaxNodesPerHistoryUpdateEvents(@Nullable UInteger value);
 
-  PropertyType getMaxNodesPerHistoryUpdateEventsNode();
+  /**
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  @Nullable PropertyType getMaxNodesPerHistoryUpdateEventsNode();
 
-  UInteger getMaxNodesPerMethodCall();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable UInteger getMaxNodesPerMethodCall();
 
-  void setMaxNodesPerMethodCall(UInteger value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setMaxNodesPerMethodCall(@Nullable UInteger value);
 
-  PropertyType getMaxNodesPerMethodCallNode();
+  /**
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  @Nullable PropertyType getMaxNodesPerMethodCallNode();
 
-  UInteger getMaxNodesPerBrowse();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable UInteger getMaxNodesPerBrowse();
 
-  void setMaxNodesPerBrowse(UInteger value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setMaxNodesPerBrowse(@Nullable UInteger value);
 
-  PropertyType getMaxNodesPerBrowseNode();
+  /**
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  @Nullable PropertyType getMaxNodesPerBrowseNode();
 
-  UInteger getMaxNodesPerRegisterNodes();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable UInteger getMaxNodesPerRegisterNodes();
 
-  void setMaxNodesPerRegisterNodes(UInteger value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setMaxNodesPerRegisterNodes(@Nullable UInteger value);
 
-  PropertyType getMaxNodesPerRegisterNodesNode();
+  /**
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  @Nullable PropertyType getMaxNodesPerRegisterNodesNode();
 
-  UInteger getMaxNodesPerTranslateBrowsePathsToNodeIds();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable UInteger getMaxNodesPerTranslateBrowsePathsToNodeIds();
 
-  void setMaxNodesPerTranslateBrowsePathsToNodeIds(UInteger value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setMaxNodesPerTranslateBrowsePathsToNodeIds(@Nullable UInteger value);
 
-  PropertyType getMaxNodesPerTranslateBrowsePathsToNodeIdsNode();
+  /**
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  @Nullable PropertyType getMaxNodesPerTranslateBrowsePathsToNodeIdsNode();
 
-  UInteger getMaxNodesPerNodeManagement();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable UInteger getMaxNodesPerNodeManagement();
 
-  void setMaxNodesPerNodeManagement(UInteger value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setMaxNodesPerNodeManagement(@Nullable UInteger value);
 
-  PropertyType getMaxNodesPerNodeManagementNode();
+  /**
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  @Nullable PropertyType getMaxNodesPerNodeManagementNode();
 
-  UInteger getMaxMonitoredItemsPerCall();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable UInteger getMaxMonitoredItemsPerCall();
 
-  void setMaxMonitoredItemsPerCall(UInteger value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setMaxMonitoredItemsPerCall(@Nullable UInteger value);
 
-  PropertyType getMaxMonitoredItemsPerCallNode();
+  /**
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  @Nullable PropertyType getMaxMonitoredItemsPerCallNode();
 }

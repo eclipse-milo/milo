@@ -10,11 +10,17 @@
 
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
+import java.util.LinkedHashMap;
 import java.util.Optional;
 import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.BaseDataVariableTypeNode;
+import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
+import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -22,8 +28,10 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.jspecify.annotations.Nullable;
 
 public class ISrClassTypeNode extends BaseInterfaceTypeNode implements ISrClassType {
   public ISrClassTypeNode(
@@ -77,58 +85,410 @@ public class ISrClassTypeNode extends BaseInterfaceTypeNode implements ISrClassT
   }
 
   @Override
+  public Optional<VariableNode> getPropertyNode(QualifiedName browseName) {
+    return findNode(
+            browseName,
+            n -> n instanceof VariableNode,
+            r ->
+                r.isForward()
+                    && (r.getReferenceTypeId().equals(NodeIds.HasProperty)
+                        || getNodeContext()
+                            .getServer()
+                            .getReferenceTypeTree()
+                            .isSubtypeOf(r.getReferenceTypeId(), NodeIds.HasProperty)))
+        .map(n -> (VariableNode) n);
+  }
+
+  @Override
   public BaseDataVariableTypeNode getIdNode() {
-    Optional<VariableNode> component = getVariableComponent("http://opcfoundation.org/UA/", "Id");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:Id (declaration i=24170, owner i=24169)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "Id");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:Id (declaration i=24170, owner"
+                    + " i=24169) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:Id (declaration i=24170, owner i=24169)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:Id (declaration i=24170, owner i=24169)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:Id (declaration i=24170, owner i=24169)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:Id (declaration i=24170, owner i=24169)"
+                + " on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:Id (declaration i=24170, owner i=24169)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:Id (declaration i=24170, owner i=24169)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof BaseDataVariableTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:Id (declaration i=24170, owner i=24169)"
+              + " on "
+              + getNodeId());
+    }
+    return (BaseDataVariableTypeNode) parent;
   }
 
   @Override
-  public UByte getId() {
-    Optional<VariableNode> component = getVariableComponent("http://opcfoundation.org/UA/", "Id");
-    return component.map(node -> (UByte) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable UByte getId() {
+    var node = getIdNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:Id (declaration i=24170, owner i=24169)"
+              + " on "
+              + getNodeId());
+    }
+    return (UByte) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setId(UByte value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "Id")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setId(@Nullable UByte value) {
+    var node = getIdNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:Id (declaration i=24170, owner i=24169)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public BaseDataVariableTypeNode getPriorityNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "Priority");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:Priority (declaration i=24171, owner i=24169)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "Priority");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:Priority (declaration i=24171,"
+                    + " owner i=24169) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:Priority (declaration i=24171, owner i=24169)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:Priority (declaration i=24171, owner i=24169)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:Priority (declaration i=24171, owner i=24169)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:Priority (declaration i=24171, owner i=24169)"
+                + " on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:Priority (declaration i=24171, owner i=24169)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:Priority (declaration i=24171, owner i=24169)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof BaseDataVariableTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:Priority (declaration i=24171, owner i=24169)"
+              + " on "
+              + getNodeId());
+    }
+    return (BaseDataVariableTypeNode) parent;
   }
 
   @Override
-  public UByte getPriority() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "Priority");
-    return component.map(node -> (UByte) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable UByte getPriority() {
+    var node = getPriorityNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:Priority (declaration i=24171, owner i=24169)"
+              + " on "
+              + getNodeId());
+    }
+    return (UByte) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setPriority(UByte value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "Priority")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setPriority(@Nullable UByte value) {
+    var node = getPriorityNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:Priority (declaration i=24171, owner i=24169)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public BaseDataVariableTypeNode getVidNode() {
-    Optional<VariableNode> component = getVariableComponent("http://opcfoundation.org/UA/", "Vid");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:Vid (declaration i=24172, owner i=24169)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "Vid");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:Vid (declaration i=24172,"
+                    + " owner i=24169) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:Vid (declaration i=24172, owner i=24169)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:Vid (declaration i=24172, owner i=24169)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:Vid (declaration i=24172, owner i=24169)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:Vid (declaration i=24172, owner i=24169)"
+                + " on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:Vid (declaration i=24172, owner i=24169)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:Vid (declaration i=24172, owner i=24169)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof BaseDataVariableTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:Vid (declaration i=24172, owner i=24169)"
+              + " on "
+              + getNodeId());
+    }
+    return (BaseDataVariableTypeNode) parent;
   }
 
   @Override
-  public UShort getVid() {
-    Optional<VariableNode> component = getVariableComponent("http://opcfoundation.org/UA/", "Vid");
-    return component.map(node -> (UShort) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable UShort getVid() {
+    var node = getVidNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:Vid (declaration i=24172, owner i=24169)"
+              + " on "
+              + getNodeId());
+    }
+    return (UShort) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setVid(UShort value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "Vid")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setVid(@Nullable UShort value) {
+    var node = getVidNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:Vid (declaration i=24172, owner i=24169)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 }

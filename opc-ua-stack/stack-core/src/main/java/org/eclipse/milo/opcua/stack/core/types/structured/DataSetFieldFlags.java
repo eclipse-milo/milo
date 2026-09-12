@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUI16;
 import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
@@ -36,6 +37,13 @@ public class DataSetFieldFlags extends OptionSetUI16<DataSetFieldFlags.Field> {
     var joiner = new StringJoiner(", ", DataSetFieldFlags.class.getSimpleName() + "[", "]");
     joiner.add("promotedField=" + getPromotedField());
     return joiner.toString();
+  }
+
+  public static EnumDefinition definition() {
+    return new EnumDefinition(
+        new EnumField[] {
+          new EnumField(0L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "PromotedField")
+        });
   }
 
   public static DataSetFieldFlags of(DataSetFieldFlags.Field... fields) {

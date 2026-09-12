@@ -132,14 +132,14 @@ public class ServerOnNetwork extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 12207),
-        new NodeId(0, 22),
+        NodeId.parse("i=12207"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "RecordId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -147,7 +147,7 @@ public class ServerOnNetwork extends Structure implements UaStructuredType {
           new StructureField(
               "ServerName",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -155,7 +155,7 @@ public class ServerOnNetwork extends Structure implements UaStructuredType {
           new StructureField(
               "DiscoveryUrl",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -163,7 +163,7 @@ public class ServerOnNetwork extends Structure implements UaStructuredType {
           new StructureField(
               "ServerCapabilities",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               1,
               null,
               UInteger.valueOf(0),

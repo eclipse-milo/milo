@@ -40,11 +40,11 @@ public class XVType extends Structure implements UaStructuredType {
 
   private final Double x;
 
-  private final Float value;
+  private final Float value2;
 
-  public XVType(Double x, Float value) {
+  public XVType(Double x, Float value2) {
     this.x = x;
-    this.value = value;
+    this.value2 = value2;
   }
 
   @Override
@@ -72,7 +72,7 @@ public class XVType extends Structure implements UaStructuredType {
   }
 
   public Float getValue() {
-    return value;
+    return value2;
   }
 
   @Override
@@ -107,14 +107,14 @@ public class XVType extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 12090),
-        new NodeId(0, 22),
+        NodeId.parse("i=12090"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "X",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 11),
+              NodeId.parse("i=11"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -122,7 +122,7 @@ public class XVType extends Structure implements UaStructuredType {
           new StructureField(
               "Value",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 10),
+              NodeId.parse("i=10"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -139,10 +139,10 @@ public class XVType extends Structure implements UaStructuredType {
     @Override
     public XVType decodeType(EncodingContext context, UaDecoder decoder) {
       final Double x;
-      final Float value;
+      final Float value2;
       x = decoder.decodeDouble("X");
-      value = decoder.decodeFloat("Value");
-      return new XVType(x, value);
+      value2 = decoder.decodeFloat("Value");
+      return new XVType(x, value2);
     }
 
     @Override

@@ -12,6 +12,8 @@ package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -147,14 +149,14 @@ public class BrokerDataSetReaderTransportDataType extends DataSetReaderTransport
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 15733),
-        new NodeId(0, 15628),
+        NodeId.parse("i=15733"),
+        NodeId.parse("i=15628"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "QueueName",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -162,7 +164,7 @@ public class BrokerDataSetReaderTransportDataType extends DataSetReaderTransport
           new StructureField(
               "ResourceUri",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -170,7 +172,7 @@ public class BrokerDataSetReaderTransportDataType extends DataSetReaderTransport
           new StructureField(
               "AuthenticationProfileUri",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -178,7 +180,7 @@ public class BrokerDataSetReaderTransportDataType extends DataSetReaderTransport
           new StructureField(
               "RequestedDeliveryGuarantee",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15008),
+              NodeId.parse("i=15008"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -186,7 +188,7 @@ public class BrokerDataSetReaderTransportDataType extends DataSetReaderTransport
           new StructureField(
               "MetaDataQueueName",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -212,8 +214,29 @@ public class BrokerDataSetReaderTransportDataType extends DataSetReaderTransport
       queueName = decoder.decodeString("QueueName");
       resourceUri = decoder.decodeString("ResourceUri");
       authenticationProfileUri = decoder.decodeString("AuthenticationProfileUri");
-      requestedDeliveryGuarantee =
-          BrokerTransportQualityOfService.from(decoder.decodeEnum("RequestedDeliveryGuarantee"));
+      {
+        Integer enumValue = decoder.decodeEnum("RequestedDeliveryGuarantee");
+        if (enumValue != null && !((Object) enumValue instanceof BrokerTransportQualityOfService)) {
+          if (!(enumValue instanceof Integer)) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_TypeMismatch,
+                "RequestedDeliveryGuarantee: expected"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.BrokerTransportQualityOfService"
+                    + " or Int32, got "
+                    + enumValue);
+          }
+          if (BrokerTransportQualityOfService.from((Integer) enumValue) == null) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_OutOfRange,
+                "RequestedDeliveryGuarantee: unknown"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.BrokerTransportQualityOfService"
+                    + " value "
+                    + enumValue);
+          }
+        }
+        requestedDeliveryGuarantee =
+            enumValue == null ? null : BrokerTransportQualityOfService.from(enumValue);
+      }
       metaDataQueueName = decoder.decodeString("MetaDataQueueName");
       return new BrokerDataSetReaderTransportDataType(
           queueName,

@@ -117,14 +117,14 @@ public class MethodAttributes extends NodeAttributes implements UaStructuredType
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 360),
-        new NodeId(0, 349),
+        NodeId.parse("i=360"),
+        NodeId.parse("i=349"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "SpecifiedAttributes",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -132,7 +132,7 @@ public class MethodAttributes extends NodeAttributes implements UaStructuredType
           new StructureField(
               "DisplayName",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 21),
+              NodeId.parse("i=21"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -140,7 +140,7 @@ public class MethodAttributes extends NodeAttributes implements UaStructuredType
           new StructureField(
               "Description",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 21),
+              NodeId.parse("i=21"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -148,7 +148,7 @@ public class MethodAttributes extends NodeAttributes implements UaStructuredType
           new StructureField(
               "WriteMask",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -156,7 +156,7 @@ public class MethodAttributes extends NodeAttributes implements UaStructuredType
           new StructureField(
               "UserWriteMask",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -164,7 +164,7 @@ public class MethodAttributes extends NodeAttributes implements UaStructuredType
           new StructureField(
               "Executable",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -172,7 +172,7 @@ public class MethodAttributes extends NodeAttributes implements UaStructuredType
           new StructureField(
               "UserExecutable",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),

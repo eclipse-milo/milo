@@ -12,6 +12,8 @@ package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -109,14 +111,14 @@ public class IdentityMappingRuleType extends Structure implements UaStructuredTy
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 15736),
-        new NodeId(0, 22),
+        NodeId.parse("i=15736"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "CriteriaType",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15632),
+              NodeId.parse("i=15632"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -124,7 +126,7 @@ public class IdentityMappingRuleType extends Structure implements UaStructuredTy
           new StructureField(
               "Criteria",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -142,7 +144,28 @@ public class IdentityMappingRuleType extends Structure implements UaStructuredTy
     public IdentityMappingRuleType decodeType(EncodingContext context, UaDecoder decoder) {
       final IdentityCriteriaType criteriaType;
       final String criteria;
-      criteriaType = IdentityCriteriaType.from(decoder.decodeEnum("CriteriaType"));
+      {
+        Integer enumValue = decoder.decodeEnum("CriteriaType");
+        if (enumValue != null && !((Object) enumValue instanceof IdentityCriteriaType)) {
+          if (!(enumValue instanceof Integer)) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_TypeMismatch,
+                "CriteriaType: expected"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.IdentityCriteriaType or"
+                    + " Int32, got "
+                    + enumValue);
+          }
+          if (IdentityCriteriaType.from((Integer) enumValue) == null) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_OutOfRange,
+                "CriteriaType: unknown"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.IdentityCriteriaType"
+                    + " value "
+                    + enumValue);
+          }
+        }
+        criteriaType = enumValue == null ? null : IdentityCriteriaType.from(enumValue);
+      }
       criteria = decoder.decodeString("Criteria");
       return new IdentityMappingRuleType(criteriaType, criteria);
     }

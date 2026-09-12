@@ -107,14 +107,14 @@ public class TimeZoneDataType extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 8917),
-        new NodeId(0, 22),
+        NodeId.parse("i=8917"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "Offset",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 4),
+              NodeId.parse("i=4"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -122,7 +122,7 @@ public class TimeZoneDataType extends Structure implements UaStructuredType {
           new StructureField(
               "DaylightSavingInOffset",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),

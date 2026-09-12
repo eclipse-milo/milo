@@ -10,27 +10,66 @@
 
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
+import java.lang.reflect.Array;
+import java.util.ArrayDeque;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
+import java.util.Objects;
 import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.Reference;
-import org.eclipse.milo.opcua.sdk.core.nodes.ObjectNode;
 import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree;
+import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
+import org.eclipse.milo.opcua.sdk.server.methods.InvalidArgumentException;
+import org.eclipse.milo.opcua.sdk.server.methods.MethodBinding;
+import org.eclipse.milo.opcua.sdk.server.methods.MethodBindings;
+import org.eclipse.milo.opcua.sdk.server.model.methods.DataSetReaderTypeCreateDataSetMirrorDetailedHandler;
+import org.eclipse.milo.opcua.sdk.server.model.methods.DataSetReaderTypeCreateDataSetMirrorHandler;
+import org.eclipse.milo.opcua.sdk.server.model.methods.DataSetReaderTypeCreateTargetVariablesDetailedHandler;
+import org.eclipse.milo.opcua.sdk.server.model.methods.DataSetReaderTypeCreateTargetVariablesHandler;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
+import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
+import org.eclipse.milo.opcua.stack.core.types.UaEnumeratedType;
+import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Matrix;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
+import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UNumber;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
+import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
+import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodResult;
+import org.eclipse.milo.opcua.stack.core.types.structured.ConfigurationVersionDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetFieldContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetMetaDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.FieldTargetDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.KeyValuePair;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.ArrayUtil;
+import org.jspecify.annotations.Nullable;
 
 public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSetReaderType {
   public DataSetReaderTypeNode(
@@ -84,253 +123,4747 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   }
 
   @Override
+  public Optional<VariableNode> getPropertyNode(QualifiedName browseName) {
+    return findNode(
+            browseName,
+            n -> n instanceof VariableNode,
+            r ->
+                r.isForward()
+                    && (r.getReferenceTypeId().equals(NodeIds.HasProperty)
+                        || getNodeContext()
+                            .getServer()
+                            .getReferenceTypeTree()
+                            .isSubtypeOf(r.getReferenceTypeId(), NodeIds.HasProperty)))
+        .map(n -> (VariableNode) n);
+  }
+
+  @Override
   public PropertyTypeNode getPublisherIdNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(DataSetReaderType.PUBLISHER_ID);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:PublisherId (declaration i=21097, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "PublisherId");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:PublisherId (declaration"
+                    + " i=21097, owner i=15306) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:PublisherId (declaration i=21097, owner i=15306)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:PublisherId (declaration i=21097, owner i=15306)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:PublisherId (declaration i=21097, owner i=15306)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:PublisherId (declaration i=21097, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:PublisherId (declaration i=21097, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:PublisherId (declaration i=21097, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof PropertyTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:PublisherId (declaration i=21097, owner i=15306)"
+              + " on "
+              + getNodeId());
+    }
+    return (PropertyTypeNode) parent;
   }
 
   @Override
-  public Object getPublisherId() {
-    return getProperty(DataSetReaderType.PUBLISHER_ID).orElse(null);
+  public @Nullable Object getPublisherId() {
+    var node = getPublisherIdNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:PublisherId (declaration i=21097, owner i=15306)"
+              + " on "
+              + getNodeId());
+    }
+    return (Object) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setPublisherId(Object value) {
-    setProperty(DataSetReaderType.PUBLISHER_ID, value);
+  public void setPublisherId(@Nullable Object value) {
+    var node = getPublisherIdNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:PublisherId (declaration i=21097, owner i=15306)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public PropertyTypeNode getWriterGroupIdNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(DataSetReaderType.WRITER_GROUP_ID);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:WriterGroupId (declaration i=21098, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "WriterGroupId");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:WriterGroupId (declaration"
+                    + " i=21098, owner i=15306) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:WriterGroupId (declaration i=21098, owner i=15306)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:WriterGroupId (declaration i=21098, owner i=15306)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:WriterGroupId (declaration i=21098, owner i=15306)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:WriterGroupId (declaration i=21098, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:WriterGroupId (declaration i=21098, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:WriterGroupId (declaration i=21098, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof PropertyTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:WriterGroupId (declaration i=21098, owner i=15306)"
+              + " on "
+              + getNodeId());
+    }
+    return (PropertyTypeNode) parent;
   }
 
   @Override
-  public UShort getWriterGroupId() {
-    return getProperty(DataSetReaderType.WRITER_GROUP_ID).orElse(null);
+  public @Nullable UShort getWriterGroupId() {
+    var node = getWriterGroupIdNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:WriterGroupId (declaration i=21098, owner i=15306)"
+              + " on "
+              + getNodeId());
+    }
+    return (UShort) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setWriterGroupId(UShort value) {
-    setProperty(DataSetReaderType.WRITER_GROUP_ID, value);
+  public void setWriterGroupId(@Nullable UShort value) {
+    var node = getWriterGroupIdNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:WriterGroupId (declaration i=21098, owner i=15306)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public PropertyTypeNode getDataSetWriterIdNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(DataSetReaderType.DATA_SET_WRITER_ID);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:DataSetWriterId (declaration i=21099, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "DataSetWriterId");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:DataSetWriterId (declaration"
+                    + " i=21099, owner i=15306) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:DataSetWriterId (declaration i=21099, owner i=15306)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:DataSetWriterId (declaration i=21099, owner i=15306)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:DataSetWriterId (declaration i=21099, owner i=15306)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:DataSetWriterId (declaration i=21099, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:DataSetWriterId (declaration i=21099, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:DataSetWriterId (declaration i=21099, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof PropertyTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:DataSetWriterId (declaration i=21099, owner i=15306)"
+              + " on "
+              + getNodeId());
+    }
+    return (PropertyTypeNode) parent;
   }
 
   @Override
-  public UShort getDataSetWriterId() {
-    return getProperty(DataSetReaderType.DATA_SET_WRITER_ID).orElse(null);
+  public @Nullable UShort getDataSetWriterId() {
+    var node = getDataSetWriterIdNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:DataSetWriterId (declaration i=21099, owner i=15306)"
+              + " on "
+              + getNodeId());
+    }
+    return (UShort) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setDataSetWriterId(UShort value) {
-    setProperty(DataSetReaderType.DATA_SET_WRITER_ID, value);
+  public void setDataSetWriterId(@Nullable UShort value) {
+    var node = getDataSetWriterIdNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:DataSetWriterId (declaration i=21099, owner i=15306)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public PropertyTypeNode getDataSetMetaDataNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(DataSetReaderType.DATA_SET_META_DATA);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:DataSetMetaData (declaration i=21100, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "DataSetMetaData");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:DataSetMetaData (declaration"
+                    + " i=21100, owner i=15306) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:DataSetMetaData (declaration i=21100, owner i=15306)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:DataSetMetaData (declaration i=21100, owner i=15306)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:DataSetMetaData (declaration i=21100, owner i=15306)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:DataSetMetaData (declaration i=21100, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:DataSetMetaData (declaration i=21100, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:DataSetMetaData (declaration i=21100, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof PropertyTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:DataSetMetaData (declaration i=21100, owner i=15306)"
+              + " on "
+              + getNodeId());
+    }
+    return (PropertyTypeNode) parent;
   }
 
   @Override
-  public DataSetMetaDataType getDataSetMetaData() {
-    return getProperty(DataSetReaderType.DATA_SET_META_DATA).orElse(null);
+  public @Nullable DataSetMetaDataType getDataSetMetaData() {
+    var node = getDataSetMetaDataNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:DataSetMetaData (declaration i=21100, owner i=15306)"
+              + " on "
+              + getNodeId());
+    }
+    Object decoded =
+        ExtensionObject.decodeValue(
+            getNodeContext().getServer().getStaticEncodingContext(),
+            node.getValue().getValue().getValue());
+    if (decoded == null) {
+      return null;
+    }
+    if (!(decoded instanceof DataSetMetaDataType)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:DataSetMetaData (declaration i=21100, owner i=15306)");
+    }
+    return (DataSetMetaDataType) decoded;
   }
 
   @Override
-  public void setDataSetMetaData(DataSetMetaDataType value) {
-    setProperty(DataSetReaderType.DATA_SET_META_DATA, value);
+  public void setDataSetMetaData(@Nullable DataSetMetaDataType value) {
+    var node = getDataSetMetaDataNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:DataSetMetaData (declaration i=21100, owner i=15306)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public PropertyTypeNode getDataSetFieldContentMaskNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(DataSetReaderType.DATA_SET_FIELD_CONTENT_MASK);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:DataSetFieldContentMask (declaration i=21101, owner"
+                + " i=15306) on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "DataSetFieldContentMask");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:DataSetFieldContentMask"
+                    + " (declaration i=21101, owner i=15306) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:DataSetFieldContentMask (declaration i=21101, owner"
+                  + " i=15306) on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:DataSetFieldContentMask (declaration i=21101, owner"
+                  + " i=15306) on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:DataSetFieldContentMask (declaration i=21101, owner"
+                  + " i=15306) on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:DataSetFieldContentMask (declaration i=21101, owner"
+                + " i=15306) on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:DataSetFieldContentMask (declaration i=21101, owner"
+                + " i=15306) on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:DataSetFieldContentMask (declaration i=21101, owner"
+                + " i=15306) on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof PropertyTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:DataSetFieldContentMask (declaration i=21101, owner"
+              + " i=15306) on "
+              + getNodeId());
+    }
+    return (PropertyTypeNode) parent;
   }
 
   @Override
-  public DataSetFieldContentMask getDataSetFieldContentMask() {
-    return getProperty(DataSetReaderType.DATA_SET_FIELD_CONTENT_MASK).orElse(null);
+  public @Nullable DataSetFieldContentMask getDataSetFieldContentMask() {
+    var node = getDataSetFieldContentMaskNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:DataSetFieldContentMask (declaration i=21101, owner"
+              + " i=15306) on "
+              + getNodeId());
+    }
+    return (DataSetFieldContentMask) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setDataSetFieldContentMask(DataSetFieldContentMask value) {
-    setProperty(DataSetReaderType.DATA_SET_FIELD_CONTENT_MASK, value);
+  public void setDataSetFieldContentMask(@Nullable DataSetFieldContentMask value) {
+    var node = getDataSetFieldContentMaskNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:DataSetFieldContentMask (declaration i=21101, owner"
+              + " i=15306) on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public PropertyTypeNode getMessageReceiveTimeoutNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(DataSetReaderType.MESSAGE_RECEIVE_TIMEOUT);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:MessageReceiveTimeout (declaration i=21102, owner"
+                + " i=15306) on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "MessageReceiveTimeout");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:MessageReceiveTimeout"
+                    + " (declaration i=21102, owner i=15306) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:MessageReceiveTimeout (declaration i=21102, owner"
+                  + " i=15306) on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:MessageReceiveTimeout (declaration i=21102, owner"
+                  + " i=15306) on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:MessageReceiveTimeout (declaration i=21102, owner"
+                  + " i=15306) on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:MessageReceiveTimeout (declaration i=21102, owner"
+                + " i=15306) on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:MessageReceiveTimeout (declaration i=21102, owner"
+                + " i=15306) on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:MessageReceiveTimeout (declaration i=21102, owner"
+                + " i=15306) on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof PropertyTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:MessageReceiveTimeout (declaration i=21102, owner i=15306)"
+              + " on "
+              + getNodeId());
+    }
+    return (PropertyTypeNode) parent;
   }
 
   @Override
-  public Double getMessageReceiveTimeout() {
-    return getProperty(DataSetReaderType.MESSAGE_RECEIVE_TIMEOUT).orElse(null);
+  public @Nullable Double getMessageReceiveTimeout() {
+    var node = getMessageReceiveTimeoutNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:MessageReceiveTimeout (declaration i=21102, owner i=15306)"
+              + " on "
+              + getNodeId());
+    }
+    return (Double) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setMessageReceiveTimeout(Double value) {
-    setProperty(DataSetReaderType.MESSAGE_RECEIVE_TIMEOUT, value);
+  public void setMessageReceiveTimeout(@Nullable Double value) {
+    var node = getMessageReceiveTimeoutNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:MessageReceiveTimeout (declaration i=21102, owner i=15306)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public PropertyTypeNode getKeyFrameCountNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(DataSetReaderType.KEY_FRAME_COUNT);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:KeyFrameCount (declaration i=17563, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "KeyFrameCount");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:KeyFrameCount (declaration"
+                    + " i=17563, owner i=15306) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:KeyFrameCount (declaration i=17563, owner i=15306)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:KeyFrameCount (declaration i=17563, owner i=15306)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:KeyFrameCount (declaration i=17563, owner i=15306)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:KeyFrameCount (declaration i=17563, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:KeyFrameCount (declaration i=17563, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:KeyFrameCount (declaration i=17563, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof PropertyTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:KeyFrameCount (declaration i=17563, owner i=15306)"
+              + " on "
+              + getNodeId());
+    }
+    return (PropertyTypeNode) parent;
   }
 
   @Override
-  public UInteger getKeyFrameCount() {
-    return getProperty(DataSetReaderType.KEY_FRAME_COUNT).orElse(null);
+  public @Nullable UInteger getKeyFrameCount() {
+    var node = getKeyFrameCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:KeyFrameCount (declaration i=17563, owner i=15306)"
+              + " on "
+              + getNodeId());
+    }
+    return (UInteger) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setKeyFrameCount(UInteger value) {
-    setProperty(DataSetReaderType.KEY_FRAME_COUNT, value);
+  public void setKeyFrameCount(@Nullable UInteger value) {
+    var node = getKeyFrameCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:KeyFrameCount (declaration i=17563, owner i=15306)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public PropertyTypeNode getHeaderLayoutUriNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(DataSetReaderType.HEADER_LAYOUT_URI);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:HeaderLayoutUri (declaration i=17564, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "HeaderLayoutUri");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:HeaderLayoutUri (declaration"
+                    + " i=17564, owner i=15306) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:HeaderLayoutUri (declaration i=17564, owner i=15306)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:HeaderLayoutUri (declaration i=17564, owner i=15306)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:HeaderLayoutUri (declaration i=17564, owner i=15306)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:HeaderLayoutUri (declaration i=17564, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:HeaderLayoutUri (declaration i=17564, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:HeaderLayoutUri (declaration i=17564, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof PropertyTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:HeaderLayoutUri (declaration i=17564, owner i=15306)"
+              + " on "
+              + getNodeId());
+    }
+    return (PropertyTypeNode) parent;
   }
 
   @Override
-  public String getHeaderLayoutUri() {
-    return getProperty(DataSetReaderType.HEADER_LAYOUT_URI).orElse(null);
+  public @Nullable String getHeaderLayoutUri() {
+    var node = getHeaderLayoutUriNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:HeaderLayoutUri (declaration i=17564, owner i=15306)"
+              + " on "
+              + getNodeId());
+    }
+    return (String) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setHeaderLayoutUri(String value) {
-    setProperty(DataSetReaderType.HEADER_LAYOUT_URI, value);
+  public void setHeaderLayoutUri(@Nullable String value) {
+    var node = getHeaderLayoutUriNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:HeaderLayoutUri (declaration i=17564, owner i=15306)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
-  public PropertyTypeNode getSecurityModeNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(DataSetReaderType.SECURITY_MODE);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable PropertyTypeNode getSecurityModeNode() {
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:SecurityMode (declaration i=15932, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "SecurityMode");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:SecurityMode (declaration"
+                    + " i=15932, owner i=15306) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:SecurityMode (declaration i=15932, owner i=15306)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:SecurityMode (declaration i=15932, owner i=15306)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:SecurityMode (declaration i=15932, owner i=15306)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        return null;
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:SecurityMode (declaration i=15932, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:SecurityMode (declaration i=15932, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof PropertyTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:SecurityMode (declaration i=15932, owner i=15306)"
+              + " on "
+              + getNodeId());
+    }
+    return (PropertyTypeNode) parent;
   }
 
   @Override
-  public MessageSecurityMode getSecurityMode() {
-    return getProperty(DataSetReaderType.SECURITY_MODE).orElse(null);
+  public @Nullable MessageSecurityMode getSecurityMode() {
+    var node = getSecurityModeNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:SecurityMode (declaration i=15932, owner i=15306)"
+              + " on "
+              + getNodeId());
+    }
+    Object value = node.getValue().getValue().getValue();
+    Object convertedValue;
+    {
+      if (value == null || value instanceof Matrix && ((Matrix) value).isNull()) {
+        convertedValue = null;
+      } else {
+        Object elements = value instanceof Matrix ? ((Matrix) value).getElements() : value;
+        int rank =
+            value instanceof Matrix
+                ? ((Matrix) value).getValueRank()
+                : ArrayUtil.getValueRank(value);
+        boolean permitted = rank == -1;
+        if (!permitted) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_TypeMismatch,
+              "SecurityMode: ValueRank=-1 does not permit rank " + rank);
+        }
+        if (value != null && !((Object) value instanceof MessageSecurityMode)) {
+          if (!(value instanceof Integer)) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_TypeMismatch,
+                "SecurityMode: expected"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode or"
+                    + " Int32, got "
+                    + value);
+          }
+          if (MessageSecurityMode.from((Integer) value) == null) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_OutOfRange,
+                "SecurityMode: unknown"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode"
+                    + " value "
+                    + value);
+          }
+        }
+        convertedValue =
+            value == null || value instanceof MessageSecurityMode
+                ? (MessageSecurityMode) value
+                : MessageSecurityMode.from((Integer) value);
+      }
+    }
+    return (MessageSecurityMode) convertedValue;
   }
 
   @Override
-  public void setSecurityMode(MessageSecurityMode value) {
-    setProperty(DataSetReaderType.SECURITY_MODE, value);
+  public void setSecurityMode(@Nullable MessageSecurityMode value) {
+    var node = getSecurityModeNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:SecurityMode (declaration i=15932, owner i=15306)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
-  public PropertyTypeNode getSecurityGroupIdNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(DataSetReaderType.SECURITY_GROUP_ID);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable PropertyTypeNode getSecurityGroupIdNode() {
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:SecurityGroupId (declaration i=15933, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "SecurityGroupId");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:SecurityGroupId (declaration"
+                    + " i=15933, owner i=15306) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:SecurityGroupId (declaration i=15933, owner i=15306)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:SecurityGroupId (declaration i=15933, owner i=15306)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:SecurityGroupId (declaration i=15933, owner i=15306)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        return null;
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:SecurityGroupId (declaration i=15933, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:SecurityGroupId (declaration i=15933, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof PropertyTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:SecurityGroupId (declaration i=15933, owner i=15306)"
+              + " on "
+              + getNodeId());
+    }
+    return (PropertyTypeNode) parent;
   }
 
   @Override
-  public String getSecurityGroupId() {
-    return getProperty(DataSetReaderType.SECURITY_GROUP_ID).orElse(null);
+  public @Nullable String getSecurityGroupId() {
+    var node = getSecurityGroupIdNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:SecurityGroupId (declaration i=15933, owner i=15306)"
+              + " on "
+              + getNodeId());
+    }
+    return (String) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setSecurityGroupId(String value) {
-    setProperty(DataSetReaderType.SECURITY_GROUP_ID, value);
+  public void setSecurityGroupId(@Nullable String value) {
+    var node = getSecurityGroupIdNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:SecurityGroupId (declaration i=15933, owner i=15306)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
-  public PropertyTypeNode getSecurityKeyServicesNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(DataSetReaderType.SECURITY_KEY_SERVICES);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable PropertyTypeNode getSecurityKeyServicesNode() {
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:SecurityKeyServices (declaration i=15934, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "SecurityKeyServices");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:SecurityKeyServices"
+                    + " (declaration i=15934, owner i=15306) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:SecurityKeyServices (declaration i=15934, owner"
+                  + " i=15306) on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:SecurityKeyServices (declaration i=15934, owner"
+                  + " i=15306) on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:SecurityKeyServices (declaration i=15934, owner"
+                  + " i=15306) on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        return null;
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:SecurityKeyServices (declaration i=15934, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:SecurityKeyServices (declaration i=15934, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof PropertyTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:SecurityKeyServices (declaration i=15934, owner i=15306)"
+              + " on "
+              + getNodeId());
+    }
+    return (PropertyTypeNode) parent;
   }
 
   @Override
-  public EndpointDescription[] getSecurityKeyServices() {
-    return getProperty(DataSetReaderType.SECURITY_KEY_SERVICES).orElse(null);
+  public @Nullable EndpointDescription @Nullable [] getSecurityKeyServices() {
+    var node = getSecurityKeyServicesNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:SecurityKeyServices (declaration i=15934, owner i=15306)"
+              + " on "
+              + getNodeId());
+    }
+    Object decoded =
+        ExtensionObject.decodeValue(
+            getNodeContext().getServer().getStaticEncodingContext(),
+            node.getValue().getValue().getValue());
+    if (decoded == null) {
+      return null;
+    }
+    if (!(decoded instanceof Object[] elements)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:SecurityKeyServices (declaration i=15934, owner i=15306)");
+    }
+    EndpointDescription[] typed = new EndpointDescription[elements.length];
+    for (int i = 0; i < elements.length; i++) {
+      if (elements[i] != null && !(elements[i] instanceof EndpointDescription)) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TypeMismatch,
+            "http://opcfoundation.org/UA/:SecurityKeyServices (declaration i=15934, owner"
+                + " i=15306)");
+      }
+      typed[i] = (EndpointDescription) elements[i];
+    }
+    return typed;
   }
 
   @Override
-  public void setSecurityKeyServices(EndpointDescription[] value) {
-    setProperty(DataSetReaderType.SECURITY_KEY_SERVICES, value);
+  public void setSecurityKeyServices(@Nullable EndpointDescription @Nullable [] value) {
+    var node = getSecurityKeyServicesNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:SecurityKeyServices (declaration i=15934, owner i=15306)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public PropertyTypeNode getDataSetReaderPropertiesNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(DataSetReaderType.DATA_SET_READER_PROPERTIES);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:DataSetReaderProperties (declaration i=17494, owner"
+                + " i=15306) on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "DataSetReaderProperties");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:DataSetReaderProperties"
+                    + " (declaration i=17494, owner i=15306) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:DataSetReaderProperties (declaration i=17494, owner"
+                  + " i=15306) on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:DataSetReaderProperties (declaration i=17494, owner"
+                  + " i=15306) on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:DataSetReaderProperties (declaration i=17494, owner"
+                  + " i=15306) on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:DataSetReaderProperties (declaration i=17494, owner"
+                + " i=15306) on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:DataSetReaderProperties (declaration i=17494, owner"
+                + " i=15306) on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:DataSetReaderProperties (declaration i=17494, owner"
+                + " i=15306) on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof PropertyTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:DataSetReaderProperties (declaration i=17494, owner"
+              + " i=15306) on "
+              + getNodeId());
+    }
+    return (PropertyTypeNode) parent;
   }
 
   @Override
-  public KeyValuePair[] getDataSetReaderProperties() {
-    return getProperty(DataSetReaderType.DATA_SET_READER_PROPERTIES).orElse(null);
+  public @Nullable KeyValuePair @Nullable [] getDataSetReaderProperties() {
+    var node = getDataSetReaderPropertiesNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:DataSetReaderProperties (declaration i=17494, owner"
+              + " i=15306) on "
+              + getNodeId());
+    }
+    Object decoded =
+        ExtensionObject.decodeValue(
+            getNodeContext().getServer().getStaticEncodingContext(),
+            node.getValue().getValue().getValue());
+    if (decoded == null) {
+      return null;
+    }
+    if (!(decoded instanceof Object[] elements)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:DataSetReaderProperties (declaration i=17494, owner"
+              + " i=15306)");
+    }
+    KeyValuePair[] typed = new KeyValuePair[elements.length];
+    for (int i = 0; i < elements.length; i++) {
+      if (elements[i] != null && !(elements[i] instanceof KeyValuePair)) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TypeMismatch,
+            "http://opcfoundation.org/UA/:DataSetReaderProperties (declaration i=17494, owner"
+                + " i=15306)");
+      }
+      typed[i] = (KeyValuePair) elements[i];
+    }
+    return typed;
   }
 
   @Override
-  public void setDataSetReaderProperties(KeyValuePair[] value) {
-    setProperty(DataSetReaderType.DATA_SET_READER_PROPERTIES, value);
+  public void setDataSetReaderProperties(@Nullable KeyValuePair @Nullable [] value) {
+    var node = getDataSetReaderPropertiesNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:DataSetReaderProperties (declaration i=17494, owner"
+              + " i=15306) on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
-  public DataSetReaderTransportTypeNode getTransportSettingsNode() {
-    Optional<ObjectNode> component =
-        getObjectComponent("http://opcfoundation.org/UA/", "TransportSettings");
-    return (DataSetReaderTransportTypeNode) component.orElse(null);
+  public @Nullable DataSetReaderTransportTypeNode getTransportSettingsNode() {
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:TransportSettings (declaration i=15311, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "TransportSettings");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:TransportSettings (declaration"
+                    + " i=15311, owner i=15306) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:TransportSettings (declaration i=15311, owner i=15306)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:TransportSettings (declaration i=15311, owner i=15306)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:TransportSettings (declaration i=15311, owner i=15306)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        return null;
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:TransportSettings (declaration i=15311, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Object) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:TransportSettings (declaration i=15311, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof DataSetReaderTransportTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:TransportSettings (declaration i=15311, owner i=15306)"
+              + " on "
+              + getNodeId());
+    }
+    return (DataSetReaderTransportTypeNode) parent;
   }
 
   @Override
-  public DataSetReaderMessageTypeNode getMessageSettingsNode() {
-    Optional<ObjectNode> component =
-        getObjectComponent("http://opcfoundation.org/UA/", "MessageSettings");
-    return (DataSetReaderMessageTypeNode) component.orElse(null);
+  public @Nullable DataSetReaderMessageTypeNode getMessageSettingsNode() {
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:MessageSettings (declaration i=21103, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "MessageSettings");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:MessageSettings (declaration"
+                    + " i=21103, owner i=15306) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:MessageSettings (declaration i=21103, owner i=15306)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:MessageSettings (declaration i=21103, owner i=15306)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:MessageSettings (declaration i=21103, owner i=15306)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        return null;
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:MessageSettings (declaration i=21103, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Object) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:MessageSettings (declaration i=21103, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof DataSetReaderMessageTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:MessageSettings (declaration i=21103, owner i=15306)"
+              + " on "
+              + getNodeId());
+    }
+    return (DataSetReaderMessageTypeNode) parent;
   }
 
   @Override
   public PubSubStatusTypeNode getStatusNode() {
-    Optional<ObjectNode> component = getObjectComponent("http://opcfoundation.org/UA/", "Status");
-    return (PubSubStatusTypeNode) component.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:Status (declaration i=15307, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "Status");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:Status (declaration i=15307,"
+                    + " owner i=15306) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:Status (declaration i=15307, owner i=15306)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:Status (declaration i=15307, owner i=15306)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:Status (declaration i=15307, owner i=15306)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:Status (declaration i=15307, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:Status (declaration i=15307, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Object) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:Status (declaration i=15307, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof PubSubStatusTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:Status (declaration i=15307, owner i=15306)"
+              + " on "
+              + getNodeId());
+    }
+    return (PubSubStatusTypeNode) parent;
   }
 
   @Override
-  public PubSubDiagnosticsDataSetReaderTypeNode getDiagnosticsNode() {
-    Optional<ObjectNode> component =
-        getObjectComponent("http://opcfoundation.org/UA/", "Diagnostics");
-    return (PubSubDiagnosticsDataSetReaderTypeNode) component.orElse(null);
+  public @Nullable PubSubDiagnosticsDataSetReaderTypeNode getDiagnosticsNode() {
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:Diagnostics (declaration i=19609, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "Diagnostics");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:Diagnostics (declaration"
+                    + " i=19609, owner i=15306) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:Diagnostics (declaration i=19609, owner i=15306)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:Diagnostics (declaration i=19609, owner i=15306)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:Diagnostics (declaration i=19609, owner i=15306)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        return null;
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:Diagnostics (declaration i=19609, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Object) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:Diagnostics (declaration i=19609, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof PubSubDiagnosticsDataSetReaderTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:Diagnostics (declaration i=19609, owner i=15306)"
+              + " on "
+              + getNodeId());
+    }
+    return (PubSubDiagnosticsDataSetReaderTypeNode) parent;
   }
 
   @Override
   public SubscribedDataSetTypeNode getSubscribedDataSetNode() {
-    Optional<ObjectNode> component =
-        getObjectComponent("http://opcfoundation.org/UA/", "SubscribedDataSet");
-    return (SubscribedDataSetTypeNode) component.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:SubscribedDataSet (declaration i=15316, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "SubscribedDataSet");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:SubscribedDataSet (declaration"
+                    + " i=15316, owner i=15306) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:SubscribedDataSet (declaration i=15316, owner i=15306)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:SubscribedDataSet (declaration i=15316, owner i=15306)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:SubscribedDataSet (declaration i=15316, owner i=15306)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:SubscribedDataSet (declaration i=15316, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:SubscribedDataSet (declaration i=15316, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Object) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:SubscribedDataSet (declaration i=15316, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof SubscribedDataSetTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:SubscribedDataSet (declaration i=15316, owner i=15306)"
+              + " on "
+              + getNodeId());
+    }
+    return (SubscribedDataSetTypeNode) parent;
   }
 
   @Override
-  public UaMethodNode getCreateTargetVariablesMethodNode() {
-    Optional<UaNode> methodNode =
-        findNode(
-            "http://opcfoundation.org/UA/",
-            "CreateTargetVariables",
-            node -> node instanceof UaMethodNode,
-            Reference.HAS_COMPONENT_PREDICATE);
-    return (UaMethodNode) methodNode.orElse(null);
+  public @Nullable UaMethodNode getCreateTargetVariablesMethodNode() {
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:CreateTargetVariables (declaration i=17386, owner"
+                + " i=15306) on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "CreateTargetVariables");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:CreateTargetVariables"
+                    + " (declaration i=17386, owner i=15306) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:CreateTargetVariables (declaration i=17386, owner"
+                  + " i=15306) on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:CreateTargetVariables (declaration i=17386, owner"
+                  + " i=15306) on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:CreateTargetVariables (declaration i=17386, owner"
+                  + " i=15306) on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        return null;
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:CreateTargetVariables (declaration i=17386, owner"
+                + " i=15306) on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Method) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:CreateTargetVariables (declaration i=17386, owner"
+                + " i=15306) on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof UaMethodNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:CreateTargetVariables (declaration i=17386, owner i=15306)"
+              + " on "
+              + getNodeId());
+    }
+    return (UaMethodNode) parent;
   }
 
   @Override
-  public UaMethodNode getCreateDataSetMirrorMethodNode() {
-    Optional<UaNode> methodNode =
-        findNode(
-            "http://opcfoundation.org/UA/",
-            "CreateDataSetMirror",
-            node -> node instanceof UaMethodNode,
-            Reference.HAS_COMPONENT_PREDICATE);
-    return (UaMethodNode) methodNode.orElse(null);
+  public MethodBinding bindCreateTargetVariables(
+      MethodBindings bindings, DataSetReaderTypeCreateTargetVariablesHandler handler)
+      throws UaException {
+    Objects.requireNonNull(bindings, "bindings");
+    Objects.requireNonNull(handler, "handler");
+    UaMethodNode methodNode = getCreateTargetVariablesMethodNode();
+    if (methodNode == null) {
+      throw new UaException(StatusCodes.Bad_NotFound, "Cannot bind an absent Method");
+    }
+    return bindings.bind(
+        this,
+        methodNode,
+        new AbstractMethodInvocationHandler(methodNode) {
+          @Override
+          public Argument[] getInputArguments() {
+            return new Argument[] {
+              new Argument(
+                  "ConfigurationVersion",
+                  ExpandedNodeId.parse("i=14593")
+                      .toNodeId(getNode().getNodeContext().getNamespaceTable())
+                      .orElseThrow(() -> new UaRuntimeException(StatusCodes.Bad_NodeIdUnknown)),
+                  -1,
+                  null,
+                  new LocalizedText(null, "")),
+              new Argument(
+                  "TargetVariablesToAdd",
+                  ExpandedNodeId.parse("i=14744")
+                      .toNodeId(getNode().getNodeContext().getNamespaceTable())
+                      .orElseThrow(() -> new UaRuntimeException(StatusCodes.Bad_NodeIdUnknown)),
+                  1,
+                  new UInteger[] {UInteger.valueOf(0)},
+                  new LocalizedText(null, ""))
+            };
+          }
+
+          @Override
+          public Argument[] getOutputArguments() {
+            return new Argument[] {
+              new Argument(
+                  "AddResults",
+                  ExpandedNodeId.parse("i=19")
+                      .toNodeId(getNode().getNodeContext().getNamespaceTable())
+                      .orElseThrow(() -> new UaRuntimeException(StatusCodes.Bad_NodeIdUnknown)),
+                  1,
+                  new UInteger[] {UInteger.valueOf(0)},
+                  new LocalizedText(null, ""))
+            };
+          }
+
+          @Override
+          protected int getRequiredInputArgumentCount(Argument[] inputArguments) {
+            return 2;
+          }
+
+          @Override
+          protected CallMethodResult invokeResult(
+              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              throws UaException {
+            StatusCode[] inputResults = new StatusCode[inputValues.length];
+            Arrays.fill(inputResults, StatusCode.GOOD);
+            @Nullable ConfigurationVersionDataType callbackInput0 = null;
+            if (inputValues.length > 0) {
+              try {
+                @Nullable ConfigurationVersionDataType convertedInput0;
+                {
+                  Object methodValue = inputValues[0].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    convertedInput0 = (ConfigurationVersionDataType) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                @Nullable ConfigurationVersionDataType projectedInput0;
+                {
+                  Object methodValue = inputValues[0].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    projectedInput0 = (ConfigurationVersionDataType) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                callbackInput0 = projectedInput0;
+              } catch (UaException failure) {
+                inputResults[0] = failure.getStatusCode();
+              }
+            }
+            @Nullable FieldTargetDataType @Nullable [] callbackInput1 = null;
+            if (inputValues.length > 1) {
+              try {
+                @Nullable FieldTargetDataType @Nullable [] convertedInput1;
+                {
+                  Object methodValue = inputValues[1].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    if (methodValue == null) {
+                      convertedInput1 = null;
+                    } else {
+                      convertedInput1 = new FieldTargetDataType[Array.getLength(methodValue)];
+                      for (int valueIndex = 0; valueIndex < convertedInput1.length; valueIndex++) {
+                        Object valueElement = Array.get(methodValue, valueIndex);
+                        convertedInput1[valueIndex] = (FieldTargetDataType) valueElement;
+                      }
+                    }
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                @Nullable FieldTargetDataType @Nullable [] projectedInput1;
+                {
+                  Object methodValue = inputValues[1].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    if (methodValue == null) {
+                      projectedInput1 = null;
+                    } else {
+                      projectedInput1 = new FieldTargetDataType[Array.getLength(methodValue)];
+                      for (int valueIndex = 0; valueIndex < projectedInput1.length; valueIndex++) {
+                        Object valueElement = Array.get(methodValue, valueIndex);
+                        projectedInput1[valueIndex] = (FieldTargetDataType) valueElement;
+                      }
+                    }
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                callbackInput1 = projectedInput1;
+              } catch (UaException failure) {
+                inputResults[1] = failure.getStatusCode();
+              }
+            }
+            if (Arrays.stream(inputResults).anyMatch(StatusCode::isBad)) {
+              throw new InvalidArgumentException(inputResults);
+            }
+            try {
+              @Nullable StatusCode @Nullable [] outputs =
+                  handler.invoke(context, callbackInput0, callbackInput1);
+              Variant outputValue0;
+              {
+                @Nullable StatusCode @Nullable [] convertedValue;
+                {
+                  Object methodValue = outputs;
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    NamespaceTable namespaceTable = context.getServer().getNamespaceTable();
+                    DataTypeTree dataTypeTree = context.getServer().getDataTypeTree();
+                    NodeId argumentDataTypeId =
+                        ExpandedNodeId.parse("i=19")
+                            .toNodeId(namespaceTable)
+                            .orElseThrow(
+                                () ->
+                                    new UaException(
+                                        StatusCodes.Bad_NodeIdInvalid,
+                                        "Method argument DataType namespace is unavailable"));
+                    if (!OpcUaDataType.isBuiltin(argumentDataTypeId)
+                        && dataTypeTree.getDataType(argumentDataTypeId) == null) {
+                      throw new UaException(
+                          StatusCodes.Bad_TypeMismatch,
+                          "Method argument AddResults (effective property i=17388, DataType i=19)"
+                              + " is unavailable in the effective type tree; resolved DataType: "
+                              + argumentDataTypeId);
+                    }
+                    Object numericElements =
+                        methodValue instanceof Matrix
+                            ? ((Matrix) methodValue).getElements()
+                            : methodValue;
+                    if (numericElements != null
+                        && numericElements.getClass().isArray()
+                        && (numericElements.getClass().getComponentType() == Number.class
+                            || numericElements.getClass().getComponentType() == UNumber.class)
+                        && (argumentDataTypeId.equals(NodeIds.Number)
+                            || dataTypeTree.isSubtypeOf(argumentDataTypeId, NodeIds.Number))) {
+                      Class<?> numericElementType = null;
+                      for (int numericIndex = 0;
+                          numericIndex < Array.getLength(numericElements);
+                          numericIndex++) {
+                        Object numericElement = Array.get(numericElements, numericIndex);
+                        if (numericElement != null) {
+                          if (numericElementType != null
+                              && numericElementType != numericElement.getClass()) {
+                            throw new UaException(
+                                StatusCodes.Bad_TypeMismatch,
+                                "An abstract numeric array requires one homogeneous wire element"
+                                    + " type");
+                          }
+                          numericElementType = numericElement.getClass();
+                        }
+                      }
+                      if (numericElementType == null) {
+                        numericElementType = dataTypeTree.getBackingClass(argumentDataTypeId);
+                      }
+                      if (numericElementType == Number.class
+                          || numericElementType == UNumber.class) {
+                        throw new UaException(
+                            StatusCodes.Bad_TypeMismatch,
+                            "An empty or all-null abstract numeric array requires a concretely"
+                                + " typed array");
+                      }
+                      Object numericArray =
+                          Array.newInstance(numericElementType, Array.getLength(numericElements));
+                      for (int numericIndex = 0;
+                          numericIndex < Array.getLength(numericElements);
+                          numericIndex++) {
+                        Array.set(
+                            numericArray, numericIndex, Array.get(numericElements, numericIndex));
+                      }
+                      if (methodValue instanceof Matrix) {
+                        methodValue =
+                            new Matrix(
+                                numericArray,
+                                ((Matrix) methodValue).getDimensions().clone(),
+                                ((Matrix) methodValue)
+                                    .getDataType()
+                                    .orElseThrow(
+                                        () ->
+                                            new UaException(
+                                                StatusCodes.Bad_TypeMismatch,
+                                                "A numeric Matrix requires an explicit wire"
+                                                    + " DataType")),
+                                ((Matrix) methodValue).getDataTypeId().orElse(null));
+                      } else {
+                        methodValue = numericArray;
+                      }
+                    }
+                    if (methodValue != null) {
+                      Object shapeElements =
+                          methodValue instanceof Matrix
+                              ? ((Matrix) methodValue).getElements()
+                              : methodValue;
+                      int valueRank =
+                          methodValue instanceof Matrix
+                              ? ((Matrix) methodValue).getValueRank()
+                              : ArrayUtil.getValueRank(methodValue);
+                      boolean emptyArray =
+                          methodValue.getClass().isArray()
+                              && ArrayUtil.getValueRank(methodValue) == 1
+                              && Array.getLength(methodValue) == 0;
+                      if (!(valueRank == 1 || emptyArray)) {
+                        throw new UaException(
+                            StatusCodes.Bad_TypeMismatch, "Method argument ValueRank mismatch");
+                      }
+                      if (methodValue instanceof Matrix) {
+                        int[] dimensions = ((Matrix) methodValue).getDimensions();
+                        if (dimensions.length < 2
+                            || !shapeElements.getClass().isArray()
+                            || ArrayUtil.getValueRank(shapeElements) != 1) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch,
+                              "Malformed Method Matrix representation");
+                        }
+                        long elementCount = 1;
+                        for (int dimension : dimensions) {
+                          if (dimension < 0 || elementCount > Integer.MAX_VALUE) {
+                            throw new UaException(
+                                StatusCodes.Bad_TypeMismatch, "Malformed Method Matrix dimensions");
+                          }
+                          elementCount *= dimension;
+                        }
+                        if (elementCount != Array.getLength(shapeElements)) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch,
+                              "Method Matrix dimensions do not match its elements");
+                        }
+                        if (!(((Matrix) methodValue)
+                            .getDataType()
+                            .equals(Variant.of(shapeElements).getDataType()))) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch,
+                              "Method Matrix DataType does not match its elements");
+                        }
+                      }
+                      Variant.of(shapeElements);
+                      if (!emptyArray) {
+                        int[] dimensions =
+                            methodValue instanceof Matrix
+                                ? ((Matrix) methodValue).getDimensions()
+                                : ArrayUtil.getDimensions(methodValue);
+                        long[] maximumDimensions = new long[] {0L};
+                        if (dimensions.length != maximumDimensions.length) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch,
+                              "Method argument ArrayDimensions mismatch");
+                        }
+                        for (int dimensionIndex = 0;
+                            dimensionIndex < dimensions.length;
+                            dimensionIndex++) {
+                          if (maximumDimensions[dimensionIndex] != 0
+                              && dimensions[dimensionIndex] > maximumDimensions[dimensionIndex]) {
+                            throw new UaException(
+                                StatusCodes.Bad_TypeMismatch,
+                                "Method argument exceeds ArrayDimensions maximum");
+                          }
+                        }
+                      }
+                    }
+                    if (methodValue != null) {
+                      Object typedElements =
+                          methodValue instanceof Matrix
+                              ? ((Matrix) methodValue).getElements()
+                              : methodValue;
+                      if (NodeIds.Structure.equals(argumentDataTypeId)
+                          || dataTypeTree.isStructType(argumentDataTypeId)) {
+                        var declaredType = dataTypeTree.getType(argumentDataTypeId);
+                        if (typedElements.getClass().isArray()) {
+                          var structureCodec =
+                              context
+                                  .getServer()
+                                  .getStaticEncodingContext()
+                                  .getDataTypeManager()
+                                  .getCodec(argumentDataTypeId);
+                          Class<?> structureClass =
+                              structureCodec == null
+                                  ? UaStructuredType.class
+                                  : structureCodec.getType();
+                          Object decodedStructures =
+                              Array.newInstance(structureClass, Array.getLength(typedElements));
+                          for (int structureIndex = 0;
+                              structureIndex < Array.getLength(typedElements);
+                              structureIndex++) {
+                            Object structure = Array.get(typedElements, structureIndex);
+                            if (structure instanceof ExtensionObject) {
+                              structure =
+                                  ((ExtensionObject) structure).isNull()
+                                      ? null
+                                      : ((ExtensionObject) structure)
+                                          .decode(context.getServer().getStaticEncodingContext());
+                            }
+                            if (structure != null) {
+                              if (!(structure instanceof UaStructuredType)) {
+                                throw new UaException(
+                                    StatusCodes.Bad_TypeMismatch,
+                                    "Method argument requires a Structure value");
+                              }
+                              if (NodeIds.Structure.equals(argumentDataTypeId)
+                                  || declaredType != null && declaredType.isAbstract()) {
+                                if (!dataTypeTree.isSubtypeOf(
+                                    ((UaStructuredType) structure)
+                                        .getTypeId()
+                                        .toNodeId(namespaceTable)
+                                        .orElse(NodeId.NULL_VALUE),
+                                    argumentDataTypeId)) {
+                                  throw new UaException(
+                                      StatusCodes.Bad_TypeMismatch,
+                                      "Method Structure is not a subtype of the effective"
+                                          + " DataType");
+                                }
+                              } else {
+                                if (!argumentDataTypeId.equals(
+                                    ((UaStructuredType) structure)
+                                        .getTypeId()
+                                        .toNodeId(namespaceTable)
+                                        .orElse(NodeId.NULL_VALUE))) {
+                                  throw new UaException(
+                                      StatusCodes.Bad_TypeMismatch,
+                                      "Method Structure does not match the effective DataType");
+                                }
+                              }
+                            }
+                            Array.set(decodedStructures, structureIndex, structure);
+                          }
+                          methodValue =
+                              methodValue instanceof Matrix
+                                  ? new Matrix(
+                                      decodedStructures,
+                                      ((Matrix) methodValue).getDimensions().clone())
+                                  : decodedStructures;
+                        } else {
+                          if (typedElements instanceof ExtensionObject) {
+                            typedElements =
+                                ((ExtensionObject) typedElements).isNull()
+                                    ? null
+                                    : ((ExtensionObject) typedElements)
+                                        .decode(context.getServer().getStaticEncodingContext());
+                          }
+                          if (typedElements != null) {
+                            if (!(typedElements instanceof UaStructuredType)) {
+                              throw new UaException(
+                                  StatusCodes.Bad_TypeMismatch,
+                                  "Method argument requires a Structure value");
+                            }
+                            if (NodeIds.Structure.equals(argumentDataTypeId)
+                                || declaredType != null && declaredType.isAbstract()) {
+                              if (!dataTypeTree.isSubtypeOf(
+                                  ((UaStructuredType) typedElements)
+                                      .getTypeId()
+                                      .toNodeId(namespaceTable)
+                                      .orElse(NodeId.NULL_VALUE),
+                                  argumentDataTypeId)) {
+                                throw new UaException(
+                                    StatusCodes.Bad_TypeMismatch,
+                                    "Method Structure is not a subtype of the effective DataType");
+                              }
+                            } else {
+                              if (!argumentDataTypeId.equals(
+                                  ((UaStructuredType) typedElements)
+                                      .getTypeId()
+                                      .toNodeId(namespaceTable)
+                                      .orElse(NodeId.NULL_VALUE))) {
+                                throw new UaException(
+                                    StatusCodes.Bad_TypeMismatch,
+                                    "Method Structure does not match the effective DataType");
+                              }
+                            }
+                          }
+                          methodValue = typedElements;
+                        }
+                      } else {
+                        Variant.of(typedElements);
+                        NodeId assignableDataTypeId =
+                            dataTypeTree.getBackingClass(argumentDataTypeId) == Number.class
+                                    && dataTypeTree.isSubtypeOf(argumentDataTypeId, NodeIds.Integer)
+                                ? NodeIds.Integer
+                                : argumentDataTypeId;
+                        if (dataTypeTree.getBackingClass(argumentDataTypeId) != Variant.class
+                            && !dataTypeTree.isAssignable(
+                                assignableDataTypeId, ArrayUtil.getBoxedType(typedElements))) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch, "Method argument DataType mismatch");
+                        }
+                      }
+                    }
+                    if (methodValue == null) {
+                      convertedValue = null;
+                    } else {
+                      convertedValue = new StatusCode[Array.getLength(methodValue)];
+                      for (int valueIndex = 0; valueIndex < convertedValue.length; valueIndex++) {
+                        Object valueElement = Array.get(methodValue, valueIndex);
+                        convertedValue[valueIndex] = (StatusCode) valueElement;
+                      }
+                    }
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                try {
+                  Object wireValue = convertedValue;
+                  Object wireElements =
+                      wireValue instanceof Matrix ? ((Matrix) wireValue).getElements() : wireValue;
+                  var numericWireValues = new ArrayDeque<Object[]>();
+                  var numericWirePath =
+                      Collections.newSetFromMap(new IdentityHashMap<Object, Boolean>());
+                  if (wireValue != null) {
+                    numericWireValues.push(new Object[] {wireValue, false});
+                  }
+                  while (!numericWireValues.isEmpty()) {
+                    Object[] numericWireFrame = numericWireValues.pop();
+                    Object numericWireValue = numericWireFrame[0];
+                    if ((Boolean) numericWireFrame[1]) {
+                      numericWirePath.remove(numericWireValue);
+                      continue;
+                    }
+                    while (numericWireValue instanceof Variant
+                        || numericWireValue instanceof DataValue) {
+                      if (numericWireValue instanceof DataValue) {
+                        if (((DataValue) numericWireValue).getValue() == null) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch,
+                              "A DataValue requires a value wrapper; use Variant.NULL_VALUE for"
+                                  + " null");
+                        }
+                        if (((DataValue) numericWireValue).getStatusCode() == null) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch,
+                              "A DataValue requires a StatusCode; use StatusCode.GOOD for Good");
+                        }
+                        numericWireValue = ((DataValue) numericWireValue).getValue();
+                      } else {
+                        numericWireValue = ((Variant) numericWireValue).getValue();
+                      }
+                    }
+                    if (numericWireValue instanceof Matrix) {
+                      numericWireValue = ((Matrix) numericWireValue).getElements();
+                    }
+                    if (numericWireValue != null && numericWireValue.getClass().isArray()) {
+                      if (!numericWirePath.add(numericWireValue)) {
+                        throw new UaException(
+                            StatusCodes.Bad_TypeMismatch,
+                            "Cyclic Variant arrays cannot be encoded");
+                      }
+                      numericWireValues.push(new Object[] {numericWireValue, true});
+                      for (int numericWireIndex = 0;
+                          numericWireIndex < Array.getLength(numericWireValue);
+                          numericWireIndex++) {
+                        Object numericWireElement = Array.get(numericWireValue, numericWireIndex);
+                        if (numericWireElement == null
+                            && ArrayUtil.getBoxedType(numericWireValue) == Variant.class) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch,
+                              "A Variant wire array requires a wrapper for every element; use"
+                                  + " Variant.NULL_VALUE for null");
+                        }
+                        if (numericWireElement == null
+                            && (UaEnumeratedType.class.isAssignableFrom(
+                                    ArrayUtil.getBoxedType(numericWireValue))
+                                || OptionSetUInteger.class.isAssignableFrom(
+                                    ArrayUtil.getBoxedType(numericWireValue)))) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch,
+                              "An enum or OptionSet wire array cannot encode a null element");
+                        }
+                        if (numericWireElement == null
+                            && ArrayUtil.getBoxedType(numericWireValue) == Boolean.class) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch,
+                              "A Boolean wire array cannot retain a null element; Milo encodes it"
+                                  + " as false");
+                        }
+                        if (numericWireElement == null
+                            && ArrayUtil.getBoxedType(numericWireValue) == StatusCode.class) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch,
+                              "A StatusCode wire array cannot retain a null element; Milo encodes"
+                                  + " it as Good");
+                        }
+                        if (numericWireElement == null
+                            && Number.class.isAssignableFrom(
+                                ArrayUtil.getBoxedType(numericWireValue))) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch,
+                              "A numeric wire array cannot retain a null element; Milo encodes it"
+                                  + " as zero");
+                        }
+                        if (numericWireElement instanceof Variant
+                            || numericWireElement instanceof DataValue) {
+                          numericWireValues.push(new Object[] {numericWireElement, false});
+                        }
+                      }
+                    }
+                  }
+                  wireValue =
+                      ExtensionObject.encodeValue(
+                          context.getServer().getStaticEncodingContext(), wireValue);
+                  outputValue0 = Variant.of(wireValue);
+                } catch (UaSerializationException encodingFailure) {
+                  throw new UaException(
+                      encodingFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                          ? StatusCodes.Bad_OutOfRange
+                          : StatusCodes.Bad_TypeMismatch,
+                      encodingFailure);
+                } catch (ClassCastException | IllegalArgumentException encodingFailure) {
+                  throw new UaException(StatusCodes.Bad_TypeMismatch, encodingFailure);
+                }
+              }
+              return new CallMethodResult(
+                  StatusCode.GOOD,
+                  new StatusCode[0],
+                  new DiagnosticInfo[0],
+                  new Variant[] {outputValue0});
+            } catch (UaRuntimeException failure) {
+              throw new UaException(failure.getStatusCode().getValue(), failure);
+            } catch (RuntimeException callbackFailure) {
+              throw new UaException(StatusCodes.Bad_InternalError, callbackFailure);
+            }
+          }
+        });
+  }
+
+  @Override
+  public MethodBinding bindCreateTargetVariablesDetailed(
+      MethodBindings bindings, DataSetReaderTypeCreateTargetVariablesDetailedHandler handler)
+      throws UaException {
+    Objects.requireNonNull(bindings, "bindings");
+    Objects.requireNonNull(handler, "handler");
+    UaMethodNode methodNode = getCreateTargetVariablesMethodNode();
+    if (methodNode == null) {
+      throw new UaException(StatusCodes.Bad_NotFound, "Cannot bind an absent Method");
+    }
+    return bindings.bind(
+        this,
+        methodNode,
+        new AbstractMethodInvocationHandler(methodNode) {
+          @Override
+          public Argument[] getInputArguments() {
+            return new Argument[] {
+              new Argument(
+                  "ConfigurationVersion",
+                  ExpandedNodeId.parse("i=14593")
+                      .toNodeId(getNode().getNodeContext().getNamespaceTable())
+                      .orElseThrow(() -> new UaRuntimeException(StatusCodes.Bad_NodeIdUnknown)),
+                  -1,
+                  null,
+                  new LocalizedText(null, "")),
+              new Argument(
+                  "TargetVariablesToAdd",
+                  ExpandedNodeId.parse("i=14744")
+                      .toNodeId(getNode().getNodeContext().getNamespaceTable())
+                      .orElseThrow(() -> new UaRuntimeException(StatusCodes.Bad_NodeIdUnknown)),
+                  1,
+                  new UInteger[] {UInteger.valueOf(0)},
+                  new LocalizedText(null, ""))
+            };
+          }
+
+          @Override
+          public Argument[] getOutputArguments() {
+            return new Argument[] {
+              new Argument(
+                  "AddResults",
+                  ExpandedNodeId.parse("i=19")
+                      .toNodeId(getNode().getNodeContext().getNamespaceTable())
+                      .orElseThrow(() -> new UaRuntimeException(StatusCodes.Bad_NodeIdUnknown)),
+                  1,
+                  new UInteger[] {UInteger.valueOf(0)},
+                  new LocalizedText(null, ""))
+            };
+          }
+
+          @Override
+          protected int getRequiredInputArgumentCount(Argument[] inputArguments) {
+            return 2;
+          }
+
+          @Override
+          protected CallMethodResult invokeResult(
+              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              throws UaException {
+            StatusCode[] inputResults = new StatusCode[inputValues.length];
+            Arrays.fill(inputResults, StatusCode.GOOD);
+            @Nullable ConfigurationVersionDataType callbackInput0 = null;
+            if (inputValues.length > 0) {
+              try {
+                @Nullable ConfigurationVersionDataType convertedInput0;
+                {
+                  Object methodValue = inputValues[0].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    convertedInput0 = (ConfigurationVersionDataType) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                @Nullable ConfigurationVersionDataType projectedInput0;
+                {
+                  Object methodValue = inputValues[0].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    projectedInput0 = (ConfigurationVersionDataType) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                callbackInput0 = projectedInput0;
+              } catch (UaException failure) {
+                inputResults[0] = failure.getStatusCode();
+              }
+            }
+            @Nullable FieldTargetDataType @Nullable [] callbackInput1 = null;
+            if (inputValues.length > 1) {
+              try {
+                @Nullable FieldTargetDataType @Nullable [] convertedInput1;
+                {
+                  Object methodValue = inputValues[1].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    if (methodValue == null) {
+                      convertedInput1 = null;
+                    } else {
+                      convertedInput1 = new FieldTargetDataType[Array.getLength(methodValue)];
+                      for (int valueIndex = 0; valueIndex < convertedInput1.length; valueIndex++) {
+                        Object valueElement = Array.get(methodValue, valueIndex);
+                        convertedInput1[valueIndex] = (FieldTargetDataType) valueElement;
+                      }
+                    }
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                @Nullable FieldTargetDataType @Nullable [] projectedInput1;
+                {
+                  Object methodValue = inputValues[1].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    if (methodValue == null) {
+                      projectedInput1 = null;
+                    } else {
+                      projectedInput1 = new FieldTargetDataType[Array.getLength(methodValue)];
+                      for (int valueIndex = 0; valueIndex < projectedInput1.length; valueIndex++) {
+                        Object valueElement = Array.get(methodValue, valueIndex);
+                        projectedInput1[valueIndex] = (FieldTargetDataType) valueElement;
+                      }
+                    }
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                callbackInput1 = projectedInput1;
+              } catch (UaException failure) {
+                inputResults[1] = failure.getStatusCode();
+              }
+            }
+            if (Arrays.stream(inputResults).anyMatch(StatusCode::isBad)) {
+              throw new InvalidArgumentException(inputResults);
+            }
+            try {
+              var result = handler.invoke(context, callbackInput0, callbackInput1);
+              if (result == null) {
+                throw new UaException(
+                    StatusCodes.Bad_InternalError, "A detailed Method handler returned null");
+              }
+              if (!result.hasOutputs()) {
+                return new CallMethodResult(
+                    result.status(),
+                    result.inputResults(),
+                    result.inputDiagnostics(),
+                    new Variant[0]);
+              }
+              var outputs = result.outputs();
+              Variant outputValue0;
+              {
+                @Nullable StatusCode @Nullable [] convertedValue;
+                {
+                  Object methodValue = outputs;
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    NamespaceTable namespaceTable = context.getServer().getNamespaceTable();
+                    DataTypeTree dataTypeTree = context.getServer().getDataTypeTree();
+                    NodeId argumentDataTypeId =
+                        ExpandedNodeId.parse("i=19")
+                            .toNodeId(namespaceTable)
+                            .orElseThrow(
+                                () ->
+                                    new UaException(
+                                        StatusCodes.Bad_NodeIdInvalid,
+                                        "Method argument DataType namespace is unavailable"));
+                    if (!OpcUaDataType.isBuiltin(argumentDataTypeId)
+                        && dataTypeTree.getDataType(argumentDataTypeId) == null) {
+                      throw new UaException(
+                          StatusCodes.Bad_TypeMismatch,
+                          "Method argument AddResults (effective property i=17388, DataType i=19)"
+                              + " is unavailable in the effective type tree; resolved DataType: "
+                              + argumentDataTypeId);
+                    }
+                    Object numericElements =
+                        methodValue instanceof Matrix
+                            ? ((Matrix) methodValue).getElements()
+                            : methodValue;
+                    if (numericElements != null
+                        && numericElements.getClass().isArray()
+                        && (numericElements.getClass().getComponentType() == Number.class
+                            || numericElements.getClass().getComponentType() == UNumber.class)
+                        && (argumentDataTypeId.equals(NodeIds.Number)
+                            || dataTypeTree.isSubtypeOf(argumentDataTypeId, NodeIds.Number))) {
+                      Class<?> numericElementType = null;
+                      for (int numericIndex = 0;
+                          numericIndex < Array.getLength(numericElements);
+                          numericIndex++) {
+                        Object numericElement = Array.get(numericElements, numericIndex);
+                        if (numericElement != null) {
+                          if (numericElementType != null
+                              && numericElementType != numericElement.getClass()) {
+                            throw new UaException(
+                                StatusCodes.Bad_TypeMismatch,
+                                "An abstract numeric array requires one homogeneous wire element"
+                                    + " type");
+                          }
+                          numericElementType = numericElement.getClass();
+                        }
+                      }
+                      if (numericElementType == null) {
+                        numericElementType = dataTypeTree.getBackingClass(argumentDataTypeId);
+                      }
+                      if (numericElementType == Number.class
+                          || numericElementType == UNumber.class) {
+                        throw new UaException(
+                            StatusCodes.Bad_TypeMismatch,
+                            "An empty or all-null abstract numeric array requires a concretely"
+                                + " typed array");
+                      }
+                      Object numericArray =
+                          Array.newInstance(numericElementType, Array.getLength(numericElements));
+                      for (int numericIndex = 0;
+                          numericIndex < Array.getLength(numericElements);
+                          numericIndex++) {
+                        Array.set(
+                            numericArray, numericIndex, Array.get(numericElements, numericIndex));
+                      }
+                      if (methodValue instanceof Matrix) {
+                        methodValue =
+                            new Matrix(
+                                numericArray,
+                                ((Matrix) methodValue).getDimensions().clone(),
+                                ((Matrix) methodValue)
+                                    .getDataType()
+                                    .orElseThrow(
+                                        () ->
+                                            new UaException(
+                                                StatusCodes.Bad_TypeMismatch,
+                                                "A numeric Matrix requires an explicit wire"
+                                                    + " DataType")),
+                                ((Matrix) methodValue).getDataTypeId().orElse(null));
+                      } else {
+                        methodValue = numericArray;
+                      }
+                    }
+                    if (methodValue != null) {
+                      Object shapeElements =
+                          methodValue instanceof Matrix
+                              ? ((Matrix) methodValue).getElements()
+                              : methodValue;
+                      int valueRank =
+                          methodValue instanceof Matrix
+                              ? ((Matrix) methodValue).getValueRank()
+                              : ArrayUtil.getValueRank(methodValue);
+                      boolean emptyArray =
+                          methodValue.getClass().isArray()
+                              && ArrayUtil.getValueRank(methodValue) == 1
+                              && Array.getLength(methodValue) == 0;
+                      if (!(valueRank == 1 || emptyArray)) {
+                        throw new UaException(
+                            StatusCodes.Bad_TypeMismatch, "Method argument ValueRank mismatch");
+                      }
+                      if (methodValue instanceof Matrix) {
+                        int[] dimensions = ((Matrix) methodValue).getDimensions();
+                        if (dimensions.length < 2
+                            || !shapeElements.getClass().isArray()
+                            || ArrayUtil.getValueRank(shapeElements) != 1) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch,
+                              "Malformed Method Matrix representation");
+                        }
+                        long elementCount = 1;
+                        for (int dimension : dimensions) {
+                          if (dimension < 0 || elementCount > Integer.MAX_VALUE) {
+                            throw new UaException(
+                                StatusCodes.Bad_TypeMismatch, "Malformed Method Matrix dimensions");
+                          }
+                          elementCount *= dimension;
+                        }
+                        if (elementCount != Array.getLength(shapeElements)) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch,
+                              "Method Matrix dimensions do not match its elements");
+                        }
+                        if (!(((Matrix) methodValue)
+                            .getDataType()
+                            .equals(Variant.of(shapeElements).getDataType()))) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch,
+                              "Method Matrix DataType does not match its elements");
+                        }
+                      }
+                      Variant.of(shapeElements);
+                      if (!emptyArray) {
+                        int[] dimensions =
+                            methodValue instanceof Matrix
+                                ? ((Matrix) methodValue).getDimensions()
+                                : ArrayUtil.getDimensions(methodValue);
+                        long[] maximumDimensions = new long[] {0L};
+                        if (dimensions.length != maximumDimensions.length) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch,
+                              "Method argument ArrayDimensions mismatch");
+                        }
+                        for (int dimensionIndex = 0;
+                            dimensionIndex < dimensions.length;
+                            dimensionIndex++) {
+                          if (maximumDimensions[dimensionIndex] != 0
+                              && dimensions[dimensionIndex] > maximumDimensions[dimensionIndex]) {
+                            throw new UaException(
+                                StatusCodes.Bad_TypeMismatch,
+                                "Method argument exceeds ArrayDimensions maximum");
+                          }
+                        }
+                      }
+                    }
+                    if (methodValue != null) {
+                      Object typedElements =
+                          methodValue instanceof Matrix
+                              ? ((Matrix) methodValue).getElements()
+                              : methodValue;
+                      if (NodeIds.Structure.equals(argumentDataTypeId)
+                          || dataTypeTree.isStructType(argumentDataTypeId)) {
+                        var declaredType = dataTypeTree.getType(argumentDataTypeId);
+                        if (typedElements.getClass().isArray()) {
+                          var structureCodec =
+                              context
+                                  .getServer()
+                                  .getStaticEncodingContext()
+                                  .getDataTypeManager()
+                                  .getCodec(argumentDataTypeId);
+                          Class<?> structureClass =
+                              structureCodec == null
+                                  ? UaStructuredType.class
+                                  : structureCodec.getType();
+                          Object decodedStructures =
+                              Array.newInstance(structureClass, Array.getLength(typedElements));
+                          for (int structureIndex = 0;
+                              structureIndex < Array.getLength(typedElements);
+                              structureIndex++) {
+                            Object structure = Array.get(typedElements, structureIndex);
+                            if (structure instanceof ExtensionObject) {
+                              structure =
+                                  ((ExtensionObject) structure).isNull()
+                                      ? null
+                                      : ((ExtensionObject) structure)
+                                          .decode(context.getServer().getStaticEncodingContext());
+                            }
+                            if (structure != null) {
+                              if (!(structure instanceof UaStructuredType)) {
+                                throw new UaException(
+                                    StatusCodes.Bad_TypeMismatch,
+                                    "Method argument requires a Structure value");
+                              }
+                              if (NodeIds.Structure.equals(argumentDataTypeId)
+                                  || declaredType != null && declaredType.isAbstract()) {
+                                if (!dataTypeTree.isSubtypeOf(
+                                    ((UaStructuredType) structure)
+                                        .getTypeId()
+                                        .toNodeId(namespaceTable)
+                                        .orElse(NodeId.NULL_VALUE),
+                                    argumentDataTypeId)) {
+                                  throw new UaException(
+                                      StatusCodes.Bad_TypeMismatch,
+                                      "Method Structure is not a subtype of the effective"
+                                          + " DataType");
+                                }
+                              } else {
+                                if (!argumentDataTypeId.equals(
+                                    ((UaStructuredType) structure)
+                                        .getTypeId()
+                                        .toNodeId(namespaceTable)
+                                        .orElse(NodeId.NULL_VALUE))) {
+                                  throw new UaException(
+                                      StatusCodes.Bad_TypeMismatch,
+                                      "Method Structure does not match the effective DataType");
+                                }
+                              }
+                            }
+                            Array.set(decodedStructures, structureIndex, structure);
+                          }
+                          methodValue =
+                              methodValue instanceof Matrix
+                                  ? new Matrix(
+                                      decodedStructures,
+                                      ((Matrix) methodValue).getDimensions().clone())
+                                  : decodedStructures;
+                        } else {
+                          if (typedElements instanceof ExtensionObject) {
+                            typedElements =
+                                ((ExtensionObject) typedElements).isNull()
+                                    ? null
+                                    : ((ExtensionObject) typedElements)
+                                        .decode(context.getServer().getStaticEncodingContext());
+                          }
+                          if (typedElements != null) {
+                            if (!(typedElements instanceof UaStructuredType)) {
+                              throw new UaException(
+                                  StatusCodes.Bad_TypeMismatch,
+                                  "Method argument requires a Structure value");
+                            }
+                            if (NodeIds.Structure.equals(argumentDataTypeId)
+                                || declaredType != null && declaredType.isAbstract()) {
+                              if (!dataTypeTree.isSubtypeOf(
+                                  ((UaStructuredType) typedElements)
+                                      .getTypeId()
+                                      .toNodeId(namespaceTable)
+                                      .orElse(NodeId.NULL_VALUE),
+                                  argumentDataTypeId)) {
+                                throw new UaException(
+                                    StatusCodes.Bad_TypeMismatch,
+                                    "Method Structure is not a subtype of the effective DataType");
+                              }
+                            } else {
+                              if (!argumentDataTypeId.equals(
+                                  ((UaStructuredType) typedElements)
+                                      .getTypeId()
+                                      .toNodeId(namespaceTable)
+                                      .orElse(NodeId.NULL_VALUE))) {
+                                throw new UaException(
+                                    StatusCodes.Bad_TypeMismatch,
+                                    "Method Structure does not match the effective DataType");
+                              }
+                            }
+                          }
+                          methodValue = typedElements;
+                        }
+                      } else {
+                        Variant.of(typedElements);
+                        NodeId assignableDataTypeId =
+                            dataTypeTree.getBackingClass(argumentDataTypeId) == Number.class
+                                    && dataTypeTree.isSubtypeOf(argumentDataTypeId, NodeIds.Integer)
+                                ? NodeIds.Integer
+                                : argumentDataTypeId;
+                        if (dataTypeTree.getBackingClass(argumentDataTypeId) != Variant.class
+                            && !dataTypeTree.isAssignable(
+                                assignableDataTypeId, ArrayUtil.getBoxedType(typedElements))) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch, "Method argument DataType mismatch");
+                        }
+                      }
+                    }
+                    if (methodValue == null) {
+                      convertedValue = null;
+                    } else {
+                      convertedValue = new StatusCode[Array.getLength(methodValue)];
+                      for (int valueIndex = 0; valueIndex < convertedValue.length; valueIndex++) {
+                        Object valueElement = Array.get(methodValue, valueIndex);
+                        convertedValue[valueIndex] = (StatusCode) valueElement;
+                      }
+                    }
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                try {
+                  Object wireValue = convertedValue;
+                  Object wireElements =
+                      wireValue instanceof Matrix ? ((Matrix) wireValue).getElements() : wireValue;
+                  var numericWireValues = new ArrayDeque<Object[]>();
+                  var numericWirePath =
+                      Collections.newSetFromMap(new IdentityHashMap<Object, Boolean>());
+                  if (wireValue != null) {
+                    numericWireValues.push(new Object[] {wireValue, false});
+                  }
+                  while (!numericWireValues.isEmpty()) {
+                    Object[] numericWireFrame = numericWireValues.pop();
+                    Object numericWireValue = numericWireFrame[0];
+                    if ((Boolean) numericWireFrame[1]) {
+                      numericWirePath.remove(numericWireValue);
+                      continue;
+                    }
+                    while (numericWireValue instanceof Variant
+                        || numericWireValue instanceof DataValue) {
+                      if (numericWireValue instanceof DataValue) {
+                        if (((DataValue) numericWireValue).getValue() == null) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch,
+                              "A DataValue requires a value wrapper; use Variant.NULL_VALUE for"
+                                  + " null");
+                        }
+                        if (((DataValue) numericWireValue).getStatusCode() == null) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch,
+                              "A DataValue requires a StatusCode; use StatusCode.GOOD for Good");
+                        }
+                        numericWireValue = ((DataValue) numericWireValue).getValue();
+                      } else {
+                        numericWireValue = ((Variant) numericWireValue).getValue();
+                      }
+                    }
+                    if (numericWireValue instanceof Matrix) {
+                      numericWireValue = ((Matrix) numericWireValue).getElements();
+                    }
+                    if (numericWireValue != null && numericWireValue.getClass().isArray()) {
+                      if (!numericWirePath.add(numericWireValue)) {
+                        throw new UaException(
+                            StatusCodes.Bad_TypeMismatch,
+                            "Cyclic Variant arrays cannot be encoded");
+                      }
+                      numericWireValues.push(new Object[] {numericWireValue, true});
+                      for (int numericWireIndex = 0;
+                          numericWireIndex < Array.getLength(numericWireValue);
+                          numericWireIndex++) {
+                        Object numericWireElement = Array.get(numericWireValue, numericWireIndex);
+                        if (numericWireElement == null
+                            && ArrayUtil.getBoxedType(numericWireValue) == Variant.class) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch,
+                              "A Variant wire array requires a wrapper for every element; use"
+                                  + " Variant.NULL_VALUE for null");
+                        }
+                        if (numericWireElement == null
+                            && (UaEnumeratedType.class.isAssignableFrom(
+                                    ArrayUtil.getBoxedType(numericWireValue))
+                                || OptionSetUInteger.class.isAssignableFrom(
+                                    ArrayUtil.getBoxedType(numericWireValue)))) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch,
+                              "An enum or OptionSet wire array cannot encode a null element");
+                        }
+                        if (numericWireElement == null
+                            && ArrayUtil.getBoxedType(numericWireValue) == Boolean.class) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch,
+                              "A Boolean wire array cannot retain a null element; Milo encodes it"
+                                  + " as false");
+                        }
+                        if (numericWireElement == null
+                            && ArrayUtil.getBoxedType(numericWireValue) == StatusCode.class) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch,
+                              "A StatusCode wire array cannot retain a null element; Milo encodes"
+                                  + " it as Good");
+                        }
+                        if (numericWireElement == null
+                            && Number.class.isAssignableFrom(
+                                ArrayUtil.getBoxedType(numericWireValue))) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch,
+                              "A numeric wire array cannot retain a null element; Milo encodes it"
+                                  + " as zero");
+                        }
+                        if (numericWireElement instanceof Variant
+                            || numericWireElement instanceof DataValue) {
+                          numericWireValues.push(new Object[] {numericWireElement, false});
+                        }
+                      }
+                    }
+                  }
+                  wireValue =
+                      ExtensionObject.encodeValue(
+                          context.getServer().getStaticEncodingContext(), wireValue);
+                  outputValue0 = Variant.of(wireValue);
+                } catch (UaSerializationException encodingFailure) {
+                  throw new UaException(
+                      encodingFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                          ? StatusCodes.Bad_OutOfRange
+                          : StatusCodes.Bad_TypeMismatch,
+                      encodingFailure);
+                } catch (ClassCastException | IllegalArgumentException encodingFailure) {
+                  throw new UaException(StatusCodes.Bad_TypeMismatch, encodingFailure);
+                }
+              }
+              return new CallMethodResult(
+                  result.status(),
+                  new StatusCode[0],
+                  new DiagnosticInfo[0],
+                  new Variant[] {outputValue0});
+            } catch (UaRuntimeException failure) {
+              throw new UaException(failure.getStatusCode().getValue(), failure);
+            } catch (RuntimeException callbackFailure) {
+              throw new UaException(StatusCodes.Bad_InternalError, callbackFailure);
+            }
+          }
+        });
+  }
+
+  @Override
+  public @Nullable UaMethodNode getCreateDataSetMirrorMethodNode() {
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:CreateDataSetMirror (declaration i=17389, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "CreateDataSetMirror");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:CreateDataSetMirror"
+                    + " (declaration i=17389, owner i=15306) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:CreateDataSetMirror (declaration i=17389, owner"
+                  + " i=15306) on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:CreateDataSetMirror (declaration i=17389, owner"
+                  + " i=15306) on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:CreateDataSetMirror (declaration i=17389, owner"
+                  + " i=15306) on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        return null;
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:CreateDataSetMirror (declaration i=17389, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Method) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:CreateDataSetMirror (declaration i=17389, owner i=15306)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof UaMethodNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:CreateDataSetMirror (declaration i=17389, owner i=15306)"
+              + " on "
+              + getNodeId());
+    }
+    return (UaMethodNode) parent;
+  }
+
+  @Override
+  public MethodBinding bindCreateDataSetMirror(
+      MethodBindings bindings, DataSetReaderTypeCreateDataSetMirrorHandler handler)
+      throws UaException {
+    Objects.requireNonNull(bindings, "bindings");
+    Objects.requireNonNull(handler, "handler");
+    UaMethodNode methodNode = getCreateDataSetMirrorMethodNode();
+    if (methodNode == null) {
+      throw new UaException(StatusCodes.Bad_NotFound, "Cannot bind an absent Method");
+    }
+    return bindings.bind(
+        this,
+        methodNode,
+        new AbstractMethodInvocationHandler(methodNode) {
+          @Override
+          public Argument[] getInputArguments() {
+            return new Argument[] {
+              new Argument(
+                  "ParentNodeName",
+                  ExpandedNodeId.parse("i=12")
+                      .toNodeId(getNode().getNodeContext().getNamespaceTable())
+                      .orElseThrow(() -> new UaRuntimeException(StatusCodes.Bad_NodeIdUnknown)),
+                  -1,
+                  null,
+                  new LocalizedText(null, "")),
+              new Argument(
+                  "RolePermissions",
+                  ExpandedNodeId.parse("i=96")
+                      .toNodeId(getNode().getNodeContext().getNamespaceTable())
+                      .orElseThrow(() -> new UaRuntimeException(StatusCodes.Bad_NodeIdUnknown)),
+                  1,
+                  new UInteger[] {UInteger.valueOf(0)},
+                  new LocalizedText(null, ""))
+            };
+          }
+
+          @Override
+          public Argument[] getOutputArguments() {
+            return new Argument[] {
+              new Argument(
+                  "ParentNodeId",
+                  ExpandedNodeId.parse("i=17")
+                      .toNodeId(getNode().getNodeContext().getNamespaceTable())
+                      .orElseThrow(() -> new UaRuntimeException(StatusCodes.Bad_NodeIdUnknown)),
+                  -1,
+                  null,
+                  new LocalizedText(null, ""))
+            };
+          }
+
+          @Override
+          protected int getRequiredInputArgumentCount(Argument[] inputArguments) {
+            return 2;
+          }
+
+          @Override
+          protected CallMethodResult invokeResult(
+              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              throws UaException {
+            StatusCode[] inputResults = new StatusCode[inputValues.length];
+            Arrays.fill(inputResults, StatusCode.GOOD);
+            @Nullable String callbackInput0 = null;
+            if (inputValues.length > 0) {
+              try {
+                @Nullable String convertedInput0;
+                {
+                  Object methodValue = inputValues[0].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    convertedInput0 = (String) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                @Nullable String projectedInput0;
+                {
+                  Object methodValue = inputValues[0].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    projectedInput0 = (String) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                callbackInput0 = projectedInput0;
+              } catch (UaException failure) {
+                inputResults[0] = failure.getStatusCode();
+              }
+            }
+            @Nullable RolePermissionType @Nullable [] callbackInput1 = null;
+            if (inputValues.length > 1) {
+              try {
+                @Nullable RolePermissionType @Nullable [] convertedInput1;
+                {
+                  Object methodValue = inputValues[1].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    if (methodValue == null) {
+                      convertedInput1 = null;
+                    } else {
+                      convertedInput1 = new RolePermissionType[Array.getLength(methodValue)];
+                      for (int valueIndex = 0; valueIndex < convertedInput1.length; valueIndex++) {
+                        Object valueElement = Array.get(methodValue, valueIndex);
+                        convertedInput1[valueIndex] = (RolePermissionType) valueElement;
+                      }
+                    }
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                @Nullable RolePermissionType @Nullable [] projectedInput1;
+                {
+                  Object methodValue = inputValues[1].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    if (methodValue == null) {
+                      projectedInput1 = null;
+                    } else {
+                      projectedInput1 = new RolePermissionType[Array.getLength(methodValue)];
+                      for (int valueIndex = 0; valueIndex < projectedInput1.length; valueIndex++) {
+                        Object valueElement = Array.get(methodValue, valueIndex);
+                        projectedInput1[valueIndex] = (RolePermissionType) valueElement;
+                      }
+                    }
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                callbackInput1 = projectedInput1;
+              } catch (UaException failure) {
+                inputResults[1] = failure.getStatusCode();
+              }
+            }
+            if (Arrays.stream(inputResults).anyMatch(StatusCode::isBad)) {
+              throw new InvalidArgumentException(inputResults);
+            }
+            try {
+              @Nullable NodeId outputs = handler.invoke(context, callbackInput0, callbackInput1);
+              Variant outputValue0;
+              {
+                @Nullable NodeId convertedValue;
+                {
+                  Object methodValue = outputs;
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    NamespaceTable namespaceTable = context.getServer().getNamespaceTable();
+                    DataTypeTree dataTypeTree = context.getServer().getDataTypeTree();
+                    NodeId argumentDataTypeId =
+                        ExpandedNodeId.parse("i=17")
+                            .toNodeId(namespaceTable)
+                            .orElseThrow(
+                                () ->
+                                    new UaException(
+                                        StatusCodes.Bad_NodeIdInvalid,
+                                        "Method argument DataType namespace is unavailable"));
+                    if (!OpcUaDataType.isBuiltin(argumentDataTypeId)
+                        && dataTypeTree.getDataType(argumentDataTypeId) == null) {
+                      throw new UaException(
+                          StatusCodes.Bad_TypeMismatch,
+                          "Method argument ParentNodeId (effective property i=17391, DataType i=17)"
+                              + " is unavailable in the effective type tree; resolved DataType: "
+                              + argumentDataTypeId);
+                    }
+                    Object numericElements =
+                        methodValue instanceof Matrix
+                            ? ((Matrix) methodValue).getElements()
+                            : methodValue;
+                    if (numericElements != null
+                        && numericElements.getClass().isArray()
+                        && (numericElements.getClass().getComponentType() == Number.class
+                            || numericElements.getClass().getComponentType() == UNumber.class)
+                        && (argumentDataTypeId.equals(NodeIds.Number)
+                            || dataTypeTree.isSubtypeOf(argumentDataTypeId, NodeIds.Number))) {
+                      Class<?> numericElementType = null;
+                      for (int numericIndex = 0;
+                          numericIndex < Array.getLength(numericElements);
+                          numericIndex++) {
+                        Object numericElement = Array.get(numericElements, numericIndex);
+                        if (numericElement != null) {
+                          if (numericElementType != null
+                              && numericElementType != numericElement.getClass()) {
+                            throw new UaException(
+                                StatusCodes.Bad_TypeMismatch,
+                                "An abstract numeric array requires one homogeneous wire element"
+                                    + " type");
+                          }
+                          numericElementType = numericElement.getClass();
+                        }
+                      }
+                      if (numericElementType == null) {
+                        numericElementType = dataTypeTree.getBackingClass(argumentDataTypeId);
+                      }
+                      if (numericElementType == Number.class
+                          || numericElementType == UNumber.class) {
+                        throw new UaException(
+                            StatusCodes.Bad_TypeMismatch,
+                            "An empty or all-null abstract numeric array requires a concretely"
+                                + " typed array");
+                      }
+                      Object numericArray =
+                          Array.newInstance(numericElementType, Array.getLength(numericElements));
+                      for (int numericIndex = 0;
+                          numericIndex < Array.getLength(numericElements);
+                          numericIndex++) {
+                        Array.set(
+                            numericArray, numericIndex, Array.get(numericElements, numericIndex));
+                      }
+                      if (methodValue instanceof Matrix) {
+                        methodValue =
+                            new Matrix(
+                                numericArray,
+                                ((Matrix) methodValue).getDimensions().clone(),
+                                ((Matrix) methodValue)
+                                    .getDataType()
+                                    .orElseThrow(
+                                        () ->
+                                            new UaException(
+                                                StatusCodes.Bad_TypeMismatch,
+                                                "A numeric Matrix requires an explicit wire"
+                                                    + " DataType")),
+                                ((Matrix) methodValue).getDataTypeId().orElse(null));
+                      } else {
+                        methodValue = numericArray;
+                      }
+                    }
+                    if (methodValue != null) {
+                      Object shapeElements =
+                          methodValue instanceof Matrix
+                              ? ((Matrix) methodValue).getElements()
+                              : methodValue;
+                      int valueRank =
+                          methodValue instanceof Matrix
+                              ? ((Matrix) methodValue).getValueRank()
+                              : ArrayUtil.getValueRank(methodValue);
+                      boolean emptyArray =
+                          methodValue.getClass().isArray()
+                              && ArrayUtil.getValueRank(methodValue) == 1
+                              && Array.getLength(methodValue) == 0;
+                      if (!(valueRank == -1)) {
+                        throw new UaException(
+                            StatusCodes.Bad_TypeMismatch, "Method argument ValueRank mismatch");
+                      }
+                      if (methodValue instanceof Matrix) {
+                        int[] dimensions = ((Matrix) methodValue).getDimensions();
+                        if (dimensions.length < 2
+                            || !shapeElements.getClass().isArray()
+                            || ArrayUtil.getValueRank(shapeElements) != 1) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch,
+                              "Malformed Method Matrix representation");
+                        }
+                        long elementCount = 1;
+                        for (int dimension : dimensions) {
+                          if (dimension < 0 || elementCount > Integer.MAX_VALUE) {
+                            throw new UaException(
+                                StatusCodes.Bad_TypeMismatch, "Malformed Method Matrix dimensions");
+                          }
+                          elementCount *= dimension;
+                        }
+                        if (elementCount != Array.getLength(shapeElements)) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch,
+                              "Method Matrix dimensions do not match its elements");
+                        }
+                        if (!(((Matrix) methodValue)
+                            .getDataType()
+                            .equals(Variant.of(shapeElements).getDataType()))) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch,
+                              "Method Matrix DataType does not match its elements");
+                        }
+                      }
+                      Variant.of(shapeElements);
+                    }
+                    if (methodValue != null) {
+                      Object typedElements =
+                          methodValue instanceof Matrix
+                              ? ((Matrix) methodValue).getElements()
+                              : methodValue;
+                      if (NodeIds.Structure.equals(argumentDataTypeId)
+                          || dataTypeTree.isStructType(argumentDataTypeId)) {
+                        var declaredType = dataTypeTree.getType(argumentDataTypeId);
+                        if (typedElements.getClass().isArray()) {
+                          var structureCodec =
+                              context
+                                  .getServer()
+                                  .getStaticEncodingContext()
+                                  .getDataTypeManager()
+                                  .getCodec(argumentDataTypeId);
+                          Class<?> structureClass =
+                              structureCodec == null
+                                  ? UaStructuredType.class
+                                  : structureCodec.getType();
+                          Object decodedStructures =
+                              Array.newInstance(structureClass, Array.getLength(typedElements));
+                          for (int structureIndex = 0;
+                              structureIndex < Array.getLength(typedElements);
+                              structureIndex++) {
+                            Object structure = Array.get(typedElements, structureIndex);
+                            if (structure instanceof ExtensionObject) {
+                              structure =
+                                  ((ExtensionObject) structure).isNull()
+                                      ? null
+                                      : ((ExtensionObject) structure)
+                                          .decode(context.getServer().getStaticEncodingContext());
+                            }
+                            if (structure != null) {
+                              if (!(structure instanceof UaStructuredType)) {
+                                throw new UaException(
+                                    StatusCodes.Bad_TypeMismatch,
+                                    "Method argument requires a Structure value");
+                              }
+                              if (NodeIds.Structure.equals(argumentDataTypeId)
+                                  || declaredType != null && declaredType.isAbstract()) {
+                                if (!dataTypeTree.isSubtypeOf(
+                                    ((UaStructuredType) structure)
+                                        .getTypeId()
+                                        .toNodeId(namespaceTable)
+                                        .orElse(NodeId.NULL_VALUE),
+                                    argumentDataTypeId)) {
+                                  throw new UaException(
+                                      StatusCodes.Bad_TypeMismatch,
+                                      "Method Structure is not a subtype of the effective"
+                                          + " DataType");
+                                }
+                              } else {
+                                if (!argumentDataTypeId.equals(
+                                    ((UaStructuredType) structure)
+                                        .getTypeId()
+                                        .toNodeId(namespaceTable)
+                                        .orElse(NodeId.NULL_VALUE))) {
+                                  throw new UaException(
+                                      StatusCodes.Bad_TypeMismatch,
+                                      "Method Structure does not match the effective DataType");
+                                }
+                              }
+                            }
+                            Array.set(decodedStructures, structureIndex, structure);
+                          }
+                          methodValue =
+                              methodValue instanceof Matrix
+                                  ? new Matrix(
+                                      decodedStructures,
+                                      ((Matrix) methodValue).getDimensions().clone())
+                                  : decodedStructures;
+                        } else {
+                          if (typedElements instanceof ExtensionObject) {
+                            typedElements =
+                                ((ExtensionObject) typedElements).isNull()
+                                    ? null
+                                    : ((ExtensionObject) typedElements)
+                                        .decode(context.getServer().getStaticEncodingContext());
+                          }
+                          if (typedElements != null) {
+                            if (!(typedElements instanceof UaStructuredType)) {
+                              throw new UaException(
+                                  StatusCodes.Bad_TypeMismatch,
+                                  "Method argument requires a Structure value");
+                            }
+                            if (NodeIds.Structure.equals(argumentDataTypeId)
+                                || declaredType != null && declaredType.isAbstract()) {
+                              if (!dataTypeTree.isSubtypeOf(
+                                  ((UaStructuredType) typedElements)
+                                      .getTypeId()
+                                      .toNodeId(namespaceTable)
+                                      .orElse(NodeId.NULL_VALUE),
+                                  argumentDataTypeId)) {
+                                throw new UaException(
+                                    StatusCodes.Bad_TypeMismatch,
+                                    "Method Structure is not a subtype of the effective DataType");
+                              }
+                            } else {
+                              if (!argumentDataTypeId.equals(
+                                  ((UaStructuredType) typedElements)
+                                      .getTypeId()
+                                      .toNodeId(namespaceTable)
+                                      .orElse(NodeId.NULL_VALUE))) {
+                                throw new UaException(
+                                    StatusCodes.Bad_TypeMismatch,
+                                    "Method Structure does not match the effective DataType");
+                              }
+                            }
+                          }
+                          methodValue = typedElements;
+                        }
+                      } else {
+                        Variant.of(typedElements);
+                        NodeId assignableDataTypeId =
+                            dataTypeTree.getBackingClass(argumentDataTypeId) == Number.class
+                                    && dataTypeTree.isSubtypeOf(argumentDataTypeId, NodeIds.Integer)
+                                ? NodeIds.Integer
+                                : argumentDataTypeId;
+                        if (dataTypeTree.getBackingClass(argumentDataTypeId) != Variant.class
+                            && !dataTypeTree.isAssignable(
+                                assignableDataTypeId, ArrayUtil.getBoxedType(typedElements))) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch, "Method argument DataType mismatch");
+                        }
+                      }
+                    }
+                    convertedValue = (NodeId) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                try {
+                  Object wireValue = convertedValue;
+                  Object wireElements =
+                      wireValue instanceof Matrix ? ((Matrix) wireValue).getElements() : wireValue;
+                  var numericWireValues = new ArrayDeque<Object[]>();
+                  var numericWirePath =
+                      Collections.newSetFromMap(new IdentityHashMap<Object, Boolean>());
+                  if (wireValue != null) {
+                    numericWireValues.push(new Object[] {wireValue, false});
+                  }
+                  while (!numericWireValues.isEmpty()) {
+                    Object[] numericWireFrame = numericWireValues.pop();
+                    Object numericWireValue = numericWireFrame[0];
+                    if ((Boolean) numericWireFrame[1]) {
+                      numericWirePath.remove(numericWireValue);
+                      continue;
+                    }
+                    while (numericWireValue instanceof Variant
+                        || numericWireValue instanceof DataValue) {
+                      if (numericWireValue instanceof DataValue) {
+                        if (((DataValue) numericWireValue).getValue() == null) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch,
+                              "A DataValue requires a value wrapper; use Variant.NULL_VALUE for"
+                                  + " null");
+                        }
+                        if (((DataValue) numericWireValue).getStatusCode() == null) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch,
+                              "A DataValue requires a StatusCode; use StatusCode.GOOD for Good");
+                        }
+                        numericWireValue = ((DataValue) numericWireValue).getValue();
+                      } else {
+                        numericWireValue = ((Variant) numericWireValue).getValue();
+                      }
+                    }
+                    if (numericWireValue instanceof Matrix) {
+                      numericWireValue = ((Matrix) numericWireValue).getElements();
+                    }
+                    if (numericWireValue != null && numericWireValue.getClass().isArray()) {
+                      if (!numericWirePath.add(numericWireValue)) {
+                        throw new UaException(
+                            StatusCodes.Bad_TypeMismatch,
+                            "Cyclic Variant arrays cannot be encoded");
+                      }
+                      numericWireValues.push(new Object[] {numericWireValue, true});
+                      for (int numericWireIndex = 0;
+                          numericWireIndex < Array.getLength(numericWireValue);
+                          numericWireIndex++) {
+                        Object numericWireElement = Array.get(numericWireValue, numericWireIndex);
+                        if (numericWireElement == null
+                            && ArrayUtil.getBoxedType(numericWireValue) == Variant.class) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch,
+                              "A Variant wire array requires a wrapper for every element; use"
+                                  + " Variant.NULL_VALUE for null");
+                        }
+                        if (numericWireElement == null
+                            && (UaEnumeratedType.class.isAssignableFrom(
+                                    ArrayUtil.getBoxedType(numericWireValue))
+                                || OptionSetUInteger.class.isAssignableFrom(
+                                    ArrayUtil.getBoxedType(numericWireValue)))) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch,
+                              "An enum or OptionSet wire array cannot encode a null element");
+                        }
+                        if (numericWireElement == null
+                            && ArrayUtil.getBoxedType(numericWireValue) == Boolean.class) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch,
+                              "A Boolean wire array cannot retain a null element; Milo encodes it"
+                                  + " as false");
+                        }
+                        if (numericWireElement == null
+                            && ArrayUtil.getBoxedType(numericWireValue) == StatusCode.class) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch,
+                              "A StatusCode wire array cannot retain a null element; Milo encodes"
+                                  + " it as Good");
+                        }
+                        if (numericWireElement == null
+                            && Number.class.isAssignableFrom(
+                                ArrayUtil.getBoxedType(numericWireValue))) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch,
+                              "A numeric wire array cannot retain a null element; Milo encodes it"
+                                  + " as zero");
+                        }
+                        if (numericWireElement instanceof Variant
+                            || numericWireElement instanceof DataValue) {
+                          numericWireValues.push(new Object[] {numericWireElement, false});
+                        }
+                      }
+                    }
+                  }
+                  wireValue =
+                      ExtensionObject.encodeValue(
+                          context.getServer().getStaticEncodingContext(), wireValue);
+                  outputValue0 = Variant.of(wireValue);
+                } catch (UaSerializationException encodingFailure) {
+                  throw new UaException(
+                      encodingFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                          ? StatusCodes.Bad_OutOfRange
+                          : StatusCodes.Bad_TypeMismatch,
+                      encodingFailure);
+                } catch (ClassCastException | IllegalArgumentException encodingFailure) {
+                  throw new UaException(StatusCodes.Bad_TypeMismatch, encodingFailure);
+                }
+              }
+              return new CallMethodResult(
+                  StatusCode.GOOD,
+                  new StatusCode[0],
+                  new DiagnosticInfo[0],
+                  new Variant[] {outputValue0});
+            } catch (UaRuntimeException failure) {
+              throw new UaException(failure.getStatusCode().getValue(), failure);
+            } catch (RuntimeException callbackFailure) {
+              throw new UaException(StatusCodes.Bad_InternalError, callbackFailure);
+            }
+          }
+        });
+  }
+
+  @Override
+  public MethodBinding bindCreateDataSetMirrorDetailed(
+      MethodBindings bindings, DataSetReaderTypeCreateDataSetMirrorDetailedHandler handler)
+      throws UaException {
+    Objects.requireNonNull(bindings, "bindings");
+    Objects.requireNonNull(handler, "handler");
+    UaMethodNode methodNode = getCreateDataSetMirrorMethodNode();
+    if (methodNode == null) {
+      throw new UaException(StatusCodes.Bad_NotFound, "Cannot bind an absent Method");
+    }
+    return bindings.bind(
+        this,
+        methodNode,
+        new AbstractMethodInvocationHandler(methodNode) {
+          @Override
+          public Argument[] getInputArguments() {
+            return new Argument[] {
+              new Argument(
+                  "ParentNodeName",
+                  ExpandedNodeId.parse("i=12")
+                      .toNodeId(getNode().getNodeContext().getNamespaceTable())
+                      .orElseThrow(() -> new UaRuntimeException(StatusCodes.Bad_NodeIdUnknown)),
+                  -1,
+                  null,
+                  new LocalizedText(null, "")),
+              new Argument(
+                  "RolePermissions",
+                  ExpandedNodeId.parse("i=96")
+                      .toNodeId(getNode().getNodeContext().getNamespaceTable())
+                      .orElseThrow(() -> new UaRuntimeException(StatusCodes.Bad_NodeIdUnknown)),
+                  1,
+                  new UInteger[] {UInteger.valueOf(0)},
+                  new LocalizedText(null, ""))
+            };
+          }
+
+          @Override
+          public Argument[] getOutputArguments() {
+            return new Argument[] {
+              new Argument(
+                  "ParentNodeId",
+                  ExpandedNodeId.parse("i=17")
+                      .toNodeId(getNode().getNodeContext().getNamespaceTable())
+                      .orElseThrow(() -> new UaRuntimeException(StatusCodes.Bad_NodeIdUnknown)),
+                  -1,
+                  null,
+                  new LocalizedText(null, ""))
+            };
+          }
+
+          @Override
+          protected int getRequiredInputArgumentCount(Argument[] inputArguments) {
+            return 2;
+          }
+
+          @Override
+          protected CallMethodResult invokeResult(
+              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              throws UaException {
+            StatusCode[] inputResults = new StatusCode[inputValues.length];
+            Arrays.fill(inputResults, StatusCode.GOOD);
+            @Nullable String callbackInput0 = null;
+            if (inputValues.length > 0) {
+              try {
+                @Nullable String convertedInput0;
+                {
+                  Object methodValue = inputValues[0].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    convertedInput0 = (String) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                @Nullable String projectedInput0;
+                {
+                  Object methodValue = inputValues[0].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    projectedInput0 = (String) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                callbackInput0 = projectedInput0;
+              } catch (UaException failure) {
+                inputResults[0] = failure.getStatusCode();
+              }
+            }
+            @Nullable RolePermissionType @Nullable [] callbackInput1 = null;
+            if (inputValues.length > 1) {
+              try {
+                @Nullable RolePermissionType @Nullable [] convertedInput1;
+                {
+                  Object methodValue = inputValues[1].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    if (methodValue == null) {
+                      convertedInput1 = null;
+                    } else {
+                      convertedInput1 = new RolePermissionType[Array.getLength(methodValue)];
+                      for (int valueIndex = 0; valueIndex < convertedInput1.length; valueIndex++) {
+                        Object valueElement = Array.get(methodValue, valueIndex);
+                        convertedInput1[valueIndex] = (RolePermissionType) valueElement;
+                      }
+                    }
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                @Nullable RolePermissionType @Nullable [] projectedInput1;
+                {
+                  Object methodValue = inputValues[1].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    if (methodValue == null) {
+                      projectedInput1 = null;
+                    } else {
+                      projectedInput1 = new RolePermissionType[Array.getLength(methodValue)];
+                      for (int valueIndex = 0; valueIndex < projectedInput1.length; valueIndex++) {
+                        Object valueElement = Array.get(methodValue, valueIndex);
+                        projectedInput1[valueIndex] = (RolePermissionType) valueElement;
+                      }
+                    }
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                callbackInput1 = projectedInput1;
+              } catch (UaException failure) {
+                inputResults[1] = failure.getStatusCode();
+              }
+            }
+            if (Arrays.stream(inputResults).anyMatch(StatusCode::isBad)) {
+              throw new InvalidArgumentException(inputResults);
+            }
+            try {
+              var result = handler.invoke(context, callbackInput0, callbackInput1);
+              if (result == null) {
+                throw new UaException(
+                    StatusCodes.Bad_InternalError, "A detailed Method handler returned null");
+              }
+              if (!result.hasOutputs()) {
+                return new CallMethodResult(
+                    result.status(),
+                    result.inputResults(),
+                    result.inputDiagnostics(),
+                    new Variant[0]);
+              }
+              var outputs = result.outputs();
+              Variant outputValue0;
+              {
+                @Nullable NodeId convertedValue;
+                {
+                  Object methodValue = outputs;
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    NamespaceTable namespaceTable = context.getServer().getNamespaceTable();
+                    DataTypeTree dataTypeTree = context.getServer().getDataTypeTree();
+                    NodeId argumentDataTypeId =
+                        ExpandedNodeId.parse("i=17")
+                            .toNodeId(namespaceTable)
+                            .orElseThrow(
+                                () ->
+                                    new UaException(
+                                        StatusCodes.Bad_NodeIdInvalid,
+                                        "Method argument DataType namespace is unavailable"));
+                    if (!OpcUaDataType.isBuiltin(argumentDataTypeId)
+                        && dataTypeTree.getDataType(argumentDataTypeId) == null) {
+                      throw new UaException(
+                          StatusCodes.Bad_TypeMismatch,
+                          "Method argument ParentNodeId (effective property i=17391, DataType i=17)"
+                              + " is unavailable in the effective type tree; resolved DataType: "
+                              + argumentDataTypeId);
+                    }
+                    Object numericElements =
+                        methodValue instanceof Matrix
+                            ? ((Matrix) methodValue).getElements()
+                            : methodValue;
+                    if (numericElements != null
+                        && numericElements.getClass().isArray()
+                        && (numericElements.getClass().getComponentType() == Number.class
+                            || numericElements.getClass().getComponentType() == UNumber.class)
+                        && (argumentDataTypeId.equals(NodeIds.Number)
+                            || dataTypeTree.isSubtypeOf(argumentDataTypeId, NodeIds.Number))) {
+                      Class<?> numericElementType = null;
+                      for (int numericIndex = 0;
+                          numericIndex < Array.getLength(numericElements);
+                          numericIndex++) {
+                        Object numericElement = Array.get(numericElements, numericIndex);
+                        if (numericElement != null) {
+                          if (numericElementType != null
+                              && numericElementType != numericElement.getClass()) {
+                            throw new UaException(
+                                StatusCodes.Bad_TypeMismatch,
+                                "An abstract numeric array requires one homogeneous wire element"
+                                    + " type");
+                          }
+                          numericElementType = numericElement.getClass();
+                        }
+                      }
+                      if (numericElementType == null) {
+                        numericElementType = dataTypeTree.getBackingClass(argumentDataTypeId);
+                      }
+                      if (numericElementType == Number.class
+                          || numericElementType == UNumber.class) {
+                        throw new UaException(
+                            StatusCodes.Bad_TypeMismatch,
+                            "An empty or all-null abstract numeric array requires a concretely"
+                                + " typed array");
+                      }
+                      Object numericArray =
+                          Array.newInstance(numericElementType, Array.getLength(numericElements));
+                      for (int numericIndex = 0;
+                          numericIndex < Array.getLength(numericElements);
+                          numericIndex++) {
+                        Array.set(
+                            numericArray, numericIndex, Array.get(numericElements, numericIndex));
+                      }
+                      if (methodValue instanceof Matrix) {
+                        methodValue =
+                            new Matrix(
+                                numericArray,
+                                ((Matrix) methodValue).getDimensions().clone(),
+                                ((Matrix) methodValue)
+                                    .getDataType()
+                                    .orElseThrow(
+                                        () ->
+                                            new UaException(
+                                                StatusCodes.Bad_TypeMismatch,
+                                                "A numeric Matrix requires an explicit wire"
+                                                    + " DataType")),
+                                ((Matrix) methodValue).getDataTypeId().orElse(null));
+                      } else {
+                        methodValue = numericArray;
+                      }
+                    }
+                    if (methodValue != null) {
+                      Object shapeElements =
+                          methodValue instanceof Matrix
+                              ? ((Matrix) methodValue).getElements()
+                              : methodValue;
+                      int valueRank =
+                          methodValue instanceof Matrix
+                              ? ((Matrix) methodValue).getValueRank()
+                              : ArrayUtil.getValueRank(methodValue);
+                      boolean emptyArray =
+                          methodValue.getClass().isArray()
+                              && ArrayUtil.getValueRank(methodValue) == 1
+                              && Array.getLength(methodValue) == 0;
+                      if (!(valueRank == -1)) {
+                        throw new UaException(
+                            StatusCodes.Bad_TypeMismatch, "Method argument ValueRank mismatch");
+                      }
+                      if (methodValue instanceof Matrix) {
+                        int[] dimensions = ((Matrix) methodValue).getDimensions();
+                        if (dimensions.length < 2
+                            || !shapeElements.getClass().isArray()
+                            || ArrayUtil.getValueRank(shapeElements) != 1) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch,
+                              "Malformed Method Matrix representation");
+                        }
+                        long elementCount = 1;
+                        for (int dimension : dimensions) {
+                          if (dimension < 0 || elementCount > Integer.MAX_VALUE) {
+                            throw new UaException(
+                                StatusCodes.Bad_TypeMismatch, "Malformed Method Matrix dimensions");
+                          }
+                          elementCount *= dimension;
+                        }
+                        if (elementCount != Array.getLength(shapeElements)) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch,
+                              "Method Matrix dimensions do not match its elements");
+                        }
+                        if (!(((Matrix) methodValue)
+                            .getDataType()
+                            .equals(Variant.of(shapeElements).getDataType()))) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch,
+                              "Method Matrix DataType does not match its elements");
+                        }
+                      }
+                      Variant.of(shapeElements);
+                    }
+                    if (methodValue != null) {
+                      Object typedElements =
+                          methodValue instanceof Matrix
+                              ? ((Matrix) methodValue).getElements()
+                              : methodValue;
+                      if (NodeIds.Structure.equals(argumentDataTypeId)
+                          || dataTypeTree.isStructType(argumentDataTypeId)) {
+                        var declaredType = dataTypeTree.getType(argumentDataTypeId);
+                        if (typedElements.getClass().isArray()) {
+                          var structureCodec =
+                              context
+                                  .getServer()
+                                  .getStaticEncodingContext()
+                                  .getDataTypeManager()
+                                  .getCodec(argumentDataTypeId);
+                          Class<?> structureClass =
+                              structureCodec == null
+                                  ? UaStructuredType.class
+                                  : structureCodec.getType();
+                          Object decodedStructures =
+                              Array.newInstance(structureClass, Array.getLength(typedElements));
+                          for (int structureIndex = 0;
+                              structureIndex < Array.getLength(typedElements);
+                              structureIndex++) {
+                            Object structure = Array.get(typedElements, structureIndex);
+                            if (structure instanceof ExtensionObject) {
+                              structure =
+                                  ((ExtensionObject) structure).isNull()
+                                      ? null
+                                      : ((ExtensionObject) structure)
+                                          .decode(context.getServer().getStaticEncodingContext());
+                            }
+                            if (structure != null) {
+                              if (!(structure instanceof UaStructuredType)) {
+                                throw new UaException(
+                                    StatusCodes.Bad_TypeMismatch,
+                                    "Method argument requires a Structure value");
+                              }
+                              if (NodeIds.Structure.equals(argumentDataTypeId)
+                                  || declaredType != null && declaredType.isAbstract()) {
+                                if (!dataTypeTree.isSubtypeOf(
+                                    ((UaStructuredType) structure)
+                                        .getTypeId()
+                                        .toNodeId(namespaceTable)
+                                        .orElse(NodeId.NULL_VALUE),
+                                    argumentDataTypeId)) {
+                                  throw new UaException(
+                                      StatusCodes.Bad_TypeMismatch,
+                                      "Method Structure is not a subtype of the effective"
+                                          + " DataType");
+                                }
+                              } else {
+                                if (!argumentDataTypeId.equals(
+                                    ((UaStructuredType) structure)
+                                        .getTypeId()
+                                        .toNodeId(namespaceTable)
+                                        .orElse(NodeId.NULL_VALUE))) {
+                                  throw new UaException(
+                                      StatusCodes.Bad_TypeMismatch,
+                                      "Method Structure does not match the effective DataType");
+                                }
+                              }
+                            }
+                            Array.set(decodedStructures, structureIndex, structure);
+                          }
+                          methodValue =
+                              methodValue instanceof Matrix
+                                  ? new Matrix(
+                                      decodedStructures,
+                                      ((Matrix) methodValue).getDimensions().clone())
+                                  : decodedStructures;
+                        } else {
+                          if (typedElements instanceof ExtensionObject) {
+                            typedElements =
+                                ((ExtensionObject) typedElements).isNull()
+                                    ? null
+                                    : ((ExtensionObject) typedElements)
+                                        .decode(context.getServer().getStaticEncodingContext());
+                          }
+                          if (typedElements != null) {
+                            if (!(typedElements instanceof UaStructuredType)) {
+                              throw new UaException(
+                                  StatusCodes.Bad_TypeMismatch,
+                                  "Method argument requires a Structure value");
+                            }
+                            if (NodeIds.Structure.equals(argumentDataTypeId)
+                                || declaredType != null && declaredType.isAbstract()) {
+                              if (!dataTypeTree.isSubtypeOf(
+                                  ((UaStructuredType) typedElements)
+                                      .getTypeId()
+                                      .toNodeId(namespaceTable)
+                                      .orElse(NodeId.NULL_VALUE),
+                                  argumentDataTypeId)) {
+                                throw new UaException(
+                                    StatusCodes.Bad_TypeMismatch,
+                                    "Method Structure is not a subtype of the effective DataType");
+                              }
+                            } else {
+                              if (!argumentDataTypeId.equals(
+                                  ((UaStructuredType) typedElements)
+                                      .getTypeId()
+                                      .toNodeId(namespaceTable)
+                                      .orElse(NodeId.NULL_VALUE))) {
+                                throw new UaException(
+                                    StatusCodes.Bad_TypeMismatch,
+                                    "Method Structure does not match the effective DataType");
+                              }
+                            }
+                          }
+                          methodValue = typedElements;
+                        }
+                      } else {
+                        Variant.of(typedElements);
+                        NodeId assignableDataTypeId =
+                            dataTypeTree.getBackingClass(argumentDataTypeId) == Number.class
+                                    && dataTypeTree.isSubtypeOf(argumentDataTypeId, NodeIds.Integer)
+                                ? NodeIds.Integer
+                                : argumentDataTypeId;
+                        if (dataTypeTree.getBackingClass(argumentDataTypeId) != Variant.class
+                            && !dataTypeTree.isAssignable(
+                                assignableDataTypeId, ArrayUtil.getBoxedType(typedElements))) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch, "Method argument DataType mismatch");
+                        }
+                      }
+                    }
+                    convertedValue = (NodeId) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                try {
+                  Object wireValue = convertedValue;
+                  Object wireElements =
+                      wireValue instanceof Matrix ? ((Matrix) wireValue).getElements() : wireValue;
+                  var numericWireValues = new ArrayDeque<Object[]>();
+                  var numericWirePath =
+                      Collections.newSetFromMap(new IdentityHashMap<Object, Boolean>());
+                  if (wireValue != null) {
+                    numericWireValues.push(new Object[] {wireValue, false});
+                  }
+                  while (!numericWireValues.isEmpty()) {
+                    Object[] numericWireFrame = numericWireValues.pop();
+                    Object numericWireValue = numericWireFrame[0];
+                    if ((Boolean) numericWireFrame[1]) {
+                      numericWirePath.remove(numericWireValue);
+                      continue;
+                    }
+                    while (numericWireValue instanceof Variant
+                        || numericWireValue instanceof DataValue) {
+                      if (numericWireValue instanceof DataValue) {
+                        if (((DataValue) numericWireValue).getValue() == null) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch,
+                              "A DataValue requires a value wrapper; use Variant.NULL_VALUE for"
+                                  + " null");
+                        }
+                        if (((DataValue) numericWireValue).getStatusCode() == null) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch,
+                              "A DataValue requires a StatusCode; use StatusCode.GOOD for Good");
+                        }
+                        numericWireValue = ((DataValue) numericWireValue).getValue();
+                      } else {
+                        numericWireValue = ((Variant) numericWireValue).getValue();
+                      }
+                    }
+                    if (numericWireValue instanceof Matrix) {
+                      numericWireValue = ((Matrix) numericWireValue).getElements();
+                    }
+                    if (numericWireValue != null && numericWireValue.getClass().isArray()) {
+                      if (!numericWirePath.add(numericWireValue)) {
+                        throw new UaException(
+                            StatusCodes.Bad_TypeMismatch,
+                            "Cyclic Variant arrays cannot be encoded");
+                      }
+                      numericWireValues.push(new Object[] {numericWireValue, true});
+                      for (int numericWireIndex = 0;
+                          numericWireIndex < Array.getLength(numericWireValue);
+                          numericWireIndex++) {
+                        Object numericWireElement = Array.get(numericWireValue, numericWireIndex);
+                        if (numericWireElement == null
+                            && ArrayUtil.getBoxedType(numericWireValue) == Variant.class) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch,
+                              "A Variant wire array requires a wrapper for every element; use"
+                                  + " Variant.NULL_VALUE for null");
+                        }
+                        if (numericWireElement == null
+                            && (UaEnumeratedType.class.isAssignableFrom(
+                                    ArrayUtil.getBoxedType(numericWireValue))
+                                || OptionSetUInteger.class.isAssignableFrom(
+                                    ArrayUtil.getBoxedType(numericWireValue)))) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch,
+                              "An enum or OptionSet wire array cannot encode a null element");
+                        }
+                        if (numericWireElement == null
+                            && ArrayUtil.getBoxedType(numericWireValue) == Boolean.class) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch,
+                              "A Boolean wire array cannot retain a null element; Milo encodes it"
+                                  + " as false");
+                        }
+                        if (numericWireElement == null
+                            && ArrayUtil.getBoxedType(numericWireValue) == StatusCode.class) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch,
+                              "A StatusCode wire array cannot retain a null element; Milo encodes"
+                                  + " it as Good");
+                        }
+                        if (numericWireElement == null
+                            && Number.class.isAssignableFrom(
+                                ArrayUtil.getBoxedType(numericWireValue))) {
+                          throw new UaException(
+                              StatusCodes.Bad_TypeMismatch,
+                              "A numeric wire array cannot retain a null element; Milo encodes it"
+                                  + " as zero");
+                        }
+                        if (numericWireElement instanceof Variant
+                            || numericWireElement instanceof DataValue) {
+                          numericWireValues.push(new Object[] {numericWireElement, false});
+                        }
+                      }
+                    }
+                  }
+                  wireValue =
+                      ExtensionObject.encodeValue(
+                          context.getServer().getStaticEncodingContext(), wireValue);
+                  outputValue0 = Variant.of(wireValue);
+                } catch (UaSerializationException encodingFailure) {
+                  throw new UaException(
+                      encodingFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                          ? StatusCodes.Bad_OutOfRange
+                          : StatusCodes.Bad_TypeMismatch,
+                      encodingFailure);
+                } catch (ClassCastException | IllegalArgumentException encodingFailure) {
+                  throw new UaException(StatusCodes.Bad_TypeMismatch, encodingFailure);
+                }
+              }
+              return new CallMethodResult(
+                  result.status(),
+                  new StatusCode[0],
+                  new DiagnosticInfo[0],
+                  new Variant[] {outputValue0});
+            } catch (UaRuntimeException failure) {
+              throw new UaException(failure.getStatusCode().getValue(), failure);
+            } catch (RuntimeException callbackFailure) {
+              throw new UaException(StatusCodes.Bad_InternalError, callbackFailure);
+            }
+          }
+        });
   }
 }

@@ -15,267 +15,1687 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.ServiceCounterDataType;
+import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
  *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.14">https://reference.opcfoundation.org/v105/Core/docs/Part5/7.14</a>
  */
 public interface SessionDiagnosticsVariableType extends BaseDataVariableType {
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   BaseDataVariableType getSessionIdNode();
 
-  NodeId getSessionId();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable NodeId getSessionId();
 
-  void setSessionId(NodeId value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setSessionId(@Nullable NodeId value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   BaseDataVariableType getSessionNameNode();
 
-  String getSessionName();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable String getSessionName();
 
-  void setSessionName(String value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setSessionName(@Nullable String value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   BaseDataVariableType getClientDescriptionNode();
 
-  ApplicationDescription getClientDescription();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable ApplicationDescription getClientDescription();
 
-  void setClientDescription(ApplicationDescription value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setClientDescription(@Nullable ApplicationDescription value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   BaseDataVariableType getServerUriNode();
 
-  String getServerUri();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable String getServerUri();
 
-  void setServerUri(String value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setServerUri(@Nullable String value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   BaseDataVariableType getEndpointUrlNode();
 
-  String getEndpointUrl();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable String getEndpointUrl();
 
-  void setEndpointUrl(String value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setEndpointUrl(@Nullable String value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   BaseDataVariableType getLocaleIdsNode();
 
-  String[] getLocaleIds();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable String @Nullable [] getLocaleIds();
 
-  void setLocaleIds(String[] value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setLocaleIds(@Nullable String @Nullable [] value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   BaseDataVariableType getActualSessionTimeoutNode();
 
-  Double getActualSessionTimeout();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable Double getActualSessionTimeout();
 
-  void setActualSessionTimeout(Double value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setActualSessionTimeout(@Nullable Double value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   BaseDataVariableType getMaxResponseMessageSizeNode();
 
-  UInteger getMaxResponseMessageSize();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable UInteger getMaxResponseMessageSize();
 
-  void setMaxResponseMessageSize(UInteger value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setMaxResponseMessageSize(@Nullable UInteger value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   BaseDataVariableType getClientConnectionTimeNode();
 
-  DateTime getClientConnectionTime();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable DateTime getClientConnectionTime();
 
-  void setClientConnectionTime(DateTime value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setClientConnectionTime(@Nullable DateTime value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   BaseDataVariableType getClientLastContactTimeNode();
 
-  DateTime getClientLastContactTime();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable DateTime getClientLastContactTime();
 
-  void setClientLastContactTime(DateTime value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setClientLastContactTime(@Nullable DateTime value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   BaseDataVariableType getCurrentSubscriptionsCountNode();
 
-  UInteger getCurrentSubscriptionsCount();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable UInteger getCurrentSubscriptionsCount();
 
-  void setCurrentSubscriptionsCount(UInteger value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setCurrentSubscriptionsCount(@Nullable UInteger value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   BaseDataVariableType getCurrentMonitoredItemsCountNode();
 
-  UInteger getCurrentMonitoredItemsCount();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable UInteger getCurrentMonitoredItemsCount();
 
-  void setCurrentMonitoredItemsCount(UInteger value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setCurrentMonitoredItemsCount(@Nullable UInteger value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   BaseDataVariableType getCurrentPublishRequestsInQueueNode();
 
-  UInteger getCurrentPublishRequestsInQueue();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable UInteger getCurrentPublishRequestsInQueue();
 
-  void setCurrentPublishRequestsInQueue(UInteger value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setCurrentPublishRequestsInQueue(@Nullable UInteger value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   BaseDataVariableType getTotalRequestCountNode();
 
-  ServiceCounterDataType getTotalRequestCount();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable ServiceCounterDataType getTotalRequestCount();
 
-  void setTotalRequestCount(ServiceCounterDataType value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setTotalRequestCount(@Nullable ServiceCounterDataType value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   BaseDataVariableType getUnauthorizedRequestCountNode();
 
-  UInteger getUnauthorizedRequestCount();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable UInteger getUnauthorizedRequestCount();
 
-  void setUnauthorizedRequestCount(UInteger value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setUnauthorizedRequestCount(@Nullable UInteger value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   BaseDataVariableType getReadCountNode();
 
-  ServiceCounterDataType getReadCount();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable ServiceCounterDataType getReadCount();
 
-  void setReadCount(ServiceCounterDataType value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setReadCount(@Nullable ServiceCounterDataType value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   BaseDataVariableType getHistoryReadCountNode();
 
-  ServiceCounterDataType getHistoryReadCount();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable ServiceCounterDataType getHistoryReadCount();
 
-  void setHistoryReadCount(ServiceCounterDataType value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setHistoryReadCount(@Nullable ServiceCounterDataType value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   BaseDataVariableType getWriteCountNode();
 
-  ServiceCounterDataType getWriteCount();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable ServiceCounterDataType getWriteCount();
 
-  void setWriteCount(ServiceCounterDataType value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setWriteCount(@Nullable ServiceCounterDataType value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   BaseDataVariableType getHistoryUpdateCountNode();
 
-  ServiceCounterDataType getHistoryUpdateCount();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable ServiceCounterDataType getHistoryUpdateCount();
 
-  void setHistoryUpdateCount(ServiceCounterDataType value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setHistoryUpdateCount(@Nullable ServiceCounterDataType value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   BaseDataVariableType getCallCountNode();
 
-  ServiceCounterDataType getCallCount();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable ServiceCounterDataType getCallCount();
 
-  void setCallCount(ServiceCounterDataType value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setCallCount(@Nullable ServiceCounterDataType value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   BaseDataVariableType getCreateMonitoredItemsCountNode();
 
-  ServiceCounterDataType getCreateMonitoredItemsCount();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable ServiceCounterDataType getCreateMonitoredItemsCount();
 
-  void setCreateMonitoredItemsCount(ServiceCounterDataType value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setCreateMonitoredItemsCount(@Nullable ServiceCounterDataType value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   BaseDataVariableType getModifyMonitoredItemsCountNode();
 
-  ServiceCounterDataType getModifyMonitoredItemsCount();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable ServiceCounterDataType getModifyMonitoredItemsCount();
 
-  void setModifyMonitoredItemsCount(ServiceCounterDataType value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setModifyMonitoredItemsCount(@Nullable ServiceCounterDataType value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   BaseDataVariableType getSetMonitoringModeCountNode();
 
-  ServiceCounterDataType getSetMonitoringModeCount();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable ServiceCounterDataType getSetMonitoringModeCount();
 
-  void setSetMonitoringModeCount(ServiceCounterDataType value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setSetMonitoringModeCount(@Nullable ServiceCounterDataType value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   BaseDataVariableType getSetTriggeringCountNode();
 
-  ServiceCounterDataType getSetTriggeringCount();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable ServiceCounterDataType getSetTriggeringCount();
 
-  void setSetTriggeringCount(ServiceCounterDataType value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setSetTriggeringCount(@Nullable ServiceCounterDataType value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   BaseDataVariableType getDeleteMonitoredItemsCountNode();
 
-  ServiceCounterDataType getDeleteMonitoredItemsCount();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable ServiceCounterDataType getDeleteMonitoredItemsCount();
 
-  void setDeleteMonitoredItemsCount(ServiceCounterDataType value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setDeleteMonitoredItemsCount(@Nullable ServiceCounterDataType value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   BaseDataVariableType getCreateSubscriptionCountNode();
 
-  ServiceCounterDataType getCreateSubscriptionCount();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable ServiceCounterDataType getCreateSubscriptionCount();
 
-  void setCreateSubscriptionCount(ServiceCounterDataType value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setCreateSubscriptionCount(@Nullable ServiceCounterDataType value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   BaseDataVariableType getModifySubscriptionCountNode();
 
-  ServiceCounterDataType getModifySubscriptionCount();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable ServiceCounterDataType getModifySubscriptionCount();
 
-  void setModifySubscriptionCount(ServiceCounterDataType value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setModifySubscriptionCount(@Nullable ServiceCounterDataType value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   BaseDataVariableType getSetPublishingModeCountNode();
 
-  ServiceCounterDataType getSetPublishingModeCount();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable ServiceCounterDataType getSetPublishingModeCount();
 
-  void setSetPublishingModeCount(ServiceCounterDataType value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setSetPublishingModeCount(@Nullable ServiceCounterDataType value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   BaseDataVariableType getPublishCountNode();
 
-  ServiceCounterDataType getPublishCount();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable ServiceCounterDataType getPublishCount();
 
-  void setPublishCount(ServiceCounterDataType value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setPublishCount(@Nullable ServiceCounterDataType value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   BaseDataVariableType getRepublishCountNode();
 
-  ServiceCounterDataType getRepublishCount();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable ServiceCounterDataType getRepublishCount();
 
-  void setRepublishCount(ServiceCounterDataType value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setRepublishCount(@Nullable ServiceCounterDataType value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   BaseDataVariableType getTransferSubscriptionsCountNode();
 
-  ServiceCounterDataType getTransferSubscriptionsCount();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable ServiceCounterDataType getTransferSubscriptionsCount();
 
-  void setTransferSubscriptionsCount(ServiceCounterDataType value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setTransferSubscriptionsCount(@Nullable ServiceCounterDataType value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   BaseDataVariableType getDeleteSubscriptionsCountNode();
 
-  ServiceCounterDataType getDeleteSubscriptionsCount();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable ServiceCounterDataType getDeleteSubscriptionsCount();
 
-  void setDeleteSubscriptionsCount(ServiceCounterDataType value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setDeleteSubscriptionsCount(@Nullable ServiceCounterDataType value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   BaseDataVariableType getAddNodesCountNode();
 
-  ServiceCounterDataType getAddNodesCount();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable ServiceCounterDataType getAddNodesCount();
 
-  void setAddNodesCount(ServiceCounterDataType value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setAddNodesCount(@Nullable ServiceCounterDataType value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   BaseDataVariableType getAddReferencesCountNode();
 
-  ServiceCounterDataType getAddReferencesCount();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable ServiceCounterDataType getAddReferencesCount();
 
-  void setAddReferencesCount(ServiceCounterDataType value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setAddReferencesCount(@Nullable ServiceCounterDataType value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   BaseDataVariableType getDeleteNodesCountNode();
 
-  ServiceCounterDataType getDeleteNodesCount();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable ServiceCounterDataType getDeleteNodesCount();
 
-  void setDeleteNodesCount(ServiceCounterDataType value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setDeleteNodesCount(@Nullable ServiceCounterDataType value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   BaseDataVariableType getDeleteReferencesCountNode();
 
-  ServiceCounterDataType getDeleteReferencesCount();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable ServiceCounterDataType getDeleteReferencesCount();
 
-  void setDeleteReferencesCount(ServiceCounterDataType value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setDeleteReferencesCount(@Nullable ServiceCounterDataType value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   BaseDataVariableType getBrowseCountNode();
 
-  ServiceCounterDataType getBrowseCount();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable ServiceCounterDataType getBrowseCount();
 
-  void setBrowseCount(ServiceCounterDataType value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setBrowseCount(@Nullable ServiceCounterDataType value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   BaseDataVariableType getBrowseNextCountNode();
 
-  ServiceCounterDataType getBrowseNextCount();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable ServiceCounterDataType getBrowseNextCount();
 
-  void setBrowseNextCount(ServiceCounterDataType value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setBrowseNextCount(@Nullable ServiceCounterDataType value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   BaseDataVariableType getTranslateBrowsePathsToNodeIdsCountNode();
 
-  ServiceCounterDataType getTranslateBrowsePathsToNodeIdsCount();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable ServiceCounterDataType getTranslateBrowsePathsToNodeIdsCount();
 
-  void setTranslateBrowsePathsToNodeIdsCount(ServiceCounterDataType value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setTranslateBrowsePathsToNodeIdsCount(@Nullable ServiceCounterDataType value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   BaseDataVariableType getQueryFirstCountNode();
 
-  ServiceCounterDataType getQueryFirstCount();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable ServiceCounterDataType getQueryFirstCount();
 
-  void setQueryFirstCount(ServiceCounterDataType value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setQueryFirstCount(@Nullable ServiceCounterDataType value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   BaseDataVariableType getQueryNextCountNode();
 
-  ServiceCounterDataType getQueryNextCount();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable ServiceCounterDataType getQueryNextCount();
 
-  void setQueryNextCount(ServiceCounterDataType value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setQueryNextCount(@Nullable ServiceCounterDataType value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   BaseDataVariableType getRegisterNodesCountNode();
 
-  ServiceCounterDataType getRegisterNodesCount();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable ServiceCounterDataType getRegisterNodesCount();
 
-  void setRegisterNodesCount(ServiceCounterDataType value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setRegisterNodesCount(@Nullable ServiceCounterDataType value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   BaseDataVariableType getUnregisterNodesCountNode();
 
-  ServiceCounterDataType getUnregisterNodesCount();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable ServiceCounterDataType getUnregisterNodesCount();
 
-  void setUnregisterNodesCount(ServiceCounterDataType value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setUnregisterNodesCount(@Nullable ServiceCounterDataType value);
 }

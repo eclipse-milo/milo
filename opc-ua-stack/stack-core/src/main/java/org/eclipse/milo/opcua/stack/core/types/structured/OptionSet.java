@@ -35,12 +35,12 @@ public abstract class OptionSet extends Structure implements UaStructuredType {
 
   public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15084");
 
-  private final ByteString value;
+  private final ByteString value2;
 
   private final ByteString validBits;
 
-  public OptionSet(ByteString value, ByteString validBits) {
-    this.value = value;
+  public OptionSet(ByteString value2, ByteString validBits) {
+    this.value2 = value2;
     this.validBits = validBits;
   }
 
@@ -65,7 +65,7 @@ public abstract class OptionSet extends Structure implements UaStructuredType {
   }
 
   public ByteString getValue() {
-    return value;
+    return value2;
   }
 
   public ByteString getValidBits() {
@@ -104,14 +104,14 @@ public abstract class OptionSet extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 12765),
-        new NodeId(0, 22),
+        NodeId.parse("i=12765"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "Value",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15),
+              NodeId.parse("i=15"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -119,7 +119,7 @@ public abstract class OptionSet extends Structure implements UaStructuredType {
           new StructureField(
               "ValidBits",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15),
+              NodeId.parse("i=15"),
               -1,
               null,
               UInteger.valueOf(0),

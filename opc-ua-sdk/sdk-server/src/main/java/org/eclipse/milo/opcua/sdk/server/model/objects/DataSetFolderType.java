@@ -11,659 +11,448 @@
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
 import org.eclipse.milo.opcua.sdk.core.nodes.MethodNode;
-import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
-import org.eclipse.milo.opcua.sdk.server.methods.Out;
-import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.sdk.server.methods.MethodBinding;
+import org.eclipse.milo.opcua.sdk.server.methods.MethodBindings;
+import org.eclipse.milo.opcua.sdk.server.model.methods.DataSetFolderTypeAddDataSetFolderDetailedHandler;
+import org.eclipse.milo.opcua.sdk.server.model.methods.DataSetFolderTypeAddDataSetFolderHandler;
+import org.eclipse.milo.opcua.sdk.server.model.methods.DataSetFolderTypeAddPublishedDataItemsDetailedHandler;
+import org.eclipse.milo.opcua.sdk.server.model.methods.DataSetFolderTypeAddPublishedDataItemsHandler;
+import org.eclipse.milo.opcua.sdk.server.model.methods.DataSetFolderTypeAddPublishedDataItemsTemplateDetailedHandler;
+import org.eclipse.milo.opcua.sdk.server.model.methods.DataSetFolderTypeAddPublishedDataItemsTemplateHandler;
+import org.eclipse.milo.opcua.sdk.server.model.methods.DataSetFolderTypeAddPublishedEventsDetailedHandler;
+import org.eclipse.milo.opcua.sdk.server.model.methods.DataSetFolderTypeAddPublishedEventsHandler;
+import org.eclipse.milo.opcua.sdk.server.model.methods.DataSetFolderTypeAddPublishedEventsTemplateDetailedHandler;
+import org.eclipse.milo.opcua.sdk.server.model.methods.DataSetFolderTypeAddPublishedEventsTemplateHandler;
+import org.eclipse.milo.opcua.sdk.server.model.methods.DataSetFolderTypeRemoveDataSetFolderDetailedHandler;
+import org.eclipse.milo.opcua.sdk.server.model.methods.DataSetFolderTypeRemoveDataSetFolderHandler;
+import org.eclipse.milo.opcua.sdk.server.model.methods.DataSetFolderTypeRemovePublishedDataSetDetailedHandler;
+import org.eclipse.milo.opcua.sdk.server.model.methods.DataSetFolderTypeRemovePublishedDataSetHandler;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
-import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
-import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
-import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
-import org.eclipse.milo.opcua.stack.core.types.structured.ConfigurationVersionDataType;
-import org.eclipse.milo.opcua.stack.core.types.structured.ContentFilter;
-import org.eclipse.milo.opcua.stack.core.types.structured.DataSetFieldFlags;
-import org.eclipse.milo.opcua.stack.core.types.structured.DataSetMetaDataType;
-import org.eclipse.milo.opcua.stack.core.types.structured.PublishedVariableDataType;
-import org.eclipse.milo.opcua.stack.core.types.structured.SimpleAttributeOperand;
-import org.eclipse.milo.opcua.stack.core.util.Lazy;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
+import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
  *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.1">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.1</a>
  */
 public interface DataSetFolderType extends FolderType {
-  MethodNode getAddPublishedDataItemsMethodNode();
-
-  MethodNode getAddPublishedEventsMethodNode();
-
-  MethodNode getAddPublishedDataItemsTemplateMethodNode();
-
-  MethodNode getAddPublishedEventsTemplateMethodNode();
-
-  MethodNode getRemovePublishedDataSetMethodNode();
-
-  MethodNode getAddDataSetFolderMethodNode();
-
-  MethodNode getRemoveDataSetFolderMethodNode();
-
-  abstract class AddPublishedDataItemsMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-    public AddPublishedDataItemsMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "Name",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "FieldNameAliases",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", "")),
-              new Argument(
-                  "FieldFlags",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15904")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", "")),
-              new Argument(
-                  "VariablesToAdd",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14273")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "DataSetNodeId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "ConfigurationVersion",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14593")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "AddResults",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=19")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      String name = (String) inputValues[0].getValue();
-      String[] fieldNameAliases = (String[]) inputValues[1].getValue();
-      DataSetFieldFlags[] fieldFlags = (DataSetFieldFlags[]) inputValues[2].getValue();
-      PublishedVariableDataType[] variablesToAdd =
-          (PublishedVariableDataType[]) inputValues[3].getValue();
-      Out<NodeId> dataSetNodeId = new Out<>();
-      Out<ConfigurationVersionDataType> configurationVersion = new Out<>();
-      Out<StatusCode[]> addResults = new Out<>();
-      invoke(
-          context,
-          name,
-          fieldNameAliases,
-          fieldFlags,
-          variablesToAdd,
-          dataSetNodeId,
-          configurationVersion,
-          addResults);
-      return new Variant[] {
-        new Variant(dataSetNodeId.get()),
-        new Variant(configurationVersion.get()),
-        new Variant(addResults.get())
-      };
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context,
-        String name,
-        String[] fieldNameAliases,
-        DataSetFieldFlags[] fieldFlags,
-        PublishedVariableDataType[] variablesToAdd,
-        Out<NodeId> dataSetNodeId,
-        Out<ConfigurationVersionDataType> configurationVersion,
-        Out<StatusCode[]> addResults)
-        throws UaException;
-  }
-
-  abstract class AddPublishedEventsMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-    public AddPublishedEventsMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "Name",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "EventNotifier",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "FieldNameAliases",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", "")),
-              new Argument(
-                  "FieldFlags",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15904")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", "")),
-              new Argument(
-                  "SelectedFields",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=601")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", "")),
-              new Argument(
-                  "Filter",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=586")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "ConfigurationVersion",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14593")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "DataSetNodeId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      String name = (String) inputValues[0].getValue();
-      NodeId eventNotifier = (NodeId) inputValues[1].getValue();
-      String[] fieldNameAliases = (String[]) inputValues[2].getValue();
-      DataSetFieldFlags[] fieldFlags = (DataSetFieldFlags[]) inputValues[3].getValue();
-      SimpleAttributeOperand[] selectedFields =
-          (SimpleAttributeOperand[]) inputValues[4].getValue();
-      ContentFilter filter = (ContentFilter) inputValues[5].getValue();
-      Out<ConfigurationVersionDataType> configurationVersion = new Out<>();
-      Out<NodeId> dataSetNodeId = new Out<>();
-      invoke(
-          context,
-          name,
-          eventNotifier,
-          fieldNameAliases,
-          fieldFlags,
-          selectedFields,
-          filter,
-          configurationVersion,
-          dataSetNodeId);
-      return new Variant[] {
-        new Variant(configurationVersion.get()), new Variant(dataSetNodeId.get())
-      };
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context,
-        String name,
-        NodeId eventNotifier,
-        String[] fieldNameAliases,
-        DataSetFieldFlags[] fieldFlags,
-        SimpleAttributeOperand[] selectedFields,
-        ContentFilter filter,
-        Out<ConfigurationVersionDataType> configurationVersion,
-        Out<NodeId> dataSetNodeId)
-        throws UaException;
-  }
-
-  abstract class AddPublishedDataItemsTemplateMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-    public AddPublishedDataItemsTemplateMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "Name",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "DataSetMetaData",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14523")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "VariablesToAdd",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14273")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "DataSetNodeId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "AddResults",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=19")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      String name = (String) inputValues[0].getValue();
-      DataSetMetaDataType dataSetMetaData = (DataSetMetaDataType) inputValues[1].getValue();
-      PublishedVariableDataType[] variablesToAdd =
-          (PublishedVariableDataType[]) inputValues[2].getValue();
-      Out<NodeId> dataSetNodeId = new Out<>();
-      Out<StatusCode[]> addResults = new Out<>();
-      invoke(context, name, dataSetMetaData, variablesToAdd, dataSetNodeId, addResults);
-      return new Variant[] {new Variant(dataSetNodeId.get()), new Variant(addResults.get())};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context,
-        String name,
-        DataSetMetaDataType dataSetMetaData,
-        PublishedVariableDataType[] variablesToAdd,
-        Out<NodeId> dataSetNodeId,
-        Out<StatusCode[]> addResults)
-        throws UaException;
-  }
-
-  abstract class AddPublishedEventsTemplateMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-    public AddPublishedEventsTemplateMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "Name",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "DataSetMetaData",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14523")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "EventNotifier",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "SelectedFields",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=601")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", "")),
-              new Argument(
-                  "Filter",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=586")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "DataSetNodeId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      String name = (String) inputValues[0].getValue();
-      DataSetMetaDataType dataSetMetaData = (DataSetMetaDataType) inputValues[1].getValue();
-      NodeId eventNotifier = (NodeId) inputValues[2].getValue();
-      SimpleAttributeOperand[] selectedFields =
-          (SimpleAttributeOperand[]) inputValues[3].getValue();
-      ContentFilter filter = (ContentFilter) inputValues[4].getValue();
-      Out<NodeId> dataSetNodeId = new Out<>();
-      invoke(context, name, dataSetMetaData, eventNotifier, selectedFields, filter, dataSetNodeId);
-      return new Variant[] {new Variant(dataSetNodeId.get())};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context,
-        String name,
-        DataSetMetaDataType dataSetMetaData,
-        NodeId eventNotifier,
-        SimpleAttributeOperand[] selectedFields,
-        ContentFilter filter,
-        Out<NodeId> dataSetNodeId)
-        throws UaException;
-  }
-
-  abstract class RemovePublishedDataSetMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    public RemovePublishedDataSetMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "DataSetNodeId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      NodeId dataSetNodeId = (NodeId) inputValues[0].getValue();
-      invoke(context, dataSetNodeId);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, NodeId dataSetNodeId)
-        throws UaException;
-  }
-
-  abstract class AddDataSetFolderMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-    public AddDataSetFolderMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "Name",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "DataSetFolderNodeId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      String name = (String) inputValues[0].getValue();
-      Out<NodeId> dataSetFolderNodeId = new Out<>();
-      invoke(context, name, dataSetFolderNodeId);
-      return new Variant[] {new Variant(dataSetFolderNodeId.get())};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context,
-        String name,
-        Out<NodeId> dataSetFolderNodeId)
-        throws UaException;
-  }
-
-  abstract class RemoveDataSetFolderMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    public RemoveDataSetFolderMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "DataSetFolderNodeId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      NodeId dataSetFolderNodeId = (NodeId) inputValues[0].getValue();
-      invoke(context, dataSetFolderNodeId);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, NodeId dataSetFolderNodeId)
-        throws UaException;
-  }
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.2
+   *
+   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
+   * confirmed absence. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  @Nullable MethodNode getAddPublishedDataItemsMethodNode();
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.2
+   *
+   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
+   * must already exist and have compatible effective metadata; binding does not create nodes or
+   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
+   * registration.
+   *
+   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
+   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
+   * handler replacement is authoritative. An observed displacement prevents further binds through
+   * that registry.
+   *
+   * @return an explicit registration lifetime
+   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
+   *     preempting ConditionManager makes binding unsupported
+   * @throws UaRuntimeException if strict local lookup fails
+   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
+   *     the Method
+   */
+  MethodBinding bindAddPublishedDataItems(
+      MethodBindings bindings, DataSetFolderTypeAddPublishedDataItemsHandler handler)
+      throws UaException;
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.2
+   *
+   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
+   * must already exist and have compatible effective metadata; binding does not create nodes or
+   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
+   * registration.
+   *
+   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
+   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
+   * handler replacement is authoritative. An observed displacement prevents further binds through
+   * that registry.
+   *
+   * @return an explicit registration lifetime
+   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
+   *     preempting ConditionManager makes binding unsupported
+   * @throws UaRuntimeException if strict local lookup fails
+   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
+   *     the Method
+   */
+  MethodBinding bindAddPublishedDataItemsDetailed(
+      MethodBindings bindings, DataSetFolderTypeAddPublishedDataItemsDetailedHandler handler)
+      throws UaException;
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.3
+   *
+   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
+   * confirmed absence. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  @Nullable MethodNode getAddPublishedEventsMethodNode();
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.3
+   *
+   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
+   * must already exist and have compatible effective metadata; binding does not create nodes or
+   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
+   * registration.
+   *
+   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
+   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
+   * handler replacement is authoritative. An observed displacement prevents further binds through
+   * that registry.
+   *
+   * @return an explicit registration lifetime
+   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
+   *     preempting ConditionManager makes binding unsupported
+   * @throws UaRuntimeException if strict local lookup fails
+   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
+   *     the Method
+   */
+  MethodBinding bindAddPublishedEvents(
+      MethodBindings bindings, DataSetFolderTypeAddPublishedEventsHandler handler)
+      throws UaException;
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.3
+   *
+   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
+   * must already exist and have compatible effective metadata; binding does not create nodes or
+   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
+   * registration.
+   *
+   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
+   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
+   * handler replacement is authoritative. An observed displacement prevents further binds through
+   * that registry.
+   *
+   * @return an explicit registration lifetime
+   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
+   *     preempting ConditionManager makes binding unsupported
+   * @throws UaRuntimeException if strict local lookup fails
+   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
+   *     the Method
+   */
+  MethodBinding bindAddPublishedEventsDetailed(
+      MethodBindings bindings, DataSetFolderTypeAddPublishedEventsDetailedHandler handler)
+      throws UaException;
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.4
+   *
+   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
+   * confirmed absence. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  @Nullable MethodNode getAddPublishedDataItemsTemplateMethodNode();
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.4
+   *
+   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
+   * must already exist and have compatible effective metadata; binding does not create nodes or
+   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
+   * registration.
+   *
+   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
+   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
+   * handler replacement is authoritative. An observed displacement prevents further binds through
+   * that registry.
+   *
+   * @return an explicit registration lifetime
+   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
+   *     preempting ConditionManager makes binding unsupported
+   * @throws UaRuntimeException if strict local lookup fails
+   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
+   *     the Method
+   */
+  MethodBinding bindAddPublishedDataItemsTemplate(
+      MethodBindings bindings, DataSetFolderTypeAddPublishedDataItemsTemplateHandler handler)
+      throws UaException;
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.4
+   *
+   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
+   * must already exist and have compatible effective metadata; binding does not create nodes or
+   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
+   * registration.
+   *
+   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
+   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
+   * handler replacement is authoritative. An observed displacement prevents further binds through
+   * that registry.
+   *
+   * @return an explicit registration lifetime
+   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
+   *     preempting ConditionManager makes binding unsupported
+   * @throws UaRuntimeException if strict local lookup fails
+   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
+   *     the Method
+   */
+  MethodBinding bindAddPublishedDataItemsTemplateDetailed(
+      MethodBindings bindings,
+      DataSetFolderTypeAddPublishedDataItemsTemplateDetailedHandler handler)
+      throws UaException;
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.5
+   *
+   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
+   * confirmed absence. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  @Nullable MethodNode getAddPublishedEventsTemplateMethodNode();
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.5
+   *
+   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
+   * must already exist and have compatible effective metadata; binding does not create nodes or
+   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
+   * registration.
+   *
+   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
+   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
+   * handler replacement is authoritative. An observed displacement prevents further binds through
+   * that registry.
+   *
+   * @return an explicit registration lifetime
+   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
+   *     preempting ConditionManager makes binding unsupported
+   * @throws UaRuntimeException if strict local lookup fails
+   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
+   *     the Method
+   */
+  MethodBinding bindAddPublishedEventsTemplate(
+      MethodBindings bindings, DataSetFolderTypeAddPublishedEventsTemplateHandler handler)
+      throws UaException;
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.5
+   *
+   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
+   * must already exist and have compatible effective metadata; binding does not create nodes or
+   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
+   * registration.
+   *
+   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
+   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
+   * handler replacement is authoritative. An observed displacement prevents further binds through
+   * that registry.
+   *
+   * @return an explicit registration lifetime
+   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
+   *     preempting ConditionManager makes binding unsupported
+   * @throws UaRuntimeException if strict local lookup fails
+   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
+   *     the Method
+   */
+  MethodBinding bindAddPublishedEventsTemplateDetailed(
+      MethodBindings bindings, DataSetFolderTypeAddPublishedEventsTemplateDetailedHandler handler)
+      throws UaException;
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.6
+   *
+   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
+   * confirmed absence. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  @Nullable MethodNode getRemovePublishedDataSetMethodNode();
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.6
+   *
+   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
+   * must already exist and have compatible effective metadata; binding does not create nodes or
+   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
+   * registration.
+   *
+   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
+   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
+   * handler replacement is authoritative. An observed displacement prevents further binds through
+   * that registry.
+   *
+   * @return an explicit registration lifetime
+   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
+   *     preempting ConditionManager makes binding unsupported
+   * @throws UaRuntimeException if strict local lookup fails
+   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
+   *     the Method
+   */
+  MethodBinding bindRemovePublishedDataSet(
+      MethodBindings bindings, DataSetFolderTypeRemovePublishedDataSetHandler handler)
+      throws UaException;
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.6
+   *
+   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
+   * must already exist and have compatible effective metadata; binding does not create nodes or
+   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
+   * registration.
+   *
+   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
+   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
+   * handler replacement is authoritative. An observed displacement prevents further binds through
+   * that registry.
+   *
+   * @return an explicit registration lifetime
+   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
+   *     preempting ConditionManager makes binding unsupported
+   * @throws UaRuntimeException if strict local lookup fails
+   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
+   *     the Method
+   */
+  MethodBinding bindRemovePublishedDataSetDetailed(
+      MethodBindings bindings, DataSetFolderTypeRemovePublishedDataSetDetailedHandler handler)
+      throws UaException;
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.7
+   *
+   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
+   * confirmed absence. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  @Nullable MethodNode getAddDataSetFolderMethodNode();
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.7
+   *
+   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
+   * must already exist and have compatible effective metadata; binding does not create nodes or
+   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
+   * registration.
+   *
+   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
+   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
+   * handler replacement is authoritative. An observed displacement prevents further binds through
+   * that registry.
+   *
+   * @return an explicit registration lifetime
+   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
+   *     preempting ConditionManager makes binding unsupported
+   * @throws UaRuntimeException if strict local lookup fails
+   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
+   *     the Method
+   */
+  MethodBinding bindAddDataSetFolder(
+      MethodBindings bindings, DataSetFolderTypeAddDataSetFolderHandler handler) throws UaException;
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.7
+   *
+   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
+   * must already exist and have compatible effective metadata; binding does not create nodes or
+   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
+   * registration.
+   *
+   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
+   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
+   * handler replacement is authoritative. An observed displacement prevents further binds through
+   * that registry.
+   *
+   * @return an explicit registration lifetime
+   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
+   *     preempting ConditionManager makes binding unsupported
+   * @throws UaRuntimeException if strict local lookup fails
+   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
+   *     the Method
+   */
+  MethodBinding bindAddDataSetFolderDetailed(
+      MethodBindings bindings, DataSetFolderTypeAddDataSetFolderDetailedHandler handler)
+      throws UaException;
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.8
+   *
+   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
+   * confirmed absence. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  @Nullable MethodNode getRemoveDataSetFolderMethodNode();
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.8
+   *
+   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
+   * must already exist and have compatible effective metadata; binding does not create nodes or
+   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
+   * registration.
+   *
+   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
+   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
+   * handler replacement is authoritative. An observed displacement prevents further binds through
+   * that registry.
+   *
+   * @return an explicit registration lifetime
+   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
+   *     preempting ConditionManager makes binding unsupported
+   * @throws UaRuntimeException if strict local lookup fails
+   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
+   *     the Method
+   */
+  MethodBinding bindRemoveDataSetFolder(
+      MethodBindings bindings, DataSetFolderTypeRemoveDataSetFolderHandler handler)
+      throws UaException;
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.8
+   *
+   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
+   * must already exist and have compatible effective metadata; binding does not create nodes or
+   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
+   * registration.
+   *
+   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
+   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
+   * handler replacement is authoritative. An observed displacement prevents further binds through
+   * that registry.
+   *
+   * @return an explicit registration lifetime
+   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
+   *     preempting ConditionManager makes binding unsupported
+   * @throws UaRuntimeException if strict local lookup fails
+   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
+   *     the Method
+   */
+  MethodBinding bindRemoveDataSetFolderDetailed(
+      MethodBindings bindings, DataSetFolderTypeRemoveDataSetFolderDetailedHandler handler)
+      throws UaException;
 }

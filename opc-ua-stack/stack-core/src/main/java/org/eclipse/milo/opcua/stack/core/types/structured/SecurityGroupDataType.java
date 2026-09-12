@@ -187,14 +187,14 @@ public class SecurityGroupDataType extends Structure implements UaStructuredType
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 23853),
-        new NodeId(0, 22),
+        NodeId.parse("i=23853"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "Name",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -202,7 +202,7 @@ public class SecurityGroupDataType extends Structure implements UaStructuredType
           new StructureField(
               "SecurityGroupFolder",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               1,
               null,
               UInteger.valueOf(0),
@@ -210,7 +210,7 @@ public class SecurityGroupDataType extends Structure implements UaStructuredType
           new StructureField(
               "KeyLifetime",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 290),
+              NodeId.parse("i=290"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -218,7 +218,7 @@ public class SecurityGroupDataType extends Structure implements UaStructuredType
           new StructureField(
               "SecurityPolicyUri",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -226,7 +226,7 @@ public class SecurityGroupDataType extends Structure implements UaStructuredType
           new StructureField(
               "MaxFutureKeyCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -234,7 +234,7 @@ public class SecurityGroupDataType extends Structure implements UaStructuredType
           new StructureField(
               "MaxPastKeyCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -242,7 +242,7 @@ public class SecurityGroupDataType extends Structure implements UaStructuredType
           new StructureField(
               "SecurityGroupId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -250,7 +250,7 @@ public class SecurityGroupDataType extends Structure implements UaStructuredType
           new StructureField(
               "RolePermissions",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 96),
+              NodeId.parse("i=96"),
               1,
               null,
               UInteger.valueOf(0),
@@ -258,7 +258,7 @@ public class SecurityGroupDataType extends Structure implements UaStructuredType
           new StructureField(
               "GroupProperties",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 14533),
+              NodeId.parse("i=14533"),
               1,
               null,
               UInteger.valueOf(0),

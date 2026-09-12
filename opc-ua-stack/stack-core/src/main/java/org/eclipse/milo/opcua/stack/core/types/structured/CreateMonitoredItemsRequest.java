@@ -12,6 +12,8 @@ package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -134,14 +136,14 @@ public class CreateMonitoredItemsRequest extends Structure implements UaRequestM
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 751),
-        new NodeId(0, 22),
+        NodeId.parse("i=751"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "RequestHeader",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 389),
+              NodeId.parse("i=389"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -149,7 +151,7 @@ public class CreateMonitoredItemsRequest extends Structure implements UaRequestM
           new StructureField(
               "SubscriptionId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 288),
+              NodeId.parse("i=288"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -157,7 +159,7 @@ public class CreateMonitoredItemsRequest extends Structure implements UaRequestM
           new StructureField(
               "TimestampsToReturn",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 625),
+              NodeId.parse("i=625"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -165,7 +167,7 @@ public class CreateMonitoredItemsRequest extends Structure implements UaRequestM
           new StructureField(
               "ItemsToCreate",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 743),
+              NodeId.parse("i=743"),
               1,
               null,
               UInteger.valueOf(0),
@@ -187,7 +189,28 @@ public class CreateMonitoredItemsRequest extends Structure implements UaRequestM
       final MonitoredItemCreateRequest[] itemsToCreate;
       requestHeader = (RequestHeader) decoder.decodeStruct("RequestHeader", RequestHeader.TYPE_ID);
       subscriptionId = decoder.decodeUInt32("SubscriptionId");
-      timestampsToReturn = TimestampsToReturn.from(decoder.decodeEnum("TimestampsToReturn"));
+      {
+        Integer enumValue = decoder.decodeEnum("TimestampsToReturn");
+        if (enumValue != null && !((Object) enumValue instanceof TimestampsToReturn)) {
+          if (!(enumValue instanceof Integer)) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_TypeMismatch,
+                "TimestampsToReturn: expected"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn or"
+                    + " Int32, got "
+                    + enumValue);
+          }
+          if (TimestampsToReturn.from((Integer) enumValue) == null) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_OutOfRange,
+                "TimestampsToReturn: unknown"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn value"
+                    + " "
+                    + enumValue);
+          }
+        }
+        timestampsToReturn = enumValue == null ? null : TimestampsToReturn.from(enumValue);
+      }
       itemsToCreate =
           (MonitoredItemCreateRequest[])
               decoder.decodeStructArray("ItemsToCreate", MonitoredItemCreateRequest.TYPE_ID);

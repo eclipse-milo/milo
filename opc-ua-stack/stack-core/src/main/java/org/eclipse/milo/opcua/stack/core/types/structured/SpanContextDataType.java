@@ -109,14 +109,14 @@ public class SpanContextDataType extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 19754),
-        new NodeId(0, 22),
+        NodeId.parse("i=19754"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "TraceId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 14),
+              NodeId.parse("i=14"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -124,7 +124,7 @@ public class SpanContextDataType extends Structure implements UaStructuredType {
           new StructureField(
               "SpanId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 9),
+              NodeId.parse("i=9"),
               -1,
               null,
               UInteger.valueOf(0),

@@ -145,14 +145,14 @@ public class SetTriggeringResponse extends Structure implements UaResponseMessag
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 778),
-        new NodeId(0, 22),
+        NodeId.parse("i=778"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "ResponseHeader",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 392),
+              NodeId.parse("i=392"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -160,7 +160,7 @@ public class SetTriggeringResponse extends Structure implements UaResponseMessag
           new StructureField(
               "AddResults",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 19),
+              NodeId.parse("i=19"),
               1,
               null,
               UInteger.valueOf(0),
@@ -168,7 +168,7 @@ public class SetTriggeringResponse extends Structure implements UaResponseMessag
           new StructureField(
               "AddDiagnosticInfos",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 25),
+              NodeId.parse("i=25"),
               1,
               null,
               UInteger.valueOf(0),
@@ -176,7 +176,7 @@ public class SetTriggeringResponse extends Structure implements UaResponseMessag
           new StructureField(
               "RemoveResults",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 19),
+              NodeId.parse("i=19"),
               1,
               null,
               UInteger.valueOf(0),
@@ -184,7 +184,7 @@ public class SetTriggeringResponse extends Structure implements UaResponseMessag
           new StructureField(
               "RemoveDiagnosticInfos",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 25),
+              NodeId.parse("i=25"),
               1,
               null,
               UInteger.valueOf(0),

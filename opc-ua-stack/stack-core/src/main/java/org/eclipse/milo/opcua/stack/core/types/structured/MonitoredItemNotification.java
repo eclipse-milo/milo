@@ -41,11 +41,11 @@ public class MonitoredItemNotification extends Structure implements UaStructured
 
   private final UInteger clientHandle;
 
-  private final DataValue value;
+  private final DataValue value2;
 
-  public MonitoredItemNotification(UInteger clientHandle, DataValue value) {
+  public MonitoredItemNotification(UInteger clientHandle, DataValue value2) {
     this.clientHandle = clientHandle;
-    this.value = value;
+    this.value2 = value2;
   }
 
   @Override
@@ -73,7 +73,7 @@ public class MonitoredItemNotification extends Structure implements UaStructured
   }
 
   public DataValue getValue() {
-    return value;
+    return value2;
   }
 
   @Override
@@ -108,14 +108,14 @@ public class MonitoredItemNotification extends Structure implements UaStructured
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 808),
-        new NodeId(0, 22),
+        NodeId.parse("i=808"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "ClientHandle",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 288),
+              NodeId.parse("i=288"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -123,7 +123,7 @@ public class MonitoredItemNotification extends Structure implements UaStructured
           new StructureField(
               "Value",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 23),
+              NodeId.parse("i=23"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -140,10 +140,10 @@ public class MonitoredItemNotification extends Structure implements UaStructured
     @Override
     public MonitoredItemNotification decodeType(EncodingContext context, UaDecoder decoder) {
       final UInteger clientHandle;
-      final DataValue value;
+      final DataValue value2;
       clientHandle = decoder.decodeUInt32("ClientHandle");
-      value = decoder.decodeDataValue("Value");
-      return new MonitoredItemNotification(clientHandle, value);
+      value2 = decoder.decodeDataValue("Value");
+      return new MonitoredItemNotification(clientHandle, value2);
     }
 
     @Override

@@ -10,17 +10,27 @@
 
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
+import java.util.LinkedHashMap;
 import java.util.Optional;
 import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
+import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.jspecify.annotations.Nullable;
 
 public class OperationLimitsTypeNode extends FolderTypeNode implements OperationLimitsType {
   public OperationLimitsTypeNode(
@@ -74,204 +84,1543 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   }
 
   @Override
-  public PropertyTypeNode getMaxNodesPerReadNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(OperationLimitsType.MAX_NODES_PER_READ);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public Optional<VariableNode> getPropertyNode(QualifiedName browseName) {
+    return findNode(
+            browseName,
+            n -> n instanceof VariableNode,
+            r ->
+                r.isForward()
+                    && (r.getReferenceTypeId().equals(NodeIds.HasProperty)
+                        || getNodeContext()
+                            .getServer()
+                            .getReferenceTypeTree()
+                            .isSubtypeOf(r.getReferenceTypeId(), NodeIds.HasProperty)))
+        .map(n -> (VariableNode) n);
   }
 
   @Override
-  public UInteger getMaxNodesPerRead() {
-    return getProperty(OperationLimitsType.MAX_NODES_PER_READ).orElse(null);
+  public @Nullable PropertyTypeNode getMaxNodesPerReadNode() {
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:MaxNodesPerRead (declaration i=11565, owner i=11564)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "MaxNodesPerRead");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:MaxNodesPerRead (declaration"
+                    + " i=11565, owner i=11564) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:MaxNodesPerRead (declaration i=11565, owner i=11564)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:MaxNodesPerRead (declaration i=11565, owner i=11564)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:MaxNodesPerRead (declaration i=11565, owner i=11564)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        return null;
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:MaxNodesPerRead (declaration i=11565, owner i=11564)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:MaxNodesPerRead (declaration i=11565, owner i=11564)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof PropertyTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:MaxNodesPerRead (declaration i=11565, owner i=11564)"
+              + " on "
+              + getNodeId());
+    }
+    return (PropertyTypeNode) parent;
   }
 
   @Override
-  public void setMaxNodesPerRead(UInteger value) {
-    setProperty(OperationLimitsType.MAX_NODES_PER_READ, value);
+  public @Nullable UInteger getMaxNodesPerRead() {
+    var node = getMaxNodesPerReadNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:MaxNodesPerRead (declaration i=11565, owner i=11564)"
+              + " on "
+              + getNodeId());
+    }
+    return (UInteger) node.getValue().getValue().getValue();
   }
 
   @Override
-  public PropertyTypeNode getMaxNodesPerHistoryReadDataNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(OperationLimitsType.MAX_NODES_PER_HISTORY_READ_DATA);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public void setMaxNodesPerRead(@Nullable UInteger value) {
+    var node = getMaxNodesPerReadNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:MaxNodesPerRead (declaration i=11565, owner i=11564)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
-  public UInteger getMaxNodesPerHistoryReadData() {
-    return getProperty(OperationLimitsType.MAX_NODES_PER_HISTORY_READ_DATA).orElse(null);
+  public @Nullable PropertyTypeNode getMaxNodesPerHistoryReadDataNode() {
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:MaxNodesPerHistoryReadData (declaration i=12161, owner"
+                + " i=11564) on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "MaxNodesPerHistoryReadData");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:MaxNodesPerHistoryReadData"
+                    + " (declaration i=12161, owner i=11564) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:MaxNodesPerHistoryReadData (declaration i=12161, owner"
+                  + " i=11564) on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:MaxNodesPerHistoryReadData (declaration i=12161, owner"
+                  + " i=11564) on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:MaxNodesPerHistoryReadData (declaration i=12161, owner"
+                  + " i=11564) on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        return null;
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:MaxNodesPerHistoryReadData (declaration i=12161, owner"
+                + " i=11564) on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:MaxNodesPerHistoryReadData (declaration i=12161, owner"
+                + " i=11564) on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof PropertyTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:MaxNodesPerHistoryReadData (declaration i=12161, owner"
+              + " i=11564) on "
+              + getNodeId());
+    }
+    return (PropertyTypeNode) parent;
   }
 
   @Override
-  public void setMaxNodesPerHistoryReadData(UInteger value) {
-    setProperty(OperationLimitsType.MAX_NODES_PER_HISTORY_READ_DATA, value);
+  public @Nullable UInteger getMaxNodesPerHistoryReadData() {
+    var node = getMaxNodesPerHistoryReadDataNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:MaxNodesPerHistoryReadData (declaration i=12161, owner"
+              + " i=11564) on "
+              + getNodeId());
+    }
+    return (UInteger) node.getValue().getValue().getValue();
   }
 
   @Override
-  public PropertyTypeNode getMaxNodesPerHistoryReadEventsNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(OperationLimitsType.MAX_NODES_PER_HISTORY_READ_EVENTS);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public void setMaxNodesPerHistoryReadData(@Nullable UInteger value) {
+    var node = getMaxNodesPerHistoryReadDataNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:MaxNodesPerHistoryReadData (declaration i=12161, owner"
+              + " i=11564) on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
-  public UInteger getMaxNodesPerHistoryReadEvents() {
-    return getProperty(OperationLimitsType.MAX_NODES_PER_HISTORY_READ_EVENTS).orElse(null);
+  public @Nullable PropertyTypeNode getMaxNodesPerHistoryReadEventsNode() {
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:MaxNodesPerHistoryReadEvents (declaration i=12162, owner"
+                + " i=11564) on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "MaxNodesPerHistoryReadEvents");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:MaxNodesPerHistoryReadEvents"
+                    + " (declaration i=12162, owner i=11564) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:MaxNodesPerHistoryReadEvents (declaration i=12162,"
+                  + " owner i=11564) on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:MaxNodesPerHistoryReadEvents (declaration i=12162,"
+                  + " owner i=11564) on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:MaxNodesPerHistoryReadEvents (declaration i=12162,"
+                  + " owner i=11564) on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        return null;
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:MaxNodesPerHistoryReadEvents (declaration i=12162, owner"
+                + " i=11564) on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:MaxNodesPerHistoryReadEvents (declaration i=12162, owner"
+                + " i=11564) on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof PropertyTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:MaxNodesPerHistoryReadEvents (declaration i=12162, owner"
+              + " i=11564) on "
+              + getNodeId());
+    }
+    return (PropertyTypeNode) parent;
   }
 
   @Override
-  public void setMaxNodesPerHistoryReadEvents(UInteger value) {
-    setProperty(OperationLimitsType.MAX_NODES_PER_HISTORY_READ_EVENTS, value);
+  public @Nullable UInteger getMaxNodesPerHistoryReadEvents() {
+    var node = getMaxNodesPerHistoryReadEventsNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:MaxNodesPerHistoryReadEvents (declaration i=12162, owner"
+              + " i=11564) on "
+              + getNodeId());
+    }
+    return (UInteger) node.getValue().getValue().getValue();
   }
 
   @Override
-  public PropertyTypeNode getMaxNodesPerWriteNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(OperationLimitsType.MAX_NODES_PER_WRITE);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public void setMaxNodesPerHistoryReadEvents(@Nullable UInteger value) {
+    var node = getMaxNodesPerHistoryReadEventsNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:MaxNodesPerHistoryReadEvents (declaration i=12162, owner"
+              + " i=11564) on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
-  public UInteger getMaxNodesPerWrite() {
-    return getProperty(OperationLimitsType.MAX_NODES_PER_WRITE).orElse(null);
+  public @Nullable PropertyTypeNode getMaxNodesPerWriteNode() {
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:MaxNodesPerWrite (declaration i=11567, owner i=11564)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "MaxNodesPerWrite");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:MaxNodesPerWrite (declaration"
+                    + " i=11567, owner i=11564) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:MaxNodesPerWrite (declaration i=11567, owner i=11564)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:MaxNodesPerWrite (declaration i=11567, owner i=11564)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:MaxNodesPerWrite (declaration i=11567, owner i=11564)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        return null;
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:MaxNodesPerWrite (declaration i=11567, owner i=11564)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:MaxNodesPerWrite (declaration i=11567, owner i=11564)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof PropertyTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:MaxNodesPerWrite (declaration i=11567, owner i=11564)"
+              + " on "
+              + getNodeId());
+    }
+    return (PropertyTypeNode) parent;
   }
 
   @Override
-  public void setMaxNodesPerWrite(UInteger value) {
-    setProperty(OperationLimitsType.MAX_NODES_PER_WRITE, value);
+  public @Nullable UInteger getMaxNodesPerWrite() {
+    var node = getMaxNodesPerWriteNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:MaxNodesPerWrite (declaration i=11567, owner i=11564)"
+              + " on "
+              + getNodeId());
+    }
+    return (UInteger) node.getValue().getValue().getValue();
   }
 
   @Override
-  public PropertyTypeNode getMaxNodesPerHistoryUpdateDataNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(OperationLimitsType.MAX_NODES_PER_HISTORY_UPDATE_DATA);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public void setMaxNodesPerWrite(@Nullable UInteger value) {
+    var node = getMaxNodesPerWriteNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:MaxNodesPerWrite (declaration i=11567, owner i=11564)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
-  public UInteger getMaxNodesPerHistoryUpdateData() {
-    return getProperty(OperationLimitsType.MAX_NODES_PER_HISTORY_UPDATE_DATA).orElse(null);
+  public @Nullable PropertyTypeNode getMaxNodesPerHistoryUpdateDataNode() {
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:MaxNodesPerHistoryUpdateData (declaration i=12163, owner"
+                + " i=11564) on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "MaxNodesPerHistoryUpdateData");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:MaxNodesPerHistoryUpdateData"
+                    + " (declaration i=12163, owner i=11564) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:MaxNodesPerHistoryUpdateData (declaration i=12163,"
+                  + " owner i=11564) on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:MaxNodesPerHistoryUpdateData (declaration i=12163,"
+                  + " owner i=11564) on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:MaxNodesPerHistoryUpdateData (declaration i=12163,"
+                  + " owner i=11564) on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        return null;
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:MaxNodesPerHistoryUpdateData (declaration i=12163, owner"
+                + " i=11564) on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:MaxNodesPerHistoryUpdateData (declaration i=12163, owner"
+                + " i=11564) on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof PropertyTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:MaxNodesPerHistoryUpdateData (declaration i=12163, owner"
+              + " i=11564) on "
+              + getNodeId());
+    }
+    return (PropertyTypeNode) parent;
   }
 
   @Override
-  public void setMaxNodesPerHistoryUpdateData(UInteger value) {
-    setProperty(OperationLimitsType.MAX_NODES_PER_HISTORY_UPDATE_DATA, value);
+  public @Nullable UInteger getMaxNodesPerHistoryUpdateData() {
+    var node = getMaxNodesPerHistoryUpdateDataNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:MaxNodesPerHistoryUpdateData (declaration i=12163, owner"
+              + " i=11564) on "
+              + getNodeId());
+    }
+    return (UInteger) node.getValue().getValue().getValue();
   }
 
   @Override
-  public PropertyTypeNode getMaxNodesPerHistoryUpdateEventsNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(OperationLimitsType.MAX_NODES_PER_HISTORY_UPDATE_EVENTS);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public void setMaxNodesPerHistoryUpdateData(@Nullable UInteger value) {
+    var node = getMaxNodesPerHistoryUpdateDataNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:MaxNodesPerHistoryUpdateData (declaration i=12163, owner"
+              + " i=11564) on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
-  public UInteger getMaxNodesPerHistoryUpdateEvents() {
-    return getProperty(OperationLimitsType.MAX_NODES_PER_HISTORY_UPDATE_EVENTS).orElse(null);
+  public @Nullable PropertyTypeNode getMaxNodesPerHistoryUpdateEventsNode() {
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:MaxNodesPerHistoryUpdateEvents (declaration i=12164,"
+                + " owner i=11564) on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "MaxNodesPerHistoryUpdateEvents");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:MaxNodesPerHistoryUpdateEvents"
+                    + " (declaration i=12164, owner i=11564) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:MaxNodesPerHistoryUpdateEvents (declaration i=12164,"
+                  + " owner i=11564) on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:MaxNodesPerHistoryUpdateEvents (declaration i=12164,"
+                  + " owner i=11564) on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:MaxNodesPerHistoryUpdateEvents (declaration i=12164,"
+                  + " owner i=11564) on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        return null;
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:MaxNodesPerHistoryUpdateEvents (declaration i=12164,"
+                + " owner i=11564) on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:MaxNodesPerHistoryUpdateEvents (declaration i=12164,"
+                + " owner i=11564) on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof PropertyTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:MaxNodesPerHistoryUpdateEvents (declaration i=12164, owner"
+              + " i=11564) on "
+              + getNodeId());
+    }
+    return (PropertyTypeNode) parent;
   }
 
   @Override
-  public void setMaxNodesPerHistoryUpdateEvents(UInteger value) {
-    setProperty(OperationLimitsType.MAX_NODES_PER_HISTORY_UPDATE_EVENTS, value);
+  public @Nullable UInteger getMaxNodesPerHistoryUpdateEvents() {
+    var node = getMaxNodesPerHistoryUpdateEventsNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:MaxNodesPerHistoryUpdateEvents (declaration i=12164, owner"
+              + " i=11564) on "
+              + getNodeId());
+    }
+    return (UInteger) node.getValue().getValue().getValue();
   }
 
   @Override
-  public PropertyTypeNode getMaxNodesPerMethodCallNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(OperationLimitsType.MAX_NODES_PER_METHOD_CALL);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public void setMaxNodesPerHistoryUpdateEvents(@Nullable UInteger value) {
+    var node = getMaxNodesPerHistoryUpdateEventsNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:MaxNodesPerHistoryUpdateEvents (declaration i=12164, owner"
+              + " i=11564) on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
-  public UInteger getMaxNodesPerMethodCall() {
-    return getProperty(OperationLimitsType.MAX_NODES_PER_METHOD_CALL).orElse(null);
+  public @Nullable PropertyTypeNode getMaxNodesPerMethodCallNode() {
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:MaxNodesPerMethodCall (declaration i=11569, owner"
+                + " i=11564) on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "MaxNodesPerMethodCall");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:MaxNodesPerMethodCall"
+                    + " (declaration i=11569, owner i=11564) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:MaxNodesPerMethodCall (declaration i=11569, owner"
+                  + " i=11564) on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:MaxNodesPerMethodCall (declaration i=11569, owner"
+                  + " i=11564) on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:MaxNodesPerMethodCall (declaration i=11569, owner"
+                  + " i=11564) on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        return null;
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:MaxNodesPerMethodCall (declaration i=11569, owner"
+                + " i=11564) on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:MaxNodesPerMethodCall (declaration i=11569, owner"
+                + " i=11564) on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof PropertyTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:MaxNodesPerMethodCall (declaration i=11569, owner i=11564)"
+              + " on "
+              + getNodeId());
+    }
+    return (PropertyTypeNode) parent;
   }
 
   @Override
-  public void setMaxNodesPerMethodCall(UInteger value) {
-    setProperty(OperationLimitsType.MAX_NODES_PER_METHOD_CALL, value);
+  public @Nullable UInteger getMaxNodesPerMethodCall() {
+    var node = getMaxNodesPerMethodCallNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:MaxNodesPerMethodCall (declaration i=11569, owner i=11564)"
+              + " on "
+              + getNodeId());
+    }
+    return (UInteger) node.getValue().getValue().getValue();
   }
 
   @Override
-  public PropertyTypeNode getMaxNodesPerBrowseNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(OperationLimitsType.MAX_NODES_PER_BROWSE);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public void setMaxNodesPerMethodCall(@Nullable UInteger value) {
+    var node = getMaxNodesPerMethodCallNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:MaxNodesPerMethodCall (declaration i=11569, owner i=11564)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
-  public UInteger getMaxNodesPerBrowse() {
-    return getProperty(OperationLimitsType.MAX_NODES_PER_BROWSE).orElse(null);
+  public @Nullable PropertyTypeNode getMaxNodesPerBrowseNode() {
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:MaxNodesPerBrowse (declaration i=11570, owner i=11564)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "MaxNodesPerBrowse");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:MaxNodesPerBrowse (declaration"
+                    + " i=11570, owner i=11564) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:MaxNodesPerBrowse (declaration i=11570, owner i=11564)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:MaxNodesPerBrowse (declaration i=11570, owner i=11564)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:MaxNodesPerBrowse (declaration i=11570, owner i=11564)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        return null;
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:MaxNodesPerBrowse (declaration i=11570, owner i=11564)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:MaxNodesPerBrowse (declaration i=11570, owner i=11564)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof PropertyTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:MaxNodesPerBrowse (declaration i=11570, owner i=11564)"
+              + " on "
+              + getNodeId());
+    }
+    return (PropertyTypeNode) parent;
   }
 
   @Override
-  public void setMaxNodesPerBrowse(UInteger value) {
-    setProperty(OperationLimitsType.MAX_NODES_PER_BROWSE, value);
+  public @Nullable UInteger getMaxNodesPerBrowse() {
+    var node = getMaxNodesPerBrowseNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:MaxNodesPerBrowse (declaration i=11570, owner i=11564)"
+              + " on "
+              + getNodeId());
+    }
+    return (UInteger) node.getValue().getValue().getValue();
   }
 
   @Override
-  public PropertyTypeNode getMaxNodesPerRegisterNodesNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(OperationLimitsType.MAX_NODES_PER_REGISTER_NODES);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public void setMaxNodesPerBrowse(@Nullable UInteger value) {
+    var node = getMaxNodesPerBrowseNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:MaxNodesPerBrowse (declaration i=11570, owner i=11564)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
-  public UInteger getMaxNodesPerRegisterNodes() {
-    return getProperty(OperationLimitsType.MAX_NODES_PER_REGISTER_NODES).orElse(null);
+  public @Nullable PropertyTypeNode getMaxNodesPerRegisterNodesNode() {
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:MaxNodesPerRegisterNodes (declaration i=11571, owner"
+                + " i=11564) on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "MaxNodesPerRegisterNodes");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:MaxNodesPerRegisterNodes"
+                    + " (declaration i=11571, owner i=11564) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:MaxNodesPerRegisterNodes (declaration i=11571, owner"
+                  + " i=11564) on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:MaxNodesPerRegisterNodes (declaration i=11571, owner"
+                  + " i=11564) on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:MaxNodesPerRegisterNodes (declaration i=11571, owner"
+                  + " i=11564) on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        return null;
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:MaxNodesPerRegisterNodes (declaration i=11571, owner"
+                + " i=11564) on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:MaxNodesPerRegisterNodes (declaration i=11571, owner"
+                + " i=11564) on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof PropertyTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:MaxNodesPerRegisterNodes (declaration i=11571, owner"
+              + " i=11564) on "
+              + getNodeId());
+    }
+    return (PropertyTypeNode) parent;
   }
 
   @Override
-  public void setMaxNodesPerRegisterNodes(UInteger value) {
-    setProperty(OperationLimitsType.MAX_NODES_PER_REGISTER_NODES, value);
+  public @Nullable UInteger getMaxNodesPerRegisterNodes() {
+    var node = getMaxNodesPerRegisterNodesNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:MaxNodesPerRegisterNodes (declaration i=11571, owner"
+              + " i=11564) on "
+              + getNodeId());
+    }
+    return (UInteger) node.getValue().getValue().getValue();
   }
 
   @Override
-  public PropertyTypeNode getMaxNodesPerTranslateBrowsePathsToNodeIdsNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(OperationLimitsType.MAX_NODES_PER_TRANSLATE_BROWSE_PATHS_TO_NODE_IDS);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public void setMaxNodesPerRegisterNodes(@Nullable UInteger value) {
+    var node = getMaxNodesPerRegisterNodesNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:MaxNodesPerRegisterNodes (declaration i=11571, owner"
+              + " i=11564) on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
-  public UInteger getMaxNodesPerTranslateBrowsePathsToNodeIds() {
-    return getProperty(OperationLimitsType.MAX_NODES_PER_TRANSLATE_BROWSE_PATHS_TO_NODE_IDS)
-        .orElse(null);
+  public @Nullable PropertyTypeNode getMaxNodesPerTranslateBrowsePathsToNodeIdsNode() {
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:MaxNodesPerTranslateBrowsePathsToNodeIds (declaration"
+                + " i=11572, owner i=11564) on "
+                + getNodeId());
+      }
+      var browseName =
+          new QualifiedName(namespaceIndex, "MaxNodesPerTranslateBrowsePathsToNodeIds");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving"
+                    + " http://opcfoundation.org/UA/:MaxNodesPerTranslateBrowsePathsToNodeIds"
+                    + " (declaration i=11572, owner i=11564) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:MaxNodesPerTranslateBrowsePathsToNodeIds (declaration"
+                  + " i=11572, owner i=11564) on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:MaxNodesPerTranslateBrowsePathsToNodeIds (declaration"
+                  + " i=11572, owner i=11564) on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:MaxNodesPerTranslateBrowsePathsToNodeIds (declaration"
+                  + " i=11572, owner i=11564) on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        return null;
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:MaxNodesPerTranslateBrowsePathsToNodeIds (declaration"
+                + " i=11572, owner i=11564) on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:MaxNodesPerTranslateBrowsePathsToNodeIds (declaration"
+                + " i=11572, owner i=11564) on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof PropertyTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:MaxNodesPerTranslateBrowsePathsToNodeIds (declaration"
+              + " i=11572, owner i=11564) on "
+              + getNodeId());
+    }
+    return (PropertyTypeNode) parent;
   }
 
   @Override
-  public void setMaxNodesPerTranslateBrowsePathsToNodeIds(UInteger value) {
-    setProperty(OperationLimitsType.MAX_NODES_PER_TRANSLATE_BROWSE_PATHS_TO_NODE_IDS, value);
+  public @Nullable UInteger getMaxNodesPerTranslateBrowsePathsToNodeIds() {
+    var node = getMaxNodesPerTranslateBrowsePathsToNodeIdsNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:MaxNodesPerTranslateBrowsePathsToNodeIds (declaration"
+              + " i=11572, owner i=11564) on "
+              + getNodeId());
+    }
+    return (UInteger) node.getValue().getValue().getValue();
   }
 
   @Override
-  public PropertyTypeNode getMaxNodesPerNodeManagementNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(OperationLimitsType.MAX_NODES_PER_NODE_MANAGEMENT);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public void setMaxNodesPerTranslateBrowsePathsToNodeIds(@Nullable UInteger value) {
+    var node = getMaxNodesPerTranslateBrowsePathsToNodeIdsNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:MaxNodesPerTranslateBrowsePathsToNodeIds (declaration"
+              + " i=11572, owner i=11564) on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
-  public UInteger getMaxNodesPerNodeManagement() {
-    return getProperty(OperationLimitsType.MAX_NODES_PER_NODE_MANAGEMENT).orElse(null);
+  public @Nullable PropertyTypeNode getMaxNodesPerNodeManagementNode() {
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:MaxNodesPerNodeManagement (declaration i=11573, owner"
+                + " i=11564) on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "MaxNodesPerNodeManagement");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:MaxNodesPerNodeManagement"
+                    + " (declaration i=11573, owner i=11564) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:MaxNodesPerNodeManagement (declaration i=11573, owner"
+                  + " i=11564) on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:MaxNodesPerNodeManagement (declaration i=11573, owner"
+                  + " i=11564) on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:MaxNodesPerNodeManagement (declaration i=11573, owner"
+                  + " i=11564) on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        return null;
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:MaxNodesPerNodeManagement (declaration i=11573, owner"
+                + " i=11564) on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:MaxNodesPerNodeManagement (declaration i=11573, owner"
+                + " i=11564) on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof PropertyTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:MaxNodesPerNodeManagement (declaration i=11573, owner"
+              + " i=11564) on "
+              + getNodeId());
+    }
+    return (PropertyTypeNode) parent;
   }
 
   @Override
-  public void setMaxNodesPerNodeManagement(UInteger value) {
-    setProperty(OperationLimitsType.MAX_NODES_PER_NODE_MANAGEMENT, value);
+  public @Nullable UInteger getMaxNodesPerNodeManagement() {
+    var node = getMaxNodesPerNodeManagementNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:MaxNodesPerNodeManagement (declaration i=11573, owner"
+              + " i=11564) on "
+              + getNodeId());
+    }
+    return (UInteger) node.getValue().getValue().getValue();
   }
 
   @Override
-  public PropertyTypeNode getMaxMonitoredItemsPerCallNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(OperationLimitsType.MAX_MONITORED_ITEMS_PER_CALL);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public void setMaxNodesPerNodeManagement(@Nullable UInteger value) {
+    var node = getMaxNodesPerNodeManagementNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:MaxNodesPerNodeManagement (declaration i=11573, owner"
+              + " i=11564) on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
-  public UInteger getMaxMonitoredItemsPerCall() {
-    return getProperty(OperationLimitsType.MAX_MONITORED_ITEMS_PER_CALL).orElse(null);
+  public @Nullable PropertyTypeNode getMaxMonitoredItemsPerCallNode() {
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:MaxMonitoredItemsPerCall (declaration i=11574, owner"
+                + " i=11564) on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "MaxMonitoredItemsPerCall");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:MaxMonitoredItemsPerCall"
+                    + " (declaration i=11574, owner i=11564) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:MaxMonitoredItemsPerCall (declaration i=11574, owner"
+                  + " i=11564) on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:MaxMonitoredItemsPerCall (declaration i=11574, owner"
+                  + " i=11564) on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:MaxMonitoredItemsPerCall (declaration i=11574, owner"
+                  + " i=11564) on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        return null;
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:MaxMonitoredItemsPerCall (declaration i=11574, owner"
+                + " i=11564) on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:MaxMonitoredItemsPerCall (declaration i=11574, owner"
+                + " i=11564) on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof PropertyTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:MaxMonitoredItemsPerCall (declaration i=11574, owner"
+              + " i=11564) on "
+              + getNodeId());
+    }
+    return (PropertyTypeNode) parent;
   }
 
   @Override
-  public void setMaxMonitoredItemsPerCall(UInteger value) {
-    setProperty(OperationLimitsType.MAX_MONITORED_ITEMS_PER_CALL, value);
+  public @Nullable UInteger getMaxMonitoredItemsPerCall() {
+    var node = getMaxMonitoredItemsPerCallNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:MaxMonitoredItemsPerCall (declaration i=11574, owner"
+              + " i=11564) on "
+              + getNodeId());
+    }
+    return (UInteger) node.getValue().getValue().getValue();
+  }
+
+  @Override
+  public void setMaxMonitoredItemsPerCall(@Nullable UInteger value) {
+    var node = getMaxMonitoredItemsPerCallNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:MaxMonitoredItemsPerCall (declaration i=11574, owner"
+              + " i=11564) on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 }

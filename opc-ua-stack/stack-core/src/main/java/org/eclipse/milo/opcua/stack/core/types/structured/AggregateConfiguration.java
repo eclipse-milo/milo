@@ -143,14 +143,14 @@ public class AggregateConfiguration extends Structure implements UaStructuredTyp
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 950),
-        new NodeId(0, 22),
+        NodeId.parse("i=950"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "UseServerCapabilitiesDefaults",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -158,7 +158,7 @@ public class AggregateConfiguration extends Structure implements UaStructuredTyp
           new StructureField(
               "TreatUncertainAsBad",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -166,7 +166,7 @@ public class AggregateConfiguration extends Structure implements UaStructuredTyp
           new StructureField(
               "PercentDataBad",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 3),
+              NodeId.parse("i=3"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -174,7 +174,7 @@ public class AggregateConfiguration extends Structure implements UaStructuredTyp
           new StructureField(
               "PercentDataGood",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 3),
+              NodeId.parse("i=3"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -182,7 +182,7 @@ public class AggregateConfiguration extends Structure implements UaStructuredTyp
           new StructureField(
               "UseSlopedExtrapolation",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),

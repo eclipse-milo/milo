@@ -121,14 +121,14 @@ public class SetPublishingModeRequest extends Structure implements UaRequestMess
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 799),
-        new NodeId(0, 22),
+        NodeId.parse("i=799"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "RequestHeader",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 389),
+              NodeId.parse("i=389"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -136,7 +136,7 @@ public class SetPublishingModeRequest extends Structure implements UaRequestMess
           new StructureField(
               "PublishingEnabled",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -144,7 +144,7 @@ public class SetPublishingModeRequest extends Structure implements UaRequestMess
           new StructureField(
               "SubscriptionIds",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 288),
+              NodeId.parse("i=288"),
               1,
               null,
               UInteger.valueOf(0),

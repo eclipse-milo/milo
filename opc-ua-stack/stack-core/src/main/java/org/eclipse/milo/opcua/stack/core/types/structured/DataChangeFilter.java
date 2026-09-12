@@ -12,6 +12,8 @@ package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -118,14 +120,14 @@ public class DataChangeFilter extends MonitoringFilter implements UaStructuredTy
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 724),
-        new NodeId(0, 719),
+        NodeId.parse("i=724"),
+        NodeId.parse("i=719"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "Trigger",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 717),
+              NodeId.parse("i=717"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -133,7 +135,7 @@ public class DataChangeFilter extends MonitoringFilter implements UaStructuredTy
           new StructureField(
               "DeadbandType",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -141,7 +143,7 @@ public class DataChangeFilter extends MonitoringFilter implements UaStructuredTy
           new StructureField(
               "DeadbandValue",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 11),
+              NodeId.parse("i=11"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -160,7 +162,27 @@ public class DataChangeFilter extends MonitoringFilter implements UaStructuredTy
       final DataChangeTrigger trigger;
       final UInteger deadbandType;
       final Double deadbandValue;
-      trigger = DataChangeTrigger.from(decoder.decodeEnum("Trigger"));
+      {
+        Integer enumValue = decoder.decodeEnum("Trigger");
+        if (enumValue != null && !((Object) enumValue instanceof DataChangeTrigger)) {
+          if (!(enumValue instanceof Integer)) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_TypeMismatch,
+                "Trigger: expected"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.DataChangeTrigger or"
+                    + " Int32, got "
+                    + enumValue);
+          }
+          if (DataChangeTrigger.from((Integer) enumValue) == null) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_OutOfRange,
+                "Trigger: unknown"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.DataChangeTrigger value "
+                    + enumValue);
+          }
+        }
+        trigger = enumValue == null ? null : DataChangeTrigger.from(enumValue);
+      }
       deadbandType = decoder.decodeUInt32("DeadbandType");
       deadbandValue = decoder.decodeDouble("DeadbandValue");
       return new DataChangeFilter(trigger, deadbandType, deadbandValue);

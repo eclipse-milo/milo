@@ -99,14 +99,14 @@ public class HistoryEventFieldList extends Structure implements UaStructuredType
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 922),
-        new NodeId(0, 22),
+        NodeId.parse("i=922"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "EventFields",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 24),
+              NodeId.parse("i=24"),
               1,
               null,
               UInteger.valueOf(0),

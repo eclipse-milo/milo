@@ -12,6 +12,8 @@ package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -122,14 +124,14 @@ public class UpdateStructureDataDetails extends HistoryUpdateDetails implements 
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 11300),
-        new NodeId(0, 677),
+        NodeId.parse("i=11300"),
+        NodeId.parse("i=677"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "NodeId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -137,7 +139,7 @@ public class UpdateStructureDataDetails extends HistoryUpdateDetails implements 
           new StructureField(
               "PerformInsertReplace",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 11293),
+              NodeId.parse("i=11293"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -145,7 +147,7 @@ public class UpdateStructureDataDetails extends HistoryUpdateDetails implements 
           new StructureField(
               "UpdateValues",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 23),
+              NodeId.parse("i=23"),
               1,
               null,
               UInteger.valueOf(0),
@@ -165,7 +167,27 @@ public class UpdateStructureDataDetails extends HistoryUpdateDetails implements 
       final PerformUpdateType performInsertReplace;
       final DataValue[] updateValues;
       nodeId = decoder.decodeNodeId("NodeId");
-      performInsertReplace = PerformUpdateType.from(decoder.decodeEnum("PerformInsertReplace"));
+      {
+        Integer enumValue = decoder.decodeEnum("PerformInsertReplace");
+        if (enumValue != null && !((Object) enumValue instanceof PerformUpdateType)) {
+          if (!(enumValue instanceof Integer)) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_TypeMismatch,
+                "PerformInsertReplace: expected"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.PerformUpdateType or"
+                    + " Int32, got "
+                    + enumValue);
+          }
+          if (PerformUpdateType.from((Integer) enumValue) == null) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_OutOfRange,
+                "PerformInsertReplace: unknown"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.PerformUpdateType value "
+                    + enumValue);
+          }
+        }
+        performInsertReplace = enumValue == null ? null : PerformUpdateType.from(enumValue);
+      }
       updateValues = decoder.decodeDataValueArray("UpdateValues");
       return new UpdateStructureDataDetails(nodeId, performInsertReplace, updateValues);
     }

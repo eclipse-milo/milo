@@ -109,14 +109,14 @@ public class AliasNameDataType extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 23499),
-        new NodeId(0, 22),
+        NodeId.parse("i=23499"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "AliasName",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 20),
+              NodeId.parse("i=20"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -124,7 +124,7 @@ public class AliasNameDataType extends Structure implements UaStructuredType {
           new StructureField(
               "ReferencedNodes",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 18),
+              NodeId.parse("i=18"),
               1,
               null,
               UInteger.valueOf(0),

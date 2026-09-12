@@ -61,6 +61,9 @@ public abstract class ReaderGroupMessageDataType extends Structure implements Ua
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 15702), new NodeId(0, 22), StructureType.Structure, new StructureField[] {});
+        NodeId.parse("i=15702"),
+        NodeId.parse("i=22"),
+        StructureType.Structure,
+        new StructureField[] {});
   }
 }

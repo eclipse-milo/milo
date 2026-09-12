@@ -117,14 +117,14 @@ public class QueryDataDescription extends Structure implements UaStructuredType 
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 572),
-        new NodeId(0, 22),
+        NodeId.parse("i=572"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "RelativePath",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 540),
+              NodeId.parse("i=540"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -132,7 +132,7 @@ public class QueryDataDescription extends Structure implements UaStructuredType 
           new StructureField(
               "AttributeId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 288),
+              NodeId.parse("i=288"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -140,7 +140,7 @@ public class QueryDataDescription extends Structure implements UaStructuredType 
           new StructureField(
               "IndexRange",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 291),
+              NodeId.parse("i=291"),
               -1,
               null,
               UInteger.valueOf(0),

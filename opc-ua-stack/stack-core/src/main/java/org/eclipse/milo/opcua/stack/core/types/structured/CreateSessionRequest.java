@@ -188,14 +188,14 @@ public class CreateSessionRequest extends Structure implements UaRequestMessageT
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 461),
-        new NodeId(0, 22),
+        NodeId.parse("i=461"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "RequestHeader",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 389),
+              NodeId.parse("i=389"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -203,7 +203,7 @@ public class CreateSessionRequest extends Structure implements UaRequestMessageT
           new StructureField(
               "ClientDescription",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 308),
+              NodeId.parse("i=308"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -211,7 +211,7 @@ public class CreateSessionRequest extends Structure implements UaRequestMessageT
           new StructureField(
               "ServerUri",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -219,7 +219,7 @@ public class CreateSessionRequest extends Structure implements UaRequestMessageT
           new StructureField(
               "EndpointUrl",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -227,7 +227,7 @@ public class CreateSessionRequest extends Structure implements UaRequestMessageT
           new StructureField(
               "SessionName",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -235,7 +235,7 @@ public class CreateSessionRequest extends Structure implements UaRequestMessageT
           new StructureField(
               "ClientNonce",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15),
+              NodeId.parse("i=15"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -243,7 +243,7 @@ public class CreateSessionRequest extends Structure implements UaRequestMessageT
           new StructureField(
               "ClientCertificate",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 311),
+              NodeId.parse("i=311"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -251,7 +251,7 @@ public class CreateSessionRequest extends Structure implements UaRequestMessageT
           new StructureField(
               "RequestedSessionTimeout",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 290),
+              NodeId.parse("i=290"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -259,7 +259,7 @@ public class CreateSessionRequest extends Structure implements UaRequestMessageT
           new StructureField(
               "MaxResponseMessageSize",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),

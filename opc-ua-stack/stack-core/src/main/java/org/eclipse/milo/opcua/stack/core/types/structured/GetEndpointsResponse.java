@@ -109,14 +109,14 @@ public class GetEndpointsResponse extends Structure implements UaResponseMessage
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 431),
-        new NodeId(0, 22),
+        NodeId.parse("i=431"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "ResponseHeader",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 392),
+              NodeId.parse("i=392"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -124,7 +124,7 @@ public class GetEndpointsResponse extends Structure implements UaResponseMessage
           new StructureField(
               "Endpoints",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 312),
+              NodeId.parse("i=312"),
               1,
               null,
               UInteger.valueOf(0),

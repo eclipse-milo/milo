@@ -106,14 +106,14 @@ public class ReadEventDetails2 extends ReadEventDetails implements UaStructuredT
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 32800),
-        new NodeId(0, 644),
+        NodeId.parse("i=32800"),
+        NodeId.parse("i=644"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "NumValuesPerNode",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 289),
+              NodeId.parse("i=289"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -121,7 +121,7 @@ public class ReadEventDetails2 extends ReadEventDetails implements UaStructuredT
           new StructureField(
               "StartTime",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 294),
+              NodeId.parse("i=294"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -129,7 +129,7 @@ public class ReadEventDetails2 extends ReadEventDetails implements UaStructuredT
           new StructureField(
               "EndTime",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 294),
+              NodeId.parse("i=294"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -137,7 +137,7 @@ public class ReadEventDetails2 extends ReadEventDetails implements UaStructuredT
           new StructureField(
               "Filter",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 725),
+              NodeId.parse("i=725"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -145,7 +145,7 @@ public class ReadEventDetails2 extends ReadEventDetails implements UaStructuredT
           new StructureField(
               "ReadModified",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),

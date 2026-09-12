@@ -11,14 +11,18 @@
 package org.eclipse.milo.opcua.sdk.server.aliases;
 
 import org.eclipse.milo.opcua.sdk.server.Session;
-import org.eclipse.milo.opcua.sdk.server.methods.Out;
-import org.eclipse.milo.opcua.sdk.server.model.objects.AliasNameCategoryType;
+import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
+import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 
 /**
  * Network-facing {@code DeleteAliasesFromCategory} implementation: authorizes the calling session
@@ -33,8 +37,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
  * call; everything else is reported per entry through the {@code ErrorCodes} output, with one
  * StatusCode per input entry.
  */
-class DeleteAliasesFromCategoryMethodImpl
-    extends AliasNameCategoryType.DeleteAliasesFromCategoryMethod {
+class DeleteAliasesFromCategoryMethodImpl extends AbstractMethodInvocationHandler {
 
   private final AliasManager aliasManager;
   private final AliasAuthorizationPolicy policy;
@@ -49,12 +52,39 @@ class DeleteAliasesFromCategoryMethodImpl
   }
 
   @Override
-  protected void invoke(
-      InvocationContext context,
-      String[] aliasNames,
-      ExpandedNodeId[] targetNodes,
-      Out<StatusCode[]> errorCodes)
-      throws UaException {
+  public Argument[] getInputArguments() {
+    return new Argument[] {
+      new Argument(
+          "AliasNames",
+          NodeIds.String,
+          1,
+          new UInteger[] {UInteger.valueOf(0)},
+          new LocalizedText("", "")),
+      new Argument(
+          "TargetNodes",
+          NodeIds.ExpandedNodeId,
+          1,
+          new UInteger[] {UInteger.valueOf(0)},
+          new LocalizedText("", ""))
+    };
+  }
+
+  @Override
+  public Argument[] getOutputArguments() {
+    return new Argument[] {
+      new Argument(
+          "ErrorCodes",
+          NodeIds.StatusCode,
+          1,
+          new UInteger[] {UInteger.valueOf(0)},
+          new LocalizedText("", ""))
+    };
+  }
+
+  @Override
+  protected Variant[] invoke(InvocationContext context, Variant[] inputValues) throws UaException {
+    String[] aliasNames = (String[]) inputValues[0].value();
+    ExpandedNodeId[] targetNodes = (ExpandedNodeId[]) inputValues[1].value();
 
     Session session = context.getSession().orElse(null);
     NodeId categoryId = context.getObjectId();
@@ -63,6 +93,7 @@ class DeleteAliasesFromCategoryMethodImpl
       throw new UaException(StatusCodes.Bad_UserAccessDenied);
     }
 
-    errorCodes.set(aliasManager.deleteAliasEntries(categoryId, aliasNames, targetNodes));
+    StatusCode[] errorCodes = aliasManager.deleteAliasEntries(categoryId, aliasNames, targetNodes);
+    return new Variant[] {new Variant(errorCodes)};
   }
 }

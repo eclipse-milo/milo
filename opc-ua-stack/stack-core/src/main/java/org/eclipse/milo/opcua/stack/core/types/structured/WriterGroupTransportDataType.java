@@ -61,6 +61,9 @@ public abstract class WriterGroupTransportDataType extends Structure implements 
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 15691), new NodeId(0, 22), StructureType.Structure, new StructureField[] {});
+        NodeId.parse("i=15691"),
+        NodeId.parse("i=22"),
+        StructureType.Structure,
+        new StructureField[] {});
   }
 }

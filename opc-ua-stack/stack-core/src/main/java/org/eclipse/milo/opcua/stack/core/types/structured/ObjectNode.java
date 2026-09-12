@@ -12,6 +12,8 @@ package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -124,14 +126,14 @@ public class ObjectNode extends InstanceNode implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 263),
-        new NodeId(0, 11879),
+        NodeId.parse("i=263"),
+        NodeId.parse("i=11879"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "NodeId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -139,7 +141,7 @@ public class ObjectNode extends InstanceNode implements UaStructuredType {
           new StructureField(
               "NodeClass",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 257),
+              NodeId.parse("i=257"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -147,7 +149,7 @@ public class ObjectNode extends InstanceNode implements UaStructuredType {
           new StructureField(
               "BrowseName",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 20),
+              NodeId.parse("i=20"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -155,7 +157,7 @@ public class ObjectNode extends InstanceNode implements UaStructuredType {
           new StructureField(
               "DisplayName",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 21),
+              NodeId.parse("i=21"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -163,7 +165,7 @@ public class ObjectNode extends InstanceNode implements UaStructuredType {
           new StructureField(
               "Description",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 21),
+              NodeId.parse("i=21"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -171,7 +173,7 @@ public class ObjectNode extends InstanceNode implements UaStructuredType {
           new StructureField(
               "WriteMask",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -179,7 +181,7 @@ public class ObjectNode extends InstanceNode implements UaStructuredType {
           new StructureField(
               "UserWriteMask",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -187,7 +189,7 @@ public class ObjectNode extends InstanceNode implements UaStructuredType {
           new StructureField(
               "RolePermissions",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 96),
+              NodeId.parse("i=96"),
               1,
               null,
               UInteger.valueOf(0),
@@ -195,7 +197,7 @@ public class ObjectNode extends InstanceNode implements UaStructuredType {
           new StructureField(
               "UserRolePermissions",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 96),
+              NodeId.parse("i=96"),
               1,
               null,
               UInteger.valueOf(0),
@@ -203,7 +205,7 @@ public class ObjectNode extends InstanceNode implements UaStructuredType {
           new StructureField(
               "AccessRestrictions",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 5),
+              NodeId.parse("i=5"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -211,7 +213,7 @@ public class ObjectNode extends InstanceNode implements UaStructuredType {
           new StructureField(
               "References",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 285),
+              NodeId.parse("i=285"),
               1,
               null,
               UInteger.valueOf(0),
@@ -219,7 +221,7 @@ public class ObjectNode extends InstanceNode implements UaStructuredType {
           new StructureField(
               "EventNotifier",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 3),
+              NodeId.parse("i=3"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -248,7 +250,26 @@ public class ObjectNode extends InstanceNode implements UaStructuredType {
       final ReferenceNode[] references;
       final UByte eventNotifier;
       nodeId = decoder.decodeNodeId("NodeId");
-      nodeClass = NodeClass.from(decoder.decodeEnum("NodeClass"));
+      {
+        Integer enumValue = decoder.decodeEnum("NodeClass");
+        if (enumValue != null && !((Object) enumValue instanceof NodeClass)) {
+          if (!(enumValue instanceof Integer)) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_TypeMismatch,
+                "NodeClass: expected org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass"
+                    + " or Int32, got "
+                    + enumValue);
+          }
+          if (NodeClass.from((Integer) enumValue) == null) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_OutOfRange,
+                "NodeClass: unknown org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass"
+                    + " value "
+                    + enumValue);
+          }
+        }
+        nodeClass = enumValue == null ? null : NodeClass.from(enumValue);
+      }
       browseName = decoder.decodeQualifiedName("BrowseName");
       displayName = decoder.decodeLocalizedText("DisplayName");
       description = decoder.decodeLocalizedText("Description");

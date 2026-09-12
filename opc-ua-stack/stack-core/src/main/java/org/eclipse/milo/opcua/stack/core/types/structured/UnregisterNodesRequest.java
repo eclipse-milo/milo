@@ -109,14 +109,14 @@ public class UnregisterNodesRequest extends Structure implements UaRequestMessag
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 566),
-        new NodeId(0, 22),
+        NodeId.parse("i=566"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "RequestHeader",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 389),
+              NodeId.parse("i=389"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -124,7 +124,7 @@ public class UnregisterNodesRequest extends Structure implements UaRequestMessag
           new StructureField(
               "NodesToUnregister",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               1,
               null,
               UInteger.valueOf(0),

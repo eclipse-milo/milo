@@ -17,6 +17,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.eclipse.milo.opcua.sdk.core.typetree.ReferenceType;
+import org.eclipse.milo.opcua.sdk.core.typetree.ReferenceTypeTree;
 import org.eclipse.milo.opcua.sdk.server.AddressSpaceManager;
 import org.eclipse.milo.opcua.sdk.server.EventListener;
 import org.eclipse.milo.opcua.sdk.server.EventNotifier;
@@ -26,8 +28,12 @@ import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.UaNodeManager;
 import org.eclipse.milo.opcua.sdk.server.VariableTypeManager;
 import org.eclipse.milo.opcua.sdk.server.model.objects.AcknowledgeableConditionTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.objects.BaseEventType;
 import org.eclipse.milo.opcua.sdk.server.model.objects.BaseEventTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.objects.ConditionType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.ConditionVariableType;
 import org.eclipse.milo.opcua.sdk.server.model.variables.ConditionVariableTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.variables.TwoStateVariableType;
 import org.eclipse.milo.opcua.sdk.server.model.variables.TwoStateVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
@@ -45,6 +51,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.eclipse.milo.opcua.stack.core.util.Tree;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -83,6 +90,18 @@ public class ConditionBehaviorTest {
     Mockito.when(server.getObjectTypeManager()).thenReturn(new ObjectTypeManager());
     Mockito.when(server.getVariableTypeManager()).thenReturn(new VariableTypeManager());
     Mockito.when(server.getTypeModelCache()).thenReturn(new TypeModelCache(server));
+
+    // The hand-built tree uses the two sibling standard aggregate reference families.
+    var references = new Tree<ReferenceType>(null, referenceType(NodeIds.References));
+    var aggregates =
+        references
+            .addChild(referenceType(NodeIds.HierarchicalReferences))
+            .addChild(referenceType(NodeIds.HasChild))
+            .addChild(referenceType(NodeIds.Aggregates));
+    aggregates.addChild(referenceType(NodeIds.HasProperty));
+    aggregates.addChild(referenceType(NodeIds.HasComponent));
+    var referenceTypeTree = new ReferenceTypeTree(references);
+    Mockito.when(server.getReferenceTypeTree()).thenReturn(referenceTypeTree);
 
     var capturingNotifier =
         new EventNotifier() {
@@ -125,6 +144,12 @@ public class ConditionBehaviorTest {
         };
   }
 
+  private static ReferenceType referenceType(NodeId nodeId) {
+    ReferenceType type = Mockito.mock(ReferenceType.class);
+    Mockito.when(type.getNodeId()).thenReturn(nodeId);
+    return type;
+  }
+
   private AcknowledgeableCondition newCondition(boolean withConfirm) {
     return new AcknowledgeableCondition(buildConditionNode(withConfirm));
   }
@@ -144,6 +169,15 @@ public class ConditionBehaviorTest {
             null);
 
     nodeManager.addNode(node);
+
+    // Keep values unset while creating the properties that behavior reads or writes. Generated
+    // setters now update existing nodes; fixture construction is explicit through UaNode.
+    node.setProperty(BaseEventType.EVENT_ID, null);
+    node.setProperty(BaseEventType.TIME, null);
+    node.setProperty(BaseEventType.MESSAGE, null);
+    node.setProperty(BaseEventType.SEVERITY, null);
+    node.setProperty(ConditionType.RETAIN, null);
+    node.setProperty(ConditionType.CLIENT_USER_ID, null);
 
     addTwoStateVariable(node, "EnabledState");
     addTwoStateVariable(node, "AckedState");
@@ -177,6 +211,7 @@ public class ConditionBehaviorTest {
             null);
 
     nodeManager.addNode(variable);
+    variable.setProperty(TwoStateVariableType.ID, null);
     parent.addComponent(variable);
   }
 
@@ -200,6 +235,7 @@ public class ConditionBehaviorTest {
             null);
 
     nodeManager.addNode(variable);
+    variable.setProperty(ConditionVariableType.SOURCE_TIMESTAMP, null);
     parent.addComponent(variable);
   }
 

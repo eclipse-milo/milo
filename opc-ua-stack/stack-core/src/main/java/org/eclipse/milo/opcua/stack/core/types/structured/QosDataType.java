@@ -60,6 +60,9 @@ public abstract class QosDataType extends Structure implements UaStructuredType 
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 23855), new NodeId(0, 22), StructureType.Structure, new StructureField[] {});
+        NodeId.parse("i=23855"),
+        NodeId.parse("i=22"),
+        StructureType.Structure,
+        new StructureField[] {});
   }
 }

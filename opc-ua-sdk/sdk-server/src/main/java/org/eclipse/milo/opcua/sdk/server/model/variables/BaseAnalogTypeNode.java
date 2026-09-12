@@ -10,21 +10,31 @@
 
 package org.eclipse.milo.opcua.sdk.server.model.variables;
 
+import java.util.LinkedHashMap;
 import java.util.Optional;
 import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
+import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelExType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.EUInformation;
 import org.eclipse.milo.opcua.stack.core.types.structured.NumberRange;
 import org.eclipse.milo.opcua.stack.core.types.structured.Range;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.jspecify.annotations.Nullable;
 
 public class BaseAnalogTypeNode extends DataItemTypeNode implements BaseAnalogType {
   public BaseAnalogTypeNode(
@@ -102,82 +112,713 @@ public class BaseAnalogTypeNode extends DataItemTypeNode implements BaseAnalogTy
   }
 
   @Override
-  public PropertyTypeNode getInstrumentRangeNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(BaseAnalogType.INSTRUMENT_RANGE);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public Optional<VariableNode> getPropertyNode(QualifiedName browseName) {
+    return findNode(
+            browseName,
+            n -> n instanceof VariableNode,
+            r ->
+                r.isForward()
+                    && (r.getReferenceTypeId().equals(NodeIds.HasProperty)
+                        || getNodeContext()
+                            .getServer()
+                            .getReferenceTypeTree()
+                            .isSubtypeOf(r.getReferenceTypeId(), NodeIds.HasProperty)))
+        .map(n -> (VariableNode) n);
   }
 
   @Override
-  public Range getInstrumentRange() {
-    return getProperty(BaseAnalogType.INSTRUMENT_RANGE).orElse(null);
+  public @Nullable PropertyTypeNode getInstrumentRangeNode() {
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:InstrumentRange (declaration i=17567, owner i=15318)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "InstrumentRange");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:InstrumentRange (declaration"
+                    + " i=17567, owner i=15318) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:InstrumentRange (declaration i=17567, owner i=15318)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:InstrumentRange (declaration i=17567, owner i=15318)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:InstrumentRange (declaration i=17567, owner i=15318)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        return null;
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:InstrumentRange (declaration i=17567, owner i=15318)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:InstrumentRange (declaration i=17567, owner i=15318)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof PropertyTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:InstrumentRange (declaration i=17567, owner i=15318)"
+              + " on "
+              + getNodeId());
+    }
+    return (PropertyTypeNode) parent;
   }
 
   @Override
-  public void setInstrumentRange(Range value) {
-    setProperty(BaseAnalogType.INSTRUMENT_RANGE, value);
+  public @Nullable Range getInstrumentRange() {
+    var node = getInstrumentRangeNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:InstrumentRange (declaration i=17567, owner i=15318)"
+              + " on "
+              + getNodeId());
+    }
+    Object decoded =
+        ExtensionObject.decodeValue(
+            getNodeContext().getServer().getStaticEncodingContext(),
+            node.getValue().getValue().getValue());
+    if (decoded == null) {
+      return null;
+    }
+    if (!(decoded instanceof Range)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:InstrumentRange (declaration i=17567, owner i=15318)");
+    }
+    return (Range) decoded;
   }
 
   @Override
-  public PropertyTypeNode getInstrumentNumberRangeNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(BaseAnalogType.INSTRUMENT_NUMBER_RANGE);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public void setInstrumentRange(@Nullable Range value) {
+    var node = getInstrumentRangeNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:InstrumentRange (declaration i=17567, owner i=15318)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
-  public NumberRange getInstrumentNumberRange() {
-    return getProperty(BaseAnalogType.INSTRUMENT_NUMBER_RANGE).orElse(null);
+  public @Nullable PropertyTypeNode getInstrumentNumberRangeNode() {
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:InstrumentNumberRange (declaration i=23904, owner"
+                + " i=15318) on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "InstrumentNumberRange");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:InstrumentNumberRange"
+                    + " (declaration i=23904, owner i=15318) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:InstrumentNumberRange (declaration i=23904, owner"
+                  + " i=15318) on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:InstrumentNumberRange (declaration i=23904, owner"
+                  + " i=15318) on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:InstrumentNumberRange (declaration i=23904, owner"
+                  + " i=15318) on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        return null;
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:InstrumentNumberRange (declaration i=23904, owner"
+                + " i=15318) on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:InstrumentNumberRange (declaration i=23904, owner"
+                + " i=15318) on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof PropertyTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:InstrumentNumberRange (declaration i=23904, owner i=15318)"
+              + " on "
+              + getNodeId());
+    }
+    return (PropertyTypeNode) parent;
   }
 
   @Override
-  public void setInstrumentNumberRange(NumberRange value) {
-    setProperty(BaseAnalogType.INSTRUMENT_NUMBER_RANGE, value);
+  public @Nullable NumberRange getInstrumentNumberRange() {
+    var node = getInstrumentNumberRangeNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:InstrumentNumberRange (declaration i=23904, owner i=15318)"
+              + " on "
+              + getNodeId());
+    }
+    Object decoded =
+        ExtensionObject.decodeValue(
+            getNodeContext().getServer().getStaticEncodingContext(),
+            node.getValue().getValue().getValue());
+    if (decoded == null) {
+      return null;
+    }
+    if (!(decoded instanceof NumberRange)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:InstrumentNumberRange (declaration i=23904, owner"
+              + " i=15318)");
+    }
+    return (NumberRange) decoded;
   }
 
   @Override
-  public PropertyTypeNode getEuRangeNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(BaseAnalogType.EU_RANGE);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public void setInstrumentNumberRange(@Nullable NumberRange value) {
+    var node = getInstrumentNumberRangeNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:InstrumentNumberRange (declaration i=23904, owner i=15318)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
-  public Range getEuRange() {
-    return getProperty(BaseAnalogType.EU_RANGE).orElse(null);
+  public @Nullable PropertyTypeNode getEuRangeNode() {
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:EURange (declaration i=17568, owner i=15318)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "EURange");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:EURange (declaration i=17568,"
+                    + " owner i=15318) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:EURange (declaration i=17568, owner i=15318)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:EURange (declaration i=17568, owner i=15318)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:EURange (declaration i=17568, owner i=15318)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        return null;
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:EURange (declaration i=17568, owner i=15318)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:EURange (declaration i=17568, owner i=15318)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof PropertyTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:EURange (declaration i=17568, owner i=15318)"
+              + " on "
+              + getNodeId());
+    }
+    return (PropertyTypeNode) parent;
   }
 
   @Override
-  public void setEuRange(Range value) {
-    setProperty(BaseAnalogType.EU_RANGE, value);
+  public @Nullable Range getEuRange() {
+    var node = getEuRangeNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:EURange (declaration i=17568, owner i=15318)"
+              + " on "
+              + getNodeId());
+    }
+    Object decoded =
+        ExtensionObject.decodeValue(
+            getNodeContext().getServer().getStaticEncodingContext(),
+            node.getValue().getValue().getValue());
+    if (decoded == null) {
+      return null;
+    }
+    if (!(decoded instanceof Range)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:EURange (declaration i=17568, owner i=15318)");
+    }
+    return (Range) decoded;
   }
 
   @Override
-  public PropertyTypeNode getEuNumberRangeNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(BaseAnalogType.EU_NUMBER_RANGE);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public void setEuRange(@Nullable Range value) {
+    var node = getEuRangeNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:EURange (declaration i=17568, owner i=15318)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
-  public NumberRange getEuNumberRange() {
-    return getProperty(BaseAnalogType.EU_NUMBER_RANGE).orElse(null);
+  public @Nullable PropertyTypeNode getEuNumberRangeNode() {
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:EUNumberRange (declaration i=23905, owner i=15318)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "EUNumberRange");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:EUNumberRange (declaration"
+                    + " i=23905, owner i=15318) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:EUNumberRange (declaration i=23905, owner i=15318)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:EUNumberRange (declaration i=23905, owner i=15318)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:EUNumberRange (declaration i=23905, owner i=15318)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        return null;
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:EUNumberRange (declaration i=23905, owner i=15318)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:EUNumberRange (declaration i=23905, owner i=15318)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof PropertyTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:EUNumberRange (declaration i=23905, owner i=15318)"
+              + " on "
+              + getNodeId());
+    }
+    return (PropertyTypeNode) parent;
   }
 
   @Override
-  public void setEuNumberRange(NumberRange value) {
-    setProperty(BaseAnalogType.EU_NUMBER_RANGE, value);
+  public @Nullable NumberRange getEuNumberRange() {
+    var node = getEuNumberRangeNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:EUNumberRange (declaration i=23905, owner i=15318)"
+              + " on "
+              + getNodeId());
+    }
+    Object decoded =
+        ExtensionObject.decodeValue(
+            getNodeContext().getServer().getStaticEncodingContext(),
+            node.getValue().getValue().getValue());
+    if (decoded == null) {
+      return null;
+    }
+    if (!(decoded instanceof NumberRange)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:EUNumberRange (declaration i=23905, owner i=15318)");
+    }
+    return (NumberRange) decoded;
   }
 
   @Override
-  public PropertyTypeNode getEngineeringUnitsNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(BaseAnalogType.ENGINEERING_UNITS);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public void setEuNumberRange(@Nullable NumberRange value) {
+    var node = getEuNumberRangeNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:EUNumberRange (declaration i=23905, owner i=15318)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
-  public EUInformation getEngineeringUnits() {
-    return getProperty(BaseAnalogType.ENGINEERING_UNITS).orElse(null);
+  public @Nullable PropertyTypeNode getEngineeringUnitsNode() {
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:EngineeringUnits (declaration i=17569, owner i=15318)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "EngineeringUnits");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:EngineeringUnits (declaration"
+                    + " i=17569, owner i=15318) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:EngineeringUnits (declaration i=17569, owner i=15318)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:EngineeringUnits (declaration i=17569, owner i=15318)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:EngineeringUnits (declaration i=17569, owner i=15318)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        return null;
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:EngineeringUnits (declaration i=17569, owner i=15318)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:EngineeringUnits (declaration i=17569, owner i=15318)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof PropertyTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:EngineeringUnits (declaration i=17569, owner i=15318)"
+              + " on "
+              + getNodeId());
+    }
+    return (PropertyTypeNode) parent;
   }
 
   @Override
-  public void setEngineeringUnits(EUInformation value) {
-    setProperty(BaseAnalogType.ENGINEERING_UNITS, value);
+  public @Nullable EUInformation getEngineeringUnitsProperty() {
+    var node = getEngineeringUnitsNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:EngineeringUnits (declaration i=17569, owner i=15318)"
+              + " on "
+              + getNodeId());
+    }
+    Object decoded =
+        ExtensionObject.decodeValue(
+            getNodeContext().getServer().getStaticEncodingContext(),
+            node.getValue().getValue().getValue());
+    if (decoded == null) {
+      return null;
+    }
+    if (!(decoded instanceof EUInformation)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:EngineeringUnits (declaration i=17569, owner i=15318)");
+    }
+    return (EUInformation) decoded;
+  }
+
+  @Override
+  public void setEngineeringUnitsProperty(@Nullable EUInformation value) {
+    var node = getEngineeringUnitsNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:EngineeringUnits (declaration i=17569, owner i=15318)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 }

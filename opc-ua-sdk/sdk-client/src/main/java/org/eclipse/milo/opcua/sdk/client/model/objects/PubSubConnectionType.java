@@ -10,14 +10,22 @@
 
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
+import com.digitalpetri.opcua.uanodeset.runtime.methods.MethodCallOptions;
+import com.digitalpetri.opcua.uanodeset.runtime.methods.MethodCallResult;
 import java.util.concurrent.CompletableFuture;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyType;
 import org.eclipse.milo.opcua.sdk.client.model.variables.SelectionListType;
+import org.eclipse.milo.opcua.sdk.client.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.structured.KeyValuePair;
+import org.eclipse.milo.opcua.stack.core.types.structured.ReaderGroupDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.WriterGroupDataType;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
@@ -41,298 +49,1010 @@ public interface PubSubConnectionType extends BaseObjectType {
           KeyValuePair[].class);
 
   /**
-   * Get the local value of the PublisherId Node.
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Lookup may perform service I/O; the value is not read
+   * remotely. Use the node's raw DataValue to inspect quality and timestamps.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @return the local value of the PublisherId Node.
-   * @throws UaException if an error occurs creating or getting the PublisherId Node.
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
    */
-  Object getPublisherId() throws UaException;
+  @Nullable Object getPublisherId() throws UaException;
 
   /**
-   * Set the local value of the PublisherId Node.
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   * This does not send a Write service request.
    *
-   * <p>The value is only updated locally; it is not written to the server.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @param value the local value to set for the PublisherId Node.
-   * @throws UaException if an error occurs creating or getting the PublisherId Node.
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
    */
-  void setPublisherId(Object value) throws UaException;
+  void setPublisherId(@Nullable Object value) throws UaException;
 
   /**
-   * Read the value of the PublisherId Node from the server and update the local value if the
-   * operation succeeds.
+   * Reads the existing member's value remotely. Only Good status is accepted, including Good
+   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
+   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
+   * node's raw readValue to retain quality, timestamps and unconverted values.
    *
-   * @return the {@link Object} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails; non-Good operation status also fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
    */
-  Object readPublisherId() throws UaException;
+  @Nullable Object readPublisherId() throws UaException;
 
   /**
-   * Write a new value for the PublisherId Node to the server and update the local value if the
-   * operation succeeds.
+   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
+   * local value.
    *
-   * @param value the {@link Object} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails; non-Good operation status also fails
    */
-  void writePublisherId(Object value) throws UaException;
+  void writePublisherId(@Nullable Object value) throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readPublisherId}.
+   * Reads the existing member's value remotely. Only Good status is accepted, including Good
+   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
+   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
+   * node's raw readValue to retain quality, timestamps and unconverted values.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
+   *
+   * @return a nonnull future completing with the value, which may be null on a present member
    */
-  CompletableFuture<?> readPublisherIdAsync();
+  CompletableFuture<? extends @Nullable Object> readPublisherIdAsync();
 
   /**
-   * An asynchronous implementation of {@link #writePublisherId}.
+   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
+   * local value.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
+   *
+   * @param value the value to store; null is permitted
+   * @return a nonnull future completing with the Write operation status, including non-Good
+   *     statuses
    */
-  CompletableFuture<StatusCode> writePublisherIdAsync(Object value);
+  CompletableFuture<StatusCode> writePublisherIdAsync(@Nullable Object value);
 
   /**
-   * Get the PublisherId {@link PropertyType} Node, or {@code null} if it does not exist.
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. It can perform service I/O and construct or
+   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the PublisherId {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
    */
   PropertyType getPublisherIdNode() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getPublisherIdNode()}.
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. It can perform service I/O and construct or
+   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
+   *
+   * @return a nonnull future completing with the existing member
    */
   CompletableFuture<? extends PropertyType> getPublisherIdNodeAsync();
 
   /**
-   * Get the local value of the ConnectionProperties Node.
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Lookup may perform service I/O; the value is not read
+   * remotely. Use the node's raw DataValue to inspect quality and timestamps.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @return the local value of the ConnectionProperties Node.
-   * @throws UaException if an error occurs creating or getting the ConnectionProperties Node.
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
    */
-  KeyValuePair[] getConnectionProperties() throws UaException;
+  @Nullable KeyValuePair @Nullable [] getConnectionProperties() throws UaException;
 
   /**
-   * Set the local value of the ConnectionProperties Node.
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   * This does not send a Write service request.
    *
-   * <p>The value is only updated locally; it is not written to the server.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @param value the local value to set for the ConnectionProperties Node.
-   * @throws UaException if an error occurs creating or getting the ConnectionProperties Node.
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
    */
-  void setConnectionProperties(KeyValuePair[] value) throws UaException;
+  void setConnectionProperties(@Nullable KeyValuePair @Nullable [] value) throws UaException;
 
   /**
-   * Read the value of the ConnectionProperties Node from the server and update the local value if
-   * the operation succeeds.
+   * Reads the existing member's value remotely. Only Good status is accepted, including Good
+   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
+   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
+   * node's raw readValue to retain quality, timestamps and unconverted values.
    *
-   * @return the {@link KeyValuePair[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails; non-Good operation status also fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
    */
-  KeyValuePair[] readConnectionProperties() throws UaException;
+  @Nullable KeyValuePair @Nullable [] readConnectionProperties() throws UaException;
 
   /**
-   * Write a new value for the ConnectionProperties Node to the server and update the local value if
-   * the operation succeeds.
+   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
+   * local value.
    *
-   * @param value the {@link KeyValuePair[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails; non-Good operation status also fails
    */
-  void writeConnectionProperties(KeyValuePair[] value) throws UaException;
+  void writeConnectionProperties(@Nullable KeyValuePair @Nullable [] value) throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readConnectionProperties}.
+   * Reads the existing member's value remotely. Only Good status is accepted, including Good
+   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
+   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
+   * node's raw readValue to retain quality, timestamps and unconverted values.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
+   *
+   * @return a nonnull future completing with the value, which may be null on a present member
    */
-  CompletableFuture<? extends KeyValuePair[]> readConnectionPropertiesAsync();
+  CompletableFuture<? extends @Nullable KeyValuePair @Nullable []> readConnectionPropertiesAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeConnectionProperties}.
+   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
+   * local value.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
+   *
+   * @param value the value to store; null is permitted
+   * @return a nonnull future completing with the Write operation status, including non-Good
+   *     statuses
    */
-  CompletableFuture<StatusCode> writeConnectionPropertiesAsync(KeyValuePair[] value);
+  CompletableFuture<StatusCode> writeConnectionPropertiesAsync(
+      @Nullable KeyValuePair @Nullable [] value);
 
   /**
-   * Get the ConnectionProperties {@link PropertyType} Node, or {@code null} if it does not exist.
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. It can perform service I/O and construct or
+   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ConnectionProperties {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
    */
   PropertyType getConnectionPropertiesNode() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getConnectionPropertiesNode()}.
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. It can perform service I/O and construct or
+   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
+   *
+   * @return a nonnull future completing with the existing member
    */
   CompletableFuture<? extends PropertyType> getConnectionPropertiesNodeAsync();
 
   /**
-   * Get the local value of the TransportProfileUri Node.
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Lookup may perform service I/O; the value is not read
+   * remotely. Use the node's raw DataValue to inspect quality and timestamps.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @return the local value of the TransportProfileUri Node.
-   * @throws UaException if an error occurs creating or getting the TransportProfileUri Node.
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
    */
-  String getTransportProfileUri() throws UaException;
+  @Nullable String getTransportProfileUri() throws UaException;
 
   /**
-   * Set the local value of the TransportProfileUri Node.
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   * This does not send a Write service request.
    *
-   * <p>The value is only updated locally; it is not written to the server.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @param value the local value to set for the TransportProfileUri Node.
-   * @throws UaException if an error occurs creating or getting the TransportProfileUri Node.
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
    */
-  void setTransportProfileUri(String value) throws UaException;
+  void setTransportProfileUri(@Nullable String value) throws UaException;
 
   /**
-   * Read the value of the TransportProfileUri Node from the server and update the local value if
-   * the operation succeeds.
+   * Reads the existing member's value remotely. Only Good status is accepted, including Good
+   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
+   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
+   * node's raw readValue to retain quality, timestamps and unconverted values.
    *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails; non-Good operation status also fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
    */
-  String readTransportProfileUri() throws UaException;
+  @Nullable String readTransportProfileUri() throws UaException;
 
   /**
-   * Write a new value for the TransportProfileUri Node to the server and update the local value if
-   * the operation succeeds.
+   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
+   * local value.
    *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails; non-Good operation status also fails
    */
-  void writeTransportProfileUri(String value) throws UaException;
+  void writeTransportProfileUri(@Nullable String value) throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readTransportProfileUri}.
+   * Reads the existing member's value remotely. Only Good status is accepted, including Good
+   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
+   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
+   * node's raw readValue to retain quality, timestamps and unconverted values.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
+   *
+   * @return a nonnull future completing with the value, which may be null on a present member
    */
-  CompletableFuture<? extends String> readTransportProfileUriAsync();
+  CompletableFuture<? extends @Nullable String> readTransportProfileUriAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeTransportProfileUri}.
+   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
+   * local value.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
+   *
+   * @param value the value to store; null is permitted
+   * @return a nonnull future completing with the Write operation status, including non-Good
+   *     statuses
    */
-  CompletableFuture<StatusCode> writeTransportProfileUriAsync(String value);
+  CompletableFuture<StatusCode> writeTransportProfileUriAsync(@Nullable String value);
 
   /**
-   * Get the TransportProfileUri {@link SelectionListType} Node, or {@code null} if it does not
-   * exist.
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. It can perform service I/O and construct or
+   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the TransportProfileUri {@link SelectionListType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
    */
   SelectionListType getTransportProfileUriNode() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getTransportProfileUriNode()}.
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. It can perform service I/O and construct or
+   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
    *
-   * @return a CompletableFuture that completes successfully with the SelectionListType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
+   *
+   * @return a nonnull future completing with the existing member
    */
   CompletableFuture<? extends SelectionListType> getTransportProfileUriNodeAsync();
 
   /**
-   * Get the Address {@link NetworkAddressType} Node, or {@code null} if it does not exist.
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. It can perform service I/O and construct or
+   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the Address {@link NetworkAddressType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
    */
   NetworkAddressType getAddressNode() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getAddressNode()}.
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. It can perform service I/O and construct or
+   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
    *
-   * @return a CompletableFuture that completes successfully with the NetworkAddressType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
+   *
+   * @return a nonnull future completing with the existing member
    */
   CompletableFuture<? extends NetworkAddressType> getAddressNodeAsync();
 
   /**
-   * Get the TransportSettings {@link ConnectionTransportType} Node, or {@code null} if it does not
-   * exist.
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. It can perform service I/O and construct or
+   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the TransportSettings {@link ConnectionTransportType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
    */
-  ConnectionTransportType getTransportSettingsNode() throws UaException;
+  @Nullable ConnectionTransportType getTransportSettingsNode() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getTransportSettingsNode()}.
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. It can perform service I/O and construct or
+   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
    *
-   * @return a CompletableFuture that completes successfully with the ConnectionTransportType Node
-   *     or completes exceptionally if an error occurs creating or getting the Node.
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
+   *
+   * @return a nonnull future completing with the existing member, or null for confirmed absence
    */
-  CompletableFuture<? extends ConnectionTransportType> getTransportSettingsNodeAsync();
+  CompletableFuture<? extends @Nullable ConnectionTransportType> getTransportSettingsNodeAsync();
 
   /**
-   * Get the Status {@link PubSubStatusType} Node, or {@code null} if it does not exist.
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. It can perform service I/O and construct or
+   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the Status {@link PubSubStatusType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
    */
   PubSubStatusType getStatusNode() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getStatusNode()}.
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. It can perform service I/O and construct or
+   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
    *
-   * @return a CompletableFuture that completes successfully with the PubSubStatusType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
+   *
+   * @return a nonnull future completing with the existing member
    */
   CompletableFuture<? extends PubSubStatusType> getStatusNodeAsync();
 
   /**
-   * Get the Diagnostics {@link PubSubDiagnosticsConnectionType} Node, or {@code null} if it does
-   * not exist.
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. It can perform service I/O and construct or
+   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the Diagnostics {@link PubSubDiagnosticsConnectionType} Node, or {@code null} if it
-   *     does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
    */
-  PubSubDiagnosticsConnectionType getDiagnosticsNode() throws UaException;
+  @Nullable PubSubDiagnosticsConnectionType getDiagnosticsNode() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getDiagnosticsNode()}.
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. It can perform service I/O and construct or
+   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
    *
-   * @return a CompletableFuture that completes successfully with the
-   *     PubSubDiagnosticsConnectionType Node or completes exceptionally if an error occurs creating
-   *     or getting the Node.
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
+   *
+   * @return a nonnull future completing with the existing member, or null for confirmed absence
    */
-  CompletableFuture<? extends PubSubDiagnosticsConnectionType> getDiagnosticsNodeAsync();
+  CompletableFuture<? extends @Nullable PubSubDiagnosticsConnectionType> getDiagnosticsNodeAsync();
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.3
+   *
+   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
+   * confirmed absence. Resolution does not create a UA node. It can perform service I/O and
+   * construct or reuse a Java wrapper in Milo's address space cache. A reference can change after
+   * lookup.
+   *
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
+   */
+  @NullMarked
+  @Nullable UaMethodNode getAddWriterGroupMethodNode() throws UaException;
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.3
+   *
+   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
+   * confirmed absence. Resolution does not create a UA node. It can perform service I/O and
+   * construct or reuse a Java wrapper in Milo's address space cache. A reference can change after
+   * lookup.
+   *
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
+   *
+   * @return a nonnull future completing with the existing member, or null for confirmed absence
+   */
+  @NullMarked
+  CompletableFuture<? extends @Nullable UaMethodNode> getAddWriterGroupMethodNodeAsync();
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.3
+   *
+   * <p>Invokes <code>AddWriterGroup</code> on this node's ObjectId using the effective Method
+   * contract.
+   *
+   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
+   * failures are preserved. The call does not create a node or retry an invocation.
+   *
+   * <p>Requires Good operation status, including Good subcodes. Uncertain and Bad statuses fail
+   * with UaException before any output conversion failure is reported. Application status outputs
+   * remain separate.
+   *
+   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
+   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
+   *
+   * @param configuration ; the supplied payload may be null.
+   * @return the output value or object, or its future; a single value may be null.
+   * @throws UaException if lookup, input validation, transport, service, operation status or output
+   *     conversion fails.
+   */
+  @NullMarked
+  @Nullable NodeId callAddWriterGroup(@Nullable WriterGroupDataType configuration)
+      throws UaException;
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.3
+   *
+   * <p>Invokes <code>AddWriterGroup</code> on this node's ObjectId using the effective Method
+   * contract.
+   *
+   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
+   * failures are preserved. The call does not create a node or retry an invocation.
+   *
+   * <p>Requires Good operation status, including Good subcodes. Uncertain and Bad statuses fail
+   * with UaException before any output conversion failure is reported. Application status outputs
+   * remain separate.
+   *
+   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
+   * complete it exceptionally. Cancellation stops observation and dependent work that has not
+   * started; it does not cancel server execution.
+   *
+   * @param configuration ; the supplied payload may be null.
+   * @return the output value or object, or its future; a single value may be null.
+   */
+  @NullMarked
+  CompletableFuture<? extends @Nullable NodeId> callAddWriterGroupAsync(
+      @Nullable WriterGroupDataType configuration);
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.3
+   *
+   * <p>Invokes <code>AddWriterGroup</code> on this node's ObjectId using the effective Method
+   * contract.
+   *
+   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
+   * failures are preserved. The call does not create a node or retry an invocation.
+   *
+   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
+   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
+   * available separately. Bad results preserve received wire outputs.
+   *
+   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
+   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
+   *
+   * @param configuration ; the supplied payload may be null.
+   * @return the detailed outcome, or its future.
+   * @throws UaException if lookup, input validation, transport, service or response envelope
+   *     validation fails.
+   */
+  @NullMarked
+  MethodCallResult<? extends @Nullable NodeId> callAddWriterGroupDetailed(
+      @Nullable WriterGroupDataType configuration) throws UaException;
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.3
+   *
+   * <p>Invokes <code>AddWriterGroup</code> on this node's ObjectId using the effective Method
+   * contract.
+   *
+   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
+   * failures are preserved. The call does not create a node or retry an invocation.
+   *
+   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
+   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
+   * available separately. Bad results preserve received wire outputs.
+   *
+   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
+   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
+   *
+   * @param options request-wide diagnostics options for this Call only.
+   * @param configuration ; the supplied payload may be null.
+   * @return the detailed outcome, or its future.
+   * @throws UaException if lookup, input validation, transport, service or response envelope
+   *     validation fails.
+   * @throws NullPointerException if a required options or presence object is null.
+   */
+  @NullMarked
+  MethodCallResult<? extends @Nullable NodeId> callAddWriterGroupDetailed(
+      MethodCallOptions options, @Nullable WriterGroupDataType configuration) throws UaException;
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.3
+   *
+   * <p>Invokes <code>AddWriterGroup</code> on this node's ObjectId using the effective Method
+   * contract.
+   *
+   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
+   * failures are preserved. The call does not create a node or retry an invocation.
+   *
+   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
+   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
+   * available separately. Bad results preserve received wire outputs.
+   *
+   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
+   * complete it exceptionally. Cancellation stops observation and dependent work that has not
+   * started; it does not cancel server execution.
+   *
+   * @param configuration ; the supplied payload may be null.
+   * @return the detailed outcome, or its future.
+   */
+  @NullMarked
+  CompletableFuture<? extends MethodCallResult<? extends @Nullable NodeId>>
+      callAddWriterGroupDetailedAsync(@Nullable WriterGroupDataType configuration);
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.3
+   *
+   * <p>Invokes <code>AddWriterGroup</code> on this node's ObjectId using the effective Method
+   * contract.
+   *
+   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
+   * failures are preserved. The call does not create a node or retry an invocation.
+   *
+   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
+   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
+   * available separately. Bad results preserve received wire outputs.
+   *
+   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
+   * complete it exceptionally. Cancellation stops observation and dependent work that has not
+   * started; it does not cancel server execution.
+   *
+   * @param options request-wide diagnostics options for this Call only.
+   * @param configuration ; the supplied payload may be null.
+   * @return the detailed outcome, or its future.
+   * @throws NullPointerException if a required options or presence object is null (exceptional
+   *     completion).
+   */
+  @NullMarked
+  CompletableFuture<? extends MethodCallResult<? extends @Nullable NodeId>>
+      callAddWriterGroupDetailedAsync(
+          MethodCallOptions options, @Nullable WriterGroupDataType configuration);
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.4
+   *
+   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
+   * confirmed absence. Resolution does not create a UA node. It can perform service I/O and
+   * construct or reuse a Java wrapper in Milo's address space cache. A reference can change after
+   * lookup.
+   *
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
+   */
+  @NullMarked
+  @Nullable UaMethodNode getAddReaderGroupMethodNode() throws UaException;
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.4
+   *
+   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
+   * confirmed absence. Resolution does not create a UA node. It can perform service I/O and
+   * construct or reuse a Java wrapper in Milo's address space cache. A reference can change after
+   * lookup.
+   *
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
+   *
+   * @return a nonnull future completing with the existing member, or null for confirmed absence
+   */
+  @NullMarked
+  CompletableFuture<? extends @Nullable UaMethodNode> getAddReaderGroupMethodNodeAsync();
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.4
+   *
+   * <p>Invokes <code>AddReaderGroup</code> on this node's ObjectId using the effective Method
+   * contract.
+   *
+   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
+   * failures are preserved. The call does not create a node or retry an invocation.
+   *
+   * <p>Requires Good operation status, including Good subcodes. Uncertain and Bad statuses fail
+   * with UaException before any output conversion failure is reported. Application status outputs
+   * remain separate.
+   *
+   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
+   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
+   *
+   * @param configuration ; the supplied payload may be null.
+   * @return the output value or object, or its future; a single value may be null.
+   * @throws UaException if lookup, input validation, transport, service, operation status or output
+   *     conversion fails.
+   */
+  @NullMarked
+  @Nullable NodeId callAddReaderGroup(@Nullable ReaderGroupDataType configuration)
+      throws UaException;
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.4
+   *
+   * <p>Invokes <code>AddReaderGroup</code> on this node's ObjectId using the effective Method
+   * contract.
+   *
+   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
+   * failures are preserved. The call does not create a node or retry an invocation.
+   *
+   * <p>Requires Good operation status, including Good subcodes. Uncertain and Bad statuses fail
+   * with UaException before any output conversion failure is reported. Application status outputs
+   * remain separate.
+   *
+   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
+   * complete it exceptionally. Cancellation stops observation and dependent work that has not
+   * started; it does not cancel server execution.
+   *
+   * @param configuration ; the supplied payload may be null.
+   * @return the output value or object, or its future; a single value may be null.
+   */
+  @NullMarked
+  CompletableFuture<? extends @Nullable NodeId> callAddReaderGroupAsync(
+      @Nullable ReaderGroupDataType configuration);
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.4
+   *
+   * <p>Invokes <code>AddReaderGroup</code> on this node's ObjectId using the effective Method
+   * contract.
+   *
+   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
+   * failures are preserved. The call does not create a node or retry an invocation.
+   *
+   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
+   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
+   * available separately. Bad results preserve received wire outputs.
+   *
+   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
+   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
+   *
+   * @param configuration ; the supplied payload may be null.
+   * @return the detailed outcome, or its future.
+   * @throws UaException if lookup, input validation, transport, service or response envelope
+   *     validation fails.
+   */
+  @NullMarked
+  MethodCallResult<? extends @Nullable NodeId> callAddReaderGroupDetailed(
+      @Nullable ReaderGroupDataType configuration) throws UaException;
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.4
+   *
+   * <p>Invokes <code>AddReaderGroup</code> on this node's ObjectId using the effective Method
+   * contract.
+   *
+   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
+   * failures are preserved. The call does not create a node or retry an invocation.
+   *
+   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
+   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
+   * available separately. Bad results preserve received wire outputs.
+   *
+   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
+   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
+   *
+   * @param options request-wide diagnostics options for this Call only.
+   * @param configuration ; the supplied payload may be null.
+   * @return the detailed outcome, or its future.
+   * @throws UaException if lookup, input validation, transport, service or response envelope
+   *     validation fails.
+   * @throws NullPointerException if a required options or presence object is null.
+   */
+  @NullMarked
+  MethodCallResult<? extends @Nullable NodeId> callAddReaderGroupDetailed(
+      MethodCallOptions options, @Nullable ReaderGroupDataType configuration) throws UaException;
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.4
+   *
+   * <p>Invokes <code>AddReaderGroup</code> on this node's ObjectId using the effective Method
+   * contract.
+   *
+   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
+   * failures are preserved. The call does not create a node or retry an invocation.
+   *
+   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
+   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
+   * available separately. Bad results preserve received wire outputs.
+   *
+   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
+   * complete it exceptionally. Cancellation stops observation and dependent work that has not
+   * started; it does not cancel server execution.
+   *
+   * @param configuration ; the supplied payload may be null.
+   * @return the detailed outcome, or its future.
+   */
+  @NullMarked
+  CompletableFuture<? extends MethodCallResult<? extends @Nullable NodeId>>
+      callAddReaderGroupDetailedAsync(@Nullable ReaderGroupDataType configuration);
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.4
+   *
+   * <p>Invokes <code>AddReaderGroup</code> on this node's ObjectId using the effective Method
+   * contract.
+   *
+   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
+   * failures are preserved. The call does not create a node or retry an invocation.
+   *
+   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
+   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
+   * available separately. Bad results preserve received wire outputs.
+   *
+   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
+   * complete it exceptionally. Cancellation stops observation and dependent work that has not
+   * started; it does not cancel server execution.
+   *
+   * @param options request-wide diagnostics options for this Call only.
+   * @param configuration ; the supplied payload may be null.
+   * @return the detailed outcome, or its future.
+   * @throws NullPointerException if a required options or presence object is null (exceptional
+   *     completion).
+   */
+  @NullMarked
+  CompletableFuture<? extends MethodCallResult<? extends @Nullable NodeId>>
+      callAddReaderGroupDetailedAsync(
+          MethodCallOptions options, @Nullable ReaderGroupDataType configuration);
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.5
+   *
+   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
+   * confirmed absence. Resolution does not create a UA node. It can perform service I/O and
+   * construct or reuse a Java wrapper in Milo's address space cache. A reference can change after
+   * lookup.
+   *
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
+   */
+  @NullMarked
+  @Nullable UaMethodNode getRemoveGroupMethodNode() throws UaException;
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.5
+   *
+   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
+   * confirmed absence. Resolution does not create a UA node. It can perform service I/O and
+   * construct or reuse a Java wrapper in Milo's address space cache. A reference can change after
+   * lookup.
+   *
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
+   *
+   * @return a nonnull future completing with the existing member, or null for confirmed absence
+   */
+  @NullMarked
+  CompletableFuture<? extends @Nullable UaMethodNode> getRemoveGroupMethodNodeAsync();
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.5
+   *
+   * <p>Invokes <code>RemoveGroup</code> on this node's ObjectId using the effective Method
+   * contract.
+   *
+   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
+   * failures are preserved. The call does not create a node or retry an invocation.
+   *
+   * <p>Requires Good operation status, including Good subcodes. Uncertain and Bad statuses fail
+   * with UaException before any output conversion failure is reported. Application status outputs
+   * remain separate.
+   *
+   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
+   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
+   *
+   * @param groupId ; the supplied payload may be null.
+   * @throws UaException if lookup, input validation, transport, service, operation status or output
+   *     conversion fails.
+   */
+  @NullMarked
+  void callRemoveGroup(@Nullable NodeId groupId) throws UaException;
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.5
+   *
+   * <p>Invokes <code>RemoveGroup</code> on this node's ObjectId using the effective Method
+   * contract.
+   *
+   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
+   * failures are preserved. The call does not create a node or retry an invocation.
+   *
+   * <p>Requires Good operation status, including Good subcodes. Uncertain and Bad statuses fail
+   * with UaException before any output conversion failure is reported. Application status outputs
+   * remain separate.
+   *
+   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
+   * complete it exceptionally. Cancellation stops observation and dependent work that has not
+   * started; it does not cancel server execution.
+   *
+   * @param groupId ; the supplied payload may be null.
+   * @return a future whose successful payload is null.
+   */
+  @NullMarked
+  CompletableFuture<? extends @Nullable Void> callRemoveGroupAsync(@Nullable NodeId groupId);
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.5
+   *
+   * <p>Invokes <code>RemoveGroup</code> on this node's ObjectId using the effective Method
+   * contract.
+   *
+   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
+   * failures are preserved. The call does not create a node or retry an invocation.
+   *
+   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
+   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
+   * available separately. Bad results preserve received wire outputs.
+   *
+   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
+   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
+   *
+   * @param groupId ; the supplied payload may be null.
+   * @return the detailed outcome, or its future.
+   * @throws UaException if lookup, input validation, transport, service or response envelope
+   *     validation fails.
+   */
+  @NullMarked
+  MethodCallResult<? extends @Nullable Void> callRemoveGroupDetailed(@Nullable NodeId groupId)
+      throws UaException;
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.5
+   *
+   * <p>Invokes <code>RemoveGroup</code> on this node's ObjectId using the effective Method
+   * contract.
+   *
+   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
+   * failures are preserved. The call does not create a node or retry an invocation.
+   *
+   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
+   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
+   * available separately. Bad results preserve received wire outputs.
+   *
+   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
+   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
+   *
+   * @param options request-wide diagnostics options for this Call only.
+   * @param groupId ; the supplied payload may be null.
+   * @return the detailed outcome, or its future.
+   * @throws UaException if lookup, input validation, transport, service or response envelope
+   *     validation fails.
+   * @throws NullPointerException if a required options or presence object is null.
+   */
+  @NullMarked
+  MethodCallResult<? extends @Nullable Void> callRemoveGroupDetailed(
+      MethodCallOptions options, @Nullable NodeId groupId) throws UaException;
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.5
+   *
+   * <p>Invokes <code>RemoveGroup</code> on this node's ObjectId using the effective Method
+   * contract.
+   *
+   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
+   * failures are preserved. The call does not create a node or retry an invocation.
+   *
+   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
+   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
+   * available separately. Bad results preserve received wire outputs.
+   *
+   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
+   * complete it exceptionally. Cancellation stops observation and dependent work that has not
+   * started; it does not cancel server execution.
+   *
+   * @param groupId ; the supplied payload may be null.
+   * @return the detailed outcome, or its future.
+   */
+  @NullMarked
+  CompletableFuture<? extends MethodCallResult<? extends @Nullable Void>>
+      callRemoveGroupDetailedAsync(@Nullable NodeId groupId);
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.5
+   *
+   * <p>Invokes <code>RemoveGroup</code> on this node's ObjectId using the effective Method
+   * contract.
+   *
+   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
+   * failures are preserved. The call does not create a node or retry an invocation.
+   *
+   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
+   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
+   * available separately. Bad results preserve received wire outputs.
+   *
+   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
+   * complete it exceptionally. Cancellation stops observation and dependent work that has not
+   * started; it does not cancel server execution.
+   *
+   * @param options request-wide diagnostics options for this Call only.
+   * @param groupId ; the supplied payload may be null.
+   * @return the detailed outcome, or its future.
+   * @throws NullPointerException if a required options or presence object is null (exceptional
+   *     completion).
+   */
+  @NullMarked
+  CompletableFuture<? extends MethodCallResult<? extends @Nullable Void>>
+      callRemoveGroupDetailedAsync(MethodCallOptions options, @Nullable NodeId groupId);
 }

@@ -136,14 +136,14 @@ public class DatagramDataSetReaderTransportDataType extends DataSetReaderTranspo
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 23866),
-        new NodeId(0, 15628),
+        NodeId.parse("i=23866"),
+        NodeId.parse("i=15628"),
         StructureType.StructureWithSubtypedValues,
         new StructureField[] {
           new StructureField(
               "Address",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15502),
+              NodeId.parse("i=15502"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -151,7 +151,7 @@ public class DatagramDataSetReaderTransportDataType extends DataSetReaderTranspo
           new StructureField(
               "QosCategory",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -159,7 +159,7 @@ public class DatagramDataSetReaderTransportDataType extends DataSetReaderTranspo
           new StructureField(
               "DatagramQos",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 23608),
+              NodeId.parse("i=23608"),
               1,
               null,
               UInteger.valueOf(0),
@@ -167,7 +167,7 @@ public class DatagramDataSetReaderTransportDataType extends DataSetReaderTranspo
           new StructureField(
               "Topic",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -191,7 +191,7 @@ public class DatagramDataSetReaderTransportDataType extends DataSetReaderTranspo
       final String topic;
       {
         ExtensionObject xo = decoder.decodeExtensionObject("Address");
-        address = (NetworkAddressDataType) xo.decode(context);
+        address = xo == null || xo.isNull() ? null : (NetworkAddressDataType) xo.decode(context);
       }
       qosCategory = decoder.decodeString("QosCategory");
       {
@@ -199,7 +199,9 @@ public class DatagramDataSetReaderTransportDataType extends DataSetReaderTranspo
         if (xos != null) {
           datagramQos = new ReceiveQosDataType[xos.length];
           for (int i = 0; i < xos.length; i++) {
-            datagramQos[i] = (ReceiveQosDataType) xos[i].decode(context);
+            ExtensionObject xo = xos[i];
+            datagramQos[i] =
+                xo == null || xo.isNull() ? null : (ReceiveQosDataType) xo.decode(context);
           }
         } else {
           datagramQos = null;
@@ -213,17 +215,19 @@ public class DatagramDataSetReaderTransportDataType extends DataSetReaderTranspo
     public void encodeType(
         EncodingContext context, UaEncoder encoder, DatagramDataSetReaderTransportDataType value) {
       {
-        ExtensionObject xo = ExtensionObject.encode(context, value.getAddress());
+        NetworkAddressDataType fieldValue = value.getAddress();
+        ExtensionObject xo =
+            fieldValue == null ? null : ExtensionObject.encode(context, fieldValue);
         encoder.encodeExtensionObject("Address", xo);
       }
       encoder.encodeString("QosCategory", value.getQosCategory());
       {
         ExtensionObject[] xos = null;
-        ReceiveQosDataType[] datagramQos = value.getDatagramQos();
-        if (datagramQos != null) {
-          xos = new ExtensionObject[datagramQos.length];
+        ReceiveQosDataType[] elements = value.getDatagramQos();
+        if (elements != null) {
+          xos = new ExtensionObject[elements.length];
           for (int i = 0; i < xos.length; i++) {
-            xos[i] = ExtensionObject.encode(context, datagramQos[i]);
+            xos[i] = elements[i] == null ? null : ExtensionObject.encode(context, elements[i]);
           }
         }
         encoder.encodeExtensionObjectArray("DatagramQos", xos);

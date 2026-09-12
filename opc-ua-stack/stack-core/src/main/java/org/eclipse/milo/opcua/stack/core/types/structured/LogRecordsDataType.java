@@ -98,14 +98,14 @@ public class LogRecordsDataType extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 19753),
-        new NodeId(0, 22),
+        NodeId.parse("i=19753"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "LogRecordArray",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 19361),
+              NodeId.parse("i=19361"),
               1,
               null,
               UInteger.valueOf(0),

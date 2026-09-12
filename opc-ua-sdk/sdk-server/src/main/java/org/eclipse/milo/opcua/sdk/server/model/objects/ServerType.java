@@ -12,24 +12,27 @@ package org.eclipse.milo.opcua.sdk.server.model.objects;
 
 import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
 import org.eclipse.milo.opcua.sdk.core.nodes.MethodNode;
-import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
-import org.eclipse.milo.opcua.sdk.server.methods.Out;
+import org.eclipse.milo.opcua.sdk.server.methods.MethodBinding;
+import org.eclipse.milo.opcua.sdk.server.methods.MethodBindings;
+import org.eclipse.milo.opcua.sdk.server.model.methods.ServerTypeGetMonitoredItemsDetailedHandler;
+import org.eclipse.milo.opcua.sdk.server.model.methods.ServerTypeGetMonitoredItemsHandler;
+import org.eclipse.milo.opcua.sdk.server.model.methods.ServerTypeRequestServerStateChangeDetailedHandler;
+import org.eclipse.milo.opcua.sdk.server.model.methods.ServerTypeRequestServerStateChangeHandler;
+import org.eclipse.milo.opcua.sdk.server.model.methods.ServerTypeResendDataDetailedHandler;
+import org.eclipse.milo.opcua.sdk.server.model.methods.ServerTypeResendDataHandler;
+import org.eclipse.milo.opcua.sdk.server.model.methods.ServerTypeSetSubscriptionDurableDetailedHandler;
+import org.eclipse.milo.opcua.sdk.server.model.methods.ServerTypeSetSubscriptionDurableHandler;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
 import org.eclipse.milo.opcua.sdk.server.model.variables.ServerStatusType;
-import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
-import org.eclipse.milo.opcua.stack.core.types.enumerated.ServerState;
-import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.types.structured.ServerStatusDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.TimeZoneDataType;
-import org.eclipse.milo.opcua.stack.core.util.Lazy;
+import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
@@ -92,348 +95,601 @@ public interface ServerType extends BaseObjectType {
           -1,
           TimeZoneDataType.class);
 
-  String[] getServerArray();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable String @Nullable [] getServerArray();
 
-  void setServerArray(String[] value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setServerArray(@Nullable String @Nullable [] value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   PropertyType getServerArrayNode();
 
-  String[] getNamespaceArray();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable String @Nullable [] getNamespaceArray();
 
-  void setNamespaceArray(String[] value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setNamespaceArray(@Nullable String @Nullable [] value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   PropertyType getNamespaceArrayNode();
 
-  UInteger getUrisVersion();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable UInteger getUrisVersion();
 
-  void setUrisVersion(UInteger value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setUrisVersion(@Nullable UInteger value);
 
-  PropertyType getUrisVersionNode();
+  /**
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  @Nullable PropertyType getUrisVersionNode();
 
-  UByte getServiceLevel();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable UByte getServiceLevel();
 
-  void setServiceLevel(UByte value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setServiceLevel(@Nullable UByte value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   PropertyType getServiceLevelNode();
 
-  Boolean getAuditing();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable Boolean getAuditing();
 
-  void setAuditing(Boolean value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setAuditing(@Nullable Boolean value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   PropertyType getAuditingNode();
 
-  DateTime getEstimatedReturnTime();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable DateTime getEstimatedReturnTime();
 
-  void setEstimatedReturnTime(DateTime value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setEstimatedReturnTime(@Nullable DateTime value);
 
-  PropertyType getEstimatedReturnTimeNode();
+  /**
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  @Nullable PropertyType getEstimatedReturnTimeNode();
 
-  TimeZoneDataType getLocalTime();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable TimeZoneDataType getLocalTime();
 
-  void setLocalTime(TimeZoneDataType value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setLocalTime(@Nullable TimeZoneDataType value);
 
-  PropertyType getLocalTimeNode();
+  /**
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  @Nullable PropertyType getLocalTimeNode();
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   ServerStatusType getServerStatusNode();
 
-  ServerStatusDataType getServerStatus();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable ServerStatusDataType getServerStatus();
 
-  void setServerStatus(ServerStatusDataType value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setServerStatus(@Nullable ServerStatusDataType value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   ServerCapabilitiesType getServerCapabilitiesNode();
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   ServerDiagnosticsType getServerDiagnosticsNode();
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   VendorServerInfoType getVendorServerInfoNode();
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   ServerRedundancyType getServerRedundancyNode();
 
-  NamespacesType getNamespacesNode();
+  /**
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  @Nullable NamespacesType getNamespacesNode();
 
-  MethodNode getGetMonitoredItemsMethodNode();
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part5/9.1
+   *
+   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
+   * confirmed absence. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  @Nullable MethodNode getGetMonitoredItemsMethodNode();
 
-  MethodNode getResendDataMethodNode();
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part5/9.1
+   *
+   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
+   * must already exist and have compatible effective metadata; binding does not create nodes or
+   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
+   * registration.
+   *
+   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
+   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
+   * handler replacement is authoritative. An observed displacement prevents further binds through
+   * that registry.
+   *
+   * @return an explicit registration lifetime
+   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
+   *     preempting ConditionManager makes binding unsupported
+   * @throws UaRuntimeException if strict local lookup fails
+   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
+   *     the Method
+   */
+  MethodBinding bindGetMonitoredItems(
+      MethodBindings bindings, ServerTypeGetMonitoredItemsHandler handler) throws UaException;
 
-  MethodNode getSetSubscriptionDurableMethodNode();
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part5/9.1
+   *
+   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
+   * must already exist and have compatible effective metadata; binding does not create nodes or
+   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
+   * registration.
+   *
+   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
+   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
+   * handler replacement is authoritative. An observed displacement prevents further binds through
+   * that registry.
+   *
+   * @return an explicit registration lifetime
+   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
+   *     preempting ConditionManager makes binding unsupported
+   * @throws UaRuntimeException if strict local lookup fails
+   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
+   *     the Method
+   */
+  MethodBinding bindGetMonitoredItemsDetailed(
+      MethodBindings bindings, ServerTypeGetMonitoredItemsDetailedHandler handler)
+      throws UaException;
 
-  MethodNode getRequestServerStateChangeMethodNode();
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part5/9.2
+   *
+   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
+   * confirmed absence. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  @Nullable MethodNode getResendDataMethodNode();
 
-  abstract class GetMonitoredItemsMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part5/9.2
+   *
+   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
+   * must already exist and have compatible effective metadata; binding does not create nodes or
+   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
+   * registration.
+   *
+   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
+   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
+   * handler replacement is authoritative. An observed displacement prevents further binds through
+   * that registry.
+   *
+   * @return an explicit registration lifetime
+   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
+   *     preempting ConditionManager makes binding unsupported
+   * @throws UaRuntimeException if strict local lookup fails
+   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
+   *     the Method
+   */
+  MethodBinding bindResendData(MethodBindings bindings, ServerTypeResendDataHandler handler)
+      throws UaException;
 
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part5/9.2
+   *
+   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
+   * must already exist and have compatible effective metadata; binding does not create nodes or
+   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
+   * registration.
+   *
+   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
+   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
+   * handler replacement is authoritative. An observed displacement prevents further binds through
+   * that registry.
+   *
+   * @return an explicit registration lifetime
+   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
+   *     preempting ConditionManager makes binding unsupported
+   * @throws UaRuntimeException if strict local lookup fails
+   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
+   *     the Method
+   */
+  MethodBinding bindResendDataDetailed(
+      MethodBindings bindings, ServerTypeResendDataDetailedHandler handler) throws UaException;
 
-    public GetMonitoredItemsMethod(UaMethodNode node) {
-      super(node);
-    }
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part5/9.3
+   *
+   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
+   * confirmed absence. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  @Nullable MethodNode getSetSubscriptionDurableMethodNode();
 
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part5/9.3
+   *
+   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
+   * must already exist and have compatible effective metadata; binding does not create nodes or
+   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
+   * registration.
+   *
+   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
+   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
+   * handler replacement is authoritative. An observed displacement prevents further binds through
+   * that registry.
+   *
+   * @return an explicit registration lifetime
+   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
+   *     preempting ConditionManager makes binding unsupported
+   * @throws UaRuntimeException if strict local lookup fails
+   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
+   *     the Method
+   */
+  MethodBinding bindSetSubscriptionDurable(
+      MethodBindings bindings, ServerTypeSetSubscriptionDurableHandler handler) throws UaException;
 
-            return new Argument[] {
-              new Argument(
-                  "SubscriptionId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part5/9.3
+   *
+   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
+   * must already exist and have compatible effective metadata; binding does not create nodes or
+   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
+   * registration.
+   *
+   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
+   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
+   * handler replacement is authoritative. An observed displacement prevents further binds through
+   * that registry.
+   *
+   * @return an explicit registration lifetime
+   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
+   *     preempting ConditionManager makes binding unsupported
+   * @throws UaRuntimeException if strict local lookup fails
+   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
+   *     the Method
+   */
+  MethodBinding bindSetSubscriptionDurableDetailed(
+      MethodBindings bindings, ServerTypeSetSubscriptionDurableDetailedHandler handler)
+      throws UaException;
 
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part5/9.4
+   *
+   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
+   * confirmed absence. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  @Nullable MethodNode getRequestServerStateChangeMethodNode();
 
-            return new Argument[] {
-              new Argument(
-                  "ServerHandles",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", "")),
-              new Argument(
-                  "ClientHandles",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", ""))
-            };
-          });
-    }
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part5/9.4
+   *
+   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
+   * must already exist and have compatible effective metadata; binding does not create nodes or
+   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
+   * registration.
+   *
+   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
+   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
+   * handler replacement is authoritative. An observed displacement prevents further binds through
+   * that registry.
+   *
+   * @return an explicit registration lifetime
+   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
+   *     preempting ConditionManager makes binding unsupported
+   * @throws UaRuntimeException if strict local lookup fails
+   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
+   *     the Method
+   */
+  MethodBinding bindRequestServerStateChange(
+      MethodBindings bindings, ServerTypeRequestServerStateChangeHandler handler)
+      throws UaException;
 
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      UInteger subscriptionId = (UInteger) inputValues[0].getValue();
-      Out<UInteger[]> serverHandles = new Out<>();
-      Out<UInteger[]> clientHandles = new Out<>();
-      invoke(context, subscriptionId, serverHandles, clientHandles);
-      return new Variant[] {new Variant(serverHandles.get()), new Variant(clientHandles.get())};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context,
-        UInteger subscriptionId,
-        Out<UInteger[]> serverHandles,
-        Out<UInteger[]> clientHandles)
-        throws UaException;
-  }
-
-  abstract class ResendDataMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    public ResendDataMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "SubscriptionId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      UInteger subscriptionId = (UInteger) inputValues[0].getValue();
-      invoke(context, subscriptionId);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, UInteger subscriptionId)
-        throws UaException;
-  }
-
-  abstract class SetSubscriptionDurableMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-    public SetSubscriptionDurableMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "SubscriptionId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "LifetimeInHours",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "RevisedLifetimeInHours",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      UInteger subscriptionId = (UInteger) inputValues[0].getValue();
-      UInteger lifetimeInHours = (UInteger) inputValues[1].getValue();
-      Out<UInteger> revisedLifetimeInHours = new Out<>();
-      invoke(context, subscriptionId, lifetimeInHours, revisedLifetimeInHours);
-      return new Variant[] {new Variant(revisedLifetimeInHours.get())};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context,
-        UInteger subscriptionId,
-        UInteger lifetimeInHours,
-        Out<UInteger> revisedLifetimeInHours)
-        throws UaException;
-  }
-
-  abstract class RequestServerStateChangeMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    public RequestServerStateChangeMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "State",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=852")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "EstimatedReturnTime",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=13")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "SecondsTillShutdown",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "Reason",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "Restart",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      ServerState state = (ServerState) inputValues[0].getValue();
-      DateTime estimatedReturnTime = (DateTime) inputValues[1].getValue();
-      UInteger secondsTillShutdown = (UInteger) inputValues[2].getValue();
-      LocalizedText reason = (LocalizedText) inputValues[3].getValue();
-      Boolean restart = (Boolean) inputValues[4].getValue();
-      invoke(context, state, estimatedReturnTime, secondsTillShutdown, reason, restart);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context,
-        ServerState state,
-        DateTime estimatedReturnTime,
-        UInteger secondsTillShutdown,
-        LocalizedText reason,
-        Boolean restart)
-        throws UaException;
-  }
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part5/9.4
+   *
+   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
+   * must already exist and have compatible effective metadata; binding does not create nodes or
+   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
+   * registration.
+   *
+   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
+   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
+   * handler replacement is authoritative. An observed displacement prevents further binds through
+   * that registry.
+   *
+   * @return an explicit registration lifetime
+   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
+   *     preempting ConditionManager makes binding unsupported
+   * @throws UaRuntimeException if strict local lookup fails
+   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
+   *     the Method
+   */
+  MethodBinding bindRequestServerStateChangeDetailed(
+      MethodBindings bindings, ServerTypeRequestServerStateChangeDetailedHandler handler)
+      throws UaException;
 }

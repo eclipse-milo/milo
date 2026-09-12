@@ -121,14 +121,14 @@ public class AggregateFilterResult extends MonitoringFilterResult implements UaS
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 739),
-        new NodeId(0, 731),
+        NodeId.parse("i=739"),
+        NodeId.parse("i=731"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "RevisedStartTime",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 294),
+              NodeId.parse("i=294"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -136,7 +136,7 @@ public class AggregateFilterResult extends MonitoringFilterResult implements UaS
           new StructureField(
               "RevisedProcessingInterval",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 290),
+              NodeId.parse("i=290"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -144,7 +144,7 @@ public class AggregateFilterResult extends MonitoringFilterResult implements UaS
           new StructureField(
               "RevisedAggregateConfiguration",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 948),
+              NodeId.parse("i=948"),
               -1,
               null,
               UInteger.valueOf(0),

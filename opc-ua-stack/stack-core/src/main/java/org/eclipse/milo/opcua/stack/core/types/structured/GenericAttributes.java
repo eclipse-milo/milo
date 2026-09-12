@@ -107,14 +107,14 @@ public class GenericAttributes extends NodeAttributes implements UaStructuredTyp
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 17611),
-        new NodeId(0, 349),
+        NodeId.parse("i=17611"),
+        NodeId.parse("i=349"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "SpecifiedAttributes",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -122,7 +122,7 @@ public class GenericAttributes extends NodeAttributes implements UaStructuredTyp
           new StructureField(
               "DisplayName",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 21),
+              NodeId.parse("i=21"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -130,7 +130,7 @@ public class GenericAttributes extends NodeAttributes implements UaStructuredTyp
           new StructureField(
               "Description",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 21),
+              NodeId.parse("i=21"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -138,7 +138,7 @@ public class GenericAttributes extends NodeAttributes implements UaStructuredTyp
           new StructureField(
               "WriteMask",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -146,7 +146,7 @@ public class GenericAttributes extends NodeAttributes implements UaStructuredTyp
           new StructureField(
               "UserWriteMask",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -154,7 +154,7 @@ public class GenericAttributes extends NodeAttributes implements UaStructuredTyp
           new StructureField(
               "AttributeValues",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17606),
+              NodeId.parse("i=17606"),
               1,
               null,
               UInteger.valueOf(0),

@@ -119,14 +119,14 @@ public class AnnotationDataType extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 32560),
-        new NodeId(0, 22),
+        NodeId.parse("i=32560"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "Annotation",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -134,7 +134,7 @@ public class AnnotationDataType extends Structure implements UaStructuredType {
           new StructureField(
               "Discipline",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -142,7 +142,7 @@ public class AnnotationDataType extends Structure implements UaStructuredType {
           new StructureField(
               "Uri",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),

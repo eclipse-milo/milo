@@ -132,14 +132,14 @@ public class RelativePathElement extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 539),
-        new NodeId(0, 22),
+        NodeId.parse("i=539"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "ReferenceTypeId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -147,7 +147,7 @@ public class RelativePathElement extends Structure implements UaStructuredType {
           new StructureField(
               "IsInverse",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -155,7 +155,7 @@ public class RelativePathElement extends Structure implements UaStructuredType {
           new StructureField(
               "IncludeSubtypes",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -163,7 +163,7 @@ public class RelativePathElement extends Structure implements UaStructuredType {
           new StructureField(
               "TargetName",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 20),
+              NodeId.parse("i=20"),
               -1,
               null,
               UInteger.valueOf(0),

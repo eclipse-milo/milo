@@ -60,6 +60,9 @@ public abstract class FilterOperand extends Structure implements UaStructuredTyp
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 591), new NodeId(0, 22), StructureType.Structure, new StructureField[] {});
+        NodeId.parse("i=591"),
+        NodeId.parse("i=22"),
+        StructureType.Structure,
+        new StructureField[] {});
   }
 }

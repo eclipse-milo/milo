@@ -99,14 +99,14 @@ public class ReadAnnotationDataDetails extends HistoryReadDetails implements UaS
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 23500),
-        new NodeId(0, 641),
+        NodeId.parse("i=23500"),
+        NodeId.parse("i=641"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "ReqTimes",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 294),
+              NodeId.parse("i=294"),
               1,
               null,
               UInteger.valueOf(0),

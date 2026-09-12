@@ -430,14 +430,14 @@ public class SubscriptionDiagnosticsDataType extends Structure implements UaStru
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 876),
-        new NodeId(0, 22),
+        NodeId.parse("i=876"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "SessionId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -445,7 +445,7 @@ public class SubscriptionDiagnosticsDataType extends Structure implements UaStru
           new StructureField(
               "SubscriptionId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -453,7 +453,7 @@ public class SubscriptionDiagnosticsDataType extends Structure implements UaStru
           new StructureField(
               "Priority",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 3),
+              NodeId.parse("i=3"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -461,7 +461,7 @@ public class SubscriptionDiagnosticsDataType extends Structure implements UaStru
           new StructureField(
               "PublishingInterval",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 290),
+              NodeId.parse("i=290"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -469,7 +469,7 @@ public class SubscriptionDiagnosticsDataType extends Structure implements UaStru
           new StructureField(
               "MaxKeepAliveCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -477,7 +477,7 @@ public class SubscriptionDiagnosticsDataType extends Structure implements UaStru
           new StructureField(
               "MaxLifetimeCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -485,7 +485,7 @@ public class SubscriptionDiagnosticsDataType extends Structure implements UaStru
           new StructureField(
               "MaxNotificationsPerPublish",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -493,7 +493,7 @@ public class SubscriptionDiagnosticsDataType extends Structure implements UaStru
           new StructureField(
               "PublishingEnabled",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -501,7 +501,7 @@ public class SubscriptionDiagnosticsDataType extends Structure implements UaStru
           new StructureField(
               "ModifyCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -509,7 +509,7 @@ public class SubscriptionDiagnosticsDataType extends Structure implements UaStru
           new StructureField(
               "EnableCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -517,7 +517,7 @@ public class SubscriptionDiagnosticsDataType extends Structure implements UaStru
           new StructureField(
               "DisableCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -525,7 +525,7 @@ public class SubscriptionDiagnosticsDataType extends Structure implements UaStru
           new StructureField(
               "RepublishRequestCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -533,7 +533,7 @@ public class SubscriptionDiagnosticsDataType extends Structure implements UaStru
           new StructureField(
               "RepublishMessageRequestCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -541,7 +541,7 @@ public class SubscriptionDiagnosticsDataType extends Structure implements UaStru
           new StructureField(
               "RepublishMessageCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -549,7 +549,7 @@ public class SubscriptionDiagnosticsDataType extends Structure implements UaStru
           new StructureField(
               "TransferRequestCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -557,7 +557,7 @@ public class SubscriptionDiagnosticsDataType extends Structure implements UaStru
           new StructureField(
               "TransferredToAltClientCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -565,7 +565,7 @@ public class SubscriptionDiagnosticsDataType extends Structure implements UaStru
           new StructureField(
               "TransferredToSameClientCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -573,7 +573,7 @@ public class SubscriptionDiagnosticsDataType extends Structure implements UaStru
           new StructureField(
               "PublishRequestCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -581,7 +581,7 @@ public class SubscriptionDiagnosticsDataType extends Structure implements UaStru
           new StructureField(
               "DataChangeNotificationsCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -589,7 +589,7 @@ public class SubscriptionDiagnosticsDataType extends Structure implements UaStru
           new StructureField(
               "EventNotificationsCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -597,7 +597,7 @@ public class SubscriptionDiagnosticsDataType extends Structure implements UaStru
           new StructureField(
               "NotificationsCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -605,7 +605,7 @@ public class SubscriptionDiagnosticsDataType extends Structure implements UaStru
           new StructureField(
               "LatePublishRequestCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -613,7 +613,7 @@ public class SubscriptionDiagnosticsDataType extends Structure implements UaStru
           new StructureField(
               "CurrentKeepAliveCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -621,7 +621,7 @@ public class SubscriptionDiagnosticsDataType extends Structure implements UaStru
           new StructureField(
               "CurrentLifetimeCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -629,7 +629,7 @@ public class SubscriptionDiagnosticsDataType extends Structure implements UaStru
           new StructureField(
               "UnacknowledgedMessageCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -637,7 +637,7 @@ public class SubscriptionDiagnosticsDataType extends Structure implements UaStru
           new StructureField(
               "DiscardedMessageCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -645,7 +645,7 @@ public class SubscriptionDiagnosticsDataType extends Structure implements UaStru
           new StructureField(
               "MonitoredItemCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -653,7 +653,7 @@ public class SubscriptionDiagnosticsDataType extends Structure implements UaStru
           new StructureField(
               "DisabledMonitoredItemCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -661,7 +661,7 @@ public class SubscriptionDiagnosticsDataType extends Structure implements UaStru
           new StructureField(
               "MonitoringQueueOverflowCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -669,7 +669,7 @@ public class SubscriptionDiagnosticsDataType extends Structure implements UaStru
           new StructureField(
               "NextSequenceNumber",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -677,7 +677,7 @@ public class SubscriptionDiagnosticsDataType extends Structure implements UaStru
           new StructureField(
               "EventQueueOverflowCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),

@@ -10,8 +10,6 @@
 
 package org.eclipse.milo.opcua.stack.core.encoding.binary;
 
-import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
-import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 import static org.junit.jupiter.api.Assertions.*;
 
 import io.netty.buffer.ByteBuf;
@@ -20,19 +18,22 @@ import io.netty.buffer.Unpooled;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
-import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.channel.EncodingLimits;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
+import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
+import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
+import org.eclipse.milo.opcua.stack.core.encoding.UaEncoder;
 import org.eclipse.milo.opcua.stack.core.types.DataTypeEncoding;
+import org.eclipse.milo.opcua.stack.core.types.DataTypeManager;
+import org.eclipse.milo.opcua.stack.core.types.DefaultDataTypeManager;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
-import org.eclipse.milo.opcua.stack.core.types.structured.DataSetWriterDataType;
-import org.eclipse.milo.opcua.stack.core.types.structured.KeyValuePair;
 import org.eclipse.milo.opcua.stack.core.types.structured.XVType;
 import org.junit.jupiter.api.Test;
 
@@ -58,7 +59,25 @@ class OpcUaDefaultBinaryEncodingTest {
     int maxRecursionDepth = 4;
     EncodingContext context = limitedContext(maxRecursionDepth);
 
-    ExtensionObject recursive = recursiveDataSetWriter(context, maxRecursionDepth + 1);
+    context.getNamespaceTable().add("urn:milo:test:recursive-structure");
+    context
+        .getDataTypeManager()
+        .registerType(
+            RecursiveStructure.TYPE_ID,
+            new RecursiveStructureCodec(),
+            RecursiveStructure.BINARY_ENCODING_ID,
+            null,
+            null);
+
+    // Root depth is zero. Four recursive fields plus the XVType leaf reach, but do not exceed,
+    // the configured limit. Unlike a null wrapper, the leaf performs a real codec decode.
+    UaStructuredType atLimit = recursiveStructure(context, maxRecursionDepth).decode(context);
+    for (int i = 0; i < maxRecursionDepth; i++) {
+      atLimit = assertInstanceOf(RecursiveStructure.class, atLimit).child();
+    }
+    assertEquals(new XVType(1.0, 2.0f), atLimit);
+
+    ExtensionObject recursive = recursiveStructure(context, maxRecursionDepth + 1);
 
     UaSerializationException exception =
         assertThrows(UaSerializationException.class, () -> recursive.decode(context));
@@ -95,6 +114,14 @@ class OpcUaDefaultBinaryEncodingTest {
             maxRecursionDepth);
 
     return new DefaultEncodingContext() {
+      private final DataTypeManager dataTypes =
+          DefaultDataTypeManager.createAndInitialize(getNamespaceTable());
+
+      @Override
+      public DataTypeManager getDataTypeManager() {
+        return dataTypes;
+      }
+
       @Override
       public EncodingLimits getEncodingLimits() {
         return encodingLimits;
@@ -135,35 +162,70 @@ class OpcUaDefaultBinaryEncodingTest {
     return new DecodeChain(root, encoding);
   }
 
-  private static ExtensionObject recursiveDataSetWriter(EncodingContext context, int depth)
-      throws UaException {
-    NodeId encodingId =
-        DataSetWriterDataType.BINARY_ENCODING_ID.toNodeIdOrThrow(context.getNamespaceTable());
-    ExtensionObject nested = ExtensionObject.of(ByteString.NULL_VALUE, NodeId.NULL_VALUE);
+  private static ExtensionObject recursiveStructure(EncodingContext context, int depth) {
+    ExtensionObject nested = ExtensionObject.encode(context, new XVType(1.0, 2.0f));
 
     for (int i = 0; i < depth; i++) {
       ByteBuf buffer = Unpooled.buffer();
-
       try {
-        OpcUaBinaryEncoder encoder = new OpcUaBinaryEncoder(context).setBuffer(buffer);
-        encoder.encodeString("Name", "writer");
-        encoder.encodeBoolean("Enabled", true);
-        encoder.encodeUInt16("DataSetWriterId", ushort(1));
-        encoder.encodeUInt32("DataSetFieldContentMask", uint(0));
-        encoder.encodeUInt32("KeyFrameCount", uint(1));
-        encoder.encodeString("DataSetName", "data-set");
-        encoder.encodeStructArray("DataSetWriterProperties", null, KeyValuePair.TYPE_ID);
-        encoder.encodeExtensionObject("TransportSettings", nested);
-        encoder.encodeExtensionObject(
-            "MessageSettings", ExtensionObject.of(ByteString.NULL_VALUE, NodeId.NULL_VALUE));
-
-        nested = ExtensionObject.of(ByteString.of(ByteBufUtil.getBytes(buffer)), encodingId);
+        // Build already encoded child bodies so only decoding is constrained by this test.
+        new OpcUaBinaryEncoder(context).setBuffer(buffer).encodeExtensionObject("Child", nested);
+        nested =
+            ExtensionObject.of(
+                ByteString.of(ByteBufUtil.getBytes(buffer)), RecursiveStructure.BINARY_ENCODING_ID);
       } finally {
         buffer.release();
       }
     }
-
     return nested;
+  }
+
+  // A Structure-typed field may legally contain another RecursiveStructure or the XVType leaf.
+  // KeyValuePair's Variant field would leave ExtensionObject bodies undecoded, so it cannot test
+  // the shared depth guard across default-binary codec invocations.
+  private record RecursiveStructure(UaStructuredType child) implements UaStructuredType {
+    private static final NodeId TYPE_ID = new NodeId(1, 1);
+    private static final NodeId BINARY_ENCODING_ID = new NodeId(1, 2);
+
+    @Override
+    public ExpandedNodeId getTypeId() {
+      return TYPE_ID.expanded();
+    }
+
+    @Override
+    public ExpandedNodeId getBinaryEncodingId() {
+      return BINARY_ENCODING_ID.expanded();
+    }
+
+    @Override
+    public ExpandedNodeId getXmlEncodingId() {
+      return NodeId.NULL_VALUE.expanded();
+    }
+
+    @Override
+    public ExpandedNodeId getJsonEncodingId() {
+      return NodeId.NULL_VALUE.expanded();
+    }
+  }
+
+  private static final class RecursiveStructureCodec
+      extends GenericDataTypeCodec<RecursiveStructure> {
+    @Override
+    public Class<RecursiveStructure> getType() {
+      return RecursiveStructure.class;
+    }
+
+    @Override
+    public RecursiveStructure decodeType(EncodingContext context, UaDecoder decoder) {
+      ExtensionObject child = decoder.decodeExtensionObject("Child");
+      return new RecursiveStructure(child == null || child.isNull() ? null : child.decode(context));
+    }
+
+    @Override
+    public void encodeType(EncodingContext context, UaEncoder encoder, RecursiveStructure value) {
+      encoder.encodeExtensionObject(
+          "Child", value.child() == null ? null : ExtensionObject.encode(context, value.child()));
+    }
   }
 
   private record DecodeChain(ExtensionObject root, DataTypeEncoding encoding) {}

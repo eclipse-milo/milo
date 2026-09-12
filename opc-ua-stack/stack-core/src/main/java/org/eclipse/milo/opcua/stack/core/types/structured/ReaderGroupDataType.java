@@ -12,6 +12,8 @@ package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -140,14 +142,14 @@ public class ReaderGroupDataType extends PubSubGroupDataType implements UaStruct
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 21153),
-        new NodeId(0, 15609),
+        NodeId.parse("i=21153"),
+        NodeId.parse("i=15609"),
         StructureType.StructureWithSubtypedValues,
         new StructureField[] {
           new StructureField(
               "Name",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -155,7 +157,7 @@ public class ReaderGroupDataType extends PubSubGroupDataType implements UaStruct
           new StructureField(
               "Enabled",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -163,7 +165,7 @@ public class ReaderGroupDataType extends PubSubGroupDataType implements UaStruct
           new StructureField(
               "SecurityMode",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 302),
+              NodeId.parse("i=302"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -171,7 +173,7 @@ public class ReaderGroupDataType extends PubSubGroupDataType implements UaStruct
           new StructureField(
               "SecurityGroupId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -179,7 +181,7 @@ public class ReaderGroupDataType extends PubSubGroupDataType implements UaStruct
           new StructureField(
               "SecurityKeyServices",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 312),
+              NodeId.parse("i=312"),
               1,
               null,
               UInteger.valueOf(0),
@@ -187,7 +189,7 @@ public class ReaderGroupDataType extends PubSubGroupDataType implements UaStruct
           new StructureField(
               "MaxNetworkMessageSize",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -195,7 +197,7 @@ public class ReaderGroupDataType extends PubSubGroupDataType implements UaStruct
           new StructureField(
               "GroupProperties",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 14533),
+              NodeId.parse("i=14533"),
               1,
               null,
               UInteger.valueOf(0),
@@ -203,7 +205,7 @@ public class ReaderGroupDataType extends PubSubGroupDataType implements UaStruct
           new StructureField(
               "TransportSettings",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15621),
+              NodeId.parse("i=15621"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -211,7 +213,7 @@ public class ReaderGroupDataType extends PubSubGroupDataType implements UaStruct
           new StructureField(
               "MessageSettings",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15622),
+              NodeId.parse("i=15622"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -219,7 +221,7 @@ public class ReaderGroupDataType extends PubSubGroupDataType implements UaStruct
           new StructureField(
               "DataSetReaders",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15623),
+              NodeId.parse("i=15623"),
               1,
               null,
               UInteger.valueOf(0),
@@ -247,7 +249,28 @@ public class ReaderGroupDataType extends PubSubGroupDataType implements UaStruct
       final DataSetReaderDataType[] dataSetReaders;
       name = decoder.decodeString("Name");
       enabled = decoder.decodeBoolean("Enabled");
-      securityMode = MessageSecurityMode.from(decoder.decodeEnum("SecurityMode"));
+      {
+        Integer enumValue = decoder.decodeEnum("SecurityMode");
+        if (enumValue != null && !((Object) enumValue instanceof MessageSecurityMode)) {
+          if (!(enumValue instanceof Integer)) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_TypeMismatch,
+                "SecurityMode: expected"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode or"
+                    + " Int32, got "
+                    + enumValue);
+          }
+          if (MessageSecurityMode.from((Integer) enumValue) == null) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_OutOfRange,
+                "SecurityMode: unknown"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode"
+                    + " value "
+                    + enumValue);
+          }
+        }
+        securityMode = enumValue == null ? null : MessageSecurityMode.from(enumValue);
+      }
       securityGroupId = decoder.decodeString("SecurityGroupId");
       securityKeyServices =
           (EndpointDescription[])
@@ -257,11 +280,13 @@ public class ReaderGroupDataType extends PubSubGroupDataType implements UaStruct
           (KeyValuePair[]) decoder.decodeStructArray("GroupProperties", KeyValuePair.TYPE_ID);
       {
         ExtensionObject xo = decoder.decodeExtensionObject("TransportSettings");
-        transportSettings = (ReaderGroupTransportDataType) xo.decode(context);
+        transportSettings =
+            xo == null || xo.isNull() ? null : (ReaderGroupTransportDataType) xo.decode(context);
       }
       {
         ExtensionObject xo = decoder.decodeExtensionObject("MessageSettings");
-        messageSettings = (ReaderGroupMessageDataType) xo.decode(context);
+        messageSettings =
+            xo == null || xo.isNull() ? null : (ReaderGroupMessageDataType) xo.decode(context);
       }
       dataSetReaders =
           (DataSetReaderDataType[])
@@ -291,11 +316,15 @@ public class ReaderGroupDataType extends PubSubGroupDataType implements UaStruct
       encoder.encodeStructArray(
           "GroupProperties", value.getGroupProperties(), KeyValuePair.TYPE_ID);
       {
-        ExtensionObject xo = ExtensionObject.encode(context, value.getTransportSettings());
+        ReaderGroupTransportDataType fieldValue = value.getTransportSettings();
+        ExtensionObject xo =
+            fieldValue == null ? null : ExtensionObject.encode(context, fieldValue);
         encoder.encodeExtensionObject("TransportSettings", xo);
       }
       {
-        ExtensionObject xo = ExtensionObject.encode(context, value.getMessageSettings());
+        ReaderGroupMessageDataType fieldValue = value.getMessageSettings();
+        ExtensionObject xo =
+            fieldValue == null ? null : ExtensionObject.encode(context, fieldValue);
         encoder.encodeExtensionObject("MessageSettings", xo);
       }
       encoder.encodeStructArray(

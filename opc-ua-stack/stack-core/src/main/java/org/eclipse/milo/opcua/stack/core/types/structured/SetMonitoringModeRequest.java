@@ -12,6 +12,8 @@ package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -133,14 +135,14 @@ public class SetMonitoringModeRequest extends Structure implements UaRequestMess
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 769),
-        new NodeId(0, 22),
+        NodeId.parse("i=769"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "RequestHeader",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 389),
+              NodeId.parse("i=389"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -148,7 +150,7 @@ public class SetMonitoringModeRequest extends Structure implements UaRequestMess
           new StructureField(
               "SubscriptionId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 288),
+              NodeId.parse("i=288"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -156,7 +158,7 @@ public class SetMonitoringModeRequest extends Structure implements UaRequestMess
           new StructureField(
               "MonitoringMode",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 716),
+              NodeId.parse("i=716"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -164,7 +166,7 @@ public class SetMonitoringModeRequest extends Structure implements UaRequestMess
           new StructureField(
               "MonitoredItemIds",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 288),
+              NodeId.parse("i=288"),
               1,
               null,
               UInteger.valueOf(0),
@@ -186,7 +188,27 @@ public class SetMonitoringModeRequest extends Structure implements UaRequestMess
       final UInteger[] monitoredItemIds;
       requestHeader = (RequestHeader) decoder.decodeStruct("RequestHeader", RequestHeader.TYPE_ID);
       subscriptionId = decoder.decodeUInt32("SubscriptionId");
-      monitoringMode = MonitoringMode.from(decoder.decodeEnum("MonitoringMode"));
+      {
+        Integer enumValue = decoder.decodeEnum("MonitoringMode");
+        if (enumValue != null && !((Object) enumValue instanceof MonitoringMode)) {
+          if (!(enumValue instanceof Integer)) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_TypeMismatch,
+                "MonitoringMode: expected"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.MonitoringMode or Int32,"
+                    + " got "
+                    + enumValue);
+          }
+          if (MonitoringMode.from((Integer) enumValue) == null) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_OutOfRange,
+                "MonitoringMode: unknown"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.MonitoringMode value "
+                    + enumValue);
+          }
+        }
+        monitoringMode = enumValue == null ? null : MonitoringMode.from(enumValue);
+      }
       monitoredItemIds = decoder.decodeUInt32Array("MonitoredItemIds");
       return new SetMonitoringModeRequest(
           requestHeader, subscriptionId, monitoringMode, monitoredItemIds);

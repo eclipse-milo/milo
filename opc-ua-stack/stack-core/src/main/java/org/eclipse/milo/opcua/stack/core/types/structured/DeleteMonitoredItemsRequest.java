@@ -122,14 +122,14 @@ public class DeleteMonitoredItemsRequest extends Structure implements UaRequestM
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 781),
-        new NodeId(0, 22),
+        NodeId.parse("i=781"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "RequestHeader",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 389),
+              NodeId.parse("i=389"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -137,7 +137,7 @@ public class DeleteMonitoredItemsRequest extends Structure implements UaRequestM
           new StructureField(
               "SubscriptionId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 288),
+              NodeId.parse("i=288"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -145,7 +145,7 @@ public class DeleteMonitoredItemsRequest extends Structure implements UaRequestM
           new StructureField(
               "MonitoredItemIds",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 288),
+              NodeId.parse("i=288"),
               1,
               null,
               UInteger.valueOf(0),

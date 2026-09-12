@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUI32;
 import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
@@ -116,6 +117,31 @@ public class PermissionType extends OptionSetUI32<PermissionType.Field> {
     joiner.add("deleteNode=" + getDeleteNode());
     joiner.add("addNode=" + getAddNode());
     return joiner.toString();
+  }
+
+  public static EnumDefinition definition() {
+    return new EnumDefinition(
+        new EnumField[] {
+          new EnumField(0L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "Browse"),
+          new EnumField(
+              1L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "ReadRolePermissions"),
+          new EnumField(2L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "WriteAttribute"),
+          new EnumField(
+              3L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "WriteRolePermissions"),
+          new EnumField(4L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "WriteHistorizing"),
+          new EnumField(5L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "Read"),
+          new EnumField(6L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "Write"),
+          new EnumField(7L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "ReadHistory"),
+          new EnumField(8L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "InsertHistory"),
+          new EnumField(9L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "ModifyHistory"),
+          new EnumField(10L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "DeleteHistory"),
+          new EnumField(11L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "ReceiveEvents"),
+          new EnumField(12L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "Call"),
+          new EnumField(13L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "AddReference"),
+          new EnumField(14L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "RemoveReference"),
+          new EnumField(15L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "DeleteNode"),
+          new EnumField(16L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "AddNode")
+        });
   }
 
   public static PermissionType of(PermissionType.Field... fields) {

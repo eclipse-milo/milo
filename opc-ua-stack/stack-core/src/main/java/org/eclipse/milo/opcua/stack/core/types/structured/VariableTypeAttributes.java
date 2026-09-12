@@ -40,7 +40,7 @@ public class VariableTypeAttributes extends NodeAttributes implements UaStructur
 
   public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15159");
 
-  private final Variant value;
+  private final Variant value2;
 
   private final NodeId dataType;
 
@@ -56,13 +56,13 @@ public class VariableTypeAttributes extends NodeAttributes implements UaStructur
       LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      Variant value,
+      Variant value2,
       NodeId dataType,
       Integer valueRank,
       UInteger @Nullable [] arrayDimensions,
       Boolean isAbstract) {
     super(specifiedAttributes, displayName, description, writeMask, userWriteMask);
-    this.value = value;
+    this.value2 = value2;
     this.dataType = dataType;
     this.valueRank = valueRank;
     this.arrayDimensions = arrayDimensions;
@@ -90,7 +90,7 @@ public class VariableTypeAttributes extends NodeAttributes implements UaStructur
   }
 
   public Variant getValue() {
-    return value;
+    return value2;
   }
 
   public NodeId getDataType() {
@@ -152,14 +152,14 @@ public class VariableTypeAttributes extends NodeAttributes implements UaStructur
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 366),
-        new NodeId(0, 349),
+        NodeId.parse("i=366"),
+        NodeId.parse("i=349"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "SpecifiedAttributes",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -167,7 +167,7 @@ public class VariableTypeAttributes extends NodeAttributes implements UaStructur
           new StructureField(
               "DisplayName",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 21),
+              NodeId.parse("i=21"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -175,7 +175,7 @@ public class VariableTypeAttributes extends NodeAttributes implements UaStructur
           new StructureField(
               "Description",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 21),
+              NodeId.parse("i=21"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -183,7 +183,7 @@ public class VariableTypeAttributes extends NodeAttributes implements UaStructur
           new StructureField(
               "WriteMask",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -191,7 +191,7 @@ public class VariableTypeAttributes extends NodeAttributes implements UaStructur
           new StructureField(
               "UserWriteMask",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -199,7 +199,7 @@ public class VariableTypeAttributes extends NodeAttributes implements UaStructur
           new StructureField(
               "Value",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 24),
+              NodeId.parse("i=24"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -207,7 +207,7 @@ public class VariableTypeAttributes extends NodeAttributes implements UaStructur
           new StructureField(
               "DataType",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -215,7 +215,7 @@ public class VariableTypeAttributes extends NodeAttributes implements UaStructur
           new StructureField(
               "ValueRank",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 6),
+              NodeId.parse("i=6"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -223,7 +223,7 @@ public class VariableTypeAttributes extends NodeAttributes implements UaStructur
           new StructureField(
               "ArrayDimensions",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               1,
               null,
               UInteger.valueOf(0),
@@ -231,7 +231,7 @@ public class VariableTypeAttributes extends NodeAttributes implements UaStructur
           new StructureField(
               "IsAbstract",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -252,7 +252,7 @@ public class VariableTypeAttributes extends NodeAttributes implements UaStructur
       final LocalizedText description;
       final UInteger writeMask;
       final UInteger userWriteMask;
-      final Variant value;
+      final Variant value2;
       final NodeId dataType;
       final Integer valueRank;
       final UInteger[] arrayDimensions;
@@ -262,7 +262,7 @@ public class VariableTypeAttributes extends NodeAttributes implements UaStructur
       description = decoder.decodeLocalizedText("Description");
       writeMask = decoder.decodeUInt32("WriteMask");
       userWriteMask = decoder.decodeUInt32("UserWriteMask");
-      value = decoder.decodeVariant("Value");
+      value2 = decoder.decodeVariant("Value");
       dataType = decoder.decodeNodeId("DataType");
       valueRank = decoder.decodeInt32("ValueRank");
       arrayDimensions = decoder.decodeUInt32Array("ArrayDimensions");
@@ -273,7 +273,7 @@ public class VariableTypeAttributes extends NodeAttributes implements UaStructur
           description,
           writeMask,
           userWriteMask,
-          value,
+          value2,
           dataType,
           valueRank,
           arrayDimensions,
@@ -288,7 +288,8 @@ public class VariableTypeAttributes extends NodeAttributes implements UaStructur
       encoder.encodeLocalizedText("Description", value.getDescription());
       encoder.encodeUInt32("WriteMask", value.getWriteMask());
       encoder.encodeUInt32("UserWriteMask", value.getUserWriteMask());
-      encoder.encodeVariant("Value", value.getValue());
+      encoder.encodeVariant(
+          "Value", value.getValue() == null ? Variant.NULL_VALUE : value.getValue());
       encoder.encodeNodeId("DataType", value.getDataType());
       encoder.encodeInt32("ValueRank", value.getValueRank());
       encoder.encodeUInt32Array("ArrayDimensions", value.getArrayDimensions());

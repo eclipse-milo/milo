@@ -74,6 +74,12 @@
  *
  * <h2>Network mutation</h2>
  *
+ * <p>Method adapters declare the fixed standard argument metadata and use {@link
+ * org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler} to validate input
+ * counts, types and shapes before invoking the alias policy or manager. They return wire outputs
+ * directly. AliasManager owns their installation and cleanup; each invocation retains the calling
+ * session and category ObjectId.
+ *
  * <p>The {@code AddAliasesToCategory} and {@code DeleteAliasesFromCategory} Methods are
  * deny-by-default at two independent layers: the Method instances are only materialized (or, on
  * adopted categories, bound) when configuration is enabled, and even then the {@link

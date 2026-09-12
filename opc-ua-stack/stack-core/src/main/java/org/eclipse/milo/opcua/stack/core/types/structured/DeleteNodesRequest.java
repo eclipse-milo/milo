@@ -109,14 +109,14 @@ public class DeleteNodesRequest extends Structure implements UaRequestMessageTyp
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 500),
-        new NodeId(0, 22),
+        NodeId.parse("i=500"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "RequestHeader",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 389),
+              NodeId.parse("i=389"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -124,7 +124,7 @@ public class DeleteNodesRequest extends Structure implements UaRequestMessageTyp
           new StructureField(
               "NodesToDelete",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 382),
+              NodeId.parse("i=382"),
               1,
               null,
               UInteger.valueOf(0),

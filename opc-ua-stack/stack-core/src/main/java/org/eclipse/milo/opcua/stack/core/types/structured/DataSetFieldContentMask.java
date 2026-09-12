@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUI32;
 import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
@@ -61,6 +62,20 @@ public class DataSetFieldContentMask extends OptionSetUI32<DataSetFieldContentMa
     joiner.add("serverPicoSeconds=" + getServerPicoSeconds());
     joiner.add("rawData=" + getRawData());
     return joiner.toString();
+  }
+
+  public static EnumDefinition definition() {
+    return new EnumDefinition(
+        new EnumField[] {
+          new EnumField(0L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "StatusCode"),
+          new EnumField(1L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "SourceTimestamp"),
+          new EnumField(2L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "ServerTimestamp"),
+          new EnumField(
+              3L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "SourcePicoSeconds"),
+          new EnumField(
+              4L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "ServerPicoSeconds"),
+          new EnumField(5L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "RawData")
+        });
   }
 
   public static DataSetFieldContentMask of(DataSetFieldContentMask.Field... fields) {

@@ -125,14 +125,14 @@ public class EventFilterResult extends MonitoringFilterResult implements UaStruc
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 736),
-        new NodeId(0, 731),
+        NodeId.parse("i=736"),
+        NodeId.parse("i=731"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "SelectClauseResults",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 19),
+              NodeId.parse("i=19"),
               1,
               null,
               UInteger.valueOf(0),
@@ -140,7 +140,7 @@ public class EventFilterResult extends MonitoringFilterResult implements UaStruc
           new StructureField(
               "SelectClauseDiagnosticInfos",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 25),
+              NodeId.parse("i=25"),
               1,
               null,
               UInteger.valueOf(0),
@@ -148,7 +148,7 @@ public class EventFilterResult extends MonitoringFilterResult implements UaStruc
           new StructureField(
               "WhereClauseResult",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 607),
+              NodeId.parse("i=607"),
               -1,
               null,
               UInteger.valueOf(0),

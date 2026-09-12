@@ -175,14 +175,14 @@ public class PubSubConfiguration2DataType extends PubSubConfigurationDataType
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 23854),
-        new NodeId(0, 15530),
+        NodeId.parse("i=23854"),
+        NodeId.parse("i=15530"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "PublishedDataSets",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15578),
+              NodeId.parse("i=15578"),
               1,
               null,
               UInteger.valueOf(0),
@@ -190,7 +190,7 @@ public class PubSubConfiguration2DataType extends PubSubConfigurationDataType
           new StructureField(
               "Connections",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15617),
+              NodeId.parse("i=15617"),
               1,
               null,
               UInteger.valueOf(0),
@@ -198,7 +198,7 @@ public class PubSubConfiguration2DataType extends PubSubConfigurationDataType
           new StructureField(
               "Enabled",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -206,7 +206,7 @@ public class PubSubConfiguration2DataType extends PubSubConfigurationDataType
           new StructureField(
               "SubscribedDataSets",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 23600),
+              NodeId.parse("i=23600"),
               1,
               null,
               UInteger.valueOf(0),
@@ -214,7 +214,7 @@ public class PubSubConfiguration2DataType extends PubSubConfigurationDataType
           new StructureField(
               "DataSetClasses",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 14523),
+              NodeId.parse("i=14523"),
               1,
               null,
               UInteger.valueOf(0),
@@ -222,7 +222,7 @@ public class PubSubConfiguration2DataType extends PubSubConfigurationDataType
           new StructureField(
               "DefaultSecurityKeyServices",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 312),
+              NodeId.parse("i=312"),
               1,
               null,
               UInteger.valueOf(0),
@@ -230,7 +230,7 @@ public class PubSubConfiguration2DataType extends PubSubConfigurationDataType
           new StructureField(
               "SecurityGroups",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 23601),
+              NodeId.parse("i=23601"),
               1,
               null,
               UInteger.valueOf(0),
@@ -238,7 +238,7 @@ public class PubSubConfiguration2DataType extends PubSubConfigurationDataType
           new StructureField(
               "PubSubKeyPushTargets",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 25270),
+              NodeId.parse("i=25270"),
               1,
               null,
               UInteger.valueOf(0),
@@ -246,7 +246,7 @@ public class PubSubConfiguration2DataType extends PubSubConfigurationDataType
           new StructureField(
               "ConfigurationVersion",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 20998),
+              NodeId.parse("i=20998"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -254,7 +254,7 @@ public class PubSubConfiguration2DataType extends PubSubConfigurationDataType
           new StructureField(
               "ConfigurationProperties",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 14533),
+              NodeId.parse("i=14533"),
               1,
               null,
               UInteger.valueOf(0),

@@ -107,14 +107,14 @@ public class BrowsePath extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 545),
-        new NodeId(0, 22),
+        NodeId.parse("i=545"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "StartingNode",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -122,7 +122,7 @@ public class BrowsePath extends Structure implements UaStructuredType {
           new StructureField(
               "RelativePath",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 540),
+              NodeId.parse("i=540"),
               -1,
               null,
               UInteger.valueOf(0),

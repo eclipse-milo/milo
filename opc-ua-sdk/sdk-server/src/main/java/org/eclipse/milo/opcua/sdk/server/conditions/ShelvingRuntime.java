@@ -18,12 +18,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import org.eclipse.milo.opcua.sdk.server.conditions.ConditionNodeTraversal.DiscoveredMethod;
 import org.eclipse.milo.opcua.sdk.server.conditions.ConditionNodeTraversal.MethodSurface;
+import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext;
-import org.eclipse.milo.opcua.sdk.server.model.objects.ShelvedStateMachineType;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ShelvedStateMachineTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.FiniteStateVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.FiniteTransitionVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.variables.TransitionVariableType;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.filters.AttributeFilterContext;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
@@ -36,6 +37,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -106,7 +108,7 @@ final class ShelvingRuntime {
       // incoherent state silently, without modelling a transition or generating an event.
       state = ShelvedState.UNSHELVED;
     } else if (state == ShelvedState.ONE_SHOT_SHELVED) {
-      Double maxTimeShelved = alarm.getNode().getMaxTimeShelved();
+      Double maxTimeShelved = maxTimeShelved();
       if (maxTimeShelved != null && Double.isFinite(maxTimeShelved)) {
         unshelveDeadline = reconstructOneShotDeadline(maxTimeShelved);
         if (unshelveDeadline == null
@@ -122,10 +124,12 @@ final class ShelvingRuntime {
     alarm.getNode().setSuppressedOrShelved(state != ShelvedState.UNSHELVED);
 
     // Seed LastTransition so its property nodes exist before read filters are installed.
-    if (lastTransition != null && lastTransition.getTransitionTime() == null) {
+    if (lastTransition != null
+        && (lastTransition.getTransitionTimeNode() == null
+            || lastTransition.getTransitionTime() == null)) {
       lastTransition.setValue(new DataValue(new Variant(LocalizedText.NULL_VALUE)));
       lastTransition.setId(NodeId.NULL_VALUE);
-      lastTransition.setTransitionTime(DateTime.NULL_VALUE);
+      lastTransition.setProperty(TransitionVariableType.TRANSITION_TIME, DateTime.NULL_VALUE);
     }
 
     node.setUnshelveTime(0.0);
@@ -133,6 +137,12 @@ final class ShelvingRuntime {
     if (unshelveDeadline != null) {
       scheduleExpiryTimer(unshelveDeadline);
     }
+  }
+
+  private @Nullable Double maxTimeShelved() {
+    return alarm.getNode().getMaxTimeShelvedNode() != null
+        ? alarm.getNode().getMaxTimeShelved()
+        : null;
   }
 
   ShelvedStateMachineTypeNode getNode() {
@@ -163,11 +173,25 @@ final class ShelvingRuntime {
     if (timedShelve != null) {
       alarm.installMethodHandler(
           timedShelve,
-          new ShelvedStateMachineType.TimedShelveMethod(timedShelve.node()) {
+          new AbstractMethodInvocationHandler(timedShelve.node()) {
             @Override
-            protected void invoke(InvocationContext context, Double shelvingTime)
+            public Argument[] getInputArguments() {
+              return new Argument[] {
+                new Argument("ShelvingTime", NodeIds.Duration, -1, null, new LocalizedText("", ""))
+              };
+            }
+
+            @Override
+            public Argument[] getOutputArguments() {
+              return new Argument[0];
+            }
+
+            @Override
+            protected Variant[] invoke(InvocationContext context, Variant[] inputValues)
                 throws UaException {
+              Double shelvingTime = (Double) inputValues[0].value();
               handleTimedShelve(context, shelvingTime);
+              return new Variant[0];
             }
           });
     }
@@ -176,10 +200,22 @@ final class ShelvingRuntime {
     if (oneShotShelve != null) {
       alarm.installMethodHandler(
           oneShotShelve,
-          new ShelvedStateMachineType.OneShotShelveMethod(oneShotShelve.node()) {
+          new AbstractMethodInvocationHandler(oneShotShelve.node()) {
             @Override
-            protected void invoke(InvocationContext context) throws UaException {
+            public Argument[] getInputArguments() {
+              return new Argument[0];
+            }
+
+            @Override
+            public Argument[] getOutputArguments() {
+              return new Argument[0];
+            }
+
+            @Override
+            protected Variant[] invoke(InvocationContext context, Variant[] inputValues)
+                throws UaException {
               handleOneShotShelve(context);
+              return new Variant[0];
             }
           });
     }
@@ -188,10 +224,22 @@ final class ShelvingRuntime {
     if (unshelve != null) {
       alarm.installMethodHandler(
           unshelve,
-          new ShelvedStateMachineType.UnshelveMethod(unshelve.node()) {
+          new AbstractMethodInvocationHandler(unshelve.node()) {
             @Override
-            protected void invoke(InvocationContext context) throws UaException {
+            public Argument[] getInputArguments() {
+              return new Argument[0];
+            }
+
+            @Override
+            public Argument[] getOutputArguments() {
+              return new Argument[0];
+            }
+
+            @Override
+            protected Variant[] invoke(InvocationContext context, Variant[] inputValues)
+                throws UaException {
               handleUnshelve(context);
+              return new Variant[0];
             }
           });
     }
@@ -211,7 +259,7 @@ final class ShelvingRuntime {
           // Reject non-finite (NaN, ±Infinity) as well as non-positive and over-limit times: a NaN
           // slips past both magnitude comparisons (IEEE-754), and +Infinity past them when there is
           // no MaxTimeShelved, otherwise reaching deadline() and shelving with a bogus expiry.
-          Double maxTimeShelved = alarm.getNode().getMaxTimeShelved();
+          Double maxTimeShelved = maxTimeShelved();
           if (!Double.isFinite(shelvingTimeMillis)
               || shelvingTimeMillis <= 0.0
               || (maxTimeShelved != null && shelvingTimeMillis > maxTimeShelved)) {
@@ -237,7 +285,7 @@ final class ShelvingRuntime {
           // (NaN/±Infinity written at runtime) is not a usable bound: treat it as unbounded rather
           // than letting deadline()'s cast turn it into 0 and immediately unshelve, mirroring the
           // finiteness guard handleTimedShelve applies to its own argument.
-          Double maxTimeShelved = alarm.getNode().getMaxTimeShelved();
+          Double maxTimeShelved = maxTimeShelved();
 
           if (maxTimeShelved != null && Double.isFinite(maxTimeShelved)) {
             double maxMillis = maxTimeShelved;

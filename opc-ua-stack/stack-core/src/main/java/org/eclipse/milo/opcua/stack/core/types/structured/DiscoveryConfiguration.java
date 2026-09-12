@@ -64,7 +64,10 @@ public class DiscoveryConfiguration extends Structure implements UaStructuredTyp
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 12900), new NodeId(0, 22), StructureType.Structure, new StructureField[] {});
+        NodeId.parse("i=12900"),
+        NodeId.parse("i=22"),
+        StructureType.Structure,
+        new StructureField[] {});
   }
 
   public static final class Codec extends GenericDataTypeCodec<DiscoveryConfiguration> {

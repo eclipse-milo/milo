@@ -14,6 +14,7 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUI32;
 import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
@@ -66,6 +67,17 @@ public class LogRecordMask extends OptionSetUI32<LogRecordMask.Field> {
     joiner.add("traceContext=" + getTraceContext());
     joiner.add("additionalData=" + getAdditionalData());
     return joiner.toString();
+  }
+
+  public static EnumDefinition definition() {
+    return new EnumDefinition(
+        new EnumField[] {
+          new EnumField(0L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "EventType"),
+          new EnumField(1L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "SourceNode"),
+          new EnumField(2L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "SourceName"),
+          new EnumField(3L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "TraceContext"),
+          new EnumField(4L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "AdditionalData")
+        });
   }
 
   public static LogRecordMask of(LogRecordMask.Field... fields) {

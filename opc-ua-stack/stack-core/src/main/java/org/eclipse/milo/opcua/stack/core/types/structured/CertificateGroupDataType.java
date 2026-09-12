@@ -138,14 +138,14 @@ public class CertificateGroupDataType extends BaseConfigurationRecordDataType
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 16540),
-        new NodeId(0, 15435),
+        NodeId.parse("i=16540"),
+        NodeId.parse("i=15435"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "Name",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -153,7 +153,7 @@ public class CertificateGroupDataType extends BaseConfigurationRecordDataType
           new StructureField(
               "RecordProperties",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 14533),
+              NodeId.parse("i=14533"),
               1,
               null,
               UInteger.valueOf(0),
@@ -161,7 +161,7 @@ public class CertificateGroupDataType extends BaseConfigurationRecordDataType
           new StructureField(
               "Purpose",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -169,7 +169,7 @@ public class CertificateGroupDataType extends BaseConfigurationRecordDataType
           new StructureField(
               "CertificateTypes",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               1,
               null,
               UInteger.valueOf(0),
@@ -177,7 +177,7 @@ public class CertificateGroupDataType extends BaseConfigurationRecordDataType
           new StructureField(
               "IsCertificateAssigned",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               1,
               null,
               UInteger.valueOf(0),
@@ -185,7 +185,7 @@ public class CertificateGroupDataType extends BaseConfigurationRecordDataType
           new StructureField(
               "ValidationOptions",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 23564),
+              NodeId.parse("i=23564"),
               -1,
               null,
               UInteger.valueOf(0),

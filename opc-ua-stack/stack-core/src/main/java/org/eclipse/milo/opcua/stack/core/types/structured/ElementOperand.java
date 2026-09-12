@@ -97,14 +97,14 @@ public class ElementOperand extends FilterOperand implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 594),
-        new NodeId(0, 589),
+        NodeId.parse("i=594"),
+        NodeId.parse("i=589"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "Index",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),

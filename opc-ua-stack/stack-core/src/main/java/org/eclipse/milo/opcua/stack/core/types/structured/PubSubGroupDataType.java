@@ -162,14 +162,14 @@ public abstract class PubSubGroupDataType extends Structure implements UaStructu
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 15689),
-        new NodeId(0, 22),
+        NodeId.parse("i=15689"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "Name",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -177,7 +177,7 @@ public abstract class PubSubGroupDataType extends Structure implements UaStructu
           new StructureField(
               "Enabled",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -185,7 +185,7 @@ public abstract class PubSubGroupDataType extends Structure implements UaStructu
           new StructureField(
               "SecurityMode",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 302),
+              NodeId.parse("i=302"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -193,7 +193,7 @@ public abstract class PubSubGroupDataType extends Structure implements UaStructu
           new StructureField(
               "SecurityGroupId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -201,7 +201,7 @@ public abstract class PubSubGroupDataType extends Structure implements UaStructu
           new StructureField(
               "SecurityKeyServices",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 312),
+              NodeId.parse("i=312"),
               1,
               null,
               UInteger.valueOf(0),
@@ -209,7 +209,7 @@ public abstract class PubSubGroupDataType extends Structure implements UaStructu
           new StructureField(
               "MaxNetworkMessageSize",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -217,7 +217,7 @@ public abstract class PubSubGroupDataType extends Structure implements UaStructu
           new StructureField(
               "GroupProperties",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 14533),
+              NodeId.parse("i=14533"),
               1,
               null,
               UInteger.valueOf(0),

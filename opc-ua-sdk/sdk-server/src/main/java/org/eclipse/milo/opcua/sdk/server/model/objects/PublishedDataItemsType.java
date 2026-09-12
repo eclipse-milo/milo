@@ -12,21 +12,18 @@ package org.eclipse.milo.opcua.sdk.server.model.objects;
 
 import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
 import org.eclipse.milo.opcua.sdk.core.nodes.MethodNode;
-import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
-import org.eclipse.milo.opcua.sdk.server.methods.Out;
+import org.eclipse.milo.opcua.sdk.server.methods.MethodBinding;
+import org.eclipse.milo.opcua.sdk.server.methods.MethodBindings;
+import org.eclipse.milo.opcua.sdk.server.model.methods.PublishedDataItemsTypeAddVariablesDetailedHandler;
+import org.eclipse.milo.opcua.sdk.server.model.methods.PublishedDataItemsTypeAddVariablesHandler;
+import org.eclipse.milo.opcua.sdk.server.model.methods.PublishedDataItemsTypeRemoveVariablesDetailedHandler;
+import org.eclipse.milo.opcua.sdk.server.model.methods.PublishedDataItemsTypeRemoveVariablesHandler;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
-import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
-import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
-import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
-import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
-import org.eclipse.milo.opcua.stack.core.types.structured.ConfigurationVersionDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedVariableDataType;
-import org.eclipse.milo.opcua.stack.core.util.Lazy;
+import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
@@ -41,216 +38,162 @@ public interface PublishedDataItemsType extends PublishedDataSetType {
           1,
           PublishedVariableDataType[].class);
 
-  PublishedVariableDataType[] getPublishedData();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable PublishedVariableDataType @Nullable [] getPublishedData();
 
-  void setPublishedData(PublishedVariableDataType[] value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setPublishedData(@Nullable PublishedVariableDataType @Nullable [] value);
 
+  /**
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   PropertyType getPublishedDataNode();
 
-  MethodNode getAddVariablesMethodNode();
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.3.2
+   *
+   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
+   * confirmed absence. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  @Nullable MethodNode getAddVariablesMethodNode();
 
-  MethodNode getRemoveVariablesMethodNode();
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.3.2
+   *
+   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
+   * must already exist and have compatible effective metadata; binding does not create nodes or
+   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
+   * registration.
+   *
+   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
+   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
+   * handler replacement is authoritative. An observed displacement prevents further binds through
+   * that registry.
+   *
+   * @return an explicit registration lifetime
+   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
+   *     preempting ConditionManager makes binding unsupported
+   * @throws UaRuntimeException if strict local lookup fails
+   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
+   *     the Method
+   */
+  MethodBinding bindAddVariables(
+      MethodBindings bindings, PublishedDataItemsTypeAddVariablesHandler handler)
+      throws UaException;
 
-  abstract class AddVariablesMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.3.2
+   *
+   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
+   * must already exist and have compatible effective metadata; binding does not create nodes or
+   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
+   * registration.
+   *
+   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
+   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
+   * handler replacement is authoritative. An observed displacement prevents further binds through
+   * that registry.
+   *
+   * @return an explicit registration lifetime
+   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
+   *     preempting ConditionManager makes binding unsupported
+   * @throws UaRuntimeException if strict local lookup fails
+   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
+   *     the Method
+   */
+  MethodBinding bindAddVariablesDetailed(
+      MethodBindings bindings, PublishedDataItemsTypeAddVariablesDetailedHandler handler)
+      throws UaException;
 
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.3.3
+   *
+   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
+   * confirmed absence. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  @Nullable MethodNode getRemoveVariablesMethodNode();
 
-    public AddVariablesMethod(UaMethodNode node) {
-      super(node);
-    }
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.3.3
+   *
+   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
+   * must already exist and have compatible effective metadata; binding does not create nodes or
+   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
+   * registration.
+   *
+   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
+   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
+   * handler replacement is authoritative. An observed displacement prevents further binds through
+   * that registry.
+   *
+   * @return an explicit registration lifetime
+   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
+   *     preempting ConditionManager makes binding unsupported
+   * @throws UaRuntimeException if strict local lookup fails
+   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
+   *     the Method
+   */
+  MethodBinding bindRemoveVariables(
+      MethodBindings bindings, PublishedDataItemsTypeRemoveVariablesHandler handler)
+      throws UaException;
 
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "ConfigurationVersion",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14593")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "FieldNameAliases",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", "")),
-              new Argument(
-                  "PromotedFields",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", "")),
-              new Argument(
-                  "VariablesToAdd",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14273")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "NewConfigurationVersion",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14593")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "AddResults",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=19")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      ConfigurationVersionDataType configurationVersion =
-          (ConfigurationVersionDataType) inputValues[0].getValue();
-      String[] fieldNameAliases = (String[]) inputValues[1].getValue();
-      Boolean[] promotedFields = (Boolean[]) inputValues[2].getValue();
-      PublishedVariableDataType[] variablesToAdd =
-          (PublishedVariableDataType[]) inputValues[3].getValue();
-      Out<ConfigurationVersionDataType> newConfigurationVersion = new Out<>();
-      Out<StatusCode[]> addResults = new Out<>();
-      invoke(
-          context,
-          configurationVersion,
-          fieldNameAliases,
-          promotedFields,
-          variablesToAdd,
-          newConfigurationVersion,
-          addResults);
-      return new Variant[] {
-        new Variant(newConfigurationVersion.get()), new Variant(addResults.get())
-      };
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context,
-        ConfigurationVersionDataType configurationVersion,
-        String[] fieldNameAliases,
-        Boolean[] promotedFields,
-        PublishedVariableDataType[] variablesToAdd,
-        Out<ConfigurationVersionDataType> newConfigurationVersion,
-        Out<StatusCode[]> addResults)
-        throws UaException;
-  }
-
-  abstract class RemoveVariablesMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-    public RemoveVariablesMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "ConfigurationVersion",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14593")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "VariablesToRemove",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "NewConfigurationVersion",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14593")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "RemoveResults",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=19")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      ConfigurationVersionDataType configurationVersion =
-          (ConfigurationVersionDataType) inputValues[0].getValue();
-      UInteger[] variablesToRemove = (UInteger[]) inputValues[1].getValue();
-      Out<ConfigurationVersionDataType> newConfigurationVersion = new Out<>();
-      Out<StatusCode[]> removeResults = new Out<>();
-      invoke(
-          context, configurationVersion, variablesToRemove, newConfigurationVersion, removeResults);
-      return new Variant[] {
-        new Variant(newConfigurationVersion.get()), new Variant(removeResults.get())
-      };
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context,
-        ConfigurationVersionDataType configurationVersion,
-        UInteger[] variablesToRemove,
-        Out<ConfigurationVersionDataType> newConfigurationVersion,
-        Out<StatusCode[]> removeResults)
-        throws UaException;
-  }
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.3.3
+   *
+   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
+   * must already exist and have compatible effective metadata; binding does not create nodes or
+   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
+   * registration.
+   *
+   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
+   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
+   * handler replacement is authoritative. An observed displacement prevents further binds through
+   * that registry.
+   *
+   * @return an explicit registration lifetime
+   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
+   *     preempting ConditionManager makes binding unsupported
+   * @throws UaRuntimeException if strict local lookup fails
+   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
+   *     the Method
+   */
+  MethodBinding bindRemoveVariablesDetailed(
+      MethodBindings bindings, PublishedDataItemsTypeRemoveVariablesDetailedHandler handler)
+      throws UaException;
 }

@@ -12,6 +12,8 @@ package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -167,14 +169,14 @@ public class AddNodesItem extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 378),
-        new NodeId(0, 22),
+        NodeId.parse("i=378"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "ParentNodeId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 18),
+              NodeId.parse("i=18"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -182,7 +184,7 @@ public class AddNodesItem extends Structure implements UaStructuredType {
           new StructureField(
               "ReferenceTypeId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -190,7 +192,7 @@ public class AddNodesItem extends Structure implements UaStructuredType {
           new StructureField(
               "RequestedNewNodeId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 18),
+              NodeId.parse("i=18"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -198,7 +200,7 @@ public class AddNodesItem extends Structure implements UaStructuredType {
           new StructureField(
               "BrowseName",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 20),
+              NodeId.parse("i=20"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -206,7 +208,7 @@ public class AddNodesItem extends Structure implements UaStructuredType {
           new StructureField(
               "NodeClass",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 257),
+              NodeId.parse("i=257"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -214,7 +216,7 @@ public class AddNodesItem extends Structure implements UaStructuredType {
           new StructureField(
               "NodeAttributes",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 22),
+              NodeId.parse("i=22"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -222,7 +224,7 @@ public class AddNodesItem extends Structure implements UaStructuredType {
           new StructureField(
               "TypeDefinition",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 18),
+              NodeId.parse("i=18"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -249,7 +251,26 @@ public class AddNodesItem extends Structure implements UaStructuredType {
       referenceTypeId = decoder.decodeNodeId("ReferenceTypeId");
       requestedNewNodeId = decoder.decodeExpandedNodeId("RequestedNewNodeId");
       browseName = decoder.decodeQualifiedName("BrowseName");
-      nodeClass = NodeClass.from(decoder.decodeEnum("NodeClass"));
+      {
+        Integer enumValue = decoder.decodeEnum("NodeClass");
+        if (enumValue != null && !((Object) enumValue instanceof NodeClass)) {
+          if (!(enumValue instanceof Integer)) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_TypeMismatch,
+                "NodeClass: expected org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass"
+                    + " or Int32, got "
+                    + enumValue);
+          }
+          if (NodeClass.from((Integer) enumValue) == null) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_OutOfRange,
+                "NodeClass: unknown org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass"
+                    + " value "
+                    + enumValue);
+          }
+        }
+        nodeClass = enumValue == null ? null : NodeClass.from(enumValue);
+      }
       nodeAttributes = decoder.decodeExtensionObject("NodeAttributes");
       typeDefinition = decoder.decodeExpandedNodeId("TypeDefinition");
       return new AddNodesItem(

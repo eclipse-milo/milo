@@ -125,14 +125,14 @@ public class TranslateBrowsePathsToNodeIdsResponse extends Structure
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 557),
-        new NodeId(0, 22),
+        NodeId.parse("i=557"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "ResponseHeader",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 392),
+              NodeId.parse("i=392"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -140,7 +140,7 @@ public class TranslateBrowsePathsToNodeIdsResponse extends Structure
           new StructureField(
               "Results",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 549),
+              NodeId.parse("i=549"),
               1,
               null,
               UInteger.valueOf(0),
@@ -148,7 +148,7 @@ public class TranslateBrowsePathsToNodeIdsResponse extends Structure
           new StructureField(
               "DiagnosticInfos",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 25),
+              NodeId.parse("i=25"),
               1,
               null,
               UInteger.valueOf(0),

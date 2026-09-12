@@ -144,14 +144,14 @@ public class PublishedDataSetDataType extends Structure implements UaStructuredT
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 15677),
-        new NodeId(0, 22),
+        NodeId.parse("i=15677"),
+        NodeId.parse("i=22"),
         StructureType.StructureWithSubtypedValues,
         new StructureField[] {
           new StructureField(
               "Name",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -159,7 +159,7 @@ public class PublishedDataSetDataType extends Structure implements UaStructuredT
           new StructureField(
               "DataSetFolder",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               1,
               null,
               UInteger.valueOf(0),
@@ -167,7 +167,7 @@ public class PublishedDataSetDataType extends Structure implements UaStructuredT
           new StructureField(
               "DataSetMetaData",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 14523),
+              NodeId.parse("i=14523"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -175,7 +175,7 @@ public class PublishedDataSetDataType extends Structure implements UaStructuredT
           new StructureField(
               "ExtensionFields",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 14533),
+              NodeId.parse("i=14533"),
               1,
               null,
               UInteger.valueOf(0),
@@ -183,7 +183,7 @@ public class PublishedDataSetDataType extends Structure implements UaStructuredT
           new StructureField(
               "DataSetSource",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15580),
+              NodeId.parse("i=15580"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -213,7 +213,8 @@ public class PublishedDataSetDataType extends Structure implements UaStructuredT
           (KeyValuePair[]) decoder.decodeStructArray("ExtensionFields", KeyValuePair.TYPE_ID);
       {
         ExtensionObject xo = decoder.decodeExtensionObject("DataSetSource");
-        dataSetSource = (PublishedDataSetSourceDataType) xo.decode(context);
+        dataSetSource =
+            xo == null || xo.isNull() ? null : (PublishedDataSetSourceDataType) xo.decode(context);
       }
       return new PublishedDataSetDataType(
           name, dataSetFolder, dataSetMetaData, extensionFields, dataSetSource);
@@ -229,7 +230,9 @@ public class PublishedDataSetDataType extends Structure implements UaStructuredT
       encoder.encodeStructArray(
           "ExtensionFields", value.getExtensionFields(), KeyValuePair.TYPE_ID);
       {
-        ExtensionObject xo = ExtensionObject.encode(context, value.getDataSetSource());
+        PublishedDataSetSourceDataType fieldValue = value.getDataSetSource();
+        ExtensionObject xo =
+            fieldValue == null ? null : ExtensionObject.encode(context, fieldValue);
         encoder.encodeExtensionObject("DataSetSource", xo);
       }
     }

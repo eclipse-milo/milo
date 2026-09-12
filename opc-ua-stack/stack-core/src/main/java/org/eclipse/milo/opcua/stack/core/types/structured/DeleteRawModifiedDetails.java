@@ -129,14 +129,14 @@ public class DeleteRawModifiedDetails extends HistoryUpdateDetails implements Ua
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 688),
-        new NodeId(0, 677),
+        NodeId.parse("i=688"),
+        NodeId.parse("i=677"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "NodeId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -144,7 +144,7 @@ public class DeleteRawModifiedDetails extends HistoryUpdateDetails implements Ua
           new StructureField(
               "IsDeleteModified",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -152,7 +152,7 @@ public class DeleteRawModifiedDetails extends HistoryUpdateDetails implements Ua
           new StructureField(
               "StartTime",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 294),
+              NodeId.parse("i=294"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -160,7 +160,7 @@ public class DeleteRawModifiedDetails extends HistoryUpdateDetails implements Ua
           new StructureField(
               "EndTime",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 294),
+              NodeId.parse("i=294"),
               -1,
               null,
               UInteger.valueOf(0),

@@ -118,14 +118,14 @@ public class ViewAttributes extends NodeAttributes implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 375),
-        new NodeId(0, 349),
+        NodeId.parse("i=375"),
+        NodeId.parse("i=349"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "SpecifiedAttributes",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -133,7 +133,7 @@ public class ViewAttributes extends NodeAttributes implements UaStructuredType {
           new StructureField(
               "DisplayName",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 21),
+              NodeId.parse("i=21"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -141,7 +141,7 @@ public class ViewAttributes extends NodeAttributes implements UaStructuredType {
           new StructureField(
               "Description",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 21),
+              NodeId.parse("i=21"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -149,7 +149,7 @@ public class ViewAttributes extends NodeAttributes implements UaStructuredType {
           new StructureField(
               "WriteMask",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -157,7 +157,7 @@ public class ViewAttributes extends NodeAttributes implements UaStructuredType {
           new StructureField(
               "UserWriteMask",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -165,7 +165,7 @@ public class ViewAttributes extends NodeAttributes implements UaStructuredType {
           new StructureField(
               "ContainsNoLoops",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -173,7 +173,7 @@ public class ViewAttributes extends NodeAttributes implements UaStructuredType {
           new StructureField(
               "EventNotifier",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 3),
+              NodeId.parse("i=3"),
               -1,
               null,
               UInteger.valueOf(0),

@@ -165,14 +165,14 @@ public class ModifySubscriptionRequest extends Structure implements UaRequestMes
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 793),
-        new NodeId(0, 22),
+        NodeId.parse("i=793"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "RequestHeader",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 389),
+              NodeId.parse("i=389"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -180,7 +180,7 @@ public class ModifySubscriptionRequest extends Structure implements UaRequestMes
           new StructureField(
               "SubscriptionId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 288),
+              NodeId.parse("i=288"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -188,7 +188,7 @@ public class ModifySubscriptionRequest extends Structure implements UaRequestMes
           new StructureField(
               "RequestedPublishingInterval",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 290),
+              NodeId.parse("i=290"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -196,7 +196,7 @@ public class ModifySubscriptionRequest extends Structure implements UaRequestMes
           new StructureField(
               "RequestedLifetimeCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 289),
+              NodeId.parse("i=289"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -204,7 +204,7 @@ public class ModifySubscriptionRequest extends Structure implements UaRequestMes
           new StructureField(
               "RequestedMaxKeepAliveCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 289),
+              NodeId.parse("i=289"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -212,7 +212,7 @@ public class ModifySubscriptionRequest extends Structure implements UaRequestMes
           new StructureField(
               "MaxNotificationsPerPublish",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 289),
+              NodeId.parse("i=289"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -220,7 +220,7 @@ public class ModifySubscriptionRequest extends Structure implements UaRequestMes
           new StructureField(
               "Priority",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 3),
+              NodeId.parse("i=3"),
               -1,
               null,
               UInteger.valueOf(0),

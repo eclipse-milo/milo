@@ -12,13 +12,16 @@ package org.eclipse.milo.opcua.sdk.server.aliases;
 
 import java.util.List;
 import org.eclipse.milo.opcua.sdk.server.Session;
-import org.eclipse.milo.opcua.sdk.server.methods.Out;
-import org.eclipse.milo.opcua.sdk.server.model.objects.AliasNameCategoryType;
+import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
+import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.AliasNameDataType;
-import org.jspecify.annotations.Nullable;
+import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 
 /**
  * Network-facing {@code FindAlias} implementation: authorizes the calling session through the
@@ -28,7 +31,7 @@ import org.jspecify.annotations.Nullable;
  * <p>The category is re-resolved from the call's Object NodeId on every invocation, so a call
  * racing a category removal fails with {@code Bad_NodeIdUnknown} instead of observing stale state.
  */
-class FindAliasMethodImpl extends AliasNameCategoryType.FindAliasMethod {
+class FindAliasMethodImpl extends AbstractMethodInvocationHandler {
 
   private final AliasSearchEngine engine;
   private final AliasAuthorizationPolicy policy;
@@ -43,12 +46,29 @@ class FindAliasMethodImpl extends AliasNameCategoryType.FindAliasMethod {
   }
 
   @Override
-  protected void invoke(
-      InvocationContext context,
-      @Nullable String aliasNameSearchPattern,
-      @Nullable NodeId referenceTypeFilter,
-      Out<AliasNameDataType[]> aliasNodeList)
-      throws UaException {
+  public Argument[] getInputArguments() {
+    return new Argument[] {
+      new Argument("AliasNameSearchPattern", NodeIds.String, -1, null, new LocalizedText("", "")),
+      new Argument("ReferenceTypeFilter", NodeIds.NodeId, -1, null, new LocalizedText("", ""))
+    };
+  }
+
+  @Override
+  public Argument[] getOutputArguments() {
+    return new Argument[] {
+      new Argument(
+          "AliasNodeList",
+          NodeIds.AliasNameDataType,
+          1,
+          new UInteger[] {UInteger.valueOf(0)},
+          new LocalizedText("", ""))
+    };
+  }
+
+  @Override
+  protected Variant[] invoke(InvocationContext context, Variant[] inputValues) throws UaException {
+    String aliasNameSearchPattern = (String) inputValues[0].value();
+    NodeId referenceTypeFilter = (NodeId) inputValues[1].value();
 
     Session session = context.getSession().orElse(null);
     NodeId categoryId = context.getObjectId();
@@ -63,6 +83,6 @@ class FindAliasMethodImpl extends AliasNameCategoryType.FindAliasMethod {
             referenceTypeFilter,
             aliasNodeId -> policy.includeResult(session, aliasNodeId));
 
-    aliasNodeList.set(results.toArray(new AliasNameDataType[0]));
+    return new Variant[] {new Variant(results.toArray(new AliasNameDataType[0]))};
   }
 }

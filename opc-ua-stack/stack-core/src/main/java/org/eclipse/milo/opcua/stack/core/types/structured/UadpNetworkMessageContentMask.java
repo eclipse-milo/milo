@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUI32;
 import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
@@ -88,6 +89,24 @@ public class UadpNetworkMessageContentMask
     joiner.add("dataSetClassId=" + getDataSetClassId());
     joiner.add("promotedFields=" + getPromotedFields());
     return joiner.toString();
+  }
+
+  public static EnumDefinition definition() {
+    return new EnumDefinition(
+        new EnumField[] {
+          new EnumField(0L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "PublisherId"),
+          new EnumField(1L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "GroupHeader"),
+          new EnumField(2L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "WriterGroupId"),
+          new EnumField(3L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "GroupVersion"),
+          new EnumField(
+              4L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "NetworkMessageNumber"),
+          new EnumField(5L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "SequenceNumber"),
+          new EnumField(6L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "PayloadHeader"),
+          new EnumField(7L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "Timestamp"),
+          new EnumField(8L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "PicoSeconds"),
+          new EnumField(9L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "DataSetClassId"),
+          new EnumField(10L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "PromotedFields")
+        });
   }
 
   public static UadpNetworkMessageContentMask of(UadpNetworkMessageContentMask.Field... fields) {

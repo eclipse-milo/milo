@@ -41,11 +41,11 @@ public class GenericAttributeValue extends Structure implements UaStructuredType
 
   private final UInteger attributeId;
 
-  private final Variant value;
+  private final Variant value2;
 
-  public GenericAttributeValue(UInteger attributeId, Variant value) {
+  public GenericAttributeValue(UInteger attributeId, Variant value2) {
     this.attributeId = attributeId;
-    this.value = value;
+    this.value2 = value2;
   }
 
   @Override
@@ -73,7 +73,7 @@ public class GenericAttributeValue extends Structure implements UaStructuredType
   }
 
   public Variant getValue() {
-    return value;
+    return value2;
   }
 
   @Override
@@ -108,14 +108,14 @@ public class GenericAttributeValue extends Structure implements UaStructuredType
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 17610),
-        new NodeId(0, 22),
+        NodeId.parse("i=17610"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "AttributeId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 288),
+              NodeId.parse("i=288"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -123,7 +123,7 @@ public class GenericAttributeValue extends Structure implements UaStructuredType
           new StructureField(
               "Value",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 24),
+              NodeId.parse("i=24"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -140,17 +140,18 @@ public class GenericAttributeValue extends Structure implements UaStructuredType
     @Override
     public GenericAttributeValue decodeType(EncodingContext context, UaDecoder decoder) {
       final UInteger attributeId;
-      final Variant value;
+      final Variant value2;
       attributeId = decoder.decodeUInt32("AttributeId");
-      value = decoder.decodeVariant("Value");
-      return new GenericAttributeValue(attributeId, value);
+      value2 = decoder.decodeVariant("Value");
+      return new GenericAttributeValue(attributeId, value2);
     }
 
     @Override
     public void encodeType(
         EncodingContext context, UaEncoder encoder, GenericAttributeValue value) {
       encoder.encodeUInt32("AttributeId", value.getAttributeId());
-      encoder.encodeVariant("Value", value.getValue());
+      encoder.encodeVariant(
+          "Value", value.getValue() == null ? Variant.NULL_VALUE : value.getValue());
     }
   }
 }

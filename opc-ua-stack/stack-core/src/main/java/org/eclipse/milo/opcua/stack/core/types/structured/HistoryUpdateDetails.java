@@ -60,6 +60,9 @@ public abstract class HistoryUpdateDetails extends Structure implements UaStruct
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 679), new NodeId(0, 22), StructureType.Structure, new StructureField[] {});
+        NodeId.parse("i=679"),
+        NodeId.parse("i=22"),
+        StructureType.Structure,
+        new StructureField[] {});
   }
 }

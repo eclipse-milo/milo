@@ -12,6 +12,8 @@ package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -221,14 +223,14 @@ public class JsonActionResponseMessage extends Structure implements UaStructured
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 0),
-        new NodeId(0, 22),
+        NodeId.parse("i=0"),
+        NodeId.parse("i=22"),
         StructureType.StructureWithSubtypedValues,
         new StructureField[] {
           new StructureField(
               "DataSetWriterId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 5),
+              NodeId.parse("i=5"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -236,7 +238,7 @@ public class JsonActionResponseMessage extends Structure implements UaStructured
           new StructureField(
               "ActionTargetId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 5),
+              NodeId.parse("i=5"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -244,7 +246,7 @@ public class JsonActionResponseMessage extends Structure implements UaStructured
           new StructureField(
               "DataSetWriterName",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -252,7 +254,7 @@ public class JsonActionResponseMessage extends Structure implements UaStructured
           new StructureField(
               "WriterGroupName",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -260,7 +262,7 @@ public class JsonActionResponseMessage extends Structure implements UaStructured
           new StructureField(
               "MetaDataVersion",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 14593),
+              NodeId.parse("i=14593"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -268,7 +270,7 @@ public class JsonActionResponseMessage extends Structure implements UaStructured
           new StructureField(
               "MinorVersion",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 20998),
+              NodeId.parse("i=20998"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -276,7 +278,7 @@ public class JsonActionResponseMessage extends Structure implements UaStructured
           new StructureField(
               "Timestamp",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 13),
+              NodeId.parse("i=13"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -284,7 +286,7 @@ public class JsonActionResponseMessage extends Structure implements UaStructured
           new StructureField(
               "Status",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 19),
+              NodeId.parse("i=19"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -292,7 +294,7 @@ public class JsonActionResponseMessage extends Structure implements UaStructured
           new StructureField(
               "MessageType",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -300,7 +302,7 @@ public class JsonActionResponseMessage extends Structure implements UaStructured
           new StructureField(
               "RequestId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 5),
+              NodeId.parse("i=5"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -308,7 +310,7 @@ public class JsonActionResponseMessage extends Structure implements UaStructured
           new StructureField(
               "ActionState",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 18595),
+              NodeId.parse("i=18595"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -316,7 +318,7 @@ public class JsonActionResponseMessage extends Structure implements UaStructured
           new StructureField(
               "Payload",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 22),
+              NodeId.parse("i=22"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -356,7 +358,27 @@ public class JsonActionResponseMessage extends Structure implements UaStructured
       status = decoder.decodeStatusCode("Status");
       messageType = decoder.decodeString("MessageType");
       requestId = decoder.decodeUInt16("RequestId");
-      actionState = ActionState.from(decoder.decodeEnum("ActionState"));
+      {
+        Integer enumValue = decoder.decodeEnum("ActionState");
+        if (enumValue != null && !((Object) enumValue instanceof ActionState)) {
+          if (!(enumValue instanceof Integer)) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_TypeMismatch,
+                "ActionState: expected"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.ActionState or Int32,"
+                    + " got "
+                    + enumValue);
+          }
+          if (ActionState.from((Integer) enumValue) == null) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_OutOfRange,
+                "ActionState: unknown"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.ActionState value "
+                    + enumValue);
+          }
+        }
+        actionState = enumValue == null ? null : ActionState.from(enumValue);
+      }
       payload = decoder.decodeExtensionObject("Payload");
       return new JsonActionResponseMessage(
           dataSetWriterId,

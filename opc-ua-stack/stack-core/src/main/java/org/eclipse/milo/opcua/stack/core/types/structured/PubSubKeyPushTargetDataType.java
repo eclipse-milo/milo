@@ -189,14 +189,14 @@ public class PubSubKeyPushTargetDataType extends Structure implements UaStructur
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 25530),
-        new NodeId(0, 22),
+        NodeId.parse("i=25530"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "ApplicationUri",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -204,7 +204,7 @@ public class PubSubKeyPushTargetDataType extends Structure implements UaStructur
           new StructureField(
               "PushTargetFolder",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               1,
               null,
               UInteger.valueOf(0),
@@ -212,7 +212,7 @@ public class PubSubKeyPushTargetDataType extends Structure implements UaStructur
           new StructureField(
               "EndpointUrl",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -220,7 +220,7 @@ public class PubSubKeyPushTargetDataType extends Structure implements UaStructur
           new StructureField(
               "SecurityPolicyUri",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -228,7 +228,7 @@ public class PubSubKeyPushTargetDataType extends Structure implements UaStructur
           new StructureField(
               "UserTokenType",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 304),
+              NodeId.parse("i=304"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -236,7 +236,7 @@ public class PubSubKeyPushTargetDataType extends Structure implements UaStructur
           new StructureField(
               "RequestedKeyCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 5),
+              NodeId.parse("i=5"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -244,7 +244,7 @@ public class PubSubKeyPushTargetDataType extends Structure implements UaStructur
           new StructureField(
               "RetryInterval",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 290),
+              NodeId.parse("i=290"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -252,7 +252,7 @@ public class PubSubKeyPushTargetDataType extends Structure implements UaStructur
           new StructureField(
               "PushTargetProperties",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 14533),
+              NodeId.parse("i=14533"),
               1,
               null,
               UInteger.valueOf(0),
@@ -260,7 +260,7 @@ public class PubSubKeyPushTargetDataType extends Structure implements UaStructur
           new StructureField(
               "SecurityGroups",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               1,
               null,
               UInteger.valueOf(0),

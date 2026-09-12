@@ -44,13 +44,13 @@ public class QueryDataSet extends Structure implements UaStructuredType {
 
   private final ExpandedNodeId typeDefinitionNode;
 
-  private final Variant @Nullable [] values;
+  private final Variant @Nullable [] values2;
 
   public QueryDataSet(
-      ExpandedNodeId nodeId, ExpandedNodeId typeDefinitionNode, Variant @Nullable [] values) {
+      ExpandedNodeId nodeId, ExpandedNodeId typeDefinitionNode, Variant @Nullable [] values2) {
     this.nodeId = nodeId;
     this.typeDefinitionNode = typeDefinitionNode;
-    this.values = values;
+    this.values2 = values2;
   }
 
   @Override
@@ -82,7 +82,7 @@ public class QueryDataSet extends Structure implements UaStructuredType {
   }
 
   public Variant @Nullable [] getValues() {
-    return values;
+    return values2;
   }
 
   @Override
@@ -120,14 +120,14 @@ public class QueryDataSet extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 579),
-        new NodeId(0, 22),
+        NodeId.parse("i=579"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "NodeId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 18),
+              NodeId.parse("i=18"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -135,7 +135,7 @@ public class QueryDataSet extends Structure implements UaStructuredType {
           new StructureField(
               "TypeDefinitionNode",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 18),
+              NodeId.parse("i=18"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -143,7 +143,7 @@ public class QueryDataSet extends Structure implements UaStructuredType {
           new StructureField(
               "Values",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 24),
+              NodeId.parse("i=24"),
               1,
               null,
               UInteger.valueOf(0),
@@ -161,11 +161,11 @@ public class QueryDataSet extends Structure implements UaStructuredType {
     public QueryDataSet decodeType(EncodingContext context, UaDecoder decoder) {
       final ExpandedNodeId nodeId;
       final ExpandedNodeId typeDefinitionNode;
-      final Variant[] values;
+      final Variant[] values2;
       nodeId = decoder.decodeExpandedNodeId("NodeId");
       typeDefinitionNode = decoder.decodeExpandedNodeId("TypeDefinitionNode");
-      values = decoder.decodeVariantArray("Values");
-      return new QueryDataSet(nodeId, typeDefinitionNode, values);
+      values2 = decoder.decodeVariantArray("Values");
+      return new QueryDataSet(nodeId, typeDefinitionNode, values2);
     }
 
     @Override

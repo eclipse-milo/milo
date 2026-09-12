@@ -12,6 +12,8 @@ package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -133,14 +135,14 @@ public class EndpointType extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 15671),
-        new NodeId(0, 22),
+        NodeId.parse("i=15671"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "EndpointUrl",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -148,7 +150,7 @@ public class EndpointType extends Structure implements UaStructuredType {
           new StructureField(
               "SecurityMode",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 302),
+              NodeId.parse("i=302"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -156,7 +158,7 @@ public class EndpointType extends Structure implements UaStructuredType {
           new StructureField(
               "SecurityPolicyUri",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -164,7 +166,7 @@ public class EndpointType extends Structure implements UaStructuredType {
           new StructureField(
               "TransportProfileUri",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -185,7 +187,28 @@ public class EndpointType extends Structure implements UaStructuredType {
       final String securityPolicyUri;
       final String transportProfileUri;
       endpointUrl = decoder.decodeString("EndpointUrl");
-      securityMode = MessageSecurityMode.from(decoder.decodeEnum("SecurityMode"));
+      {
+        Integer enumValue = decoder.decodeEnum("SecurityMode");
+        if (enumValue != null && !((Object) enumValue instanceof MessageSecurityMode)) {
+          if (!(enumValue instanceof Integer)) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_TypeMismatch,
+                "SecurityMode: expected"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode or"
+                    + " Int32, got "
+                    + enumValue);
+          }
+          if (MessageSecurityMode.from((Integer) enumValue) == null) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_OutOfRange,
+                "SecurityMode: unknown"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode"
+                    + " value "
+                    + enumValue);
+          }
+        }
+        securityMode = enumValue == null ? null : MessageSecurityMode.from(enumValue);
+      }
       securityPolicyUri = decoder.decodeString("SecurityPolicyUri");
       transportProfileUri = decoder.decodeString("TransportProfileUri");
       return new EndpointType(endpointUrl, securityMode, securityPolicyUri, transportProfileUri);

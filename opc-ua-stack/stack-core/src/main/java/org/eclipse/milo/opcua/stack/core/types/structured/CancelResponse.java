@@ -107,14 +107,14 @@ public class CancelResponse extends Structure implements UaResponseMessageType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 482),
-        new NodeId(0, 22),
+        NodeId.parse("i=482"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "ResponseHeader",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 392),
+              NodeId.parse("i=392"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -122,7 +122,7 @@ public class CancelResponse extends Structure implements UaResponseMessageType {
           new StructureField(
               "CancelCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),

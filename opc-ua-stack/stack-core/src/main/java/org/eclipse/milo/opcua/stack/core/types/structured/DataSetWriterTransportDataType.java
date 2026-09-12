@@ -61,6 +61,9 @@ public abstract class DataSetWriterTransportDataType extends Structure implement
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 15683), new NodeId(0, 22), StructureType.Structure, new StructureField[] {});
+        NodeId.parse("i=15683"),
+        NodeId.parse("i=22"),
+        StructureType.Structure,
+        new StructureField[] {});
   }
 }

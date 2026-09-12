@@ -115,14 +115,14 @@ public class ReferenceListEntryDataType extends Structure implements UaStructure
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 32662),
-        new NodeId(0, 22),
+        NodeId.parse("i=32662"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "ReferenceType",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -130,7 +130,7 @@ public class ReferenceListEntryDataType extends Structure implements UaStructure
           new StructureField(
               "IsForward",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -138,7 +138,7 @@ public class ReferenceListEntryDataType extends Structure implements UaStructure
           new StructureField(
               "TargetNode",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 18),
+              NodeId.parse("i=18"),
               -1,
               null,
               UInteger.valueOf(0),

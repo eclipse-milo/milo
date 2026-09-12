@@ -135,14 +135,14 @@ public class ServiceCertificateDataType extends Structure implements UaStructure
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 23725),
-        new NodeId(0, 22),
+        NodeId.parse("i=23725"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "Certificate",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15),
+              NodeId.parse("i=15"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -150,7 +150,7 @@ public class ServiceCertificateDataType extends Structure implements UaStructure
           new StructureField(
               "Issuers",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15),
+              NodeId.parse("i=15"),
               1,
               null,
               UInteger.valueOf(0),
@@ -158,7 +158,7 @@ public class ServiceCertificateDataType extends Structure implements UaStructure
           new StructureField(
               "ValidFrom",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 294),
+              NodeId.parse("i=294"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -166,7 +166,7 @@ public class ServiceCertificateDataType extends Structure implements UaStructure
           new StructureField(
               "ValidTo",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 294),
+              NodeId.parse("i=294"),
               -1,
               null,
               UInteger.valueOf(0),

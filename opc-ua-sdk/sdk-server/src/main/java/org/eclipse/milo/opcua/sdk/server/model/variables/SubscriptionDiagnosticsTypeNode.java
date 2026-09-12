@@ -10,19 +10,27 @@
 
 package org.eclipse.milo.opcua.sdk.server.model.variables;
 
+import java.util.LinkedHashMap;
 import java.util.Optional;
 import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
+import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelExType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.jspecify.annotations.Nullable;
 
 public class SubscriptionDiagnosticsTypeNode extends BaseDataVariableTypeNode
     implements SubscriptionDiagnosticsType {
@@ -101,622 +109,4078 @@ public class SubscriptionDiagnosticsTypeNode extends BaseDataVariableTypeNode
   }
 
   @Override
+  public Optional<VariableNode> getPropertyNode(QualifiedName browseName) {
+    return findNode(
+            browseName,
+            n -> n instanceof VariableNode,
+            r ->
+                r.isForward()
+                    && (r.getReferenceTypeId().equals(NodeIds.HasProperty)
+                        || getNodeContext()
+                            .getServer()
+                            .getReferenceTypeTree()
+                            .isSubtypeOf(r.getReferenceTypeId(), NodeIds.HasProperty)))
+        .map(n -> (VariableNode) n);
+  }
+
+  @Override
   public BaseDataVariableTypeNode getSessionIdNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "SessionId");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:SessionId (declaration i=2173, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "SessionId");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:SessionId (declaration i=2173,"
+                    + " owner i=2172) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:SessionId (declaration i=2173, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:SessionId (declaration i=2173, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:SessionId (declaration i=2173, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:SessionId (declaration i=2173, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:SessionId (declaration i=2173, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:SessionId (declaration i=2173, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof BaseDataVariableTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:SessionId (declaration i=2173, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (BaseDataVariableTypeNode) parent;
   }
 
   @Override
-  public NodeId getSessionId() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "SessionId");
-    return component.map(node -> (NodeId) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable NodeId getSessionId() {
+    var node = getSessionIdNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:SessionId (declaration i=2173, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (NodeId) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setSessionId(NodeId value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "SessionId")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setSessionId(@Nullable NodeId value) {
+    var node = getSessionIdNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:SessionId (declaration i=2173, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public BaseDataVariableTypeNode getSubscriptionIdNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "SubscriptionId");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:SubscriptionId (declaration i=2174, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "SubscriptionId");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:SubscriptionId (declaration"
+                    + " i=2174, owner i=2172) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:SubscriptionId (declaration i=2174, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:SubscriptionId (declaration i=2174, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:SubscriptionId (declaration i=2174, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:SubscriptionId (declaration i=2174, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:SubscriptionId (declaration i=2174, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:SubscriptionId (declaration i=2174, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof BaseDataVariableTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:SubscriptionId (declaration i=2174, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (BaseDataVariableTypeNode) parent;
   }
 
   @Override
-  public UInteger getSubscriptionId() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "SubscriptionId");
-    return component.map(node -> (UInteger) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable UInteger getSubscriptionId() {
+    var node = getSubscriptionIdNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:SubscriptionId (declaration i=2174, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (UInteger) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setSubscriptionId(UInteger value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "SubscriptionId")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setSubscriptionId(@Nullable UInteger value) {
+    var node = getSubscriptionIdNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:SubscriptionId (declaration i=2174, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public BaseDataVariableTypeNode getPriorityNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "Priority");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:Priority (declaration i=2175, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "Priority");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:Priority (declaration i=2175,"
+                    + " owner i=2172) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:Priority (declaration i=2175, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:Priority (declaration i=2175, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:Priority (declaration i=2175, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:Priority (declaration i=2175, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:Priority (declaration i=2175, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:Priority (declaration i=2175, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof BaseDataVariableTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:Priority (declaration i=2175, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (BaseDataVariableTypeNode) parent;
   }
 
   @Override
-  public UByte getPriority() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "Priority");
-    return component.map(node -> (UByte) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable UByte getPriority() {
+    var node = getPriorityNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:Priority (declaration i=2175, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (UByte) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setPriority(UByte value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "Priority")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setPriority(@Nullable UByte value) {
+    var node = getPriorityNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:Priority (declaration i=2175, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public BaseDataVariableTypeNode getPublishingIntervalNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "PublishingInterval");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:PublishingInterval (declaration i=2176, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "PublishingInterval");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:PublishingInterval"
+                    + " (declaration i=2176, owner i=2172) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:PublishingInterval (declaration i=2176, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:PublishingInterval (declaration i=2176, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:PublishingInterval (declaration i=2176, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:PublishingInterval (declaration i=2176, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:PublishingInterval (declaration i=2176, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:PublishingInterval (declaration i=2176, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof BaseDataVariableTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:PublishingInterval (declaration i=2176, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (BaseDataVariableTypeNode) parent;
   }
 
   @Override
-  public Double getPublishingInterval() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "PublishingInterval");
-    return component.map(node -> (Double) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable Double getPublishingInterval() {
+    var node = getPublishingIntervalNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:PublishingInterval (declaration i=2176, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (Double) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setPublishingInterval(Double value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "PublishingInterval")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setPublishingInterval(@Nullable Double value) {
+    var node = getPublishingIntervalNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:PublishingInterval (declaration i=2176, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public BaseDataVariableTypeNode getMaxKeepAliveCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "MaxKeepAliveCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:MaxKeepAliveCount (declaration i=2177, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "MaxKeepAliveCount");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:MaxKeepAliveCount (declaration"
+                    + " i=2177, owner i=2172) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:MaxKeepAliveCount (declaration i=2177, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:MaxKeepAliveCount (declaration i=2177, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:MaxKeepAliveCount (declaration i=2177, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:MaxKeepAliveCount (declaration i=2177, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:MaxKeepAliveCount (declaration i=2177, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:MaxKeepAliveCount (declaration i=2177, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof BaseDataVariableTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:MaxKeepAliveCount (declaration i=2177, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (BaseDataVariableTypeNode) parent;
   }
 
   @Override
-  public UInteger getMaxKeepAliveCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "MaxKeepAliveCount");
-    return component.map(node -> (UInteger) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable UInteger getMaxKeepAliveCount() {
+    var node = getMaxKeepAliveCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:MaxKeepAliveCount (declaration i=2177, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (UInteger) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setMaxKeepAliveCount(UInteger value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "MaxKeepAliveCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setMaxKeepAliveCount(@Nullable UInteger value) {
+    var node = getMaxKeepAliveCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:MaxKeepAliveCount (declaration i=2177, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public BaseDataVariableTypeNode getMaxLifetimeCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "MaxLifetimeCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:MaxLifetimeCount (declaration i=8888, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "MaxLifetimeCount");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:MaxLifetimeCount (declaration"
+                    + " i=8888, owner i=2172) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:MaxLifetimeCount (declaration i=8888, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:MaxLifetimeCount (declaration i=8888, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:MaxLifetimeCount (declaration i=8888, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:MaxLifetimeCount (declaration i=8888, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:MaxLifetimeCount (declaration i=8888, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:MaxLifetimeCount (declaration i=8888, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof BaseDataVariableTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:MaxLifetimeCount (declaration i=8888, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (BaseDataVariableTypeNode) parent;
   }
 
   @Override
-  public UInteger getMaxLifetimeCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "MaxLifetimeCount");
-    return component.map(node -> (UInteger) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable UInteger getMaxLifetimeCount() {
+    var node = getMaxLifetimeCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:MaxLifetimeCount (declaration i=8888, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (UInteger) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setMaxLifetimeCount(UInteger value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "MaxLifetimeCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setMaxLifetimeCount(@Nullable UInteger value) {
+    var node = getMaxLifetimeCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:MaxLifetimeCount (declaration i=8888, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public BaseDataVariableTypeNode getMaxNotificationsPerPublishNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "MaxNotificationsPerPublish");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:MaxNotificationsPerPublish (declaration i=2179, owner"
+                + " i=2172) on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "MaxNotificationsPerPublish");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:MaxNotificationsPerPublish"
+                    + " (declaration i=2179, owner i=2172) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:MaxNotificationsPerPublish (declaration i=2179, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:MaxNotificationsPerPublish (declaration i=2179, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:MaxNotificationsPerPublish (declaration i=2179, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:MaxNotificationsPerPublish (declaration i=2179, owner"
+                + " i=2172) on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:MaxNotificationsPerPublish (declaration i=2179, owner"
+                + " i=2172) on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:MaxNotificationsPerPublish (declaration i=2179, owner"
+                + " i=2172) on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof BaseDataVariableTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:MaxNotificationsPerPublish (declaration i=2179, owner"
+              + " i=2172) on "
+              + getNodeId());
+    }
+    return (BaseDataVariableTypeNode) parent;
   }
 
   @Override
-  public UInteger getMaxNotificationsPerPublish() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "MaxNotificationsPerPublish");
-    return component.map(node -> (UInteger) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable UInteger getMaxNotificationsPerPublish() {
+    var node = getMaxNotificationsPerPublishNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:MaxNotificationsPerPublish (declaration i=2179, owner"
+              + " i=2172) on "
+              + getNodeId());
+    }
+    return (UInteger) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setMaxNotificationsPerPublish(UInteger value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "MaxNotificationsPerPublish")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setMaxNotificationsPerPublish(@Nullable UInteger value) {
+    var node = getMaxNotificationsPerPublishNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:MaxNotificationsPerPublish (declaration i=2179, owner"
+              + " i=2172) on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public BaseDataVariableTypeNode getPublishingEnabledNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "PublishingEnabled");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:PublishingEnabled (declaration i=2180, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "PublishingEnabled");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:PublishingEnabled (declaration"
+                    + " i=2180, owner i=2172) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:PublishingEnabled (declaration i=2180, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:PublishingEnabled (declaration i=2180, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:PublishingEnabled (declaration i=2180, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:PublishingEnabled (declaration i=2180, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:PublishingEnabled (declaration i=2180, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:PublishingEnabled (declaration i=2180, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof BaseDataVariableTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:PublishingEnabled (declaration i=2180, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (BaseDataVariableTypeNode) parent;
   }
 
   @Override
-  public Boolean getPublishingEnabled() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "PublishingEnabled");
-    return component.map(node -> (Boolean) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable Boolean getPublishingEnabled() {
+    var node = getPublishingEnabledNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:PublishingEnabled (declaration i=2180, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (Boolean) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setPublishingEnabled(Boolean value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "PublishingEnabled")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setPublishingEnabled(@Nullable Boolean value) {
+    var node = getPublishingEnabledNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:PublishingEnabled (declaration i=2180, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public BaseDataVariableTypeNode getModifyCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "ModifyCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:ModifyCount (declaration i=2181, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "ModifyCount");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:ModifyCount (declaration"
+                    + " i=2181, owner i=2172) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:ModifyCount (declaration i=2181, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:ModifyCount (declaration i=2181, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:ModifyCount (declaration i=2181, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:ModifyCount (declaration i=2181, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:ModifyCount (declaration i=2181, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:ModifyCount (declaration i=2181, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof BaseDataVariableTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:ModifyCount (declaration i=2181, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (BaseDataVariableTypeNode) parent;
   }
 
   @Override
-  public UInteger getModifyCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "ModifyCount");
-    return component.map(node -> (UInteger) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable UInteger getModifyCount() {
+    var node = getModifyCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:ModifyCount (declaration i=2181, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (UInteger) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setModifyCount(UInteger value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "ModifyCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setModifyCount(@Nullable UInteger value) {
+    var node = getModifyCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:ModifyCount (declaration i=2181, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public BaseDataVariableTypeNode getEnableCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "EnableCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:EnableCount (declaration i=2182, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "EnableCount");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:EnableCount (declaration"
+                    + " i=2182, owner i=2172) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:EnableCount (declaration i=2182, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:EnableCount (declaration i=2182, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:EnableCount (declaration i=2182, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:EnableCount (declaration i=2182, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:EnableCount (declaration i=2182, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:EnableCount (declaration i=2182, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof BaseDataVariableTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:EnableCount (declaration i=2182, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (BaseDataVariableTypeNode) parent;
   }
 
   @Override
-  public UInteger getEnableCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "EnableCount");
-    return component.map(node -> (UInteger) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable UInteger getEnableCount() {
+    var node = getEnableCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:EnableCount (declaration i=2182, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (UInteger) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setEnableCount(UInteger value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "EnableCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setEnableCount(@Nullable UInteger value) {
+    var node = getEnableCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:EnableCount (declaration i=2182, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public BaseDataVariableTypeNode getDisableCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "DisableCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:DisableCount (declaration i=2183, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "DisableCount");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:DisableCount (declaration"
+                    + " i=2183, owner i=2172) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:DisableCount (declaration i=2183, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:DisableCount (declaration i=2183, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:DisableCount (declaration i=2183, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:DisableCount (declaration i=2183, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:DisableCount (declaration i=2183, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:DisableCount (declaration i=2183, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof BaseDataVariableTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:DisableCount (declaration i=2183, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (BaseDataVariableTypeNode) parent;
   }
 
   @Override
-  public UInteger getDisableCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "DisableCount");
-    return component.map(node -> (UInteger) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable UInteger getDisableCount() {
+    var node = getDisableCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:DisableCount (declaration i=2183, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (UInteger) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setDisableCount(UInteger value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "DisableCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setDisableCount(@Nullable UInteger value) {
+    var node = getDisableCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:DisableCount (declaration i=2183, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public BaseDataVariableTypeNode getRepublishRequestCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "RepublishRequestCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:RepublishRequestCount (declaration i=2184, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "RepublishRequestCount");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:RepublishRequestCount"
+                    + " (declaration i=2184, owner i=2172) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:RepublishRequestCount (declaration i=2184, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:RepublishRequestCount (declaration i=2184, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:RepublishRequestCount (declaration i=2184, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:RepublishRequestCount (declaration i=2184, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:RepublishRequestCount (declaration i=2184, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:RepublishRequestCount (declaration i=2184, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof BaseDataVariableTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:RepublishRequestCount (declaration i=2184, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (BaseDataVariableTypeNode) parent;
   }
 
   @Override
-  public UInteger getRepublishRequestCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "RepublishRequestCount");
-    return component.map(node -> (UInteger) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable UInteger getRepublishRequestCount() {
+    var node = getRepublishRequestCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:RepublishRequestCount (declaration i=2184, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (UInteger) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setRepublishRequestCount(UInteger value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "RepublishRequestCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setRepublishRequestCount(@Nullable UInteger value) {
+    var node = getRepublishRequestCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:RepublishRequestCount (declaration i=2184, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public BaseDataVariableTypeNode getRepublishMessageRequestCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "RepublishMessageRequestCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:RepublishMessageRequestCount (declaration i=2185, owner"
+                + " i=2172) on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "RepublishMessageRequestCount");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:RepublishMessageRequestCount"
+                    + " (declaration i=2185, owner i=2172) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:RepublishMessageRequestCount (declaration i=2185, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:RepublishMessageRequestCount (declaration i=2185, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:RepublishMessageRequestCount (declaration i=2185, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:RepublishMessageRequestCount (declaration i=2185, owner"
+                + " i=2172) on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:RepublishMessageRequestCount (declaration i=2185, owner"
+                + " i=2172) on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:RepublishMessageRequestCount (declaration i=2185, owner"
+                + " i=2172) on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof BaseDataVariableTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:RepublishMessageRequestCount (declaration i=2185, owner"
+              + " i=2172) on "
+              + getNodeId());
+    }
+    return (BaseDataVariableTypeNode) parent;
   }
 
   @Override
-  public UInteger getRepublishMessageRequestCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "RepublishMessageRequestCount");
-    return component.map(node -> (UInteger) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable UInteger getRepublishMessageRequestCount() {
+    var node = getRepublishMessageRequestCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:RepublishMessageRequestCount (declaration i=2185, owner"
+              + " i=2172) on "
+              + getNodeId());
+    }
+    return (UInteger) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setRepublishMessageRequestCount(UInteger value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "RepublishMessageRequestCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setRepublishMessageRequestCount(@Nullable UInteger value) {
+    var node = getRepublishMessageRequestCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:RepublishMessageRequestCount (declaration i=2185, owner"
+              + " i=2172) on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public BaseDataVariableTypeNode getRepublishMessageCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "RepublishMessageCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:RepublishMessageCount (declaration i=2186, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "RepublishMessageCount");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:RepublishMessageCount"
+                    + " (declaration i=2186, owner i=2172) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:RepublishMessageCount (declaration i=2186, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:RepublishMessageCount (declaration i=2186, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:RepublishMessageCount (declaration i=2186, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:RepublishMessageCount (declaration i=2186, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:RepublishMessageCount (declaration i=2186, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:RepublishMessageCount (declaration i=2186, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof BaseDataVariableTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:RepublishMessageCount (declaration i=2186, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (BaseDataVariableTypeNode) parent;
   }
 
   @Override
-  public UInteger getRepublishMessageCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "RepublishMessageCount");
-    return component.map(node -> (UInteger) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable UInteger getRepublishMessageCount() {
+    var node = getRepublishMessageCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:RepublishMessageCount (declaration i=2186, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (UInteger) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setRepublishMessageCount(UInteger value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "RepublishMessageCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setRepublishMessageCount(@Nullable UInteger value) {
+    var node = getRepublishMessageCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:RepublishMessageCount (declaration i=2186, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public BaseDataVariableTypeNode getTransferRequestCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "TransferRequestCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:TransferRequestCount (declaration i=2187, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "TransferRequestCount");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:TransferRequestCount"
+                    + " (declaration i=2187, owner i=2172) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:TransferRequestCount (declaration i=2187, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:TransferRequestCount (declaration i=2187, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:TransferRequestCount (declaration i=2187, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:TransferRequestCount (declaration i=2187, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:TransferRequestCount (declaration i=2187, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:TransferRequestCount (declaration i=2187, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof BaseDataVariableTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:TransferRequestCount (declaration i=2187, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (BaseDataVariableTypeNode) parent;
   }
 
   @Override
-  public UInteger getTransferRequestCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "TransferRequestCount");
-    return component.map(node -> (UInteger) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable UInteger getTransferRequestCount() {
+    var node = getTransferRequestCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:TransferRequestCount (declaration i=2187, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (UInteger) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setTransferRequestCount(UInteger value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "TransferRequestCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setTransferRequestCount(@Nullable UInteger value) {
+    var node = getTransferRequestCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:TransferRequestCount (declaration i=2187, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public BaseDataVariableTypeNode getTransferredToAltClientCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "TransferredToAltClientCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:TransferredToAltClientCount (declaration i=2188, owner"
+                + " i=2172) on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "TransferredToAltClientCount");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:TransferredToAltClientCount"
+                    + " (declaration i=2188, owner i=2172) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:TransferredToAltClientCount (declaration i=2188, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:TransferredToAltClientCount (declaration i=2188, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:TransferredToAltClientCount (declaration i=2188, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:TransferredToAltClientCount (declaration i=2188, owner"
+                + " i=2172) on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:TransferredToAltClientCount (declaration i=2188, owner"
+                + " i=2172) on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:TransferredToAltClientCount (declaration i=2188, owner"
+                + " i=2172) on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof BaseDataVariableTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:TransferredToAltClientCount (declaration i=2188, owner"
+              + " i=2172) on "
+              + getNodeId());
+    }
+    return (BaseDataVariableTypeNode) parent;
   }
 
   @Override
-  public UInteger getTransferredToAltClientCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "TransferredToAltClientCount");
-    return component.map(node -> (UInteger) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable UInteger getTransferredToAltClientCount() {
+    var node = getTransferredToAltClientCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:TransferredToAltClientCount (declaration i=2188, owner"
+              + " i=2172) on "
+              + getNodeId());
+    }
+    return (UInteger) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setTransferredToAltClientCount(UInteger value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "TransferredToAltClientCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setTransferredToAltClientCount(@Nullable UInteger value) {
+    var node = getTransferredToAltClientCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:TransferredToAltClientCount (declaration i=2188, owner"
+              + " i=2172) on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public BaseDataVariableTypeNode getTransferredToSameClientCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "TransferredToSameClientCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:TransferredToSameClientCount (declaration i=2189, owner"
+                + " i=2172) on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "TransferredToSameClientCount");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:TransferredToSameClientCount"
+                    + " (declaration i=2189, owner i=2172) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:TransferredToSameClientCount (declaration i=2189, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:TransferredToSameClientCount (declaration i=2189, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:TransferredToSameClientCount (declaration i=2189, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:TransferredToSameClientCount (declaration i=2189, owner"
+                + " i=2172) on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:TransferredToSameClientCount (declaration i=2189, owner"
+                + " i=2172) on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:TransferredToSameClientCount (declaration i=2189, owner"
+                + " i=2172) on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof BaseDataVariableTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:TransferredToSameClientCount (declaration i=2189, owner"
+              + " i=2172) on "
+              + getNodeId());
+    }
+    return (BaseDataVariableTypeNode) parent;
   }
 
   @Override
-  public UInteger getTransferredToSameClientCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "TransferredToSameClientCount");
-    return component.map(node -> (UInteger) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable UInteger getTransferredToSameClientCount() {
+    var node = getTransferredToSameClientCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:TransferredToSameClientCount (declaration i=2189, owner"
+              + " i=2172) on "
+              + getNodeId());
+    }
+    return (UInteger) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setTransferredToSameClientCount(UInteger value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "TransferredToSameClientCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setTransferredToSameClientCount(@Nullable UInteger value) {
+    var node = getTransferredToSameClientCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:TransferredToSameClientCount (declaration i=2189, owner"
+              + " i=2172) on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public BaseDataVariableTypeNode getPublishRequestCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "PublishRequestCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:PublishRequestCount (declaration i=2190, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "PublishRequestCount");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:PublishRequestCount"
+                    + " (declaration i=2190, owner i=2172) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:PublishRequestCount (declaration i=2190, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:PublishRequestCount (declaration i=2190, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:PublishRequestCount (declaration i=2190, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:PublishRequestCount (declaration i=2190, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:PublishRequestCount (declaration i=2190, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:PublishRequestCount (declaration i=2190, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof BaseDataVariableTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:PublishRequestCount (declaration i=2190, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (BaseDataVariableTypeNode) parent;
   }
 
   @Override
-  public UInteger getPublishRequestCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "PublishRequestCount");
-    return component.map(node -> (UInteger) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable UInteger getPublishRequestCount() {
+    var node = getPublishRequestCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:PublishRequestCount (declaration i=2190, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (UInteger) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setPublishRequestCount(UInteger value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "PublishRequestCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setPublishRequestCount(@Nullable UInteger value) {
+    var node = getPublishRequestCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:PublishRequestCount (declaration i=2190, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public BaseDataVariableTypeNode getDataChangeNotificationsCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "DataChangeNotificationsCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:DataChangeNotificationsCount (declaration i=2191, owner"
+                + " i=2172) on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "DataChangeNotificationsCount");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:DataChangeNotificationsCount"
+                    + " (declaration i=2191, owner i=2172) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:DataChangeNotificationsCount (declaration i=2191, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:DataChangeNotificationsCount (declaration i=2191, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:DataChangeNotificationsCount (declaration i=2191, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:DataChangeNotificationsCount (declaration i=2191, owner"
+                + " i=2172) on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:DataChangeNotificationsCount (declaration i=2191, owner"
+                + " i=2172) on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:DataChangeNotificationsCount (declaration i=2191, owner"
+                + " i=2172) on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof BaseDataVariableTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:DataChangeNotificationsCount (declaration i=2191, owner"
+              + " i=2172) on "
+              + getNodeId());
+    }
+    return (BaseDataVariableTypeNode) parent;
   }
 
   @Override
-  public UInteger getDataChangeNotificationsCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "DataChangeNotificationsCount");
-    return component.map(node -> (UInteger) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable UInteger getDataChangeNotificationsCount() {
+    var node = getDataChangeNotificationsCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:DataChangeNotificationsCount (declaration i=2191, owner"
+              + " i=2172) on "
+              + getNodeId());
+    }
+    return (UInteger) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setDataChangeNotificationsCount(UInteger value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "DataChangeNotificationsCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setDataChangeNotificationsCount(@Nullable UInteger value) {
+    var node = getDataChangeNotificationsCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:DataChangeNotificationsCount (declaration i=2191, owner"
+              + " i=2172) on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public BaseDataVariableTypeNode getEventNotificationsCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "EventNotificationsCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:EventNotificationsCount (declaration i=2998, owner"
+                + " i=2172) on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "EventNotificationsCount");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:EventNotificationsCount"
+                    + " (declaration i=2998, owner i=2172) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:EventNotificationsCount (declaration i=2998, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:EventNotificationsCount (declaration i=2998, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:EventNotificationsCount (declaration i=2998, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:EventNotificationsCount (declaration i=2998, owner"
+                + " i=2172) on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:EventNotificationsCount (declaration i=2998, owner"
+                + " i=2172) on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:EventNotificationsCount (declaration i=2998, owner"
+                + " i=2172) on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof BaseDataVariableTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:EventNotificationsCount (declaration i=2998, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (BaseDataVariableTypeNode) parent;
   }
 
   @Override
-  public UInteger getEventNotificationsCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "EventNotificationsCount");
-    return component.map(node -> (UInteger) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable UInteger getEventNotificationsCount() {
+    var node = getEventNotificationsCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:EventNotificationsCount (declaration i=2998, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (UInteger) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setEventNotificationsCount(UInteger value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "EventNotificationsCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setEventNotificationsCount(@Nullable UInteger value) {
+    var node = getEventNotificationsCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:EventNotificationsCount (declaration i=2998, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public BaseDataVariableTypeNode getNotificationsCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "NotificationsCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:NotificationsCount (declaration i=2193, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "NotificationsCount");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:NotificationsCount"
+                    + " (declaration i=2193, owner i=2172) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:NotificationsCount (declaration i=2193, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:NotificationsCount (declaration i=2193, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:NotificationsCount (declaration i=2193, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:NotificationsCount (declaration i=2193, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:NotificationsCount (declaration i=2193, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:NotificationsCount (declaration i=2193, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof BaseDataVariableTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:NotificationsCount (declaration i=2193, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (BaseDataVariableTypeNode) parent;
   }
 
   @Override
-  public UInteger getNotificationsCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "NotificationsCount");
-    return component.map(node -> (UInteger) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable UInteger getNotificationsCount() {
+    var node = getNotificationsCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:NotificationsCount (declaration i=2193, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (UInteger) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setNotificationsCount(UInteger value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "NotificationsCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setNotificationsCount(@Nullable UInteger value) {
+    var node = getNotificationsCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:NotificationsCount (declaration i=2193, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public BaseDataVariableTypeNode getLatePublishRequestCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "LatePublishRequestCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:LatePublishRequestCount (declaration i=8889, owner"
+                + " i=2172) on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "LatePublishRequestCount");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:LatePublishRequestCount"
+                    + " (declaration i=8889, owner i=2172) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:LatePublishRequestCount (declaration i=8889, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:LatePublishRequestCount (declaration i=8889, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:LatePublishRequestCount (declaration i=8889, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:LatePublishRequestCount (declaration i=8889, owner"
+                + " i=2172) on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:LatePublishRequestCount (declaration i=8889, owner"
+                + " i=2172) on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:LatePublishRequestCount (declaration i=8889, owner"
+                + " i=2172) on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof BaseDataVariableTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:LatePublishRequestCount (declaration i=8889, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (BaseDataVariableTypeNode) parent;
   }
 
   @Override
-  public UInteger getLatePublishRequestCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "LatePublishRequestCount");
-    return component.map(node -> (UInteger) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable UInteger getLatePublishRequestCount() {
+    var node = getLatePublishRequestCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:LatePublishRequestCount (declaration i=8889, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (UInteger) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setLatePublishRequestCount(UInteger value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "LatePublishRequestCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setLatePublishRequestCount(@Nullable UInteger value) {
+    var node = getLatePublishRequestCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:LatePublishRequestCount (declaration i=8889, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public BaseDataVariableTypeNode getCurrentKeepAliveCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "CurrentKeepAliveCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:CurrentKeepAliveCount (declaration i=8890, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "CurrentKeepAliveCount");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:CurrentKeepAliveCount"
+                    + " (declaration i=8890, owner i=2172) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:CurrentKeepAliveCount (declaration i=8890, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:CurrentKeepAliveCount (declaration i=8890, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:CurrentKeepAliveCount (declaration i=8890, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:CurrentKeepAliveCount (declaration i=8890, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:CurrentKeepAliveCount (declaration i=8890, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:CurrentKeepAliveCount (declaration i=8890, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof BaseDataVariableTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:CurrentKeepAliveCount (declaration i=8890, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (BaseDataVariableTypeNode) parent;
   }
 
   @Override
-  public UInteger getCurrentKeepAliveCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "CurrentKeepAliveCount");
-    return component.map(node -> (UInteger) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable UInteger getCurrentKeepAliveCount() {
+    var node = getCurrentKeepAliveCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:CurrentKeepAliveCount (declaration i=8890, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (UInteger) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setCurrentKeepAliveCount(UInteger value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "CurrentKeepAliveCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setCurrentKeepAliveCount(@Nullable UInteger value) {
+    var node = getCurrentKeepAliveCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:CurrentKeepAliveCount (declaration i=8890, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public BaseDataVariableTypeNode getCurrentLifetimeCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "CurrentLifetimeCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:CurrentLifetimeCount (declaration i=8891, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "CurrentLifetimeCount");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:CurrentLifetimeCount"
+                    + " (declaration i=8891, owner i=2172) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:CurrentLifetimeCount (declaration i=8891, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:CurrentLifetimeCount (declaration i=8891, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:CurrentLifetimeCount (declaration i=8891, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:CurrentLifetimeCount (declaration i=8891, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:CurrentLifetimeCount (declaration i=8891, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:CurrentLifetimeCount (declaration i=8891, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof BaseDataVariableTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:CurrentLifetimeCount (declaration i=8891, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (BaseDataVariableTypeNode) parent;
   }
 
   @Override
-  public UInteger getCurrentLifetimeCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "CurrentLifetimeCount");
-    return component.map(node -> (UInteger) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable UInteger getCurrentLifetimeCount() {
+    var node = getCurrentLifetimeCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:CurrentLifetimeCount (declaration i=8891, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (UInteger) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setCurrentLifetimeCount(UInteger value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "CurrentLifetimeCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setCurrentLifetimeCount(@Nullable UInteger value) {
+    var node = getCurrentLifetimeCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:CurrentLifetimeCount (declaration i=8891, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public BaseDataVariableTypeNode getUnacknowledgedMessageCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "UnacknowledgedMessageCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:UnacknowledgedMessageCount (declaration i=8892, owner"
+                + " i=2172) on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "UnacknowledgedMessageCount");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:UnacknowledgedMessageCount"
+                    + " (declaration i=8892, owner i=2172) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:UnacknowledgedMessageCount (declaration i=8892, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:UnacknowledgedMessageCount (declaration i=8892, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:UnacknowledgedMessageCount (declaration i=8892, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:UnacknowledgedMessageCount (declaration i=8892, owner"
+                + " i=2172) on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:UnacknowledgedMessageCount (declaration i=8892, owner"
+                + " i=2172) on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:UnacknowledgedMessageCount (declaration i=8892, owner"
+                + " i=2172) on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof BaseDataVariableTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:UnacknowledgedMessageCount (declaration i=8892, owner"
+              + " i=2172) on "
+              + getNodeId());
+    }
+    return (BaseDataVariableTypeNode) parent;
   }
 
   @Override
-  public UInteger getUnacknowledgedMessageCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "UnacknowledgedMessageCount");
-    return component.map(node -> (UInteger) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable UInteger getUnacknowledgedMessageCount() {
+    var node = getUnacknowledgedMessageCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:UnacknowledgedMessageCount (declaration i=8892, owner"
+              + " i=2172) on "
+              + getNodeId());
+    }
+    return (UInteger) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setUnacknowledgedMessageCount(UInteger value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "UnacknowledgedMessageCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setUnacknowledgedMessageCount(@Nullable UInteger value) {
+    var node = getUnacknowledgedMessageCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:UnacknowledgedMessageCount (declaration i=8892, owner"
+              + " i=2172) on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public BaseDataVariableTypeNode getDiscardedMessageCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "DiscardedMessageCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:DiscardedMessageCount (declaration i=8893, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "DiscardedMessageCount");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:DiscardedMessageCount"
+                    + " (declaration i=8893, owner i=2172) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:DiscardedMessageCount (declaration i=8893, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:DiscardedMessageCount (declaration i=8893, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:DiscardedMessageCount (declaration i=8893, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:DiscardedMessageCount (declaration i=8893, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:DiscardedMessageCount (declaration i=8893, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:DiscardedMessageCount (declaration i=8893, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof BaseDataVariableTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:DiscardedMessageCount (declaration i=8893, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (BaseDataVariableTypeNode) parent;
   }
 
   @Override
-  public UInteger getDiscardedMessageCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "DiscardedMessageCount");
-    return component.map(node -> (UInteger) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable UInteger getDiscardedMessageCount() {
+    var node = getDiscardedMessageCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:DiscardedMessageCount (declaration i=8893, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (UInteger) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setDiscardedMessageCount(UInteger value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "DiscardedMessageCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setDiscardedMessageCount(@Nullable UInteger value) {
+    var node = getDiscardedMessageCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:DiscardedMessageCount (declaration i=8893, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public BaseDataVariableTypeNode getMonitoredItemCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "MonitoredItemCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:MonitoredItemCount (declaration i=8894, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "MonitoredItemCount");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:MonitoredItemCount"
+                    + " (declaration i=8894, owner i=2172) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:MonitoredItemCount (declaration i=8894, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:MonitoredItemCount (declaration i=8894, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:MonitoredItemCount (declaration i=8894, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:MonitoredItemCount (declaration i=8894, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:MonitoredItemCount (declaration i=8894, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:MonitoredItemCount (declaration i=8894, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof BaseDataVariableTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:MonitoredItemCount (declaration i=8894, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (BaseDataVariableTypeNode) parent;
   }
 
   @Override
-  public UInteger getMonitoredItemCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "MonitoredItemCount");
-    return component.map(node -> (UInteger) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable UInteger getMonitoredItemCount() {
+    var node = getMonitoredItemCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:MonitoredItemCount (declaration i=8894, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (UInteger) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setMonitoredItemCount(UInteger value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "MonitoredItemCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setMonitoredItemCount(@Nullable UInteger value) {
+    var node = getMonitoredItemCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:MonitoredItemCount (declaration i=8894, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public BaseDataVariableTypeNode getDisabledMonitoredItemCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "DisabledMonitoredItemCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:DisabledMonitoredItemCount (declaration i=8895, owner"
+                + " i=2172) on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "DisabledMonitoredItemCount");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:DisabledMonitoredItemCount"
+                    + " (declaration i=8895, owner i=2172) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:DisabledMonitoredItemCount (declaration i=8895, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:DisabledMonitoredItemCount (declaration i=8895, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:DisabledMonitoredItemCount (declaration i=8895, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:DisabledMonitoredItemCount (declaration i=8895, owner"
+                + " i=2172) on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:DisabledMonitoredItemCount (declaration i=8895, owner"
+                + " i=2172) on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:DisabledMonitoredItemCount (declaration i=8895, owner"
+                + " i=2172) on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof BaseDataVariableTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:DisabledMonitoredItemCount (declaration i=8895, owner"
+              + " i=2172) on "
+              + getNodeId());
+    }
+    return (BaseDataVariableTypeNode) parent;
   }
 
   @Override
-  public UInteger getDisabledMonitoredItemCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "DisabledMonitoredItemCount");
-    return component.map(node -> (UInteger) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable UInteger getDisabledMonitoredItemCount() {
+    var node = getDisabledMonitoredItemCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:DisabledMonitoredItemCount (declaration i=8895, owner"
+              + " i=2172) on "
+              + getNodeId());
+    }
+    return (UInteger) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setDisabledMonitoredItemCount(UInteger value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "DisabledMonitoredItemCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setDisabledMonitoredItemCount(@Nullable UInteger value) {
+    var node = getDisabledMonitoredItemCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:DisabledMonitoredItemCount (declaration i=8895, owner"
+              + " i=2172) on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public BaseDataVariableTypeNode getMonitoringQueueOverflowCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "MonitoringQueueOverflowCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:MonitoringQueueOverflowCount (declaration i=8896, owner"
+                + " i=2172) on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "MonitoringQueueOverflowCount");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:MonitoringQueueOverflowCount"
+                    + " (declaration i=8896, owner i=2172) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:MonitoringQueueOverflowCount (declaration i=8896, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:MonitoringQueueOverflowCount (declaration i=8896, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:MonitoringQueueOverflowCount (declaration i=8896, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:MonitoringQueueOverflowCount (declaration i=8896, owner"
+                + " i=2172) on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:MonitoringQueueOverflowCount (declaration i=8896, owner"
+                + " i=2172) on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:MonitoringQueueOverflowCount (declaration i=8896, owner"
+                + " i=2172) on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof BaseDataVariableTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:MonitoringQueueOverflowCount (declaration i=8896, owner"
+              + " i=2172) on "
+              + getNodeId());
+    }
+    return (BaseDataVariableTypeNode) parent;
   }
 
   @Override
-  public UInteger getMonitoringQueueOverflowCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "MonitoringQueueOverflowCount");
-    return component.map(node -> (UInteger) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable UInteger getMonitoringQueueOverflowCount() {
+    var node = getMonitoringQueueOverflowCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:MonitoringQueueOverflowCount (declaration i=8896, owner"
+              + " i=2172) on "
+              + getNodeId());
+    }
+    return (UInteger) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setMonitoringQueueOverflowCount(UInteger value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "MonitoringQueueOverflowCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setMonitoringQueueOverflowCount(@Nullable UInteger value) {
+    var node = getMonitoringQueueOverflowCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:MonitoringQueueOverflowCount (declaration i=8896, owner"
+              + " i=2172) on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public BaseDataVariableTypeNode getNextSequenceNumberNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "NextSequenceNumber");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:NextSequenceNumber (declaration i=8897, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "NextSequenceNumber");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:NextSequenceNumber"
+                    + " (declaration i=8897, owner i=2172) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:NextSequenceNumber (declaration i=8897, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:NextSequenceNumber (declaration i=8897, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:NextSequenceNumber (declaration i=8897, owner i=2172)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:NextSequenceNumber (declaration i=8897, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:NextSequenceNumber (declaration i=8897, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:NextSequenceNumber (declaration i=8897, owner i=2172)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof BaseDataVariableTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:NextSequenceNumber (declaration i=8897, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (BaseDataVariableTypeNode) parent;
   }
 
   @Override
-  public UInteger getNextSequenceNumber() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "NextSequenceNumber");
-    return component.map(node -> (UInteger) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable UInteger getNextSequenceNumber() {
+    var node = getNextSequenceNumberNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:NextSequenceNumber (declaration i=8897, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (UInteger) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setNextSequenceNumber(UInteger value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "NextSequenceNumber")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setNextSequenceNumber(@Nullable UInteger value) {
+    var node = getNextSequenceNumberNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:NextSequenceNumber (declaration i=8897, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public BaseDataVariableTypeNode getEventQueueOverflowCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "EventQueueOverflowCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:EventQueueOverflowCount (declaration i=8902, owner"
+                + " i=2172) on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "EventQueueOverflowCount");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:EventQueueOverflowCount"
+                    + " (declaration i=8902, owner i=2172) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:EventQueueOverflowCount (declaration i=8902, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:EventQueueOverflowCount (declaration i=8902, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:EventQueueOverflowCount (declaration i=8902, owner"
+                  + " i=2172) on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:EventQueueOverflowCount (declaration i=8902, owner"
+                + " i=2172) on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:EventQueueOverflowCount (declaration i=8902, owner"
+                + " i=2172) on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:EventQueueOverflowCount (declaration i=8902, owner"
+                + " i=2172) on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof BaseDataVariableTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:EventQueueOverflowCount (declaration i=8902, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (BaseDataVariableTypeNode) parent;
   }
 
   @Override
-  public UInteger getEventQueueOverflowCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "EventQueueOverflowCount");
-    return component.map(node -> (UInteger) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable UInteger getEventQueueOverflowCount() {
+    var node = getEventQueueOverflowCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:EventQueueOverflowCount (declaration i=8902, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    return (UInteger) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setEventQueueOverflowCount(UInteger value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "EventQueueOverflowCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setEventQueueOverflowCount(@Nullable UInteger value) {
+    var node = getEventQueueOverflowCountNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:EventQueueOverflowCount (declaration i=8902, owner i=2172)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 }

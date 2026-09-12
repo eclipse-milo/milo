@@ -12,6 +12,8 @@ package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -155,14 +157,14 @@ public class ServerStatusDataType extends Structure implements UaStructuredType 
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 864),
-        new NodeId(0, 22),
+        NodeId.parse("i=864"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "StartTime",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 294),
+              NodeId.parse("i=294"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -170,7 +172,7 @@ public class ServerStatusDataType extends Structure implements UaStructuredType 
           new StructureField(
               "CurrentTime",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 294),
+              NodeId.parse("i=294"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -178,7 +180,7 @@ public class ServerStatusDataType extends Structure implements UaStructuredType 
           new StructureField(
               "State",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 852),
+              NodeId.parse("i=852"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -186,7 +188,7 @@ public class ServerStatusDataType extends Structure implements UaStructuredType 
           new StructureField(
               "BuildInfo",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 338),
+              NodeId.parse("i=338"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -194,7 +196,7 @@ public class ServerStatusDataType extends Structure implements UaStructuredType 
           new StructureField(
               "SecondsTillShutdown",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -202,7 +204,7 @@ public class ServerStatusDataType extends Structure implements UaStructuredType 
           new StructureField(
               "ShutdownReason",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 21),
+              NodeId.parse("i=21"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -226,7 +228,26 @@ public class ServerStatusDataType extends Structure implements UaStructuredType 
       final LocalizedText shutdownReason;
       startTime = decoder.decodeDateTime("StartTime");
       currentTime = decoder.decodeDateTime("CurrentTime");
-      state = ServerState.from(decoder.decodeEnum("State"));
+      {
+        Integer enumValue = decoder.decodeEnum("State");
+        if (enumValue != null && !((Object) enumValue instanceof ServerState)) {
+          if (!(enumValue instanceof Integer)) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_TypeMismatch,
+                "State: expected org.eclipse.milo.opcua.stack.core.types.enumerated.ServerState or"
+                    + " Int32, got "
+                    + enumValue);
+          }
+          if (ServerState.from((Integer) enumValue) == null) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_OutOfRange,
+                "State: unknown org.eclipse.milo.opcua.stack.core.types.enumerated.ServerState"
+                    + " value "
+                    + enumValue);
+          }
+        }
+        state = enumValue == null ? null : ServerState.from(enumValue);
+      }
       buildInfo = (BuildInfo) decoder.decodeStruct("BuildInfo", BuildInfo.TYPE_ID);
       secondsTillShutdown = decoder.decodeUInt32("SecondsTillShutdown");
       shutdownReason = decoder.decodeLocalizedText("ShutdownReason");

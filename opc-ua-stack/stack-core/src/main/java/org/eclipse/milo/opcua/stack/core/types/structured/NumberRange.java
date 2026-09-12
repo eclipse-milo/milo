@@ -108,14 +108,14 @@ public class NumberRange extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 24250),
-        new NodeId(0, 22),
+        NodeId.parse("i=24250"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "Low",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 26),
+              NodeId.parse("i=26"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -123,7 +123,7 @@ public class NumberRange extends Structure implements UaStructuredType {
           new StructureField(
               "High",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 26),
+              NodeId.parse("i=26"),
               -1,
               null,
               UInteger.valueOf(0),

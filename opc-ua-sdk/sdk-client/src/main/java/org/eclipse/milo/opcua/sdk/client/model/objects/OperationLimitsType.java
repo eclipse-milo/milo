@@ -17,6 +17,7 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
@@ -120,891 +121,1445 @@ public interface OperationLimitsType extends FolderType {
           UInteger.class);
 
   /**
-   * Get the local value of the MaxNodesPerRead Node.
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Lookup may perform service I/O; the value is not read
+   * remotely. Use the node's raw DataValue to inspect quality and timestamps.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @return the local value of the MaxNodesPerRead Node.
-   * @throws UaException if an error occurs creating or getting the MaxNodesPerRead Node.
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
    */
-  UInteger getMaxNodesPerRead() throws UaException;
+  @Nullable UInteger getMaxNodesPerRead() throws UaException;
 
   /**
-   * Set the local value of the MaxNodesPerRead Node.
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   * This does not send a Write service request.
    *
-   * <p>The value is only updated locally; it is not written to the server.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @param value the local value to set for the MaxNodesPerRead Node.
-   * @throws UaException if an error occurs creating or getting the MaxNodesPerRead Node.
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
    */
-  void setMaxNodesPerRead(UInteger value) throws UaException;
+  void setMaxNodesPerRead(@Nullable UInteger value) throws UaException;
 
   /**
-   * Read the value of the MaxNodesPerRead Node from the server and update the local value if the
-   * operation succeeds.
+   * Reads the existing member's value remotely. Only Good status is accepted, including Good
+   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
+   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
+   * node's raw readValue to retain quality, timestamps and unconverted values.
    *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readMaxNodesPerRead() throws UaException;
-
-  /**
-   * Write a new value for the MaxNodesPerRead Node to the server and update the local value if the
-   * operation succeeds.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails; non-Good operation status also fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
    */
-  void writeMaxNodesPerRead(UInteger value) throws UaException;
+  @Nullable UInteger readMaxNodesPerRead() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readMaxNodesPerRead}.
+   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
+   * local value.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails; non-Good operation status also fails
    */
-  CompletableFuture<? extends UInteger> readMaxNodesPerReadAsync();
+  void writeMaxNodesPerRead(@Nullable UInteger value) throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeMaxNodesPerRead}.
+   * Reads the existing member's value remotely. Only Good status is accepted, including Good
+   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
+   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
+   * node's raw readValue to retain quality, timestamps and unconverted values.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
+   *
+   * @return a nonnull future completing with the value, which may be null on a present member
    */
-  CompletableFuture<StatusCode> writeMaxNodesPerReadAsync(UInteger value);
+  CompletableFuture<? extends @Nullable UInteger> readMaxNodesPerReadAsync();
 
   /**
-   * Get the MaxNodesPerRead {@link PropertyType} Node, or {@code null} if it does not exist.
+   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
+   * local value.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @return the MaxNodesPerRead {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
+   *
+   * @param value the value to store; null is permitted
+   * @return a nonnull future completing with the Write operation status, including non-Good
+   *     statuses
    */
-  PropertyType getMaxNodesPerReadNode() throws UaException;
+  CompletableFuture<StatusCode> writeMaxNodesPerReadAsync(@Nullable UInteger value);
 
   /**
-   * Asynchronous implementation of {@link #getMaxNodesPerReadNode()}.
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. It can perform service I/O and construct or
+   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
    */
-  CompletableFuture<? extends PropertyType> getMaxNodesPerReadNodeAsync();
+  @Nullable PropertyType getMaxNodesPerReadNode() throws UaException;
 
   /**
-   * Get the local value of the MaxNodesPerHistoryReadData Node.
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. It can perform service I/O and construct or
+   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
    *
-   * @return the local value of the MaxNodesPerHistoryReadData Node.
-   * @throws UaException if an error occurs creating or getting the MaxNodesPerHistoryReadData Node.
+   * @return a nonnull future completing with the existing member, or null for confirmed absence
    */
-  UInteger getMaxNodesPerHistoryReadData() throws UaException;
+  CompletableFuture<? extends @Nullable PropertyType> getMaxNodesPerReadNodeAsync();
 
   /**
-   * Set the local value of the MaxNodesPerHistoryReadData Node.
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Lookup may perform service I/O; the value is not read
+   * remotely. Use the node's raw DataValue to inspect quality and timestamps.
    *
-   * <p>The value is only updated locally; it is not written to the server.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @param value the local value to set for the MaxNodesPerHistoryReadData Node.
-   * @throws UaException if an error occurs creating or getting the MaxNodesPerHistoryReadData Node.
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
    */
-  void setMaxNodesPerHistoryReadData(UInteger value) throws UaException;
+  @Nullable UInteger getMaxNodesPerHistoryReadData() throws UaException;
 
   /**
-   * Read the value of the MaxNodesPerHistoryReadData Node from the server and update the local
-   * value if the operation succeeds.
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   * This does not send a Write service request.
    *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
    */
-  UInteger readMaxNodesPerHistoryReadData() throws UaException;
+  void setMaxNodesPerHistoryReadData(@Nullable UInteger value) throws UaException;
 
   /**
-   * Write a new value for the MaxNodesPerHistoryReadData Node to the server and update the local
-   * value if the operation succeeds.
+   * Reads the existing member's value remotely. Only Good status is accepted, including Good
+   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
+   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
+   * node's raw readValue to retain quality, timestamps and unconverted values.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails; non-Good operation status also fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
    */
-  void writeMaxNodesPerHistoryReadData(UInteger value) throws UaException;
+  @Nullable UInteger readMaxNodesPerHistoryReadData() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readMaxNodesPerHistoryReadData}.
+   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
+   * local value.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails; non-Good operation status also fails
    */
-  CompletableFuture<? extends UInteger> readMaxNodesPerHistoryReadDataAsync();
+  void writeMaxNodesPerHistoryReadData(@Nullable UInteger value) throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeMaxNodesPerHistoryReadData}.
+   * Reads the existing member's value remotely. Only Good status is accepted, including Good
+   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
+   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
+   * node's raw readValue to retain quality, timestamps and unconverted values.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
+   *
+   * @return a nonnull future completing with the value, which may be null on a present member
    */
-  CompletableFuture<StatusCode> writeMaxNodesPerHistoryReadDataAsync(UInteger value);
+  CompletableFuture<? extends @Nullable UInteger> readMaxNodesPerHistoryReadDataAsync();
 
   /**
-   * Get the MaxNodesPerHistoryReadData {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
+   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
+   * local value.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @return the MaxNodesPerHistoryReadData {@link PropertyType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
+   *
+   * @param value the value to store; null is permitted
+   * @return a nonnull future completing with the Write operation status, including non-Good
+   *     statuses
    */
-  PropertyType getMaxNodesPerHistoryReadDataNode() throws UaException;
+  CompletableFuture<StatusCode> writeMaxNodesPerHistoryReadDataAsync(@Nullable UInteger value);
 
   /**
-   * Asynchronous implementation of {@link #getMaxNodesPerHistoryReadDataNode()}.
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. It can perform service I/O and construct or
+   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
    */
-  CompletableFuture<? extends PropertyType> getMaxNodesPerHistoryReadDataNodeAsync();
+  @Nullable PropertyType getMaxNodesPerHistoryReadDataNode() throws UaException;
 
   /**
-   * Get the local value of the MaxNodesPerHistoryReadEvents Node.
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. It can perform service I/O and construct or
+   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
    *
-   * @return the local value of the MaxNodesPerHistoryReadEvents Node.
-   * @throws UaException if an error occurs creating or getting the MaxNodesPerHistoryReadEvents
-   *     Node.
+   * @return a nonnull future completing with the existing member, or null for confirmed absence
    */
-  UInteger getMaxNodesPerHistoryReadEvents() throws UaException;
+  CompletableFuture<? extends @Nullable PropertyType> getMaxNodesPerHistoryReadDataNodeAsync();
 
   /**
-   * Set the local value of the MaxNodesPerHistoryReadEvents Node.
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Lookup may perform service I/O; the value is not read
+   * remotely. Use the node's raw DataValue to inspect quality and timestamps.
    *
-   * <p>The value is only updated locally; it is not written to the server.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @param value the local value to set for the MaxNodesPerHistoryReadEvents Node.
-   * @throws UaException if an error occurs creating or getting the MaxNodesPerHistoryReadEvents
-   *     Node.
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
    */
-  void setMaxNodesPerHistoryReadEvents(UInteger value) throws UaException;
+  @Nullable UInteger getMaxNodesPerHistoryReadEvents() throws UaException;
 
   /**
-   * Read the value of the MaxNodesPerHistoryReadEvents Node from the server and update the local
-   * value if the operation succeeds.
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   * This does not send a Write service request.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
    */
-  UInteger readMaxNodesPerHistoryReadEvents() throws UaException;
+  void setMaxNodesPerHistoryReadEvents(@Nullable UInteger value) throws UaException;
 
   /**
-   * Write a new value for the MaxNodesPerHistoryReadEvents Node to the server and update the local
-   * value if the operation succeeds.
+   * Reads the existing member's value remotely. Only Good status is accepted, including Good
+   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
+   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
+   * node's raw readValue to retain quality, timestamps and unconverted values.
    *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails; non-Good operation status also fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
    */
-  void writeMaxNodesPerHistoryReadEvents(UInteger value) throws UaException;
+  @Nullable UInteger readMaxNodesPerHistoryReadEvents() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readMaxNodesPerHistoryReadEvents}.
+   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
+   * local value.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails; non-Good operation status also fails
    */
-  CompletableFuture<? extends UInteger> readMaxNodesPerHistoryReadEventsAsync();
+  void writeMaxNodesPerHistoryReadEvents(@Nullable UInteger value) throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeMaxNodesPerHistoryReadEvents}.
+   * Reads the existing member's value remotely. Only Good status is accepted, including Good
+   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
+   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
+   * node's raw readValue to retain quality, timestamps and unconverted values.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
+   *
+   * @return a nonnull future completing with the value, which may be null on a present member
    */
-  CompletableFuture<StatusCode> writeMaxNodesPerHistoryReadEventsAsync(UInteger value);
+  CompletableFuture<? extends @Nullable UInteger> readMaxNodesPerHistoryReadEventsAsync();
 
   /**
-   * Get the MaxNodesPerHistoryReadEvents {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
+   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
+   * local value.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
    *
-   * @return the MaxNodesPerHistoryReadEvents {@link PropertyType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @param value the value to store; null is permitted
+   * @return a nonnull future completing with the Write operation status, including non-Good
+   *     statuses
    */
-  PropertyType getMaxNodesPerHistoryReadEventsNode() throws UaException;
+  CompletableFuture<StatusCode> writeMaxNodesPerHistoryReadEventsAsync(@Nullable UInteger value);
 
   /**
-   * Asynchronous implementation of {@link #getMaxNodesPerHistoryReadEventsNode()}.
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. It can perform service I/O and construct or
+   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
    */
-  CompletableFuture<? extends PropertyType> getMaxNodesPerHistoryReadEventsNodeAsync();
+  @Nullable PropertyType getMaxNodesPerHistoryReadEventsNode() throws UaException;
 
   /**
-   * Get the local value of the MaxNodesPerWrite Node.
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. It can perform service I/O and construct or
+   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
    *
-   * @return the local value of the MaxNodesPerWrite Node.
-   * @throws UaException if an error occurs creating or getting the MaxNodesPerWrite Node.
+   * @return a nonnull future completing with the existing member, or null for confirmed absence
    */
-  UInteger getMaxNodesPerWrite() throws UaException;
+  CompletableFuture<? extends @Nullable PropertyType> getMaxNodesPerHistoryReadEventsNodeAsync();
 
   /**
-   * Set the local value of the MaxNodesPerWrite Node.
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Lookup may perform service I/O; the value is not read
+   * remotely. Use the node's raw DataValue to inspect quality and timestamps.
    *
-   * <p>The value is only updated locally; it is not written to the server.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @param value the local value to set for the MaxNodesPerWrite Node.
-   * @throws UaException if an error occurs creating or getting the MaxNodesPerWrite Node.
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
    */
-  void setMaxNodesPerWrite(UInteger value) throws UaException;
+  @Nullable UInteger getMaxNodesPerWrite() throws UaException;
 
   /**
-   * Read the value of the MaxNodesPerWrite Node from the server and update the local value if the
-   * operation succeeds.
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   * This does not send a Write service request.
    *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
    */
-  UInteger readMaxNodesPerWrite() throws UaException;
+  void setMaxNodesPerWrite(@Nullable UInteger value) throws UaException;
 
   /**
-   * Write a new value for the MaxNodesPerWrite Node to the server and update the local value if the
-   * operation succeeds.
+   * Reads the existing member's value remotely. Only Good status is accepted, including Good
+   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
+   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
+   * node's raw readValue to retain quality, timestamps and unconverted values.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails; non-Good operation status also fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
    */
-  void writeMaxNodesPerWrite(UInteger value) throws UaException;
+  @Nullable UInteger readMaxNodesPerWrite() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readMaxNodesPerWrite}.
+   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
+   * local value.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails; non-Good operation status also fails
    */
-  CompletableFuture<? extends UInteger> readMaxNodesPerWriteAsync();
+  void writeMaxNodesPerWrite(@Nullable UInteger value) throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeMaxNodesPerWrite}.
+   * Reads the existing member's value remotely. Only Good status is accepted, including Good
+   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
+   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
+   * node's raw readValue to retain quality, timestamps and unconverted values.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @return a nonnull future completing with the value, which may be null on a present member
    */
-  CompletableFuture<StatusCode> writeMaxNodesPerWriteAsync(UInteger value);
+  CompletableFuture<? extends @Nullable UInteger> readMaxNodesPerWriteAsync();
 
   /**
-   * Get the MaxNodesPerWrite {@link PropertyType} Node, or {@code null} if it does not exist.
+   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
+   * local value.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @return the MaxNodesPerWrite {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
+   *
+   * @param value the value to store; null is permitted
+   * @return a nonnull future completing with the Write operation status, including non-Good
+   *     statuses
    */
-  PropertyType getMaxNodesPerWriteNode() throws UaException;
+  CompletableFuture<StatusCode> writeMaxNodesPerWriteAsync(@Nullable UInteger value);
 
   /**
-   * Asynchronous implementation of {@link #getMaxNodesPerWriteNode()}.
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. It can perform service I/O and construct or
+   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
    */
-  CompletableFuture<? extends PropertyType> getMaxNodesPerWriteNodeAsync();
+  @Nullable PropertyType getMaxNodesPerWriteNode() throws UaException;
 
   /**
-   * Get the local value of the MaxNodesPerHistoryUpdateData Node.
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. It can perform service I/O and construct or
+   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
    *
-   * @return the local value of the MaxNodesPerHistoryUpdateData Node.
-   * @throws UaException if an error occurs creating or getting the MaxNodesPerHistoryUpdateData
-   *     Node.
+   * @return a nonnull future completing with the existing member, or null for confirmed absence
    */
-  UInteger getMaxNodesPerHistoryUpdateData() throws UaException;
+  CompletableFuture<? extends @Nullable PropertyType> getMaxNodesPerWriteNodeAsync();
 
   /**
-   * Set the local value of the MaxNodesPerHistoryUpdateData Node.
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Lookup may perform service I/O; the value is not read
+   * remotely. Use the node's raw DataValue to inspect quality and timestamps.
    *
-   * <p>The value is only updated locally; it is not written to the server.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @param value the local value to set for the MaxNodesPerHistoryUpdateData Node.
-   * @throws UaException if an error occurs creating or getting the MaxNodesPerHistoryUpdateData
-   *     Node.
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
    */
-  void setMaxNodesPerHistoryUpdateData(UInteger value) throws UaException;
+  @Nullable UInteger getMaxNodesPerHistoryUpdateData() throws UaException;
 
   /**
-   * Read the value of the MaxNodesPerHistoryUpdateData Node from the server and update the local
-   * value if the operation succeeds.
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   * This does not send a Write service request.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
    */
-  UInteger readMaxNodesPerHistoryUpdateData() throws UaException;
+  void setMaxNodesPerHistoryUpdateData(@Nullable UInteger value) throws UaException;
 
   /**
-   * Write a new value for the MaxNodesPerHistoryUpdateData Node to the server and update the local
-   * value if the operation succeeds.
+   * Reads the existing member's value remotely. Only Good status is accepted, including Good
+   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
+   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
+   * node's raw readValue to retain quality, timestamps and unconverted values.
    *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails; non-Good operation status also fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
    */
-  void writeMaxNodesPerHistoryUpdateData(UInteger value) throws UaException;
+  @Nullable UInteger readMaxNodesPerHistoryUpdateData() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readMaxNodesPerHistoryUpdateData}.
+   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
+   * local value.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails; non-Good operation status also fails
    */
-  CompletableFuture<? extends UInteger> readMaxNodesPerHistoryUpdateDataAsync();
+  void writeMaxNodesPerHistoryUpdateData(@Nullable UInteger value) throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeMaxNodesPerHistoryUpdateData}.
+   * Reads the existing member's value remotely. Only Good status is accepted, including Good
+   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
+   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
+   * node's raw readValue to retain quality, timestamps and unconverted values.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
+   *
+   * @return a nonnull future completing with the value, which may be null on a present member
    */
-  CompletableFuture<StatusCode> writeMaxNodesPerHistoryUpdateDataAsync(UInteger value);
+  CompletableFuture<? extends @Nullable UInteger> readMaxNodesPerHistoryUpdateDataAsync();
 
   /**
-   * Get the MaxNodesPerHistoryUpdateData {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
+   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
+   * local value.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
    *
-   * @return the MaxNodesPerHistoryUpdateData {@link PropertyType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @param value the value to store; null is permitted
+   * @return a nonnull future completing with the Write operation status, including non-Good
+   *     statuses
    */
-  PropertyType getMaxNodesPerHistoryUpdateDataNode() throws UaException;
+  CompletableFuture<StatusCode> writeMaxNodesPerHistoryUpdateDataAsync(@Nullable UInteger value);
 
   /**
-   * Asynchronous implementation of {@link #getMaxNodesPerHistoryUpdateDataNode()}.
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. It can perform service I/O and construct or
+   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
    */
-  CompletableFuture<? extends PropertyType> getMaxNodesPerHistoryUpdateDataNodeAsync();
+  @Nullable PropertyType getMaxNodesPerHistoryUpdateDataNode() throws UaException;
 
   /**
-   * Get the local value of the MaxNodesPerHistoryUpdateEvents Node.
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. It can perform service I/O and construct or
+   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
    *
-   * @return the local value of the MaxNodesPerHistoryUpdateEvents Node.
-   * @throws UaException if an error occurs creating or getting the MaxNodesPerHistoryUpdateEvents
-   *     Node.
+   * @return a nonnull future completing with the existing member, or null for confirmed absence
    */
-  UInteger getMaxNodesPerHistoryUpdateEvents() throws UaException;
+  CompletableFuture<? extends @Nullable PropertyType> getMaxNodesPerHistoryUpdateDataNodeAsync();
 
   /**
-   * Set the local value of the MaxNodesPerHistoryUpdateEvents Node.
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Lookup may perform service I/O; the value is not read
+   * remotely. Use the node's raw DataValue to inspect quality and timestamps.
    *
-   * <p>The value is only updated locally; it is not written to the server.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @param value the local value to set for the MaxNodesPerHistoryUpdateEvents Node.
-   * @throws UaException if an error occurs creating or getting the MaxNodesPerHistoryUpdateEvents
-   *     Node.
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
    */
-  void setMaxNodesPerHistoryUpdateEvents(UInteger value) throws UaException;
+  @Nullable UInteger getMaxNodesPerHistoryUpdateEvents() throws UaException;
 
   /**
-   * Read the value of the MaxNodesPerHistoryUpdateEvents Node from the server and update the local
-   * value if the operation succeeds.
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   * This does not send a Write service request.
    *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
    */
-  UInteger readMaxNodesPerHistoryUpdateEvents() throws UaException;
+  void setMaxNodesPerHistoryUpdateEvents(@Nullable UInteger value) throws UaException;
 
   /**
-   * Write a new value for the MaxNodesPerHistoryUpdateEvents Node to the server and update the
-   * local value if the operation succeeds.
+   * Reads the existing member's value remotely. Only Good status is accepted, including Good
+   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
+   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
+   * node's raw readValue to retain quality, timestamps and unconverted values.
    *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails; non-Good operation status also fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
    */
-  void writeMaxNodesPerHistoryUpdateEvents(UInteger value) throws UaException;
+  @Nullable UInteger readMaxNodesPerHistoryUpdateEvents() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readMaxNodesPerHistoryUpdateEvents}.
+   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
+   * local value.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails; non-Good operation status also fails
    */
-  CompletableFuture<? extends UInteger> readMaxNodesPerHistoryUpdateEventsAsync();
+  void writeMaxNodesPerHistoryUpdateEvents(@Nullable UInteger value) throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeMaxNodesPerHistoryUpdateEvents}.
+   * Reads the existing member's value remotely. Only Good status is accepted, including Good
+   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
+   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
+   * node's raw readValue to retain quality, timestamps and unconverted values.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
+   *
+   * @return a nonnull future completing with the value, which may be null on a present member
    */
-  CompletableFuture<StatusCode> writeMaxNodesPerHistoryUpdateEventsAsync(UInteger value);
+  CompletableFuture<? extends @Nullable UInteger> readMaxNodesPerHistoryUpdateEventsAsync();
 
   /**
-   * Get the MaxNodesPerHistoryUpdateEvents {@link PropertyType} Node, or {@code null} if it does
-   * not exist.
+   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
+   * local value.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @return the MaxNodesPerHistoryUpdateEvents {@link PropertyType} Node, or {@code null} if it
-   *     does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
+   *
+   * @param value the value to store; null is permitted
+   * @return a nonnull future completing with the Write operation status, including non-Good
+   *     statuses
    */
-  PropertyType getMaxNodesPerHistoryUpdateEventsNode() throws UaException;
+  CompletableFuture<StatusCode> writeMaxNodesPerHistoryUpdateEventsAsync(@Nullable UInteger value);
 
   /**
-   * Asynchronous implementation of {@link #getMaxNodesPerHistoryUpdateEventsNode()}.
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. It can perform service I/O and construct or
+   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
    */
-  CompletableFuture<? extends PropertyType> getMaxNodesPerHistoryUpdateEventsNodeAsync();
+  @Nullable PropertyType getMaxNodesPerHistoryUpdateEventsNode() throws UaException;
 
   /**
-   * Get the local value of the MaxNodesPerMethodCall Node.
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. It can perform service I/O and construct or
+   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
    *
-   * @return the local value of the MaxNodesPerMethodCall Node.
-   * @throws UaException if an error occurs creating or getting the MaxNodesPerMethodCall Node.
+   * @return a nonnull future completing with the existing member, or null for confirmed absence
    */
-  UInteger getMaxNodesPerMethodCall() throws UaException;
+  CompletableFuture<? extends @Nullable PropertyType> getMaxNodesPerHistoryUpdateEventsNodeAsync();
 
   /**
-   * Set the local value of the MaxNodesPerMethodCall Node.
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Lookup may perform service I/O; the value is not read
+   * remotely. Use the node's raw DataValue to inspect quality and timestamps.
    *
-   * <p>The value is only updated locally; it is not written to the server.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @param value the local value to set for the MaxNodesPerMethodCall Node.
-   * @throws UaException if an error occurs creating or getting the MaxNodesPerMethodCall Node.
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
    */
-  void setMaxNodesPerMethodCall(UInteger value) throws UaException;
+  @Nullable UInteger getMaxNodesPerMethodCall() throws UaException;
 
   /**
-   * Read the value of the MaxNodesPerMethodCall Node from the server and update the local value if
-   * the operation succeeds.
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   * This does not send a Write service request.
    *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
    */
-  UInteger readMaxNodesPerMethodCall() throws UaException;
+  void setMaxNodesPerMethodCall(@Nullable UInteger value) throws UaException;
 
   /**
-   * Write a new value for the MaxNodesPerMethodCall Node to the server and update the local value
-   * if the operation succeeds.
+   * Reads the existing member's value remotely. Only Good status is accepted, including Good
+   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
+   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
+   * node's raw readValue to retain quality, timestamps and unconverted values.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails; non-Good operation status also fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
    */
-  void writeMaxNodesPerMethodCall(UInteger value) throws UaException;
+  @Nullable UInteger readMaxNodesPerMethodCall() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readMaxNodesPerMethodCall}.
+   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
+   * local value.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails; non-Good operation status also fails
    */
-  CompletableFuture<? extends UInteger> readMaxNodesPerMethodCallAsync();
+  void writeMaxNodesPerMethodCall(@Nullable UInteger value) throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeMaxNodesPerMethodCall}.
+   * Reads the existing member's value remotely. Only Good status is accepted, including Good
+   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
+   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
+   * node's raw readValue to retain quality, timestamps and unconverted values.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
+   *
+   * @return a nonnull future completing with the value, which may be null on a present member
    */
-  CompletableFuture<StatusCode> writeMaxNodesPerMethodCallAsync(UInteger value);
+  CompletableFuture<? extends @Nullable UInteger> readMaxNodesPerMethodCallAsync();
 
   /**
-   * Get the MaxNodesPerMethodCall {@link PropertyType} Node, or {@code null} if it does not exist.
+   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
+   * local value.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
    *
-   * @return the MaxNodesPerMethodCall {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @param value the value to store; null is permitted
+   * @return a nonnull future completing with the Write operation status, including non-Good
+   *     statuses
    */
-  PropertyType getMaxNodesPerMethodCallNode() throws UaException;
+  CompletableFuture<StatusCode> writeMaxNodesPerMethodCallAsync(@Nullable UInteger value);
 
   /**
-   * Asynchronous implementation of {@link #getMaxNodesPerMethodCallNode()}.
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. It can perform service I/O and construct or
+   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
    */
-  CompletableFuture<? extends PropertyType> getMaxNodesPerMethodCallNodeAsync();
+  @Nullable PropertyType getMaxNodesPerMethodCallNode() throws UaException;
 
   /**
-   * Get the local value of the MaxNodesPerBrowse Node.
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. It can perform service I/O and construct or
+   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
    *
-   * @return the local value of the MaxNodesPerBrowse Node.
-   * @throws UaException if an error occurs creating or getting the MaxNodesPerBrowse Node.
+   * @return a nonnull future completing with the existing member, or null for confirmed absence
    */
-  UInteger getMaxNodesPerBrowse() throws UaException;
+  CompletableFuture<? extends @Nullable PropertyType> getMaxNodesPerMethodCallNodeAsync();
 
   /**
-   * Set the local value of the MaxNodesPerBrowse Node.
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Lookup may perform service I/O; the value is not read
+   * remotely. Use the node's raw DataValue to inspect quality and timestamps.
    *
-   * <p>The value is only updated locally; it is not written to the server.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @param value the local value to set for the MaxNodesPerBrowse Node.
-   * @throws UaException if an error occurs creating or getting the MaxNodesPerBrowse Node.
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
    */
-  void setMaxNodesPerBrowse(UInteger value) throws UaException;
+  @Nullable UInteger getMaxNodesPerBrowse() throws UaException;
 
   /**
-   * Read the value of the MaxNodesPerBrowse Node from the server and update the local value if the
-   * operation succeeds.
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   * This does not send a Write service request.
    *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
    */
-  UInteger readMaxNodesPerBrowse() throws UaException;
+  void setMaxNodesPerBrowse(@Nullable UInteger value) throws UaException;
 
   /**
-   * Write a new value for the MaxNodesPerBrowse Node to the server and update the local value if
-   * the operation succeeds.
+   * Reads the existing member's value remotely. Only Good status is accepted, including Good
+   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
+   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
+   * node's raw readValue to retain quality, timestamps and unconverted values.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails; non-Good operation status also fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
    */
-  void writeMaxNodesPerBrowse(UInteger value) throws UaException;
+  @Nullable UInteger readMaxNodesPerBrowse() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readMaxNodesPerBrowse}.
+   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
+   * local value.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails; non-Good operation status also fails
    */
-  CompletableFuture<? extends UInteger> readMaxNodesPerBrowseAsync();
+  void writeMaxNodesPerBrowse(@Nullable UInteger value) throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeMaxNodesPerBrowse}.
+   * Reads the existing member's value remotely. Only Good status is accepted, including Good
+   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
+   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
+   * node's raw readValue to retain quality, timestamps and unconverted values.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @return a nonnull future completing with the value, which may be null on a present member
    */
-  CompletableFuture<StatusCode> writeMaxNodesPerBrowseAsync(UInteger value);
+  CompletableFuture<? extends @Nullable UInteger> readMaxNodesPerBrowseAsync();
 
   /**
-   * Get the MaxNodesPerBrowse {@link PropertyType} Node, or {@code null} if it does not exist.
+   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
+   * local value.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @return the MaxNodesPerBrowse {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
+   *
+   * @param value the value to store; null is permitted
+   * @return a nonnull future completing with the Write operation status, including non-Good
+   *     statuses
    */
-  PropertyType getMaxNodesPerBrowseNode() throws UaException;
+  CompletableFuture<StatusCode> writeMaxNodesPerBrowseAsync(@Nullable UInteger value);
 
   /**
-   * Asynchronous implementation of {@link #getMaxNodesPerBrowseNode()}.
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. It can perform service I/O and construct or
+   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
    */
-  CompletableFuture<? extends PropertyType> getMaxNodesPerBrowseNodeAsync();
+  @Nullable PropertyType getMaxNodesPerBrowseNode() throws UaException;
 
   /**
-   * Get the local value of the MaxNodesPerRegisterNodes Node.
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. It can perform service I/O and construct or
+   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
    *
-   * @return the local value of the MaxNodesPerRegisterNodes Node.
-   * @throws UaException if an error occurs creating or getting the MaxNodesPerRegisterNodes Node.
+   * @return a nonnull future completing with the existing member, or null for confirmed absence
    */
-  UInteger getMaxNodesPerRegisterNodes() throws UaException;
+  CompletableFuture<? extends @Nullable PropertyType> getMaxNodesPerBrowseNodeAsync();
 
   /**
-   * Set the local value of the MaxNodesPerRegisterNodes Node.
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Lookup may perform service I/O; the value is not read
+   * remotely. Use the node's raw DataValue to inspect quality and timestamps.
    *
-   * <p>The value is only updated locally; it is not written to the server.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @param value the local value to set for the MaxNodesPerRegisterNodes Node.
-   * @throws UaException if an error occurs creating or getting the MaxNodesPerRegisterNodes Node.
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
    */
-  void setMaxNodesPerRegisterNodes(UInteger value) throws UaException;
+  @Nullable UInteger getMaxNodesPerRegisterNodes() throws UaException;
 
   /**
-   * Read the value of the MaxNodesPerRegisterNodes Node from the server and update the local value
-   * if the operation succeeds.
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   * This does not send a Write service request.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
    */
-  UInteger readMaxNodesPerRegisterNodes() throws UaException;
+  void setMaxNodesPerRegisterNodes(@Nullable UInteger value) throws UaException;
 
   /**
-   * Write a new value for the MaxNodesPerRegisterNodes Node to the server and update the local
-   * value if the operation succeeds.
+   * Reads the existing member's value remotely. Only Good status is accepted, including Good
+   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
+   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
+   * node's raw readValue to retain quality, timestamps and unconverted values.
    *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails; non-Good operation status also fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
    */
-  void writeMaxNodesPerRegisterNodes(UInteger value) throws UaException;
+  @Nullable UInteger readMaxNodesPerRegisterNodes() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readMaxNodesPerRegisterNodes}.
+   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
+   * local value.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails; non-Good operation status also fails
    */
-  CompletableFuture<? extends UInteger> readMaxNodesPerRegisterNodesAsync();
+  void writeMaxNodesPerRegisterNodes(@Nullable UInteger value) throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeMaxNodesPerRegisterNodes}.
+   * Reads the existing member's value remotely. Only Good status is accepted, including Good
+   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
+   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
+   * node's raw readValue to retain quality, timestamps and unconverted values.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
+   *
+   * @return a nonnull future completing with the value, which may be null on a present member
    */
-  CompletableFuture<StatusCode> writeMaxNodesPerRegisterNodesAsync(UInteger value);
+  CompletableFuture<? extends @Nullable UInteger> readMaxNodesPerRegisterNodesAsync();
 
   /**
-   * Get the MaxNodesPerRegisterNodes {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
+   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
+   * local value.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
    *
-   * @return the MaxNodesPerRegisterNodes {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @param value the value to store; null is permitted
+   * @return a nonnull future completing with the Write operation status, including non-Good
+   *     statuses
    */
-  PropertyType getMaxNodesPerRegisterNodesNode() throws UaException;
+  CompletableFuture<StatusCode> writeMaxNodesPerRegisterNodesAsync(@Nullable UInteger value);
 
   /**
-   * Asynchronous implementation of {@link #getMaxNodesPerRegisterNodesNode()}.
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. It can perform service I/O and construct or
+   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
    */
-  CompletableFuture<? extends PropertyType> getMaxNodesPerRegisterNodesNodeAsync();
+  @Nullable PropertyType getMaxNodesPerRegisterNodesNode() throws UaException;
 
   /**
-   * Get the local value of the MaxNodesPerTranslateBrowsePathsToNodeIds Node.
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. It can perform service I/O and construct or
+   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
    *
-   * @return the local value of the MaxNodesPerTranslateBrowsePathsToNodeIds Node.
-   * @throws UaException if an error occurs creating or getting the
-   *     MaxNodesPerTranslateBrowsePathsToNodeIds Node.
+   * @return a nonnull future completing with the existing member, or null for confirmed absence
    */
-  UInteger getMaxNodesPerTranslateBrowsePathsToNodeIds() throws UaException;
+  CompletableFuture<? extends @Nullable PropertyType> getMaxNodesPerRegisterNodesNodeAsync();
 
   /**
-   * Set the local value of the MaxNodesPerTranslateBrowsePathsToNodeIds Node.
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Lookup may perform service I/O; the value is not read
+   * remotely. Use the node's raw DataValue to inspect quality and timestamps.
    *
-   * <p>The value is only updated locally; it is not written to the server.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @param value the local value to set for the MaxNodesPerTranslateBrowsePathsToNodeIds Node.
-   * @throws UaException if an error occurs creating or getting the
-   *     MaxNodesPerTranslateBrowsePathsToNodeIds Node.
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
    */
-  void setMaxNodesPerTranslateBrowsePathsToNodeIds(UInteger value) throws UaException;
+  @Nullable UInteger getMaxNodesPerTranslateBrowsePathsToNodeIds() throws UaException;
 
   /**
-   * Read the value of the MaxNodesPerTranslateBrowsePathsToNodeIds Node from the server and update
-   * the local value if the operation succeeds.
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   * This does not send a Write service request.
    *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
    */
-  UInteger readMaxNodesPerTranslateBrowsePathsToNodeIds() throws UaException;
+  void setMaxNodesPerTranslateBrowsePathsToNodeIds(@Nullable UInteger value) throws UaException;
 
   /**
-   * Write a new value for the MaxNodesPerTranslateBrowsePathsToNodeIds Node to the server and
-   * update the local value if the operation succeeds.
+   * Reads the existing member's value remotely. Only Good status is accepted, including Good
+   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
+   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
+   * node's raw readValue to retain quality, timestamps and unconverted values.
    *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails; non-Good operation status also fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
    */
-  void writeMaxNodesPerTranslateBrowsePathsToNodeIds(UInteger value) throws UaException;
+  @Nullable UInteger readMaxNodesPerTranslateBrowsePathsToNodeIds() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readMaxNodesPerTranslateBrowsePathsToNodeIds}.
+   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
+   * local value.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails; non-Good operation status also fails
    */
-  CompletableFuture<? extends UInteger> readMaxNodesPerTranslateBrowsePathsToNodeIdsAsync();
+  void writeMaxNodesPerTranslateBrowsePathsToNodeIds(@Nullable UInteger value) throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeMaxNodesPerTranslateBrowsePathsToNodeIds}.
+   * Reads the existing member's value remotely. Only Good status is accepted, including Good
+   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
+   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
+   * node's raw readValue to retain quality, timestamps and unconverted values.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
+   *
+   * @return a nonnull future completing with the value, which may be null on a present member
    */
-  CompletableFuture<StatusCode> writeMaxNodesPerTranslateBrowsePathsToNodeIdsAsync(UInteger value);
+  CompletableFuture<? extends @Nullable UInteger>
+      readMaxNodesPerTranslateBrowsePathsToNodeIdsAsync();
 
   /**
-   * Get the MaxNodesPerTranslateBrowsePathsToNodeIds {@link PropertyType} Node, or {@code null} if
-   * it does not exist.
+   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
+   * local value.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @return the MaxNodesPerTranslateBrowsePathsToNodeIds {@link PropertyType} Node, or {@code null}
-   *     if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
+   *
+   * @param value the value to store; null is permitted
+   * @return a nonnull future completing with the Write operation status, including non-Good
+   *     statuses
    */
-  PropertyType getMaxNodesPerTranslateBrowsePathsToNodeIdsNode() throws UaException;
+  CompletableFuture<StatusCode> writeMaxNodesPerTranslateBrowsePathsToNodeIdsAsync(
+      @Nullable UInteger value);
 
   /**
-   * Asynchronous implementation of {@link #getMaxNodesPerTranslateBrowsePathsToNodeIdsNode()}.
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. It can perform service I/O and construct or
+   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
    */
-  CompletableFuture<? extends PropertyType> getMaxNodesPerTranslateBrowsePathsToNodeIdsNodeAsync();
+  @Nullable PropertyType getMaxNodesPerTranslateBrowsePathsToNodeIdsNode() throws UaException;
 
   /**
-   * Get the local value of the MaxNodesPerNodeManagement Node.
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. It can perform service I/O and construct or
+   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
    *
-   * @return the local value of the MaxNodesPerNodeManagement Node.
-   * @throws UaException if an error occurs creating or getting the MaxNodesPerNodeManagement Node.
+   * @return a nonnull future completing with the existing member, or null for confirmed absence
    */
-  UInteger getMaxNodesPerNodeManagement() throws UaException;
+  CompletableFuture<? extends @Nullable PropertyType>
+      getMaxNodesPerTranslateBrowsePathsToNodeIdsNodeAsync();
 
   /**
-   * Set the local value of the MaxNodesPerNodeManagement Node.
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Lookup may perform service I/O; the value is not read
+   * remotely. Use the node's raw DataValue to inspect quality and timestamps.
    *
-   * <p>The value is only updated locally; it is not written to the server.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @param value the local value to set for the MaxNodesPerNodeManagement Node.
-   * @throws UaException if an error occurs creating or getting the MaxNodesPerNodeManagement Node.
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
    */
-  void setMaxNodesPerNodeManagement(UInteger value) throws UaException;
+  @Nullable UInteger getMaxNodesPerNodeManagement() throws UaException;
 
   /**
-   * Read the value of the MaxNodesPerNodeManagement Node from the server and update the local value
-   * if the operation succeeds.
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   * This does not send a Write service request.
    *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
    */
-  UInteger readMaxNodesPerNodeManagement() throws UaException;
+  void setMaxNodesPerNodeManagement(@Nullable UInteger value) throws UaException;
 
   /**
-   * Write a new value for the MaxNodesPerNodeManagement Node to the server and update the local
-   * value if the operation succeeds.
+   * Reads the existing member's value remotely. Only Good status is accepted, including Good
+   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
+   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
+   * node's raw readValue to retain quality, timestamps and unconverted values.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails; non-Good operation status also fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
    */
-  void writeMaxNodesPerNodeManagement(UInteger value) throws UaException;
+  @Nullable UInteger readMaxNodesPerNodeManagement() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readMaxNodesPerNodeManagement}.
+   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
+   * local value.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails; non-Good operation status also fails
    */
-  CompletableFuture<? extends UInteger> readMaxNodesPerNodeManagementAsync();
+  void writeMaxNodesPerNodeManagement(@Nullable UInteger value) throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeMaxNodesPerNodeManagement}.
+   * Reads the existing member's value remotely. Only Good status is accepted, including Good
+   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
+   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
+   * node's raw readValue to retain quality, timestamps and unconverted values.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
+   *
+   * @return a nonnull future completing with the value, which may be null on a present member
    */
-  CompletableFuture<StatusCode> writeMaxNodesPerNodeManagementAsync(UInteger value);
+  CompletableFuture<? extends @Nullable UInteger> readMaxNodesPerNodeManagementAsync();
 
   /**
-   * Get the MaxNodesPerNodeManagement {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
+   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
+   * local value.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @return the MaxNodesPerNodeManagement {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
+   *
+   * @param value the value to store; null is permitted
+   * @return a nonnull future completing with the Write operation status, including non-Good
+   *     statuses
    */
-  PropertyType getMaxNodesPerNodeManagementNode() throws UaException;
+  CompletableFuture<StatusCode> writeMaxNodesPerNodeManagementAsync(@Nullable UInteger value);
 
   /**
-   * Asynchronous implementation of {@link #getMaxNodesPerNodeManagementNode()}.
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. It can perform service I/O and construct or
+   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
    */
-  CompletableFuture<? extends PropertyType> getMaxNodesPerNodeManagementNodeAsync();
+  @Nullable PropertyType getMaxNodesPerNodeManagementNode() throws UaException;
 
   /**
-   * Get the local value of the MaxMonitoredItemsPerCall Node.
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. It can perform service I/O and construct or
+   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
    *
-   * @return the local value of the MaxMonitoredItemsPerCall Node.
-   * @throws UaException if an error occurs creating or getting the MaxMonitoredItemsPerCall Node.
+   * @return a nonnull future completing with the existing member, or null for confirmed absence
    */
-  UInteger getMaxMonitoredItemsPerCall() throws UaException;
+  CompletableFuture<? extends @Nullable PropertyType> getMaxNodesPerNodeManagementNodeAsync();
 
   /**
-   * Set the local value of the MaxMonitoredItemsPerCall Node.
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Lookup may perform service I/O; the value is not read
+   * remotely. Use the node's raw DataValue to inspect quality and timestamps.
    *
-   * <p>The value is only updated locally; it is not written to the server.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @param value the local value to set for the MaxMonitoredItemsPerCall Node.
-   * @throws UaException if an error occurs creating or getting the MaxMonitoredItemsPerCall Node.
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
    */
-  void setMaxMonitoredItemsPerCall(UInteger value) throws UaException;
+  @Nullable UInteger getMaxMonitoredItemsPerCall() throws UaException;
 
   /**
-   * Read the value of the MaxMonitoredItemsPerCall Node from the server and update the local value
-   * if the operation succeeds.
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   * This does not send a Write service request.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
    */
-  UInteger readMaxMonitoredItemsPerCall() throws UaException;
+  void setMaxMonitoredItemsPerCall(@Nullable UInteger value) throws UaException;
 
   /**
-   * Write a new value for the MaxMonitoredItemsPerCall Node to the server and update the local
-   * value if the operation succeeds.
+   * Reads the existing member's value remotely. Only Good status is accepted, including Good
+   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
+   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
+   * node's raw readValue to retain quality, timestamps and unconverted values.
    *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails; non-Good operation status also fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
    */
-  void writeMaxMonitoredItemsPerCall(UInteger value) throws UaException;
+  @Nullable UInteger readMaxMonitoredItemsPerCall() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readMaxMonitoredItemsPerCall}.
+   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
+   * local value.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails; non-Good operation status also fails
    */
-  CompletableFuture<? extends UInteger> readMaxMonitoredItemsPerCallAsync();
+  void writeMaxMonitoredItemsPerCall(@Nullable UInteger value) throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeMaxMonitoredItemsPerCall}.
+   * Reads the existing member's value remotely. Only Good status is accepted, including Good
+   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
+   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
+   * node's raw readValue to retain quality, timestamps and unconverted values.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
+   *
+   * @return a nonnull future completing with the value, which may be null on a present member
    */
-  CompletableFuture<StatusCode> writeMaxMonitoredItemsPerCallAsync(UInteger value);
+  CompletableFuture<? extends @Nullable UInteger> readMaxMonitoredItemsPerCallAsync();
 
   /**
-   * Get the MaxMonitoredItemsPerCall {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
+   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
+   * local value.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
    *
-   * @return the MaxMonitoredItemsPerCall {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @param value the value to store; null is permitted
+   * @return a nonnull future completing with the Write operation status, including non-Good
+   *     statuses
    */
-  PropertyType getMaxMonitoredItemsPerCallNode() throws UaException;
+  CompletableFuture<StatusCode> writeMaxMonitoredItemsPerCallAsync(@Nullable UInteger value);
 
   /**
-   * Asynchronous implementation of {@link #getMaxMonitoredItemsPerCallNode()}.
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. It can perform service I/O and construct or
+   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
+   *
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
+   */
+  @Nullable PropertyType getMaxMonitoredItemsPerCallNode() throws UaException;
+
+  /**
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. It can perform service I/O and construct or
+   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
+   *
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @return a nonnull future completing with the existing member, or null for confirmed absence
    */
-  CompletableFuture<? extends PropertyType> getMaxMonitoredItemsPerCallNodeAsync();
+  CompletableFuture<? extends @Nullable PropertyType> getMaxMonitoredItemsPerCallNodeAsync();
 }

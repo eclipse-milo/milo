@@ -129,14 +129,14 @@ public class ReadEventDetails extends HistoryReadDetails implements UaStructured
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 646),
-        new NodeId(0, 641),
+        NodeId.parse("i=646"),
+        NodeId.parse("i=641"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "NumValuesPerNode",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 289),
+              NodeId.parse("i=289"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -144,7 +144,7 @@ public class ReadEventDetails extends HistoryReadDetails implements UaStructured
           new StructureField(
               "StartTime",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 294),
+              NodeId.parse("i=294"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -152,7 +152,7 @@ public class ReadEventDetails extends HistoryReadDetails implements UaStructured
           new StructureField(
               "EndTime",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 294),
+              NodeId.parse("i=294"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -160,7 +160,7 @@ public class ReadEventDetails extends HistoryReadDetails implements UaStructured
           new StructureField(
               "Filter",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 725),
+              NodeId.parse("i=725"),
               -1,
               null,
               UInteger.valueOf(0),

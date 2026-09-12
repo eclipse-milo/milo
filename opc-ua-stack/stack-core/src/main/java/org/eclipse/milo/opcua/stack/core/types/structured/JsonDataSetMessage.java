@@ -209,14 +209,14 @@ public class JsonDataSetMessage extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 0),
-        new NodeId(0, 22),
+        NodeId.parse("i=0"),
+        NodeId.parse("i=22"),
         StructureType.StructureWithSubtypedValues,
         new StructureField[] {
           new StructureField(
               "DataSetWriterId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 5),
+              NodeId.parse("i=5"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -224,7 +224,7 @@ public class JsonDataSetMessage extends Structure implements UaStructuredType {
           new StructureField(
               "DataSetWriterName",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -232,7 +232,7 @@ public class JsonDataSetMessage extends Structure implements UaStructuredType {
           new StructureField(
               "PublisherId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -240,7 +240,7 @@ public class JsonDataSetMessage extends Structure implements UaStructuredType {
           new StructureField(
               "WriterGroupName",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -248,7 +248,7 @@ public class JsonDataSetMessage extends Structure implements UaStructuredType {
           new StructureField(
               "SequenceNumber",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -256,7 +256,7 @@ public class JsonDataSetMessage extends Structure implements UaStructuredType {
           new StructureField(
               "MetaDataVersion",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 14593),
+              NodeId.parse("i=14593"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -264,7 +264,7 @@ public class JsonDataSetMessage extends Structure implements UaStructuredType {
           new StructureField(
               "MinorVersion",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 20998),
+              NodeId.parse("i=20998"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -272,7 +272,7 @@ public class JsonDataSetMessage extends Structure implements UaStructuredType {
           new StructureField(
               "Timestamp",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 13),
+              NodeId.parse("i=13"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -280,7 +280,7 @@ public class JsonDataSetMessage extends Structure implements UaStructuredType {
           new StructureField(
               "Status",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 19),
+              NodeId.parse("i=19"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -288,7 +288,7 @@ public class JsonDataSetMessage extends Structure implements UaStructuredType {
           new StructureField(
               "MessageType",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -296,7 +296,7 @@ public class JsonDataSetMessage extends Structure implements UaStructuredType {
           new StructureField(
               "Payload",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 22),
+              NodeId.parse("i=22"),
               -1,
               null,
               UInteger.valueOf(0),

@@ -123,14 +123,14 @@ public class FindServersOnNetworkResponse extends Structure implements UaRespons
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 12209),
-        new NodeId(0, 22),
+        NodeId.parse("i=12209"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "ResponseHeader",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 392),
+              NodeId.parse("i=392"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -138,7 +138,7 @@ public class FindServersOnNetworkResponse extends Structure implements UaRespons
           new StructureField(
               "LastCounterResetTime",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 294),
+              NodeId.parse("i=294"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -146,7 +146,7 @@ public class FindServersOnNetworkResponse extends Structure implements UaRespons
           new StructureField(
               "Servers",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12189),
+              NodeId.parse("i=12189"),
               1,
               null,
               UInteger.valueOf(0),

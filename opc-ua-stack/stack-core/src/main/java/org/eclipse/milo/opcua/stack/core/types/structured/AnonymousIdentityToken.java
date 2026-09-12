@@ -88,14 +88,14 @@ public class AnonymousIdentityToken extends UserIdentityToken implements UaStruc
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 321),
-        new NodeId(0, 316),
+        NodeId.parse("i=321"),
+        NodeId.parse("i=316"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "PolicyId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),

@@ -111,14 +111,14 @@ public class JsonDataSetReaderMessageDataType extends DataSetReaderMessageDataTy
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 15725),
-        new NodeId(0, 15629),
+        NodeId.parse("i=15725"),
+        NodeId.parse("i=15629"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "NetworkMessageContentMask",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15654),
+              NodeId.parse("i=15654"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -126,7 +126,7 @@ public class JsonDataSetReaderMessageDataType extends DataSetReaderMessageDataTy
           new StructureField(
               "DataSetMessageContentMask",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15658),
+              NodeId.parse("i=15658"),
               -1,
               null,
               UInteger.valueOf(0),

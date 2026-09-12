@@ -100,14 +100,14 @@ public class PublishedDataItemsDataType extends PublishedDataSetSourceDataType
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 15679),
-        new NodeId(0, 15580),
+        NodeId.parse("i=15679"),
+        NodeId.parse("i=15580"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "PublishedData",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 14273),
+              NodeId.parse("i=14273"),
               1,
               null,
               UInteger.valueOf(0),

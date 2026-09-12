@@ -119,14 +119,14 @@ public class QueryNextRequest extends Structure implements UaRequestMessageType 
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 621),
-        new NodeId(0, 22),
+        NodeId.parse("i=621"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "RequestHeader",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 389),
+              NodeId.parse("i=389"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -134,7 +134,7 @@ public class QueryNextRequest extends Structure implements UaRequestMessageType 
           new StructureField(
               "ReleaseContinuationPoint",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -142,7 +142,7 @@ public class QueryNextRequest extends Structure implements UaRequestMessageType 
           new StructureField(
               "ContinuationPoint",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 521),
+              NodeId.parse("i=521"),
               -1,
               null,
               UInteger.valueOf(0),

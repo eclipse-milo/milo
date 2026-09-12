@@ -144,14 +144,14 @@ public class ReadProcessedDetails extends HistoryReadDetails implements UaStruct
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 652),
-        new NodeId(0, 641),
+        NodeId.parse("i=652"),
+        NodeId.parse("i=641"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "StartTime",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 294),
+              NodeId.parse("i=294"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -159,7 +159,7 @@ public class ReadProcessedDetails extends HistoryReadDetails implements UaStruct
           new StructureField(
               "EndTime",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 294),
+              NodeId.parse("i=294"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -167,7 +167,7 @@ public class ReadProcessedDetails extends HistoryReadDetails implements UaStruct
           new StructureField(
               "ProcessingInterval",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 290),
+              NodeId.parse("i=290"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -175,7 +175,7 @@ public class ReadProcessedDetails extends HistoryReadDetails implements UaStruct
           new StructureField(
               "AggregateType",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               1,
               null,
               UInteger.valueOf(0),
@@ -183,7 +183,7 @@ public class ReadProcessedDetails extends HistoryReadDetails implements UaStruct
           new StructureField(
               "AggregateConfiguration",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 948),
+              NodeId.parse("i=948"),
               -1,
               null,
               UInteger.valueOf(0),

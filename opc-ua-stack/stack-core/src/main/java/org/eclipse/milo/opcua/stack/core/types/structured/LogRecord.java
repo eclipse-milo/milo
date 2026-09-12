@@ -10,8 +10,11 @@
 
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
+import java.util.Objects;
 import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -42,6 +45,8 @@ public class LogRecord extends Structure implements UaStructuredType {
 
   public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=19387");
 
+  private final UInteger opcUaPresenceMask;
+
   private final DateTime time;
 
   private final UShort severity;
@@ -67,6 +72,58 @@ public class LogRecord extends Structure implements UaStructuredType {
       LocalizedText message,
       @Nullable TraceContextDataType traceContext,
       NameValuePair @Nullable [] additionalData) {
+    this(
+        Unsigned.uint(
+            0L
+                | (eventType != null ? 1L : 0L)
+                | (sourceNode != null ? 2L : 0L)
+                | (sourceName != null ? 4L : 0L)
+                | (traceContext != null ? 8L : 0L)
+                | (additionalData != null ? 16L : 0L)),
+        time,
+        severity,
+        eventType,
+        sourceNode,
+        sourceName,
+        message,
+        traceContext,
+        additionalData);
+  }
+
+  /**
+   * Creates a value with explicit optional-field presence. Bits follow inherited then local
+   * optional fields.
+   */
+  public LogRecord(
+      UInteger presenceMask,
+      DateTime time,
+      UShort severity,
+      @Nullable NodeId eventType,
+      @Nullable NodeId sourceNode,
+      @Nullable String sourceName,
+      LocalizedText message,
+      @Nullable TraceContextDataType traceContext,
+      NameValuePair @Nullable [] additionalData) {
+    Objects.requireNonNull(presenceMask, "presenceMask");
+    if ((presenceMask.longValue() & ~31L) != 0) {
+      throw new IllegalArgumentException("Unknown optional-field bits for i=19361");
+    }
+    if ((presenceMask.longValue() & 1L) == 0 && eventType != null) {
+      throw new IllegalArgumentException("Absent optional field has a value: EventType");
+    }
+    if ((presenceMask.longValue() & 2L) == 0 && sourceNode != null) {
+      throw new IllegalArgumentException("Absent optional field has a value: SourceNode");
+    }
+    if ((presenceMask.longValue() & 4L) == 0 && sourceName != null) {
+      throw new IllegalArgumentException("Absent optional field has a value: SourceName");
+    }
+    if ((presenceMask.longValue() & 8L) == 0 && traceContext != null) {
+      throw new IllegalArgumentException("Absent optional field has a value: TraceContext");
+    }
+    if ((presenceMask.longValue() & 16L) == 0 && additionalData != null) {
+      throw new IllegalArgumentException("Absent optional field has a value: AdditionalData");
+    }
+    this.opcUaPresenceMask = presenceMask;
     this.time = time;
     this.severity = severity;
     this.eventType = eventType;
@@ -75,6 +132,11 @@ public class LogRecord extends Structure implements UaStructuredType {
     this.message = message;
     this.traceContext = traceContext;
     this.additionalData = additionalData;
+  }
+
+  /** Returns presence bits for inherited and local optional fields. */
+  public UInteger opcUaEncodingMask() {
+    return opcUaPresenceMask;
   }
 
   @Override
@@ -146,6 +208,7 @@ public class LogRecord extends Structure implements UaStructuredType {
     eqb.append(getMessage(), that.getMessage());
     eqb.append(getTraceContext(), that.getTraceContext());
     eqb.append(getAdditionalData(), that.getAdditionalData());
+    eqb.append(opcUaEncodingMask().longValue() & 31L, that.opcUaEncodingMask().longValue() & 31L);
     return eqb.build();
   }
 
@@ -160,6 +223,7 @@ public class LogRecord extends Structure implements UaStructuredType {
     hcb.append(getMessage());
     hcb.append(getTraceContext());
     hcb.append(getAdditionalData());
+    hcb.append(opcUaEncodingMask().longValue() & 31L);
     return hcb.build();
   }
 
@@ -179,14 +243,14 @@ public class LogRecord extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 19379),
-        new NodeId(0, 22),
+        NodeId.parse("i=19379"),
+        NodeId.parse("i=22"),
         StructureType.StructureWithOptionalFields,
         new StructureField[] {
           new StructureField(
               "Time",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 13),
+              NodeId.parse("i=13"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -194,7 +258,7 @@ public class LogRecord extends Structure implements UaStructuredType {
           new StructureField(
               "Severity",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 5),
+              NodeId.parse("i=5"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -202,7 +266,7 @@ public class LogRecord extends Structure implements UaStructuredType {
           new StructureField(
               "EventType",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -210,7 +274,7 @@ public class LogRecord extends Structure implements UaStructuredType {
           new StructureField(
               "SourceNode",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -218,7 +282,7 @@ public class LogRecord extends Structure implements UaStructuredType {
           new StructureField(
               "SourceName",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -226,7 +290,7 @@ public class LogRecord extends Structure implements UaStructuredType {
           new StructureField(
               "Message",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 21),
+              NodeId.parse("i=21"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -234,7 +298,7 @@ public class LogRecord extends Structure implements UaStructuredType {
           new StructureField(
               "TraceContext",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 19747),
+              NodeId.parse("i=19747"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -242,7 +306,7 @@ public class LogRecord extends Structure implements UaStructuredType {
           new StructureField(
               "AdditionalData",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 19748),
+              NodeId.parse("i=19748"),
               1,
               null,
               UInteger.valueOf(0),
@@ -267,76 +331,73 @@ public class LogRecord extends Structure implements UaStructuredType {
       final TraceContextDataType traceContext;
       final NameValuePair[] additionalData;
       final long encodingMask = decoder.decodeUInt32("EncodingMask").longValue();
+      if ((encodingMask & ~31L) != 0) {
+        throw new UaSerializationException(
+            StatusCodes.Bad_DecodingError, "Unknown optional-field bits for i=19361");
+      }
       time = decoder.decodeDateTime("Time");
       severity = decoder.decodeUInt16("Severity");
-      if ((encodingMask & (1L << 0)) != 0) {
+      if ((encodingMask & 1L) != 0) {
         eventType = decoder.decodeNodeId("EventType");
       } else {
         eventType = null;
       }
-      if ((encodingMask & (1L << 1)) != 0) {
+      if ((encodingMask & 2L) != 0) {
         sourceNode = decoder.decodeNodeId("SourceNode");
       } else {
         sourceNode = null;
       }
-      if ((encodingMask & (1L << 2)) != 0) {
+      if ((encodingMask & 4L) != 0) {
         sourceName = decoder.decodeString("SourceName");
       } else {
         sourceName = null;
       }
       message = decoder.decodeLocalizedText("Message");
-      if ((encodingMask & (1L << 3)) != 0) {
+      if ((encodingMask & 8L) != 0) {
         traceContext =
             (TraceContextDataType)
                 decoder.decodeStruct("TraceContext", TraceContextDataType.TYPE_ID);
       } else {
         traceContext = null;
       }
-      if ((encodingMask & (1L << 4)) != 0) {
+      if ((encodingMask & 16L) != 0) {
         additionalData =
             (NameValuePair[]) decoder.decodeStructArray("AdditionalData", NameValuePair.TYPE_ID);
       } else {
         additionalData = null;
       }
       return new LogRecord(
-          time, severity, eventType, sourceNode, sourceName, message, traceContext, additionalData);
+          Unsigned.uint(encodingMask),
+          time,
+          severity,
+          eventType,
+          sourceNode,
+          sourceName,
+          message,
+          traceContext,
+          additionalData);
     }
 
     @Override
     public void encodeType(EncodingContext context, UaEncoder encoder, LogRecord value) {
-      long encodingMask = 0L;
-      if (value.getEventType() != null) {
-        encodingMask |= (1L << 0);
-      }
-      if (value.getSourceNode() != null) {
-        encodingMask |= (1L << 1);
-      }
-      if (value.getSourceName() != null) {
-        encodingMask |= (1L << 2);
-      }
-      if (value.getTraceContext() != null) {
-        encodingMask |= (1L << 3);
-      }
-      if (value.getAdditionalData() != null) {
-        encodingMask |= (1L << 4);
-      }
+      long encodingMask = value.opcUaEncodingMask().longValue() & 31L;
       encoder.encodeUInt32("EncodingMask", Unsigned.uint(encodingMask));
       encoder.encodeDateTime("Time", value.getTime());
       encoder.encodeUInt16("Severity", value.getSeverity());
-      if (value.getEventType() != null) {
+      if ((encodingMask & 1L) != 0) {
         encoder.encodeNodeId("EventType", value.getEventType());
       }
-      if (value.getSourceNode() != null) {
+      if ((encodingMask & 2L) != 0) {
         encoder.encodeNodeId("SourceNode", value.getSourceNode());
       }
-      if (value.getSourceName() != null) {
+      if ((encodingMask & 4L) != 0) {
         encoder.encodeString("SourceName", value.getSourceName());
       }
       encoder.encodeLocalizedText("Message", value.getMessage());
-      if (value.getTraceContext() != null) {
+      if ((encodingMask & 8L) != 0) {
         encoder.encodeStruct("TraceContext", value.getTraceContext(), TraceContextDataType.TYPE_ID);
       }
-      if (value.getAdditionalData() != null) {
+      if ((encodingMask & 16L) != 0) {
         encoder.encodeStructArray(
             "AdditionalData", value.getAdditionalData(), NameValuePair.TYPE_ID);
       }

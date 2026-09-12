@@ -101,14 +101,14 @@ public class StandaloneSubscribedDataSetRefDataType extends SubscribedDataSetDat
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 23851),
-        new NodeId(0, 15630),
+        NodeId.parse("i=23851"),
+        NodeId.parse("i=15630"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "DataSetName",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),

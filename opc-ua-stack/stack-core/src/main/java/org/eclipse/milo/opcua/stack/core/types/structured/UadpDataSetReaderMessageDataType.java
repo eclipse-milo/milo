@@ -190,14 +190,14 @@ public class UadpDataSetReaderMessageDataType extends DataSetReaderMessageDataTy
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 15718),
-        new NodeId(0, 15629),
+        NodeId.parse("i=15718"),
+        NodeId.parse("i=15629"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "GroupVersion",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 20998),
+              NodeId.parse("i=20998"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -205,7 +205,7 @@ public class UadpDataSetReaderMessageDataType extends DataSetReaderMessageDataTy
           new StructureField(
               "NetworkMessageNumber",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 5),
+              NodeId.parse("i=5"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -213,7 +213,7 @@ public class UadpDataSetReaderMessageDataType extends DataSetReaderMessageDataTy
           new StructureField(
               "DataSetOffset",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 5),
+              NodeId.parse("i=5"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -221,7 +221,7 @@ public class UadpDataSetReaderMessageDataType extends DataSetReaderMessageDataTy
           new StructureField(
               "DataSetClassId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 14),
+              NodeId.parse("i=14"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -229,7 +229,7 @@ public class UadpDataSetReaderMessageDataType extends DataSetReaderMessageDataTy
           new StructureField(
               "NetworkMessageContentMask",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15642),
+              NodeId.parse("i=15642"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -237,7 +237,7 @@ public class UadpDataSetReaderMessageDataType extends DataSetReaderMessageDataTy
           new StructureField(
               "DataSetMessageContentMask",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15646),
+              NodeId.parse("i=15646"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -245,7 +245,7 @@ public class UadpDataSetReaderMessageDataType extends DataSetReaderMessageDataTy
           new StructureField(
               "PublishingInterval",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 290),
+              NodeId.parse("i=290"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -253,7 +253,7 @@ public class UadpDataSetReaderMessageDataType extends DataSetReaderMessageDataTy
           new StructureField(
               "ReceiveOffset",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 290),
+              NodeId.parse("i=290"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -261,7 +261,7 @@ public class UadpDataSetReaderMessageDataType extends DataSetReaderMessageDataTy
           new StructureField(
               "ProcessingOffset",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 290),
+              NodeId.parse("i=290"),
               -1,
               null,
               UInteger.valueOf(0),

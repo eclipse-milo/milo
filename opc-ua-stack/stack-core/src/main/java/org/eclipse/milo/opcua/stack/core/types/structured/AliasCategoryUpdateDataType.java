@@ -108,14 +108,14 @@ public class AliasCategoryUpdateDataType extends Structure implements UaStructur
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 24338),
-        new NodeId(0, 22),
+        NodeId.parse("i=24338"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "Category",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 24106),
+              NodeId.parse("i=24106"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -123,7 +123,7 @@ public class AliasCategoryUpdateDataType extends Structure implements UaStructur
           new StructureField(
               "LastChange",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 20998),
+              NodeId.parse("i=20998"),
               -1,
               null,
               UInteger.valueOf(0),

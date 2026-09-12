@@ -108,14 +108,14 @@ public class EventFilter extends MonitoringFilter implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 727),
-        new NodeId(0, 719),
+        NodeId.parse("i=727"),
+        NodeId.parse("i=719"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "SelectClauses",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 601),
+              NodeId.parse("i=601"),
               1,
               null,
               UInteger.valueOf(0),
@@ -123,7 +123,7 @@ public class EventFilter extends MonitoringFilter implements UaStructuredType {
           new StructureField(
               "WhereClause",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 586),
+              NodeId.parse("i=586"),
               -1,
               null,
               UInteger.valueOf(0),

@@ -178,14 +178,14 @@ public class PublishedVariableDataType extends Structure implements UaStructured
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 14323),
-        new NodeId(0, 22),
+        NodeId.parse("i=14323"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "PublishedVariable",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -193,7 +193,7 @@ public class PublishedVariableDataType extends Structure implements UaStructured
           new StructureField(
               "AttributeId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 288),
+              NodeId.parse("i=288"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -201,7 +201,7 @@ public class PublishedVariableDataType extends Structure implements UaStructured
           new StructureField(
               "SamplingIntervalHint",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 290),
+              NodeId.parse("i=290"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -209,7 +209,7 @@ public class PublishedVariableDataType extends Structure implements UaStructured
           new StructureField(
               "DeadbandType",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -217,7 +217,7 @@ public class PublishedVariableDataType extends Structure implements UaStructured
           new StructureField(
               "DeadbandValue",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 11),
+              NodeId.parse("i=11"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -225,7 +225,7 @@ public class PublishedVariableDataType extends Structure implements UaStructured
           new StructureField(
               "IndexRange",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 291),
+              NodeId.parse("i=291"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -233,7 +233,7 @@ public class PublishedVariableDataType extends Structure implements UaStructured
           new StructureField(
               "SubstituteValue",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 24),
+              NodeId.parse("i=24"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -241,7 +241,7 @@ public class PublishedVariableDataType extends Structure implements UaStructured
           new StructureField(
               "MetaDataProperties",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 20),
+              NodeId.parse("i=20"),
               1,
               null,
               UInteger.valueOf(0),
@@ -293,7 +293,9 @@ public class PublishedVariableDataType extends Structure implements UaStructured
       encoder.encodeUInt32("DeadbandType", value.getDeadbandType());
       encoder.encodeDouble("DeadbandValue", value.getDeadbandValue());
       encoder.encodeString("IndexRange", value.getIndexRange());
-      encoder.encodeVariant("SubstituteValue", value.getSubstituteValue());
+      encoder.encodeVariant(
+          "SubstituteValue",
+          value.getSubstituteValue() == null ? Variant.NULL_VALUE : value.getSubstituteValue());
       encoder.encodeQualifiedNameArray("MetaDataProperties", value.getMetaDataProperties());
     }
   }

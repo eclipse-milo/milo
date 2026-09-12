@@ -26,12 +26,13 @@ import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.conditions.ConditionNodeTraversal.DiscoveredMethod;
 import org.eclipse.milo.opcua.sdk.server.conditions.ConditionNodeTraversal.MethodSurface;
+import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext;
 import org.eclipse.milo.opcua.sdk.server.methods.MethodInvocationHandler;
-import org.eclipse.milo.opcua.sdk.server.model.objects.ConditionType;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ConditionTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.ConditionVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.variables.TwoStateVariableType;
 import org.eclipse.milo.opcua.sdk.server.model.variables.TwoStateVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
@@ -41,6 +42,7 @@ import org.eclipse.milo.opcua.sdk.server.nodes.filters.AttributeFilter;
 import org.eclipse.milo.opcua.sdk.server.nodes.filters.AttributeFilterChain;
 import org.eclipse.milo.opcua.sdk.server.nodes.filters.AttributeFilterContext;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
+import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
@@ -52,6 +54,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.util.NonceUtil;
 import org.jspecify.annotations.Nullable;
 
@@ -984,10 +987,22 @@ public class Condition {
     if (enable != null) {
       installMethodHandler(
           enable,
-          new ConditionType.EnableMethod(enable.node()) {
+          new AbstractMethodInvocationHandler(enable.node()) {
             @Override
-            protected void invoke(InvocationContext context) throws UaException {
+            public Argument[] getInputArguments() {
+              return new Argument[0];
+            }
+
+            @Override
+            public Argument[] getOutputArguments() {
+              return new Argument[0];
+            }
+
+            @Override
+            protected Variant[] invoke(InvocationContext context, Variant[] inputValues)
+                throws UaException {
               handleEnable(context);
+              return new Variant[0];
             }
           });
     }
@@ -996,10 +1011,22 @@ public class Condition {
     if (disable != null) {
       installMethodHandler(
           disable,
-          new ConditionType.DisableMethod(disable.node()) {
+          new AbstractMethodInvocationHandler(disable.node()) {
             @Override
-            protected void invoke(InvocationContext context) throws UaException {
+            public Argument[] getInputArguments() {
+              return new Argument[0];
+            }
+
+            @Override
+            public Argument[] getOutputArguments() {
+              return new Argument[0];
+            }
+
+            @Override
+            protected Variant[] invoke(InvocationContext context, Variant[] inputValues)
+                throws UaException {
               handleDisable(context);
+              return new Variant[0];
             }
           });
     }
@@ -1008,12 +1035,37 @@ public class Condition {
     if (addComment != null) {
       installMethodHandler(
           addComment,
-          new ConditionType.AddCommentMethod(addComment.node()) {
+          new AbstractMethodInvocationHandler(addComment.node()) {
             @Override
-            protected void invoke(
-                InvocationContext context, ByteString eventId, LocalizedText comment)
+            public Argument[] getInputArguments() {
+              return new Argument[] {
+                new Argument(
+                    "EventId",
+                    NodeIds.ByteString,
+                    -1,
+                    null,
+                    new LocalizedText("", "The identifier for the event to comment.")),
+                new Argument(
+                    "Comment",
+                    NodeIds.LocalizedText,
+                    -1,
+                    null,
+                    new LocalizedText("", "The comment to add to the condition."))
+              };
+            }
+
+            @Override
+            public Argument[] getOutputArguments() {
+              return new Argument[0];
+            }
+
+            @Override
+            protected Variant[] invoke(InvocationContext context, Variant[] inputValues)
                 throws UaException {
+              ByteString eventId = (ByteString) inputValues[0].value();
+              LocalizedText comment = (LocalizedText) inputValues[1].value();
               handleAddComment(context, eventId, comment);
+              return new Variant[0];
             }
           });
     }
@@ -1153,7 +1205,11 @@ public class Condition {
 
     state.setValue(new DataValue(new Variant(text)));
     state.setId(value);
-    state.setTransitionTime(time);
+    if (state.getTransitionTimeNode() == null) {
+      state.setProperty(TwoStateVariableType.TRANSITION_TIME, time);
+    } else {
+      state.setTransitionTime(time);
+    }
 
     PropertyTypeNode effectiveDisplayName = state.getEffectiveDisplayNameNode();
     if (effectiveDisplayName != null) {

@@ -121,14 +121,14 @@ public class UserManagementDataType extends Structure implements UaStructuredTyp
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 24292),
-        new NodeId(0, 22),
+        NodeId.parse("i=24292"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "UserName",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -136,7 +136,7 @@ public class UserManagementDataType extends Structure implements UaStructuredTyp
           new StructureField(
               "UserConfiguration",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 24279),
+              NodeId.parse("i=24279"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -144,7 +144,7 @@ public class UserManagementDataType extends Structure implements UaStructuredTyp
           new StructureField(
               "Description",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),

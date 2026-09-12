@@ -12,6 +12,8 @@ package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -135,14 +137,14 @@ public class BrokerWriterGroupTransportDataType extends WriterGroupTransportData
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 15727),
-        new NodeId(0, 15611),
+        NodeId.parse("i=15727"),
+        NodeId.parse("i=15611"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "QueueName",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -150,7 +152,7 @@ public class BrokerWriterGroupTransportDataType extends WriterGroupTransportData
           new StructureField(
               "ResourceUri",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -158,7 +160,7 @@ public class BrokerWriterGroupTransportDataType extends WriterGroupTransportData
           new StructureField(
               "AuthenticationProfileUri",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -166,7 +168,7 @@ public class BrokerWriterGroupTransportDataType extends WriterGroupTransportData
           new StructureField(
               "RequestedDeliveryGuarantee",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15008),
+              NodeId.parse("i=15008"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -190,8 +192,29 @@ public class BrokerWriterGroupTransportDataType extends WriterGroupTransportData
       queueName = decoder.decodeString("QueueName");
       resourceUri = decoder.decodeString("ResourceUri");
       authenticationProfileUri = decoder.decodeString("AuthenticationProfileUri");
-      requestedDeliveryGuarantee =
-          BrokerTransportQualityOfService.from(decoder.decodeEnum("RequestedDeliveryGuarantee"));
+      {
+        Integer enumValue = decoder.decodeEnum("RequestedDeliveryGuarantee");
+        if (enumValue != null && !((Object) enumValue instanceof BrokerTransportQualityOfService)) {
+          if (!(enumValue instanceof Integer)) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_TypeMismatch,
+                "RequestedDeliveryGuarantee: expected"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.BrokerTransportQualityOfService"
+                    + " or Int32, got "
+                    + enumValue);
+          }
+          if (BrokerTransportQualityOfService.from((Integer) enumValue) == null) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_OutOfRange,
+                "RequestedDeliveryGuarantee: unknown"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.BrokerTransportQualityOfService"
+                    + " value "
+                    + enumValue);
+          }
+        }
+        requestedDeliveryGuarantee =
+            enumValue == null ? null : BrokerTransportQualityOfService.from(enumValue);
+      }
       return new BrokerWriterGroupTransportDataType(
           queueName, resourceUri, authenticationProfileUri, requestedDeliveryGuarantee);
     }

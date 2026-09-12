@@ -12,6 +12,8 @@ package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -128,14 +130,14 @@ public class SecuritySettingsDataType extends BaseConfigurationRecordDataType
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 16546),
-        new NodeId(0, 15435),
+        NodeId.parse("i=16546"),
+        NodeId.parse("i=15435"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "Name",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -143,7 +145,7 @@ public class SecuritySettingsDataType extends BaseConfigurationRecordDataType
           new StructureField(
               "RecordProperties",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 14533),
+              NodeId.parse("i=14533"),
               1,
               null,
               UInteger.valueOf(0),
@@ -151,7 +153,7 @@ public class SecuritySettingsDataType extends BaseConfigurationRecordDataType
           new StructureField(
               "SecurityModes",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 302),
+              NodeId.parse("i=302"),
               1,
               null,
               UInteger.valueOf(0),
@@ -159,7 +161,7 @@ public class SecuritySettingsDataType extends BaseConfigurationRecordDataType
           new StructureField(
               "SecurityPolicyUris",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               1,
               null,
               UInteger.valueOf(0),
@@ -167,7 +169,7 @@ public class SecuritySettingsDataType extends BaseConfigurationRecordDataType
           new StructureField(
               "CertificateGroupName",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -192,14 +194,33 @@ public class SecuritySettingsDataType extends BaseConfigurationRecordDataType
       recordProperties =
           (KeyValuePair[]) decoder.decodeStructArray("RecordProperties", KeyValuePair.TYPE_ID);
       {
-        Integer[] values = decoder.decodeEnumArray("SecurityModes");
-        if (values != null) {
-          securityModes = new MessageSecurityMode[values.length];
-          for (int i = 0; i < values.length; i++) {
-            securityModes[i] = MessageSecurityMode.from(values[i]);
-          }
-        } else {
+        Integer[] enumValues = decoder.decodeEnumArray("SecurityModes");
+        if (enumValues == null) {
           securityModes = null;
+        } else {
+          securityModes = new MessageSecurityMode[enumValues.length];
+          for (int i = 0; i < enumValues.length; i++) {
+            Integer enumValue = enumValues[i];
+            if (enumValue != null && !((Object) enumValue instanceof MessageSecurityMode)) {
+              if (!(enumValue instanceof Integer)) {
+                throw new UaSerializationException(
+                    StatusCodes.Bad_TypeMismatch,
+                    "SecurityModes: expected"
+                        + " org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode"
+                        + " or Int32, got "
+                        + enumValue);
+              }
+              if (MessageSecurityMode.from((Integer) enumValue) == null) {
+                throw new UaSerializationException(
+                    StatusCodes.Bad_OutOfRange,
+                    "SecurityModes: unknown"
+                        + " org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode"
+                        + " value "
+                        + enumValue);
+              }
+            }
+            securityModes[i] = enumValue == null ? null : MessageSecurityMode.from(enumValue);
+          }
         }
       }
       securityPolicyUris = decoder.decodeStringArray("SecurityPolicyUris");

@@ -107,14 +107,14 @@ public class UnsignedRationalNumber extends Structure implements UaStructuredTyp
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 24110),
-        new NodeId(0, 22),
+        NodeId.parse("i=24110"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "Numerator",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -122,7 +122,7 @@ public class UnsignedRationalNumber extends Structure implements UaStructuredTyp
           new StructureField(
               "Denominator",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),

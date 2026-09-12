@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUI32;
 import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
@@ -68,6 +69,22 @@ public class JsonNetworkMessageContentMask
     joiner.add("replyTo=" + getReplyTo());
     joiner.add("writerGroupName=" + getWriterGroupName());
     return joiner.toString();
+  }
+
+  public static EnumDefinition definition() {
+    return new EnumDefinition(
+        new EnumField[] {
+          new EnumField(
+              0L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "NetworkMessageHeader"),
+          new EnumField(
+              1L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "DataSetMessageHeader"),
+          new EnumField(
+              2L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "SingleDataSetMessage"),
+          new EnumField(3L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "PublisherId"),
+          new EnumField(4L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "DataSetClassId"),
+          new EnumField(5L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "ReplyTo"),
+          new EnumField(6L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "WriterGroupName")
+        });
   }
 
   public static JsonNetworkMessageContentMask of(JsonNetworkMessageContentMask.Field... fields) {

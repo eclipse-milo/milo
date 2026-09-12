@@ -123,14 +123,14 @@ public class BrowseResult extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 524),
-        new NodeId(0, 22),
+        NodeId.parse("i=524"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "StatusCode",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 19),
+              NodeId.parse("i=19"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -138,7 +138,7 @@ public class BrowseResult extends Structure implements UaStructuredType {
           new StructureField(
               "ContinuationPoint",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 521),
+              NodeId.parse("i=521"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -146,7 +146,7 @@ public class BrowseResult extends Structure implements UaStructuredType {
           new StructureField(
               "References",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 518),
+              NodeId.parse("i=518"),
               1,
               null,
               UInteger.valueOf(0),

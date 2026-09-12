@@ -127,14 +127,14 @@ public class EndpointDataType extends BaseConfigurationRecordDataType implements
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 16544),
-        new NodeId(0, 15435),
+        NodeId.parse("i=16544"),
+        NodeId.parse("i=15435"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "Name",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -142,7 +142,7 @@ public class EndpointDataType extends BaseConfigurationRecordDataType implements
           new StructureField(
               "RecordProperties",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 14533),
+              NodeId.parse("i=14533"),
               1,
               null,
               UInteger.valueOf(0),
@@ -150,7 +150,7 @@ public class EndpointDataType extends BaseConfigurationRecordDataType implements
           new StructureField(
               "DiscoveryUrls",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 23751),
+              NodeId.parse("i=23751"),
               1,
               null,
               UInteger.valueOf(0),
@@ -158,7 +158,7 @@ public class EndpointDataType extends BaseConfigurationRecordDataType implements
           new StructureField(
               "NetworkName",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -166,7 +166,7 @@ public class EndpointDataType extends BaseConfigurationRecordDataType implements
           new StructureField(
               "Port",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 5),
+              NodeId.parse("i=5"),
               -1,
               null,
               UInteger.valueOf(0),

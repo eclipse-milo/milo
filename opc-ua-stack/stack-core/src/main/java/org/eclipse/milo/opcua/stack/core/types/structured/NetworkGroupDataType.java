@@ -109,14 +109,14 @@ public class NetworkGroupDataType extends Structure implements UaStructuredType 
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 11958),
-        new NodeId(0, 22),
+        NodeId.parse("i=11958"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "ServerUri",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -124,7 +124,7 @@ public class NetworkGroupDataType extends Structure implements UaStructuredType 
           new StructureField(
               "NetworkPaths",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 11943),
+              NodeId.parse("i=11943"),
               1,
               null,
               UInteger.valueOf(0),

@@ -98,14 +98,14 @@ public class EndpointUrlListDataType extends Structure implements UaStructuredTy
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 11957),
-        new NodeId(0, 22),
+        NodeId.parse("i=11957"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "EndpointUrlList",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               1,
               null,
               UInteger.valueOf(0),

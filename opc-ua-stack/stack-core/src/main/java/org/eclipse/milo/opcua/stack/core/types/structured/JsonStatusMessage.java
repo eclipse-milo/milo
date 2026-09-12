@@ -12,6 +12,8 @@ package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -163,14 +165,14 @@ public class JsonStatusMessage extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 0),
-        new NodeId(0, 22),
+        NodeId.parse("i=0"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "MessageId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -178,7 +180,7 @@ public class JsonStatusMessage extends Structure implements UaStructuredType {
           new StructureField(
               "MessageType",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -186,7 +188,7 @@ public class JsonStatusMessage extends Structure implements UaStructuredType {
           new StructureField(
               "PublisherId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -194,7 +196,7 @@ public class JsonStatusMessage extends Structure implements UaStructuredType {
           new StructureField(
               "Timestamp",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 294),
+              NodeId.parse("i=294"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -202,7 +204,7 @@ public class JsonStatusMessage extends Structure implements UaStructuredType {
           new StructureField(
               "IsCyclic",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -210,7 +212,7 @@ public class JsonStatusMessage extends Structure implements UaStructuredType {
           new StructureField(
               "Status",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 14647),
+              NodeId.parse("i=14647"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -218,7 +220,7 @@ public class JsonStatusMessage extends Structure implements UaStructuredType {
           new StructureField(
               "NextReportTime",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 294),
+              NodeId.parse("i=294"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -246,7 +248,26 @@ public class JsonStatusMessage extends Structure implements UaStructuredType {
       publisherId = decoder.decodeString("PublisherId");
       timestamp = decoder.decodeDateTime("Timestamp");
       isCyclic = decoder.decodeBoolean("IsCyclic");
-      status = PubSubState.from(decoder.decodeEnum("Status"));
+      {
+        Integer enumValue = decoder.decodeEnum("Status");
+        if (enumValue != null && !((Object) enumValue instanceof PubSubState)) {
+          if (!(enumValue instanceof Integer)) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_TypeMismatch,
+                "Status: expected org.eclipse.milo.opcua.stack.core.types.enumerated.PubSubState or"
+                    + " Int32, got "
+                    + enumValue);
+          }
+          if (PubSubState.from((Integer) enumValue) == null) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_OutOfRange,
+                "Status: unknown org.eclipse.milo.opcua.stack.core.types.enumerated.PubSubState"
+                    + " value "
+                    + enumValue);
+          }
+        }
+        status = enumValue == null ? null : PubSubState.from(enumValue);
+      }
       nextReportTime = decoder.decodeDateTime("NextReportTime");
       return new JsonStatusMessage(
           messageId, messageType, publisherId, timestamp, isCyclic, status, nextReportTime);

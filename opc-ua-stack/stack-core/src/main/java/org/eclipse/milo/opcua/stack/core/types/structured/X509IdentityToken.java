@@ -102,14 +102,14 @@ public class X509IdentityToken extends UserIdentityToken implements UaStructured
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 327),
-        new NodeId(0, 316),
+        NodeId.parse("i=327"),
+        NodeId.parse("i=316"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "PolicyId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -117,7 +117,7 @@ public class X509IdentityToken extends UserIdentityToken implements UaStructured
           new StructureField(
               "CertificateData",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15),
+              NodeId.parse("i=15"),
               -1,
               null,
               UInteger.valueOf(0),

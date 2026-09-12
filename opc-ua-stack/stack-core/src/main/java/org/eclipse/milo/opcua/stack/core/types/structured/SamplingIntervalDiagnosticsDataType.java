@@ -133,14 +133,14 @@ public class SamplingIntervalDiagnosticsDataType extends Structure implements Ua
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 858),
-        new NodeId(0, 22),
+        NodeId.parse("i=858"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "SamplingInterval",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 290),
+              NodeId.parse("i=290"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -148,7 +148,7 @@ public class SamplingIntervalDiagnosticsDataType extends Structure implements Ua
           new StructureField(
               "MonitoredItemCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -156,7 +156,7 @@ public class SamplingIntervalDiagnosticsDataType extends Structure implements Ua
           new StructureField(
               "MaxMonitoredItemCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -164,7 +164,7 @@ public class SamplingIntervalDiagnosticsDataType extends Structure implements Ua
           new StructureField(
               "DisabledMonitoredItemCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),

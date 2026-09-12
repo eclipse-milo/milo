@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUI32;
 import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
@@ -97,6 +98,32 @@ public class PubSubConfigurationRefMask extends OptionSetUI32<PubSubConfiguratio
     joiner.add("referenceSecurityGroup=" + getReferenceSecurityGroup());
     joiner.add("referencePushTarget=" + getReferencePushTarget());
     return joiner.toString();
+  }
+
+  public static EnumDefinition definition() {
+    return new EnumDefinition(
+        new EnumField[] {
+          new EnumField(0L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "ElementAdd"),
+          new EnumField(1L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "ElementMatch"),
+          new EnumField(2L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "ElementModify"),
+          new EnumField(3L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "ElementRemove"),
+          new EnumField(4L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "ReferenceWriter"),
+          new EnumField(5L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "ReferenceReader"),
+          new EnumField(
+              6L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "ReferenceWriterGroup"),
+          new EnumField(
+              7L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "ReferenceReaderGroup"),
+          new EnumField(
+              8L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "ReferenceConnection"),
+          new EnumField(
+              9L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "ReferencePubDataset"),
+          new EnumField(
+              10L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "ReferenceSubDataset"),
+          new EnumField(
+              11L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "ReferenceSecurityGroup"),
+          new EnumField(
+              12L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "ReferencePushTarget")
+        });
   }
 
   public static PubSubConfigurationRefMask of(PubSubConfigurationRefMask.Field... fields) {

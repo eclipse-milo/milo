@@ -13,6 +13,8 @@ package org.eclipse.milo.opcua.stack.core.types.structured;
 import java.util.StringJoiner;
 import java.util.UUID;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -167,14 +169,14 @@ public class FieldTargetDataType extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 14848),
-        new NodeId(0, 22),
+        NodeId.parse("i=14848"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "DataSetFieldId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 14),
+              NodeId.parse("i=14"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -182,7 +184,7 @@ public class FieldTargetDataType extends Structure implements UaStructuredType {
           new StructureField(
               "ReceiverIndexRange",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 291),
+              NodeId.parse("i=291"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -190,7 +192,7 @@ public class FieldTargetDataType extends Structure implements UaStructuredType {
           new StructureField(
               "TargetNodeId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -198,7 +200,7 @@ public class FieldTargetDataType extends Structure implements UaStructuredType {
           new StructureField(
               "AttributeId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 288),
+              NodeId.parse("i=288"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -206,7 +208,7 @@ public class FieldTargetDataType extends Structure implements UaStructuredType {
           new StructureField(
               "WriteIndexRange",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 291),
+              NodeId.parse("i=291"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -214,7 +216,7 @@ public class FieldTargetDataType extends Structure implements UaStructuredType {
           new StructureField(
               "OverrideValueHandling",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15874),
+              NodeId.parse("i=15874"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -222,7 +224,7 @@ public class FieldTargetDataType extends Structure implements UaStructuredType {
           new StructureField(
               "OverrideValue",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 24),
+              NodeId.parse("i=24"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -250,8 +252,28 @@ public class FieldTargetDataType extends Structure implements UaStructuredType {
       targetNodeId = decoder.decodeNodeId("TargetNodeId");
       attributeId = decoder.decodeUInt32("AttributeId");
       writeIndexRange = decoder.decodeString("WriteIndexRange");
-      overrideValueHandling =
-          OverrideValueHandling.from(decoder.decodeEnum("OverrideValueHandling"));
+      {
+        Integer enumValue = decoder.decodeEnum("OverrideValueHandling");
+        if (enumValue != null && !((Object) enumValue instanceof OverrideValueHandling)) {
+          if (!(enumValue instanceof Integer)) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_TypeMismatch,
+                "OverrideValueHandling: expected"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.OverrideValueHandling or"
+                    + " Int32, got "
+                    + enumValue);
+          }
+          if (OverrideValueHandling.from((Integer) enumValue) == null) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_OutOfRange,
+                "OverrideValueHandling: unknown"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.OverrideValueHandling"
+                    + " value "
+                    + enumValue);
+          }
+        }
+        overrideValueHandling = enumValue == null ? null : OverrideValueHandling.from(enumValue);
+      }
       overrideValue = decoder.decodeVariant("OverrideValue");
       return new FieldTargetDataType(
           dataSetFieldId,
@@ -271,7 +293,9 @@ public class FieldTargetDataType extends Structure implements UaStructuredType {
       encoder.encodeUInt32("AttributeId", value.getAttributeId());
       encoder.encodeString("WriteIndexRange", value.getWriteIndexRange());
       encoder.encodeEnum("OverrideValueHandling", value.getOverrideValueHandling());
-      encoder.encodeVariant("OverrideValue", value.getOverrideValue());
+      encoder.encodeVariant(
+          "OverrideValue",
+          value.getOverrideValue() == null ? Variant.NULL_VALUE : value.getOverrideValue());
     }
   }
 }

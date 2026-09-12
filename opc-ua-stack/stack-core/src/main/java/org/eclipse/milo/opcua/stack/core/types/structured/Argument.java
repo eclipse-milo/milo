@@ -143,14 +143,14 @@ public class Argument extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 298),
-        new NodeId(0, 22),
+        NodeId.parse("i=298"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "Name",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -158,7 +158,7 @@ public class Argument extends Structure implements UaStructuredType {
           new StructureField(
               "DataType",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -166,7 +166,7 @@ public class Argument extends Structure implements UaStructuredType {
           new StructureField(
               "ValueRank",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 6),
+              NodeId.parse("i=6"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -174,7 +174,7 @@ public class Argument extends Structure implements UaStructuredType {
           new StructureField(
               "ArrayDimensions",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               1,
               null,
               UInteger.valueOf(0),
@@ -182,7 +182,7 @@ public class Argument extends Structure implements UaStructuredType {
           new StructureField(
               "Description",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 21),
+              NodeId.parse("i=21"),
               -1,
               null,
               UInteger.valueOf(0),

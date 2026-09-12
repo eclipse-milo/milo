@@ -102,14 +102,14 @@ public class HistoryModifiedEvent extends HistoryEvent implements UaStructuredTy
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 32825),
-        new NodeId(0, 659),
+        NodeId.parse("i=32825"),
+        NodeId.parse("i=659"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "Events",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 920),
+              NodeId.parse("i=920"),
               1,
               null,
               UInteger.valueOf(0),
@@ -117,7 +117,7 @@ public class HistoryModifiedEvent extends HistoryEvent implements UaStructuredTy
           new StructureField(
               "ModificationInfos",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 11216),
+              NodeId.parse("i=11216"),
               1,
               null,
               UInteger.valueOf(0),

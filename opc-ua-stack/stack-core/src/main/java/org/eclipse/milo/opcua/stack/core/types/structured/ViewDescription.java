@@ -118,14 +118,14 @@ public class ViewDescription extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 513),
-        new NodeId(0, 22),
+        NodeId.parse("i=513"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "ViewId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -133,7 +133,7 @@ public class ViewDescription extends Structure implements UaStructuredType {
           new StructureField(
               "Timestamp",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 294),
+              NodeId.parse("i=294"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -141,7 +141,7 @@ public class ViewDescription extends Structure implements UaStructuredType {
           new StructureField(
               "ViewVersion",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),

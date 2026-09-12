@@ -99,14 +99,14 @@ public class JsonDataSetWriterMessageDataType extends DataSetWriterMessageDataTy
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 15724),
-        new NodeId(0, 15605),
+        NodeId.parse("i=15724"),
+        NodeId.parse("i=15605"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "DataSetMessageContentMask",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15658),
+              NodeId.parse("i=15658"),
               -1,
               null,
               UInteger.valueOf(0),

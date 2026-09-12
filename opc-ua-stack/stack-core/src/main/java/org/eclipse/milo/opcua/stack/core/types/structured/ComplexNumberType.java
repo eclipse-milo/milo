@@ -107,14 +107,14 @@ public class ComplexNumberType extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 12181),
-        new NodeId(0, 22),
+        NodeId.parse("i=12181"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "Real",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 10),
+              NodeId.parse("i=10"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -122,7 +122,7 @@ public class ComplexNumberType extends Structure implements UaStructuredType {
           new StructureField(
               "Imaginary",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 10),
+              NodeId.parse("i=10"),
               -1,
               null,
               UInteger.valueOf(0),

@@ -122,14 +122,14 @@ public class QueryNextResponse extends Structure implements UaResponseMessageTyp
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 624),
-        new NodeId(0, 22),
+        NodeId.parse("i=624"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "ResponseHeader",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 392),
+              NodeId.parse("i=392"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -137,7 +137,7 @@ public class QueryNextResponse extends Structure implements UaResponseMessageTyp
           new StructureField(
               "QueryDataSets",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 577),
+              NodeId.parse("i=577"),
               1,
               null,
               UInteger.valueOf(0),
@@ -145,7 +145,7 @@ public class QueryNextResponse extends Structure implements UaResponseMessageTyp
           new StructureField(
               "RevisedContinuationPoint",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 521),
+              NodeId.parse("i=521"),
               -1,
               null,
               UInteger.valueOf(0),

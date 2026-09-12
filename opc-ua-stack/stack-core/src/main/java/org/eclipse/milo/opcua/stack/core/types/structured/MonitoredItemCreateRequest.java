@@ -12,6 +12,8 @@ package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -122,14 +124,14 @@ public class MonitoredItemCreateRequest extends Structure implements UaStructure
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 745),
-        new NodeId(0, 22),
+        NodeId.parse("i=745"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "ItemToMonitor",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 626),
+              NodeId.parse("i=626"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -137,7 +139,7 @@ public class MonitoredItemCreateRequest extends Structure implements UaStructure
           new StructureField(
               "MonitoringMode",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 716),
+              NodeId.parse("i=716"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -145,7 +147,7 @@ public class MonitoredItemCreateRequest extends Structure implements UaStructure
           new StructureField(
               "RequestedParameters",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 740),
+              NodeId.parse("i=740"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -165,7 +167,27 @@ public class MonitoredItemCreateRequest extends Structure implements UaStructure
       final MonitoringMode monitoringMode;
       final MonitoringParameters requestedParameters;
       itemToMonitor = (ReadValueId) decoder.decodeStruct("ItemToMonitor", ReadValueId.TYPE_ID);
-      monitoringMode = MonitoringMode.from(decoder.decodeEnum("MonitoringMode"));
+      {
+        Integer enumValue = decoder.decodeEnum("MonitoringMode");
+        if (enumValue != null && !((Object) enumValue instanceof MonitoringMode)) {
+          if (!(enumValue instanceof Integer)) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_TypeMismatch,
+                "MonitoringMode: expected"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.MonitoringMode or Int32,"
+                    + " got "
+                    + enumValue);
+          }
+          if (MonitoringMode.from((Integer) enumValue) == null) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_OutOfRange,
+                "MonitoringMode: unknown"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.MonitoringMode value "
+                    + enumValue);
+          }
+        }
+        monitoringMode = enumValue == null ? null : MonitoringMode.from(enumValue);
+      }
       requestedParameters =
           (MonitoringParameters)
               decoder.decodeStruct("RequestedParameters", MonitoringParameters.TYPE_ID);

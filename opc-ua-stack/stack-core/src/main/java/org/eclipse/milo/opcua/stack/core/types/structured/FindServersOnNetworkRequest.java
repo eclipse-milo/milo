@@ -133,14 +133,14 @@ public class FindServersOnNetworkRequest extends Structure implements UaRequestM
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 12208),
-        new NodeId(0, 22),
+        NodeId.parse("i=12208"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "RequestHeader",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 389),
+              NodeId.parse("i=389"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -148,7 +148,7 @@ public class FindServersOnNetworkRequest extends Structure implements UaRequestM
           new StructureField(
               "StartingRecordId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 289),
+              NodeId.parse("i=289"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -156,7 +156,7 @@ public class FindServersOnNetworkRequest extends Structure implements UaRequestM
           new StructureField(
               "MaxRecordsToReturn",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -164,7 +164,7 @@ public class FindServersOnNetworkRequest extends Structure implements UaRequestM
           new StructureField(
               "ServerCapabilityFilter",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               1,
               null,
               UInteger.valueOf(0),

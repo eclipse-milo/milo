@@ -109,14 +109,14 @@ public class DeleteEventDetails extends HistoryUpdateDetails implements UaStruct
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 694),
-        new NodeId(0, 677),
+        NodeId.parse("i=694"),
+        NodeId.parse("i=677"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "NodeId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -124,7 +124,7 @@ public class DeleteEventDetails extends HistoryUpdateDetails implements UaStruct
           new StructureField(
               "EventIds",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15),
+              NodeId.parse("i=15"),
               1,
               null,
               UInteger.valueOf(0),

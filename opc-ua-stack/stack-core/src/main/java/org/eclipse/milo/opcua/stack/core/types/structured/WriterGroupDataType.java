@@ -12,6 +12,8 @@ package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -208,14 +210,14 @@ public class WriterGroupDataType extends PubSubGroupDataType implements UaStruct
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 21150),
-        new NodeId(0, 15609),
+        NodeId.parse("i=21150"),
+        NodeId.parse("i=15609"),
         StructureType.StructureWithSubtypedValues,
         new StructureField[] {
           new StructureField(
               "Name",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -223,7 +225,7 @@ public class WriterGroupDataType extends PubSubGroupDataType implements UaStruct
           new StructureField(
               "Enabled",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -231,7 +233,7 @@ public class WriterGroupDataType extends PubSubGroupDataType implements UaStruct
           new StructureField(
               "SecurityMode",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 302),
+              NodeId.parse("i=302"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -239,7 +241,7 @@ public class WriterGroupDataType extends PubSubGroupDataType implements UaStruct
           new StructureField(
               "SecurityGroupId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -247,7 +249,7 @@ public class WriterGroupDataType extends PubSubGroupDataType implements UaStruct
           new StructureField(
               "SecurityKeyServices",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 312),
+              NodeId.parse("i=312"),
               1,
               null,
               UInteger.valueOf(0),
@@ -255,7 +257,7 @@ public class WriterGroupDataType extends PubSubGroupDataType implements UaStruct
           new StructureField(
               "MaxNetworkMessageSize",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -263,7 +265,7 @@ public class WriterGroupDataType extends PubSubGroupDataType implements UaStruct
           new StructureField(
               "GroupProperties",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 14533),
+              NodeId.parse("i=14533"),
               1,
               null,
               UInteger.valueOf(0),
@@ -271,7 +273,7 @@ public class WriterGroupDataType extends PubSubGroupDataType implements UaStruct
           new StructureField(
               "WriterGroupId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 5),
+              NodeId.parse("i=5"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -279,7 +281,7 @@ public class WriterGroupDataType extends PubSubGroupDataType implements UaStruct
           new StructureField(
               "PublishingInterval",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 290),
+              NodeId.parse("i=290"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -287,7 +289,7 @@ public class WriterGroupDataType extends PubSubGroupDataType implements UaStruct
           new StructureField(
               "KeepAliveTime",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 290),
+              NodeId.parse("i=290"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -295,7 +297,7 @@ public class WriterGroupDataType extends PubSubGroupDataType implements UaStruct
           new StructureField(
               "Priority",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 3),
+              NodeId.parse("i=3"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -303,7 +305,7 @@ public class WriterGroupDataType extends PubSubGroupDataType implements UaStruct
           new StructureField(
               "LocaleIds",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 295),
+              NodeId.parse("i=295"),
               1,
               null,
               UInteger.valueOf(0),
@@ -311,7 +313,7 @@ public class WriterGroupDataType extends PubSubGroupDataType implements UaStruct
           new StructureField(
               "HeaderLayoutUri",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -319,7 +321,7 @@ public class WriterGroupDataType extends PubSubGroupDataType implements UaStruct
           new StructureField(
               "TransportSettings",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15611),
+              NodeId.parse("i=15611"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -327,7 +329,7 @@ public class WriterGroupDataType extends PubSubGroupDataType implements UaStruct
           new StructureField(
               "MessageSettings",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15616),
+              NodeId.parse("i=15616"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -335,7 +337,7 @@ public class WriterGroupDataType extends PubSubGroupDataType implements UaStruct
           new StructureField(
               "DataSetWriters",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15597),
+              NodeId.parse("i=15597"),
               1,
               null,
               UInteger.valueOf(0),
@@ -369,7 +371,28 @@ public class WriterGroupDataType extends PubSubGroupDataType implements UaStruct
       final DataSetWriterDataType[] dataSetWriters;
       name = decoder.decodeString("Name");
       enabled = decoder.decodeBoolean("Enabled");
-      securityMode = MessageSecurityMode.from(decoder.decodeEnum("SecurityMode"));
+      {
+        Integer enumValue = decoder.decodeEnum("SecurityMode");
+        if (enumValue != null && !((Object) enumValue instanceof MessageSecurityMode)) {
+          if (!(enumValue instanceof Integer)) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_TypeMismatch,
+                "SecurityMode: expected"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode or"
+                    + " Int32, got "
+                    + enumValue);
+          }
+          if (MessageSecurityMode.from((Integer) enumValue) == null) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_OutOfRange,
+                "SecurityMode: unknown"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode"
+                    + " value "
+                    + enumValue);
+          }
+        }
+        securityMode = enumValue == null ? null : MessageSecurityMode.from(enumValue);
+      }
       securityGroupId = decoder.decodeString("SecurityGroupId");
       securityKeyServices =
           (EndpointDescription[])
@@ -385,11 +408,13 @@ public class WriterGroupDataType extends PubSubGroupDataType implements UaStruct
       headerLayoutUri = decoder.decodeString("HeaderLayoutUri");
       {
         ExtensionObject xo = decoder.decodeExtensionObject("TransportSettings");
-        transportSettings = (WriterGroupTransportDataType) xo.decode(context);
+        transportSettings =
+            xo == null || xo.isNull() ? null : (WriterGroupTransportDataType) xo.decode(context);
       }
       {
         ExtensionObject xo = decoder.decodeExtensionObject("MessageSettings");
-        messageSettings = (WriterGroupMessageDataType) xo.decode(context);
+        messageSettings =
+            xo == null || xo.isNull() ? null : (WriterGroupMessageDataType) xo.decode(context);
       }
       dataSetWriters =
           (DataSetWriterDataType[])
@@ -431,11 +456,15 @@ public class WriterGroupDataType extends PubSubGroupDataType implements UaStruct
       encoder.encodeStringArray("LocaleIds", value.getLocaleIds());
       encoder.encodeString("HeaderLayoutUri", value.getHeaderLayoutUri());
       {
-        ExtensionObject xo = ExtensionObject.encode(context, value.getTransportSettings());
+        WriterGroupTransportDataType fieldValue = value.getTransportSettings();
+        ExtensionObject xo =
+            fieldValue == null ? null : ExtensionObject.encode(context, fieldValue);
         encoder.encodeExtensionObject("TransportSettings", xo);
       }
       {
-        ExtensionObject xo = ExtensionObject.encode(context, value.getMessageSettings());
+        WriterGroupMessageDataType fieldValue = value.getMessageSettings();
+        ExtensionObject xo =
+            fieldValue == null ? null : ExtensionObject.encode(context, fieldValue);
         encoder.encodeExtensionObject("MessageSettings", xo);
       }
       encoder.encodeStructArray(

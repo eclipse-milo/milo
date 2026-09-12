@@ -122,14 +122,14 @@ public class PubSubConfigurationDataType extends Structure implements UaStructur
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 21154),
-        new NodeId(0, 22),
+        NodeId.parse("i=21154"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "PublishedDataSets",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15578),
+              NodeId.parse("i=15578"),
               1,
               null,
               UInteger.valueOf(0),
@@ -137,7 +137,7 @@ public class PubSubConfigurationDataType extends Structure implements UaStructur
           new StructureField(
               "Connections",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15617),
+              NodeId.parse("i=15617"),
               1,
               null,
               UInteger.valueOf(0),
@@ -145,7 +145,7 @@ public class PubSubConfigurationDataType extends Structure implements UaStructur
           new StructureField(
               "Enabled",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),

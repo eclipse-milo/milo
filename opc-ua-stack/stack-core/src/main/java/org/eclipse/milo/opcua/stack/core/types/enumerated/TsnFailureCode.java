@@ -116,6 +116,12 @@ public enum TsnFailureCode implements UaEnumeratedType {
     return TypeInfo.TYPE_ID;
   }
 
+  /**
+   * Look up a known enum constant.
+   *
+   * @return the matching constant, or null for an unknown number. Retain the original number when
+   *     interpreting values from newer models.
+   */
   public static @Nullable TsnFailureCode from(int value) {
     return switch (value) {
       case 0 -> NoFailure;

@@ -12,6 +12,8 @@ package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -152,14 +154,14 @@ public class OpenSecureChannelRequest extends Structure implements UaRequestMess
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 446),
-        new NodeId(0, 22),
+        NodeId.parse("i=446"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "RequestHeader",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 389),
+              NodeId.parse("i=389"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -167,7 +169,7 @@ public class OpenSecureChannelRequest extends Structure implements UaRequestMess
           new StructureField(
               "ClientProtocolVersion",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -175,7 +177,7 @@ public class OpenSecureChannelRequest extends Structure implements UaRequestMess
           new StructureField(
               "RequestType",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 315),
+              NodeId.parse("i=315"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -183,7 +185,7 @@ public class OpenSecureChannelRequest extends Structure implements UaRequestMess
           new StructureField(
               "SecurityMode",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 302),
+              NodeId.parse("i=302"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -191,7 +193,7 @@ public class OpenSecureChannelRequest extends Structure implements UaRequestMess
           new StructureField(
               "ClientNonce",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15),
+              NodeId.parse("i=15"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -199,7 +201,7 @@ public class OpenSecureChannelRequest extends Structure implements UaRequestMess
           new StructureField(
               "RequestedLifetime",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -223,8 +225,50 @@ public class OpenSecureChannelRequest extends Structure implements UaRequestMess
       final UInteger requestedLifetime;
       requestHeader = (RequestHeader) decoder.decodeStruct("RequestHeader", RequestHeader.TYPE_ID);
       clientProtocolVersion = decoder.decodeUInt32("ClientProtocolVersion");
-      requestType = SecurityTokenRequestType.from(decoder.decodeEnum("RequestType"));
-      securityMode = MessageSecurityMode.from(decoder.decodeEnum("SecurityMode"));
+      {
+        Integer enumValue = decoder.decodeEnum("RequestType");
+        if (enumValue != null && !((Object) enumValue instanceof SecurityTokenRequestType)) {
+          if (!(enumValue instanceof Integer)) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_TypeMismatch,
+                "RequestType: expected"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.SecurityTokenRequestType"
+                    + " or Int32, got "
+                    + enumValue);
+          }
+          if (SecurityTokenRequestType.from((Integer) enumValue) == null) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_OutOfRange,
+                "RequestType: unknown"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.SecurityTokenRequestType"
+                    + " value "
+                    + enumValue);
+          }
+        }
+        requestType = enumValue == null ? null : SecurityTokenRequestType.from(enumValue);
+      }
+      {
+        Integer enumValue = decoder.decodeEnum("SecurityMode");
+        if (enumValue != null && !((Object) enumValue instanceof MessageSecurityMode)) {
+          if (!(enumValue instanceof Integer)) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_TypeMismatch,
+                "SecurityMode: expected"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode or"
+                    + " Int32, got "
+                    + enumValue);
+          }
+          if (MessageSecurityMode.from((Integer) enumValue) == null) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_OutOfRange,
+                "SecurityMode: unknown"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode"
+                    + " value "
+                    + enumValue);
+          }
+        }
+        securityMode = enumValue == null ? null : MessageSecurityMode.from(enumValue);
+      }
       clientNonce = decoder.decodeByteString("ClientNonce");
       requestedLifetime = decoder.decodeUInt32("RequestedLifetime");
       return new OpenSecureChannelRequest(

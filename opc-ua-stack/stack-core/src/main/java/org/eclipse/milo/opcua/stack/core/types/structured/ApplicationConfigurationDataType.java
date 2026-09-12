@@ -172,14 +172,14 @@ public class ApplicationConfigurationDataType extends BaseConfigurationDataType
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 23754),
-        new NodeId(0, 15434),
+        NodeId.parse("i=23754"),
+        NodeId.parse("i=15434"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "ConfigurationVersion",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 20998),
+              NodeId.parse("i=20998"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -187,7 +187,7 @@ public class ApplicationConfigurationDataType extends BaseConfigurationDataType
           new StructureField(
               "ConfigurationProperties",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 14533),
+              NodeId.parse("i=14533"),
               1,
               null,
               UInteger.valueOf(0),
@@ -195,7 +195,7 @@ public class ApplicationConfigurationDataType extends BaseConfigurationDataType
           new StructureField(
               "ApplicationIdentity",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15556),
+              NodeId.parse("i=15556"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -203,7 +203,7 @@ public class ApplicationConfigurationDataType extends BaseConfigurationDataType
           new StructureField(
               "CertificateGroups",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15436),
+              NodeId.parse("i=15436"),
               1,
               null,
               UInteger.valueOf(0),
@@ -211,7 +211,7 @@ public class ApplicationConfigurationDataType extends BaseConfigurationDataType
           new StructureField(
               "ServerEndpoints",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15558),
+              NodeId.parse("i=15558"),
               1,
               null,
               UInteger.valueOf(0),
@@ -219,7 +219,7 @@ public class ApplicationConfigurationDataType extends BaseConfigurationDataType
           new StructureField(
               "ClientEndpoints",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15557),
+              NodeId.parse("i=15557"),
               1,
               null,
               UInteger.valueOf(0),
@@ -227,7 +227,7 @@ public class ApplicationConfigurationDataType extends BaseConfigurationDataType
           new StructureField(
               "SecuritySettings",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15559),
+              NodeId.parse("i=15559"),
               1,
               null,
               UInteger.valueOf(0),
@@ -235,7 +235,7 @@ public class ApplicationConfigurationDataType extends BaseConfigurationDataType
           new StructureField(
               "UserTokenSettings",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15560),
+              NodeId.parse("i=15560"),
               1,
               null,
               UInteger.valueOf(0),
@@ -243,7 +243,7 @@ public class ApplicationConfigurationDataType extends BaseConfigurationDataType
           new StructureField(
               "AuthorizationServices",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 23744),
+              NodeId.parse("i=23744"),
               1,
               null,
               UInteger.valueOf(0),

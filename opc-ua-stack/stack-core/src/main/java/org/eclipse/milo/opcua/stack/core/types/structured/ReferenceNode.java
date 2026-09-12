@@ -113,14 +113,14 @@ public class ReferenceNode extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 287),
-        new NodeId(0, 22),
+        NodeId.parse("i=287"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "ReferenceTypeId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -128,7 +128,7 @@ public class ReferenceNode extends Structure implements UaStructuredType {
           new StructureField(
               "IsInverse",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -136,7 +136,7 @@ public class ReferenceNode extends Structure implements UaStructuredType {
           new StructureField(
               "TargetId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 18),
+              NodeId.parse("i=18"),
               -1,
               null,
               UInteger.valueOf(0),

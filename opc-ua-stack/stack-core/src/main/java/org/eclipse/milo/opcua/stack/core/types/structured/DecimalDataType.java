@@ -37,11 +37,11 @@ public class DecimalDataType extends Structure implements UaStructuredType {
 
   private final Short scale;
 
-  private final ByteString value;
+  private final ByteString value2;
 
-  public DecimalDataType(Short scale, ByteString value) {
+  public DecimalDataType(Short scale, ByteString value2) {
     this.scale = scale;
-    this.value = value;
+    this.value2 = value2;
   }
 
   @Override
@@ -69,7 +69,7 @@ public class DecimalDataType extends Structure implements UaStructuredType {
   }
 
   public ByteString getValue() {
-    return value;
+    return value2;
   }
 
   @Override
@@ -104,14 +104,14 @@ public class DecimalDataType extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 17863),
-        new NodeId(0, 22),
+        NodeId.parse("i=17863"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "Scale",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 4),
+              NodeId.parse("i=4"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -119,7 +119,7 @@ public class DecimalDataType extends Structure implements UaStructuredType {
           new StructureField(
               "Value",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15),
+              NodeId.parse("i=15"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -136,10 +136,10 @@ public class DecimalDataType extends Structure implements UaStructuredType {
     @Override
     public DecimalDataType decodeType(EncodingContext context, UaDecoder decoder) {
       final Short scale;
-      final ByteString value;
+      final ByteString value2;
       scale = decoder.decodeInt16("Scale");
-      value = decoder.decodeByteString("Value");
-      return new DecimalDataType(scale, value);
+      value2 = decoder.decodeByteString("Value");
+      return new DecimalDataType(scale, value2);
     }
 
     @Override

@@ -12,6 +12,8 @@ package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -146,14 +148,14 @@ public class UadpWriterGroupMessageDataType extends WriterGroupMessageDataType
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 15715),
-        new NodeId(0, 15616),
+        NodeId.parse("i=15715"),
+        NodeId.parse("i=15616"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "GroupVersion",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 20998),
+              NodeId.parse("i=20998"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -161,7 +163,7 @@ public class UadpWriterGroupMessageDataType extends WriterGroupMessageDataType
           new StructureField(
               "DataSetOrdering",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 20408),
+              NodeId.parse("i=20408"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -169,7 +171,7 @@ public class UadpWriterGroupMessageDataType extends WriterGroupMessageDataType
           new StructureField(
               "NetworkMessageContentMask",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15642),
+              NodeId.parse("i=15642"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -177,7 +179,7 @@ public class UadpWriterGroupMessageDataType extends WriterGroupMessageDataType
           new StructureField(
               "SamplingOffset",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 290),
+              NodeId.parse("i=290"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -185,7 +187,7 @@ public class UadpWriterGroupMessageDataType extends WriterGroupMessageDataType
           new StructureField(
               "PublishingOffset",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 290),
+              NodeId.parse("i=290"),
               1,
               null,
               UInteger.valueOf(0),
@@ -207,7 +209,28 @@ public class UadpWriterGroupMessageDataType extends WriterGroupMessageDataType
       final Double samplingOffset;
       final Double[] publishingOffset;
       groupVersion = decoder.decodeUInt32("GroupVersion");
-      dataSetOrdering = DataSetOrderingType.from(decoder.decodeEnum("DataSetOrdering"));
+      {
+        Integer enumValue = decoder.decodeEnum("DataSetOrdering");
+        if (enumValue != null && !((Object) enumValue instanceof DataSetOrderingType)) {
+          if (!(enumValue instanceof Integer)) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_TypeMismatch,
+                "DataSetOrdering: expected"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.DataSetOrderingType or"
+                    + " Int32, got "
+                    + enumValue);
+          }
+          if (DataSetOrderingType.from((Integer) enumValue) == null) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_OutOfRange,
+                "DataSetOrdering: unknown"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.DataSetOrderingType"
+                    + " value "
+                    + enumValue);
+          }
+        }
+        dataSetOrdering = enumValue == null ? null : DataSetOrderingType.from(enumValue);
+      }
       networkMessageContentMask =
           new UadpNetworkMessageContentMask(decoder.decodeUInt32("NetworkMessageContentMask"));
       samplingOffset = decoder.decodeDouble("SamplingOffset");

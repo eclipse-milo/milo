@@ -189,14 +189,14 @@ public class PubSubConnectionDataType extends Structure implements UaStructuredT
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 15694),
-        new NodeId(0, 22),
+        NodeId.parse("i=15694"),
+        NodeId.parse("i=22"),
         StructureType.StructureWithSubtypedValues,
         new StructureField[] {
           new StructureField(
               "Name",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -204,7 +204,7 @@ public class PubSubConnectionDataType extends Structure implements UaStructuredT
           new StructureField(
               "Enabled",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -212,7 +212,7 @@ public class PubSubConnectionDataType extends Structure implements UaStructuredT
           new StructureField(
               "PublisherId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 24),
+              NodeId.parse("i=24"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -220,7 +220,7 @@ public class PubSubConnectionDataType extends Structure implements UaStructuredT
           new StructureField(
               "TransportProfileUri",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -228,7 +228,7 @@ public class PubSubConnectionDataType extends Structure implements UaStructuredT
           new StructureField(
               "Address",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15502),
+              NodeId.parse("i=15502"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -236,7 +236,7 @@ public class PubSubConnectionDataType extends Structure implements UaStructuredT
           new StructureField(
               "ConnectionProperties",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 14533),
+              NodeId.parse("i=14533"),
               1,
               null,
               UInteger.valueOf(0),
@@ -244,7 +244,7 @@ public class PubSubConnectionDataType extends Structure implements UaStructuredT
           new StructureField(
               "TransportSettings",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15618),
+              NodeId.parse("i=15618"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -252,7 +252,7 @@ public class PubSubConnectionDataType extends Structure implements UaStructuredT
           new StructureField(
               "WriterGroups",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15480),
+              NodeId.parse("i=15480"),
               1,
               null,
               UInteger.valueOf(0),
@@ -260,7 +260,7 @@ public class PubSubConnectionDataType extends Structure implements UaStructuredT
           new StructureField(
               "ReaderGroups",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15520),
+              NodeId.parse("i=15520"),
               1,
               null,
               UInteger.valueOf(0),
@@ -291,13 +291,14 @@ public class PubSubConnectionDataType extends Structure implements UaStructuredT
       transportProfileUri = decoder.decodeString("TransportProfileUri");
       {
         ExtensionObject xo = decoder.decodeExtensionObject("Address");
-        address = (NetworkAddressDataType) xo.decode(context);
+        address = xo == null || xo.isNull() ? null : (NetworkAddressDataType) xo.decode(context);
       }
       connectionProperties =
           (KeyValuePair[]) decoder.decodeStructArray("ConnectionProperties", KeyValuePair.TYPE_ID);
       {
         ExtensionObject xo = decoder.decodeExtensionObject("TransportSettings");
-        transportSettings = (ConnectionTransportDataType) xo.decode(context);
+        transportSettings =
+            xo == null || xo.isNull() ? null : (ConnectionTransportDataType) xo.decode(context);
       }
       writerGroups =
           (WriterGroupDataType[])
@@ -322,16 +323,22 @@ public class PubSubConnectionDataType extends Structure implements UaStructuredT
         EncodingContext context, UaEncoder encoder, PubSubConnectionDataType value) {
       encoder.encodeString("Name", value.getName());
       encoder.encodeBoolean("Enabled", value.getEnabled());
-      encoder.encodeVariant("PublisherId", value.getPublisherId());
+      encoder.encodeVariant(
+          "PublisherId",
+          value.getPublisherId() == null ? Variant.NULL_VALUE : value.getPublisherId());
       encoder.encodeString("TransportProfileUri", value.getTransportProfileUri());
       {
-        ExtensionObject xo = ExtensionObject.encode(context, value.getAddress());
+        NetworkAddressDataType fieldValue = value.getAddress();
+        ExtensionObject xo =
+            fieldValue == null ? null : ExtensionObject.encode(context, fieldValue);
         encoder.encodeExtensionObject("Address", xo);
       }
       encoder.encodeStructArray(
           "ConnectionProperties", value.getConnectionProperties(), KeyValuePair.TYPE_ID);
       {
-        ExtensionObject xo = ExtensionObject.encode(context, value.getTransportSettings());
+        ConnectionTransportDataType fieldValue = value.getTransportSettings();
+        ExtensionObject xo =
+            fieldValue == null ? null : ExtensionObject.encode(context, fieldValue);
         encoder.encodeExtensionObject("TransportSettings", xo);
       }
       encoder.encodeStructArray(

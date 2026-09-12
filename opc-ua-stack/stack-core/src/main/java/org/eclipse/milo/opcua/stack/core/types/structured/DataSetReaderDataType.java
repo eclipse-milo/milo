@@ -12,6 +12,8 @@ package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -280,14 +282,14 @@ public class DataSetReaderDataType extends Structure implements UaStructuredType
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 15703),
-        new NodeId(0, 22),
+        NodeId.parse("i=15703"),
+        NodeId.parse("i=22"),
         StructureType.StructureWithSubtypedValues,
         new StructureField[] {
           new StructureField(
               "Name",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -295,7 +297,7 @@ public class DataSetReaderDataType extends Structure implements UaStructuredType
           new StructureField(
               "Enabled",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -303,7 +305,7 @@ public class DataSetReaderDataType extends Structure implements UaStructuredType
           new StructureField(
               "PublisherId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 24),
+              NodeId.parse("i=24"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -311,7 +313,7 @@ public class DataSetReaderDataType extends Structure implements UaStructuredType
           new StructureField(
               "WriterGroupId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 5),
+              NodeId.parse("i=5"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -319,7 +321,7 @@ public class DataSetReaderDataType extends Structure implements UaStructuredType
           new StructureField(
               "DataSetWriterId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 5),
+              NodeId.parse("i=5"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -327,7 +329,7 @@ public class DataSetReaderDataType extends Structure implements UaStructuredType
           new StructureField(
               "DataSetMetaData",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 14523),
+              NodeId.parse("i=14523"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -335,7 +337,7 @@ public class DataSetReaderDataType extends Structure implements UaStructuredType
           new StructureField(
               "DataSetFieldContentMask",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15583),
+              NodeId.parse("i=15583"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -343,7 +345,7 @@ public class DataSetReaderDataType extends Structure implements UaStructuredType
           new StructureField(
               "MessageReceiveTimeout",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 290),
+              NodeId.parse("i=290"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -351,7 +353,7 @@ public class DataSetReaderDataType extends Structure implements UaStructuredType
           new StructureField(
               "KeyFrameCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -359,7 +361,7 @@ public class DataSetReaderDataType extends Structure implements UaStructuredType
           new StructureField(
               "HeaderLayoutUri",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -367,7 +369,7 @@ public class DataSetReaderDataType extends Structure implements UaStructuredType
           new StructureField(
               "SecurityMode",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 302),
+              NodeId.parse("i=302"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -375,7 +377,7 @@ public class DataSetReaderDataType extends Structure implements UaStructuredType
           new StructureField(
               "SecurityGroupId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -383,7 +385,7 @@ public class DataSetReaderDataType extends Structure implements UaStructuredType
           new StructureField(
               "SecurityKeyServices",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 312),
+              NodeId.parse("i=312"),
               1,
               null,
               UInteger.valueOf(0),
@@ -391,7 +393,7 @@ public class DataSetReaderDataType extends Structure implements UaStructuredType
           new StructureField(
               "DataSetReaderProperties",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 14533),
+              NodeId.parse("i=14533"),
               1,
               null,
               UInteger.valueOf(0),
@@ -399,7 +401,7 @@ public class DataSetReaderDataType extends Structure implements UaStructuredType
           new StructureField(
               "TransportSettings",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15628),
+              NodeId.parse("i=15628"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -407,7 +409,7 @@ public class DataSetReaderDataType extends Structure implements UaStructuredType
           new StructureField(
               "MessageSettings",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15629),
+              NodeId.parse("i=15629"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -415,7 +417,7 @@ public class DataSetReaderDataType extends Structure implements UaStructuredType
           new StructureField(
               "SubscribedDataSet",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15630),
+              NodeId.parse("i=15630"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -461,7 +463,28 @@ public class DataSetReaderDataType extends Structure implements UaStructuredType
       messageReceiveTimeout = decoder.decodeDouble("MessageReceiveTimeout");
       keyFrameCount = decoder.decodeUInt32("KeyFrameCount");
       headerLayoutUri = decoder.decodeString("HeaderLayoutUri");
-      securityMode = MessageSecurityMode.from(decoder.decodeEnum("SecurityMode"));
+      {
+        Integer enumValue = decoder.decodeEnum("SecurityMode");
+        if (enumValue != null && !((Object) enumValue instanceof MessageSecurityMode)) {
+          if (!(enumValue instanceof Integer)) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_TypeMismatch,
+                "SecurityMode: expected"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode or"
+                    + " Int32, got "
+                    + enumValue);
+          }
+          if (MessageSecurityMode.from((Integer) enumValue) == null) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_OutOfRange,
+                "SecurityMode: unknown"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode"
+                    + " value "
+                    + enumValue);
+          }
+        }
+        securityMode = enumValue == null ? null : MessageSecurityMode.from(enumValue);
+      }
       securityGroupId = decoder.decodeString("SecurityGroupId");
       securityKeyServices =
           (EndpointDescription[])
@@ -471,15 +494,18 @@ public class DataSetReaderDataType extends Structure implements UaStructuredType
               decoder.decodeStructArray("DataSetReaderProperties", KeyValuePair.TYPE_ID);
       {
         ExtensionObject xo = decoder.decodeExtensionObject("TransportSettings");
-        transportSettings = (DataSetReaderTransportDataType) xo.decode(context);
+        transportSettings =
+            xo == null || xo.isNull() ? null : (DataSetReaderTransportDataType) xo.decode(context);
       }
       {
         ExtensionObject xo = decoder.decodeExtensionObject("MessageSettings");
-        messageSettings = (DataSetReaderMessageDataType) xo.decode(context);
+        messageSettings =
+            xo == null || xo.isNull() ? null : (DataSetReaderMessageDataType) xo.decode(context);
       }
       {
         ExtensionObject xo = decoder.decodeExtensionObject("SubscribedDataSet");
-        subscribedDataSet = (SubscribedDataSetDataType) xo.decode(context);
+        subscribedDataSet =
+            xo == null || xo.isNull() ? null : (SubscribedDataSetDataType) xo.decode(context);
       }
       return new DataSetReaderDataType(
           name,
@@ -506,7 +532,9 @@ public class DataSetReaderDataType extends Structure implements UaStructuredType
         EncodingContext context, UaEncoder encoder, DataSetReaderDataType value) {
       encoder.encodeString("Name", value.getName());
       encoder.encodeBoolean("Enabled", value.getEnabled());
-      encoder.encodeVariant("PublisherId", value.getPublisherId());
+      encoder.encodeVariant(
+          "PublisherId",
+          value.getPublisherId() == null ? Variant.NULL_VALUE : value.getPublisherId());
       encoder.encodeUInt16("WriterGroupId", value.getWriterGroupId());
       encoder.encodeUInt16("DataSetWriterId", value.getDataSetWriterId());
       encoder.encodeStruct(
@@ -523,15 +551,21 @@ public class DataSetReaderDataType extends Structure implements UaStructuredType
       encoder.encodeStructArray(
           "DataSetReaderProperties", value.getDataSetReaderProperties(), KeyValuePair.TYPE_ID);
       {
-        ExtensionObject xo = ExtensionObject.encode(context, value.getTransportSettings());
+        DataSetReaderTransportDataType fieldValue = value.getTransportSettings();
+        ExtensionObject xo =
+            fieldValue == null ? null : ExtensionObject.encode(context, fieldValue);
         encoder.encodeExtensionObject("TransportSettings", xo);
       }
       {
-        ExtensionObject xo = ExtensionObject.encode(context, value.getMessageSettings());
+        DataSetReaderMessageDataType fieldValue = value.getMessageSettings();
+        ExtensionObject xo =
+            fieldValue == null ? null : ExtensionObject.encode(context, fieldValue);
         encoder.encodeExtensionObject("MessageSettings", xo);
       }
       {
-        ExtensionObject xo = ExtensionObject.encode(context, value.getSubscribedDataSet());
+        SubscribedDataSetDataType fieldValue = value.getSubscribedDataSet();
+        ExtensionObject xo =
+            fieldValue == null ? null : ExtensionObject.encode(context, fieldValue);
         encoder.encodeExtensionObject("SubscribedDataSet", xo);
       }
     }

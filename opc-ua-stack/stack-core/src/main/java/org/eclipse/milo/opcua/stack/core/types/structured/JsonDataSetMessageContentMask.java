@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUI32;
 import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
@@ -93,6 +94,25 @@ public class JsonDataSetMessageContentMask
     joiner.add("minorVersion=" + getMinorVersion());
     joiner.add("fieldEncoding2=" + getFieldEncoding2());
     return joiner.toString();
+  }
+
+  public static EnumDefinition definition() {
+    return new EnumDefinition(
+        new EnumField[] {
+          new EnumField(0L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "DataSetWriterId"),
+          new EnumField(1L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "MetaDataVersion"),
+          new EnumField(2L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "SequenceNumber"),
+          new EnumField(3L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "Timestamp"),
+          new EnumField(4L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "Status"),
+          new EnumField(5L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "MessageType"),
+          new EnumField(
+              6L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "DataSetWriterName"),
+          new EnumField(7L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "FieldEncoding1"),
+          new EnumField(8L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "PublisherId"),
+          new EnumField(9L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "WriterGroupName"),
+          new EnumField(10L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "MinorVersion"),
+          new EnumField(11L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "FieldEncoding2")
+        });
   }
 
   public static JsonDataSetMessageContentMask of(JsonDataSetMessageContentMask.Field... fields) {

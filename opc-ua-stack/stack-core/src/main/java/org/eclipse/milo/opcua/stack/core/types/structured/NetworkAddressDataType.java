@@ -94,14 +94,14 @@ public abstract class NetworkAddressDataType extends Structure implements UaStru
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 21151),
-        new NodeId(0, 22),
+        NodeId.parse("i=21151"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "NetworkInterface",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),

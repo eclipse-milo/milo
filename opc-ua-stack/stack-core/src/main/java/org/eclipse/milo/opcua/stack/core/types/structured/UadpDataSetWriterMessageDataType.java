@@ -134,14 +134,14 @@ public class UadpDataSetWriterMessageDataType extends DataSetWriterMessageDataTy
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 15717),
-        new NodeId(0, 15605),
+        NodeId.parse("i=15717"),
+        NodeId.parse("i=15605"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "DataSetMessageContentMask",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15646),
+              NodeId.parse("i=15646"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -149,7 +149,7 @@ public class UadpDataSetWriterMessageDataType extends DataSetWriterMessageDataTy
           new StructureField(
               "ConfiguredSize",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 5),
+              NodeId.parse("i=5"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -157,7 +157,7 @@ public class UadpDataSetWriterMessageDataType extends DataSetWriterMessageDataTy
           new StructureField(
               "NetworkMessageNumber",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 5),
+              NodeId.parse("i=5"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -165,7 +165,7 @@ public class UadpDataSetWriterMessageDataType extends DataSetWriterMessageDataTy
           new StructureField(
               "DataSetOffset",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 5),
+              NodeId.parse("i=5"),
               -1,
               null,
               UInteger.valueOf(0),

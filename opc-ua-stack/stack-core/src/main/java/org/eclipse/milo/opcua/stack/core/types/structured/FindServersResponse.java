@@ -109,14 +109,14 @@ public class FindServersResponse extends Structure implements UaResponseMessageT
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 425),
-        new NodeId(0, 22),
+        NodeId.parse("i=425"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "ResponseHeader",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 392),
+              NodeId.parse("i=392"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -124,7 +124,7 @@ public class FindServersResponse extends Structure implements UaResponseMessageT
           new StructureField(
               "Servers",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 308),
+              NodeId.parse("i=308"),
               1,
               null,
               UInteger.valueOf(0),

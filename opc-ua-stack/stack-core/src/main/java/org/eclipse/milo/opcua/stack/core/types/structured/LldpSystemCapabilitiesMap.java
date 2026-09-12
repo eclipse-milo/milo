@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUI32;
 import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
@@ -86,6 +87,67 @@ public class LldpSystemCapabilitiesMap extends OptionSetUI32<LldpSystemCapabilit
     joiner.add("svlanComponent=" + getSvlanComponent());
     joiner.add("twoPortMacRelay=" + getTwoPortMacRelay());
     return joiner.toString();
+  }
+
+  public static EnumDefinition definition() {
+    return new EnumDefinition(
+        new EnumField[] {
+          new EnumField(
+              0L,
+              LocalizedText.NULL_VALUE,
+              new LocalizedText("", "System has capabilities other than those listed below"),
+              "Other"),
+          new EnumField(
+              1L,
+              LocalizedText.NULL_VALUE,
+              new LocalizedText("", "System has repeater capability"),
+              "Repeater"),
+          new EnumField(
+              2L,
+              LocalizedText.NULL_VALUE,
+              new LocalizedText("", "System has bridge capability"),
+              "Bridge"),
+          new EnumField(
+              3L,
+              LocalizedText.NULL_VALUE,
+              new LocalizedText("", "System has WLAN access point capability"),
+              "WlanAccessPoint"),
+          new EnumField(
+              4L,
+              LocalizedText.NULL_VALUE,
+              new LocalizedText("", "System has router capability"),
+              "Router"),
+          new EnumField(
+              5L,
+              LocalizedText.NULL_VALUE,
+              new LocalizedText("", "System has telephone capability"),
+              "Telephone"),
+          new EnumField(
+              6L,
+              LocalizedText.NULL_VALUE,
+              new LocalizedText("", "System has DOCSIS cable device capability (IETF RFC 4639)"),
+              "DocsisCableDevice"),
+          new EnumField(
+              7L,
+              LocalizedText.NULL_VALUE,
+              new LocalizedText("", "System has only station capability"),
+              "StationOnly"),
+          new EnumField(
+              8L,
+              LocalizedText.NULL_VALUE,
+              new LocalizedText("", "System has C-VLAN component functionality"),
+              "CvlanComponent"),
+          new EnumField(
+              9L,
+              LocalizedText.NULL_VALUE,
+              new LocalizedText("", "System has S-VLAN component functionality"),
+              "SvlanComponent"),
+          new EnumField(
+              10L,
+              LocalizedText.NULL_VALUE,
+              new LocalizedText("", "System has Two-port MAC Relay (TPMR) functionality."),
+              "TwoPortMacRelay")
+        });
   }
 
   public static LldpSystemCapabilitiesMap of(LldpSystemCapabilitiesMap.Field... fields) {

@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUI32;
 import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
@@ -161,6 +162,42 @@ public class AttributeWriteMask extends OptionSetUI32<AttributeWriteMask.Field> 
     joiner.add("accessRestrictions=" + getAccessRestrictions());
     joiner.add("accessLevelEx=" + getAccessLevelEx());
     return joiner.toString();
+  }
+
+  public static EnumDefinition definition() {
+    return new EnumDefinition(
+        new EnumField[] {
+          new EnumField(0L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "AccessLevel"),
+          new EnumField(1L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "ArrayDimensions"),
+          new EnumField(2L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "BrowseName"),
+          new EnumField(3L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "ContainsNoLoops"),
+          new EnumField(4L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "DataType"),
+          new EnumField(5L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "Description"),
+          new EnumField(6L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "DisplayName"),
+          new EnumField(7L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "EventNotifier"),
+          new EnumField(8L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "Executable"),
+          new EnumField(9L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "Historizing"),
+          new EnumField(10L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "InverseName"),
+          new EnumField(11L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "IsAbstract"),
+          new EnumField(
+              12L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "MinimumSamplingInterval"),
+          new EnumField(13L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "NodeClass"),
+          new EnumField(14L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "NodeId"),
+          new EnumField(15L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "Symmetric"),
+          new EnumField(16L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "UserAccessLevel"),
+          new EnumField(17L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "UserExecutable"),
+          new EnumField(18L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "UserWriteMask"),
+          new EnumField(19L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "ValueRank"),
+          new EnumField(20L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "WriteMask"),
+          new EnumField(
+              21L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "ValueForVariableType"),
+          new EnumField(
+              22L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "DataTypeDefinition"),
+          new EnumField(23L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "RolePermissions"),
+          new EnumField(
+              24L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "AccessRestrictions"),
+          new EnumField(25L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "AccessLevelEx")
+        });
   }
 
   public static AttributeWriteMask of(AttributeWriteMask.Field... fields) {

@@ -113,14 +113,14 @@ public class SimpleTypeDescription extends DataTypeDescription implements UaStru
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 15421),
-        new NodeId(0, 14525),
+        NodeId.parse("i=15421"),
+        NodeId.parse("i=14525"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "DataTypeId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -128,7 +128,7 @@ public class SimpleTypeDescription extends DataTypeDescription implements UaStru
           new StructureField(
               "Name",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 20),
+              NodeId.parse("i=20"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -136,7 +136,7 @@ public class SimpleTypeDescription extends DataTypeDescription implements UaStru
           new StructureField(
               "BaseDataType",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -144,7 +144,7 @@ public class SimpleTypeDescription extends DataTypeDescription implements UaStru
           new StructureField(
               "BuiltInType",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 3),
+              NodeId.parse("i=3"),
               -1,
               null,
               UInteger.valueOf(0),

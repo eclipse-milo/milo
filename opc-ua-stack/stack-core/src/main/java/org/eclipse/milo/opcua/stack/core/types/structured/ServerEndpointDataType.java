@@ -152,14 +152,14 @@ public class ServerEndpointDataType extends EndpointDataType implements UaStruct
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 16545),
-        new NodeId(0, 15557),
+        NodeId.parse("i=16545"),
+        NodeId.parse("i=15557"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "Name",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -167,7 +167,7 @@ public class ServerEndpointDataType extends EndpointDataType implements UaStruct
           new StructureField(
               "RecordProperties",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 14533),
+              NodeId.parse("i=14533"),
               1,
               null,
               UInteger.valueOf(0),
@@ -175,7 +175,7 @@ public class ServerEndpointDataType extends EndpointDataType implements UaStruct
           new StructureField(
               "DiscoveryUrls",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 23751),
+              NodeId.parse("i=23751"),
               1,
               null,
               UInteger.valueOf(0),
@@ -183,7 +183,7 @@ public class ServerEndpointDataType extends EndpointDataType implements UaStruct
           new StructureField(
               "NetworkName",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -191,7 +191,7 @@ public class ServerEndpointDataType extends EndpointDataType implements UaStruct
           new StructureField(
               "Port",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 5),
+              NodeId.parse("i=5"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -199,7 +199,7 @@ public class ServerEndpointDataType extends EndpointDataType implements UaStruct
           new StructureField(
               "EndpointUrls",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 23751),
+              NodeId.parse("i=23751"),
               1,
               null,
               UInteger.valueOf(0),
@@ -207,7 +207,7 @@ public class ServerEndpointDataType extends EndpointDataType implements UaStruct
           new StructureField(
               "SecuritySettingNames",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               1,
               null,
               UInteger.valueOf(0),
@@ -215,7 +215,7 @@ public class ServerEndpointDataType extends EndpointDataType implements UaStruct
           new StructureField(
               "TransportProfileUri",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 23751),
+              NodeId.parse("i=23751"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -223,7 +223,7 @@ public class ServerEndpointDataType extends EndpointDataType implements UaStruct
           new StructureField(
               "UserTokenSettingNames",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               1,
               null,
               UInteger.valueOf(0),
@@ -231,7 +231,7 @@ public class ServerEndpointDataType extends EndpointDataType implements UaStruct
           new StructureField(
               "ReverseConnectUrls",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               1,
               null,
               UInteger.valueOf(0),

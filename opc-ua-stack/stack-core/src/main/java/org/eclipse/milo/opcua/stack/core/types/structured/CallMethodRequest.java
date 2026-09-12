@@ -119,14 +119,14 @@ public class CallMethodRequest extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 706),
-        new NodeId(0, 22),
+        NodeId.parse("i=706"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "ObjectId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -134,7 +134,7 @@ public class CallMethodRequest extends Structure implements UaStructuredType {
           new StructureField(
               "MethodId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -142,7 +142,7 @@ public class CallMethodRequest extends Structure implements UaStructuredType {
           new StructureField(
               "InputArguments",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 24),
+              NodeId.parse("i=24"),
               1,
               null,
               UInteger.valueOf(0),

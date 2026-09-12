@@ -107,14 +107,14 @@ public class RolePermissionType extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 128),
-        new NodeId(0, 22),
+        NodeId.parse("i=128"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "RoleId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -122,7 +122,7 @@ public class RolePermissionType extends Structure implements UaStructuredType {
           new StructureField(
               "Permissions",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 94),
+              NodeId.parse("i=94"),
               -1,
               null,
               UInteger.valueOf(0),

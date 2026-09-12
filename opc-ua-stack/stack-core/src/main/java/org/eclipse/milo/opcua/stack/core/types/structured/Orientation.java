@@ -60,6 +60,9 @@ public abstract class Orientation extends Structure implements UaStructuredType 
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 18820), new NodeId(0, 22), StructureType.Structure, new StructureField[] {});
+        NodeId.parse("i=18820"),
+        NodeId.parse("i=22"),
+        StructureType.Structure,
+        new StructureField[] {});
   }
 }

@@ -39,10 +39,10 @@ public class RelativePath extends Structure implements UaStructuredType {
 
   public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15189");
 
-  private final RelativePathElement @Nullable [] elements;
+  private final RelativePathElement @Nullable [] elements2;
 
-  public RelativePath(RelativePathElement @Nullable [] elements) {
-    this.elements = elements;
+  public RelativePath(RelativePathElement @Nullable [] elements2) {
+    this.elements2 = elements2;
   }
 
   @Override
@@ -66,7 +66,7 @@ public class RelativePath extends Structure implements UaStructuredType {
   }
 
   public RelativePathElement @Nullable [] getElements() {
-    return elements;
+    return elements2;
   }
 
   @Override
@@ -98,14 +98,14 @@ public class RelativePath extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 542),
-        new NodeId(0, 22),
+        NodeId.parse("i=542"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "Elements",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 537),
+              NodeId.parse("i=537"),
               1,
               null,
               UInteger.valueOf(0),
@@ -121,11 +121,11 @@ public class RelativePath extends Structure implements UaStructuredType {
 
     @Override
     public RelativePath decodeType(EncodingContext context, UaDecoder decoder) {
-      final RelativePathElement[] elements;
-      elements =
+      final RelativePathElement[] elements2;
+      elements2 =
           (RelativePathElement[])
               decoder.decodeStructArray("Elements", RelativePathElement.TYPE_ID);
-      return new RelativePath(elements);
+      return new RelativePath(elements2);
     }
 
     @Override

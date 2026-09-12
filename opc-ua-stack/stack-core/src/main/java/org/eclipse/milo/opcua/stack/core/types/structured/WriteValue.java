@@ -45,13 +45,13 @@ public class WriteValue extends Structure implements UaStructuredType {
 
   private final String indexRange;
 
-  private final DataValue value;
+  private final DataValue value2;
 
-  public WriteValue(NodeId nodeId, UInteger attributeId, String indexRange, DataValue value) {
+  public WriteValue(NodeId nodeId, UInteger attributeId, String indexRange, DataValue value2) {
     this.nodeId = nodeId;
     this.attributeId = attributeId;
     this.indexRange = indexRange;
-    this.value = value;
+    this.value2 = value2;
   }
 
   @Override
@@ -87,7 +87,7 @@ public class WriteValue extends Structure implements UaStructuredType {
   }
 
   public DataValue getValue() {
-    return value;
+    return value2;
   }
 
   @Override
@@ -128,14 +128,14 @@ public class WriteValue extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 670),
-        new NodeId(0, 22),
+        NodeId.parse("i=670"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "NodeId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -143,7 +143,7 @@ public class WriteValue extends Structure implements UaStructuredType {
           new StructureField(
               "AttributeId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 288),
+              NodeId.parse("i=288"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -151,7 +151,7 @@ public class WriteValue extends Structure implements UaStructuredType {
           new StructureField(
               "IndexRange",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 291),
+              NodeId.parse("i=291"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -159,7 +159,7 @@ public class WriteValue extends Structure implements UaStructuredType {
           new StructureField(
               "Value",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 23),
+              NodeId.parse("i=23"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -178,12 +178,12 @@ public class WriteValue extends Structure implements UaStructuredType {
       final NodeId nodeId;
       final UInteger attributeId;
       final String indexRange;
-      final DataValue value;
+      final DataValue value2;
       nodeId = decoder.decodeNodeId("NodeId");
       attributeId = decoder.decodeUInt32("AttributeId");
       indexRange = decoder.decodeString("IndexRange");
-      value = decoder.decodeDataValue("Value");
-      return new WriteValue(nodeId, attributeId, indexRange, value);
+      value2 = decoder.decodeDataValue("Value");
+      return new WriteValue(nodeId, attributeId, indexRange, value2);
     }
 
     @Override

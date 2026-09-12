@@ -132,14 +132,14 @@ public class FindServersRequest extends Structure implements UaRequestMessageTyp
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 422),
-        new NodeId(0, 22),
+        NodeId.parse("i=422"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "RequestHeader",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 389),
+              NodeId.parse("i=389"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -147,7 +147,7 @@ public class FindServersRequest extends Structure implements UaRequestMessageTyp
           new StructureField(
               "EndpointUrl",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -155,7 +155,7 @@ public class FindServersRequest extends Structure implements UaRequestMessageTyp
           new StructureField(
               "LocaleIds",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 295),
+              NodeId.parse("i=295"),
               1,
               null,
               UInteger.valueOf(0),
@@ -163,7 +163,7 @@ public class FindServersRequest extends Structure implements UaRequestMessageTyp
           new StructureField(
               "ServerUris",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               1,
               null,
               UInteger.valueOf(0),

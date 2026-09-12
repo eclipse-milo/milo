@@ -140,14 +140,14 @@ public class SessionlessInvokeRequestType extends Structure implements UaStructu
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 15903),
-        new NodeId(0, 22),
+        NodeId.parse("i=15903"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "UrisVersion",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 20998),
+              NodeId.parse("i=20998"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -155,7 +155,7 @@ public class SessionlessInvokeRequestType extends Structure implements UaStructu
           new StructureField(
               "NamespaceUris",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               1,
               null,
               UInteger.valueOf(0),
@@ -163,7 +163,7 @@ public class SessionlessInvokeRequestType extends Structure implements UaStructu
           new StructureField(
               "ServerUris",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               1,
               null,
               UInteger.valueOf(0),
@@ -171,7 +171,7 @@ public class SessionlessInvokeRequestType extends Structure implements UaStructu
           new StructureField(
               "LocaleIds",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 295),
+              NodeId.parse("i=295"),
               1,
               null,
               UInteger.valueOf(0),
@@ -179,7 +179,7 @@ public class SessionlessInvokeRequestType extends Structure implements UaStructu
           new StructureField(
               "ServiceId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),

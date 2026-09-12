@@ -99,14 +99,14 @@ public class ReceiveQosPriorityDataType extends ReceiveQosDataType implements Ua
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 23861),
-        new NodeId(0, 23608),
+        NodeId.parse("i=23861"),
+        NodeId.parse("i=23608"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "PriorityLabel",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),

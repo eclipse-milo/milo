@@ -175,14 +175,14 @@ public class QuantityDimension extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 32562),
-        new NodeId(0, 22),
+        NodeId.parse("i=32562"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "MassExponent",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 2),
+              NodeId.parse("i=2"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -190,7 +190,7 @@ public class QuantityDimension extends Structure implements UaStructuredType {
           new StructureField(
               "LengthExponent",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 2),
+              NodeId.parse("i=2"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -198,7 +198,7 @@ public class QuantityDimension extends Structure implements UaStructuredType {
           new StructureField(
               "TimeExponent",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 2),
+              NodeId.parse("i=2"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -206,7 +206,7 @@ public class QuantityDimension extends Structure implements UaStructuredType {
           new StructureField(
               "ElectricCurrentExponent",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 2),
+              NodeId.parse("i=2"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -214,7 +214,7 @@ public class QuantityDimension extends Structure implements UaStructuredType {
           new StructureField(
               "AmountOfSubstanceExponent",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 2),
+              NodeId.parse("i=2"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -222,7 +222,7 @@ public class QuantityDimension extends Structure implements UaStructuredType {
           new StructureField(
               "LuminousIntensityExponent",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 2),
+              NodeId.parse("i=2"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -230,7 +230,7 @@ public class QuantityDimension extends Structure implements UaStructuredType {
           new StructureField(
               "AbsoluteTemperatureExponent",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 2),
+              NodeId.parse("i=2"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -238,7 +238,7 @@ public class QuantityDimension extends Structure implements UaStructuredType {
           new StructureField(
               "DimensionlessExponent",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 2),
+              NodeId.parse("i=2"),
               -1,
               null,
               UInteger.valueOf(0),

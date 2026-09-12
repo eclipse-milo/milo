@@ -12,22 +12,22 @@ package org.eclipse.milo.opcua.sdk.server.model.objects;
 
 import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
 import org.eclipse.milo.opcua.sdk.core.nodes.MethodNode;
-import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
-import org.eclipse.milo.opcua.sdk.server.methods.Out;
+import org.eclipse.milo.opcua.sdk.server.methods.MethodBinding;
+import org.eclipse.milo.opcua.sdk.server.methods.MethodBindings;
+import org.eclipse.milo.opcua.sdk.server.model.methods.AliasNameCategoryTypeAddAliasesToCategoryDetailedHandler;
+import org.eclipse.milo.opcua.sdk.server.model.methods.AliasNameCategoryTypeAddAliasesToCategoryHandler;
+import org.eclipse.milo.opcua.sdk.server.model.methods.AliasNameCategoryTypeDeleteAliasesFromCategoryDetailedHandler;
+import org.eclipse.milo.opcua.sdk.server.model.methods.AliasNameCategoryTypeDeleteAliasesFromCategoryHandler;
+import org.eclipse.milo.opcua.sdk.server.model.methods.AliasNameCategoryTypeFindAliasDetailedHandler;
+import org.eclipse.milo.opcua.sdk.server.model.methods.AliasNameCategoryTypeFindAliasHandler;
+import org.eclipse.milo.opcua.sdk.server.model.methods.AliasNameCategoryTypeFindAliasVerboseDetailedHandler;
+import org.eclipse.milo.opcua.sdk.server.model.methods.AliasNameCategoryTypeFindAliasVerboseHandler;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
-import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
-import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
-import org.eclipse.milo.opcua.stack.core.types.structured.AliasNameDataType;
-import org.eclipse.milo.opcua.stack.core.types.structured.AliasNameVerboseDataType;
-import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
-import org.eclipse.milo.opcua.stack.core.util.Lazy;
+import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
@@ -42,333 +42,282 @@ public interface AliasNameCategoryType extends FolderType {
           -1,
           UInteger.class);
 
-  UInteger getLastChange();
+  /**
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
+   * timestamps.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
+   */
+  @Nullable UInteger getLastChange();
 
-  void setLastChange(UInteger value);
+  /**
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  void setLastChange(@Nullable UInteger value);
 
-  PropertyType getLastChangeNode();
+  /**
+   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
+   * absence. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  @Nullable PropertyType getLastChangeNode();
 
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part17/6.3.2
+   *
+   * <p>Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   MethodNode getFindAliasMethodNode();
 
-  MethodNode getFindAliasVerboseMethodNode();
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part17/6.3.2
+   *
+   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
+   * must already exist and have compatible effective metadata; binding does not create nodes or
+   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
+   * registration.
+   *
+   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
+   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
+   * handler replacement is authoritative. An observed displacement prevents further binds through
+   * that registry.
+   *
+   * @return an explicit registration lifetime
+   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
+   *     preempting ConditionManager makes binding unsupported
+   * @throws UaRuntimeException if strict local lookup fails
+   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
+   *     the Method
+   */
+  MethodBinding bindFindAlias(
+      MethodBindings bindings, AliasNameCategoryTypeFindAliasHandler handler) throws UaException;
 
-  MethodNode getAddAliasesToCategoryMethodNode();
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part17/6.3.2
+   *
+   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
+   * must already exist and have compatible effective metadata; binding does not create nodes or
+   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
+   * registration.
+   *
+   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
+   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
+   * handler replacement is authoritative. An observed displacement prevents further binds through
+   * that registry.
+   *
+   * @return an explicit registration lifetime
+   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
+   *     preempting ConditionManager makes binding unsupported
+   * @throws UaRuntimeException if strict local lookup fails
+   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
+   *     the Method
+   */
+  MethodBinding bindFindAliasDetailed(
+      MethodBindings bindings, AliasNameCategoryTypeFindAliasDetailedHandler handler)
+      throws UaException;
 
-  MethodNode getDeleteAliasesFromCategoryMethodNode();
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part17/6.3.3
+   *
+   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
+   * confirmed absence. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  @Nullable MethodNode getFindAliasVerboseMethodNode();
 
-  abstract class FindAliasMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part17/6.3.3
+   *
+   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
+   * must already exist and have compatible effective metadata; binding does not create nodes or
+   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
+   * registration.
+   *
+   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
+   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
+   * handler replacement is authoritative. An observed displacement prevents further binds through
+   * that registry.
+   *
+   * @return an explicit registration lifetime
+   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
+   *     preempting ConditionManager makes binding unsupported
+   * @throws UaRuntimeException if strict local lookup fails
+   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
+   *     the Method
+   */
+  MethodBinding bindFindAliasVerbose(
+      MethodBindings bindings, AliasNameCategoryTypeFindAliasVerboseHandler handler)
+      throws UaException;
 
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part17/6.3.3
+   *
+   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
+   * must already exist and have compatible effective metadata; binding does not create nodes or
+   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
+   * registration.
+   *
+   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
+   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
+   * handler replacement is authoritative. An observed displacement prevents further binds through
+   * that registry.
+   *
+   * @return an explicit registration lifetime
+   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
+   *     preempting ConditionManager makes binding unsupported
+   * @throws UaRuntimeException if strict local lookup fails
+   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
+   *     the Method
+   */
+  MethodBinding bindFindAliasVerboseDetailed(
+      MethodBindings bindings, AliasNameCategoryTypeFindAliasVerboseDetailedHandler handler)
+      throws UaException;
 
-    public FindAliasMethod(UaMethodNode node) {
-      super(node);
-    }
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part17/6.3.4
+   *
+   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
+   * confirmed absence. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  @Nullable MethodNode getAddAliasesToCategoryMethodNode();
 
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part17/6.3.4
+   *
+   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
+   * must already exist and have compatible effective metadata; binding does not create nodes or
+   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
+   * registration.
+   *
+   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
+   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
+   * handler replacement is authoritative. An observed displacement prevents further binds through
+   * that registry.
+   *
+   * @return an explicit registration lifetime
+   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
+   *     preempting ConditionManager makes binding unsupported
+   * @throws UaRuntimeException if strict local lookup fails
+   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
+   *     the Method
+   */
+  MethodBinding bindAddAliasesToCategory(
+      MethodBindings bindings, AliasNameCategoryTypeAddAliasesToCategoryHandler handler)
+      throws UaException;
 
-            return new Argument[] {
-              new Argument(
-                  "AliasNameSearchPattern",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "ReferenceTypeFilter",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part17/6.3.4
+   *
+   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
+   * must already exist and have compatible effective metadata; binding does not create nodes or
+   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
+   * registration.
+   *
+   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
+   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
+   * handler replacement is authoritative. An observed displacement prevents further binds through
+   * that registry.
+   *
+   * @return an explicit registration lifetime
+   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
+   *     preempting ConditionManager makes binding unsupported
+   * @throws UaRuntimeException if strict local lookup fails
+   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
+   *     the Method
+   */
+  MethodBinding bindAddAliasesToCategoryDetailed(
+      MethodBindings bindings, AliasNameCategoryTypeAddAliasesToCategoryDetailedHandler handler)
+      throws UaException;
 
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part17/6.3.5
+   *
+   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
+   * confirmed absence. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member, or null for confirmed absence
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
+  @Nullable MethodNode getDeleteAliasesFromCategoryMethodNode();
 
-            return new Argument[] {
-              new Argument(
-                  "AliasNodeList",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=23468")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", ""))
-            };
-          });
-    }
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part17/6.3.5
+   *
+   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
+   * must already exist and have compatible effective metadata; binding does not create nodes or
+   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
+   * registration.
+   *
+   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
+   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
+   * handler replacement is authoritative. An observed displacement prevents further binds through
+   * that registry.
+   *
+   * @return an explicit registration lifetime
+   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
+   *     preempting ConditionManager makes binding unsupported
+   * @throws UaRuntimeException if strict local lookup fails
+   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
+   *     the Method
+   */
+  MethodBinding bindDeleteAliasesFromCategory(
+      MethodBindings bindings, AliasNameCategoryTypeDeleteAliasesFromCategoryHandler handler)
+      throws UaException;
 
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      String aliasNameSearchPattern = (String) inputValues[0].getValue();
-      NodeId referenceTypeFilter = (NodeId) inputValues[1].getValue();
-      Out<AliasNameDataType[]> aliasNodeList = new Out<>();
-      invoke(context, aliasNameSearchPattern, referenceTypeFilter, aliasNodeList);
-      return new Variant[] {new Variant(aliasNodeList.get())};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context,
-        String aliasNameSearchPattern,
-        NodeId referenceTypeFilter,
-        Out<AliasNameDataType[]> aliasNodeList)
-        throws UaException;
-  }
-
-  abstract class FindAliasVerboseMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-    public FindAliasVerboseMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "AliasNameSearchPattern",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "ReferenceTypeFilter",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "AliasNodeList",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24051")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      String aliasNameSearchPattern = (String) inputValues[0].getValue();
-      NodeId referenceTypeFilter = (NodeId) inputValues[1].getValue();
-      Out<AliasNameVerboseDataType[]> aliasNodeList = new Out<>();
-      invoke(context, aliasNameSearchPattern, referenceTypeFilter, aliasNodeList);
-      return new Variant[] {new Variant(aliasNodeList.get())};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context,
-        String aliasNameSearchPattern,
-        NodeId referenceTypeFilter,
-        Out<AliasNameVerboseDataType[]> aliasNodeList)
-        throws UaException;
-  }
-
-  abstract class AddAliasesToCategoryMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-    public AddAliasesToCategoryMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "AliasNames",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", "")),
-              new Argument(
-                  "TargetNodes",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=18")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", "")),
-              new Argument(
-                  "TargetServers",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", "")),
-              new Argument(
-                  "TargetReferenceType",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "ErrorCodes",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=19")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      String[] aliasNames = (String[]) inputValues[0].getValue();
-      ExpandedNodeId[] targetNodes = (ExpandedNodeId[]) inputValues[1].getValue();
-      String[] targetServers = (String[]) inputValues[2].getValue();
-      NodeId targetReferenceType = (NodeId) inputValues[3].getValue();
-      Out<StatusCode[]> errorCodes = new Out<>();
-      invoke(context, aliasNames, targetNodes, targetServers, targetReferenceType, errorCodes);
-      return new Variant[] {new Variant(errorCodes.get())};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context,
-        String[] aliasNames,
-        ExpandedNodeId[] targetNodes,
-        String[] targetServers,
-        NodeId targetReferenceType,
-        Out<StatusCode[]> errorCodes)
-        throws UaException;
-  }
-
-  abstract class DeleteAliasesFromCategoryMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-    public DeleteAliasesFromCategoryMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "AliasNames",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", "")),
-              new Argument(
-                  "TargetNodes",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=18")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "ErrorCodes",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=19")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      String[] aliasNames = (String[]) inputValues[0].getValue();
-      ExpandedNodeId[] targetNodes = (ExpandedNodeId[]) inputValues[1].getValue();
-      Out<StatusCode[]> errorCodes = new Out<>();
-      invoke(context, aliasNames, targetNodes, errorCodes);
-      return new Variant[] {new Variant(errorCodes.get())};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context,
-        String[] aliasNames,
-        ExpandedNodeId[] targetNodes,
-        Out<StatusCode[]> errorCodes)
-        throws UaException;
-  }
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part17/6.3.5
+   *
+   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
+   * must already exist and have compatible effective metadata; binding does not create nodes or
+   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
+   * registration.
+   *
+   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
+   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
+   * handler replacement is authoritative. An observed displacement prevents further binds through
+   * that registry.
+   *
+   * @return an explicit registration lifetime
+   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
+   *     preempting ConditionManager makes binding unsupported
+   * @throws UaRuntimeException if strict local lookup fails
+   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
+   *     the Method
+   */
+  MethodBinding bindDeleteAliasesFromCategoryDetailed(
+      MethodBindings bindings,
+      AliasNameCategoryTypeDeleteAliasesFromCategoryDetailedHandler handler)
+      throws UaException;
 }

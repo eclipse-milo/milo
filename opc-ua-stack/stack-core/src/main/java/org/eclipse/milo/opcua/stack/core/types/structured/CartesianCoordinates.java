@@ -60,6 +60,9 @@ public abstract class CartesianCoordinates extends Structure implements UaStruct
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 18818), new NodeId(0, 22), StructureType.Structure, new StructureField[] {});
+        NodeId.parse("i=18818"),
+        NodeId.parse("i=22"),
+        StructureType.Structure,
+        new StructureField[] {});
   }
 }

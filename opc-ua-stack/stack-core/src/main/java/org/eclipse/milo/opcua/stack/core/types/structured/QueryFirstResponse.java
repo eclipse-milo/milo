@@ -156,14 +156,14 @@ public class QueryFirstResponse extends Structure implements UaResponseMessageTy
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 618),
-        new NodeId(0, 22),
+        NodeId.parse("i=618"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "ResponseHeader",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 392),
+              NodeId.parse("i=392"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -171,7 +171,7 @@ public class QueryFirstResponse extends Structure implements UaResponseMessageTy
           new StructureField(
               "QueryDataSets",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 577),
+              NodeId.parse("i=577"),
               1,
               null,
               UInteger.valueOf(0),
@@ -179,7 +179,7 @@ public class QueryFirstResponse extends Structure implements UaResponseMessageTy
           new StructureField(
               "ContinuationPoint",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 521),
+              NodeId.parse("i=521"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -187,7 +187,7 @@ public class QueryFirstResponse extends Structure implements UaResponseMessageTy
           new StructureField(
               "ParsingResults",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 610),
+              NodeId.parse("i=610"),
               1,
               null,
               UInteger.valueOf(0),
@@ -195,7 +195,7 @@ public class QueryFirstResponse extends Structure implements UaResponseMessageTy
           new StructureField(
               "DiagnosticInfos",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 25),
+              NodeId.parse("i=25"),
               1,
               null,
               UInteger.valueOf(0),
@@ -203,7 +203,7 @@ public class QueryFirstResponse extends Structure implements UaResponseMessageTy
           new StructureField(
               "FilterResult",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 607),
+              NodeId.parse("i=607"),
               -1,
               null,
               UInteger.valueOf(0),

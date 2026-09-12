@@ -113,14 +113,14 @@ public class ThreeDFrame extends Frame implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 18823),
-        new NodeId(0, 18813),
+        NodeId.parse("i=18823"),
+        NodeId.parse("i=18813"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "CartesianCoordinates",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 18810),
+              NodeId.parse("i=18810"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -128,7 +128,7 @@ public class ThreeDFrame extends Frame implements UaStructuredType {
           new StructureField(
               "Orientation",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 18812),
+              NodeId.parse("i=18812"),
               -1,
               null,
               UInteger.valueOf(0),

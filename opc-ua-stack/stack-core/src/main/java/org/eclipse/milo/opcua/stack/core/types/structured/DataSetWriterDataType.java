@@ -190,14 +190,14 @@ public class DataSetWriterDataType extends Structure implements UaStructuredType
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 15682),
-        new NodeId(0, 22),
+        NodeId.parse("i=15682"),
+        NodeId.parse("i=22"),
         StructureType.StructureWithSubtypedValues,
         new StructureField[] {
           new StructureField(
               "Name",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -205,7 +205,7 @@ public class DataSetWriterDataType extends Structure implements UaStructuredType
           new StructureField(
               "Enabled",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -213,7 +213,7 @@ public class DataSetWriterDataType extends Structure implements UaStructuredType
           new StructureField(
               "DataSetWriterId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 5),
+              NodeId.parse("i=5"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -221,7 +221,7 @@ public class DataSetWriterDataType extends Structure implements UaStructuredType
           new StructureField(
               "DataSetFieldContentMask",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15583),
+              NodeId.parse("i=15583"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -229,7 +229,7 @@ public class DataSetWriterDataType extends Structure implements UaStructuredType
           new StructureField(
               "KeyFrameCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -237,7 +237,7 @@ public class DataSetWriterDataType extends Structure implements UaStructuredType
           new StructureField(
               "DataSetName",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -245,7 +245,7 @@ public class DataSetWriterDataType extends Structure implements UaStructuredType
           new StructureField(
               "DataSetWriterProperties",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 14533),
+              NodeId.parse("i=14533"),
               1,
               null,
               UInteger.valueOf(0),
@@ -253,7 +253,7 @@ public class DataSetWriterDataType extends Structure implements UaStructuredType
           new StructureField(
               "TransportSettings",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15598),
+              NodeId.parse("i=15598"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -261,7 +261,7 @@ public class DataSetWriterDataType extends Structure implements UaStructuredType
           new StructureField(
               "MessageSettings",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15605),
+              NodeId.parse("i=15605"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -298,11 +298,13 @@ public class DataSetWriterDataType extends Structure implements UaStructuredType
               decoder.decodeStructArray("DataSetWriterProperties", KeyValuePair.TYPE_ID);
       {
         ExtensionObject xo = decoder.decodeExtensionObject("TransportSettings");
-        transportSettings = (DataSetWriterTransportDataType) xo.decode(context);
+        transportSettings =
+            xo == null || xo.isNull() ? null : (DataSetWriterTransportDataType) xo.decode(context);
       }
       {
         ExtensionObject xo = decoder.decodeExtensionObject("MessageSettings");
-        messageSettings = (DataSetWriterMessageDataType) xo.decode(context);
+        messageSettings =
+            xo == null || xo.isNull() ? null : (DataSetWriterMessageDataType) xo.decode(context);
       }
       return new DataSetWriterDataType(
           name,
@@ -329,11 +331,15 @@ public class DataSetWriterDataType extends Structure implements UaStructuredType
       encoder.encodeStructArray(
           "DataSetWriterProperties", value.getDataSetWriterProperties(), KeyValuePair.TYPE_ID);
       {
-        ExtensionObject xo = ExtensionObject.encode(context, value.getTransportSettings());
+        DataSetWriterTransportDataType fieldValue = value.getTransportSettings();
+        ExtensionObject xo =
+            fieldValue == null ? null : ExtensionObject.encode(context, fieldValue);
         encoder.encodeExtensionObject("TransportSettings", xo);
       }
       {
-        ExtensionObject xo = ExtensionObject.encode(context, value.getMessageSettings());
+        DataSetWriterMessageDataType fieldValue = value.getMessageSettings();
+        ExtensionObject xo =
+            fieldValue == null ? null : ExtensionObject.encode(context, fieldValue);
         encoder.encodeExtensionObject("MessageSettings", xo);
       }
     }

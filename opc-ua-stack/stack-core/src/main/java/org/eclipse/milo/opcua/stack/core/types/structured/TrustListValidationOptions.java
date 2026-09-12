@@ -14,6 +14,7 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUI32;
 import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
@@ -78,6 +79,54 @@ public class TrustListValidationOptions extends OptionSetUI32<TrustListValidatio
     joiner.add("checkRevocationStatusOnline=" + getCheckRevocationStatusOnline());
     joiner.add("checkRevocationStatusOffline=" + getCheckRevocationStatusOffline());
     return joiner.toString();
+  }
+
+  public static EnumDefinition definition() {
+    return new EnumDefinition(
+        new EnumField[] {
+          new EnumField(
+              0L,
+              LocalizedText.NULL_VALUE,
+              new LocalizedText(
+                  "", "Ignore errors related to the validity time of the Certificate."),
+              "SuppressCertificateExpired"),
+          new EnumField(
+              1L,
+              LocalizedText.NULL_VALUE,
+              new LocalizedText("", "Ignore mismatches between the host name or ApplicationUri."),
+              "SuppressHostNameInvalid"),
+          new EnumField(
+              2L,
+              LocalizedText.NULL_VALUE,
+              new LocalizedText(
+                  "",
+                  "Ignore errors if the revocation list cannot be found for the issuer of the"
+                      + " Certificate."),
+              "SuppressRevocationStatusUnknown"),
+          new EnumField(
+              3L,
+              LocalizedText.NULL_VALUE,
+              new LocalizedText("", "Ignore errors if an issuer has an expired Certificate."),
+              "SuppressIssuerCertificateExpired"),
+          new EnumField(
+              4L,
+              LocalizedText.NULL_VALUE,
+              new LocalizedText(
+                  "",
+                  "Ignore errors if the revocation list cannot be found for any issuer of issuer"
+                      + " Certificates."),
+              "SuppressIssuerRevocationStatusUnknown"),
+          new EnumField(
+              5L,
+              LocalizedText.NULL_VALUE,
+              new LocalizedText("", "Check the revocation status online."),
+              "CheckRevocationStatusOnline"),
+          new EnumField(
+              6L,
+              LocalizedText.NULL_VALUE,
+              new LocalizedText("", "Check the revocation status offline."),
+              "CheckRevocationStatusOffline")
+        });
   }
 
   public static TrustListValidationOptions of(TrustListValidationOptions.Field... fields) {

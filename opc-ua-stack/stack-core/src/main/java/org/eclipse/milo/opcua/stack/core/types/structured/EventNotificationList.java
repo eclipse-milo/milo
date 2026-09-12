@@ -98,14 +98,14 @@ public class EventNotificationList extends NotificationData implements UaStructu
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 916),
-        new NodeId(0, 945),
+        NodeId.parse("i=916"),
+        NodeId.parse("i=945"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "Events",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 917),
+              NodeId.parse("i=917"),
               1,
               null,
               UInteger.valueOf(0),

@@ -13,8 +13,8 @@ package org.eclipse.milo.opcua.sdk.server.conditions;
 import java.util.function.Consumer;
 import org.eclipse.milo.opcua.sdk.server.conditions.ConditionNodeTraversal.DiscoveredMethod;
 import org.eclipse.milo.opcua.sdk.server.conditions.ConditionNodeTraversal.MethodSurface;
+import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext;
-import org.eclipse.milo.opcua.sdk.server.model.objects.AcknowledgeableConditionType;
 import org.eclipse.milo.opcua.sdk.server.model.objects.AcknowledgeableConditionTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.TwoStateVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
@@ -25,6 +25,8 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -318,12 +320,37 @@ public class AcknowledgeableCondition extends Condition {
     if (acknowledge != null) {
       installMethodHandler(
           acknowledge,
-          new AcknowledgeableConditionType.AcknowledgeMethod(acknowledge.node()) {
+          new AbstractMethodInvocationHandler(acknowledge.node()) {
             @Override
-            protected void invoke(
-                InvocationContext context, ByteString eventId, LocalizedText comment)
+            public Argument[] getInputArguments() {
+              return new Argument[] {
+                new Argument(
+                    "EventId",
+                    NodeIds.ByteString,
+                    -1,
+                    null,
+                    new LocalizedText("", "The identifier for the event to comment.")),
+                new Argument(
+                    "Comment",
+                    NodeIds.LocalizedText,
+                    -1,
+                    null,
+                    new LocalizedText("", "The comment to add to the condition."))
+              };
+            }
+
+            @Override
+            public Argument[] getOutputArguments() {
+              return new Argument[0];
+            }
+
+            @Override
+            protected Variant[] invoke(InvocationContext context, Variant[] inputValues)
                 throws UaException {
+              ByteString eventId = (ByteString) inputValues[0].value();
+              LocalizedText comment = (LocalizedText) inputValues[1].value();
               handleAcknowledge(context, eventId, comment);
+              return new Variant[0];
             }
           });
     }
@@ -333,12 +360,37 @@ public class AcknowledgeableCondition extends Condition {
       if (hasConfirmedState()) {
         installMethodHandler(
             confirm,
-            new AcknowledgeableConditionType.ConfirmMethod(confirm.node()) {
+            new AbstractMethodInvocationHandler(confirm.node()) {
               @Override
-              protected void invoke(
-                  InvocationContext context, ByteString eventId, LocalizedText comment)
+              public Argument[] getInputArguments() {
+                return new Argument[] {
+                  new Argument(
+                      "EventId",
+                      NodeIds.ByteString,
+                      -1,
+                      null,
+                      new LocalizedText("", "The identifier for the event to comment.")),
+                  new Argument(
+                      "Comment",
+                      NodeIds.LocalizedText,
+                      -1,
+                      null,
+                      new LocalizedText("", "The comment to add to the condition."))
+                };
+              }
+
+              @Override
+              public Argument[] getOutputArguments() {
+                return new Argument[0];
+              }
+
+              @Override
+              protected Variant[] invoke(InvocationContext context, Variant[] inputValues)
                   throws UaException {
+                ByteString eventId = (ByteString) inputValues[0].value();
+                LocalizedText comment = (LocalizedText) inputValues[1].value();
                 handleConfirm(context, eventId, comment);
+                return new Variant[0];
               }
             });
       } else {

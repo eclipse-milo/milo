@@ -10,23 +10,54 @@
 
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.Objects;
 import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
+import org.eclipse.milo.opcua.sdk.server.methods.InvalidArgumentException;
+import org.eclipse.milo.opcua.sdk.server.methods.MethodBinding;
+import org.eclipse.milo.opcua.sdk.server.methods.MethodBindings;
+import org.eclipse.milo.opcua.sdk.server.model.methods.UserManagementTypeAddUserDetailedHandler;
+import org.eclipse.milo.opcua.sdk.server.model.methods.UserManagementTypeAddUserHandler;
+import org.eclipse.milo.opcua.sdk.server.model.methods.UserManagementTypeChangePasswordDetailedHandler;
+import org.eclipse.milo.opcua.sdk.server.model.methods.UserManagementTypeChangePasswordHandler;
+import org.eclipse.milo.opcua.sdk.server.model.methods.UserManagementTypeModifyUserDetailedHandler;
+import org.eclipse.milo.opcua.sdk.server.model.methods.UserManagementTypeModifyUserHandler;
+import org.eclipse.milo.opcua.sdk.server.model.methods.UserManagementTypeRemoveUserDetailedHandler;
+import org.eclipse.milo.opcua.sdk.server.model.methods.UserManagementTypeRemoveUserHandler;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
+import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Matrix;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
+import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
+import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
+import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodResult;
 import org.eclipse.milo.opcua.stack.core.types.structured.PasswordOptionsMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.Range;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.types.structured.UserConfigurationMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserManagementDataType;
+import org.jspecify.annotations.Nullable;
 
 public class UserManagementTypeNode extends BaseObjectTypeNode implements UserManagementType {
   public UserManagementTypeNode(
@@ -80,110 +111,2946 @@ public class UserManagementTypeNode extends BaseObjectTypeNode implements UserMa
   }
 
   @Override
+  public Optional<VariableNode> getPropertyNode(QualifiedName browseName) {
+    return findNode(
+            browseName,
+            n -> n instanceof VariableNode,
+            r ->
+                r.isForward()
+                    && (r.getReferenceTypeId().equals(NodeIds.HasProperty)
+                        || getNodeContext()
+                            .getServer()
+                            .getReferenceTypeTree()
+                            .isSubtypeOf(r.getReferenceTypeId(), NodeIds.HasProperty)))
+        .map(n -> (VariableNode) n);
+  }
+
+  @Override
   public PropertyTypeNode getUsersNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(UserManagementType.USERS);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:Users (declaration i=24265, owner i=24264)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "Users");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:Users (declaration i=24265,"
+                    + " owner i=24264) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:Users (declaration i=24265, owner i=24264)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:Users (declaration i=24265, owner i=24264)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:Users (declaration i=24265, owner i=24264)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:Users (declaration i=24265, owner i=24264)"
+                + " on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:Users (declaration i=24265, owner i=24264)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:Users (declaration i=24265, owner i=24264)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof PropertyTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:Users (declaration i=24265, owner i=24264)"
+              + " on "
+              + getNodeId());
+    }
+    return (PropertyTypeNode) parent;
   }
 
   @Override
-  public UserManagementDataType[] getUsers() {
-    return getProperty(UserManagementType.USERS).orElse(null);
+  public @Nullable UserManagementDataType @Nullable [] getUsers() {
+    var node = getUsersNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:Users (declaration i=24265, owner i=24264)"
+              + " on "
+              + getNodeId());
+    }
+    Object decoded =
+        ExtensionObject.decodeValue(
+            getNodeContext().getServer().getStaticEncodingContext(),
+            node.getValue().getValue().getValue());
+    if (decoded == null) {
+      return null;
+    }
+    if (!(decoded instanceof Object[] elements)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:Users (declaration i=24265, owner i=24264)");
+    }
+    UserManagementDataType[] typed = new UserManagementDataType[elements.length];
+    for (int i = 0; i < elements.length; i++) {
+      if (elements[i] != null && !(elements[i] instanceof UserManagementDataType)) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TypeMismatch,
+            "http://opcfoundation.org/UA/:Users (declaration i=24265, owner i=24264)");
+      }
+      typed[i] = (UserManagementDataType) elements[i];
+    }
+    return typed;
   }
 
   @Override
-  public void setUsers(UserManagementDataType[] value) {
-    setProperty(UserManagementType.USERS, value);
+  public void setUsers(@Nullable UserManagementDataType @Nullable [] value) {
+    var node = getUsersNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:Users (declaration i=24265, owner i=24264)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public PropertyTypeNode getPasswordLengthNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(UserManagementType.PASSWORD_LENGTH);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:PasswordLength (declaration i=24266, owner i=24264)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "PasswordLength");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:PasswordLength (declaration"
+                    + " i=24266, owner i=24264) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:PasswordLength (declaration i=24266, owner i=24264)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:PasswordLength (declaration i=24266, owner i=24264)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:PasswordLength (declaration i=24266, owner i=24264)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:PasswordLength (declaration i=24266, owner i=24264)"
+                + " on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:PasswordLength (declaration i=24266, owner i=24264)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:PasswordLength (declaration i=24266, owner i=24264)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof PropertyTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:PasswordLength (declaration i=24266, owner i=24264)"
+              + " on "
+              + getNodeId());
+    }
+    return (PropertyTypeNode) parent;
   }
 
   @Override
-  public Range getPasswordLength() {
-    return getProperty(UserManagementType.PASSWORD_LENGTH).orElse(null);
+  public @Nullable Range getPasswordLength() {
+    var node = getPasswordLengthNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:PasswordLength (declaration i=24266, owner i=24264)"
+              + " on "
+              + getNodeId());
+    }
+    Object decoded =
+        ExtensionObject.decodeValue(
+            getNodeContext().getServer().getStaticEncodingContext(),
+            node.getValue().getValue().getValue());
+    if (decoded == null) {
+      return null;
+    }
+    if (!(decoded instanceof Range)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:PasswordLength (declaration i=24266, owner i=24264)");
+    }
+    return (Range) decoded;
   }
 
   @Override
-  public void setPasswordLength(Range value) {
-    setProperty(UserManagementType.PASSWORD_LENGTH, value);
+  public void setPasswordLength(@Nullable Range value) {
+    var node = getPasswordLengthNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:PasswordLength (declaration i=24266, owner i=24264)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public PropertyTypeNode getPasswordOptionsNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(UserManagementType.PASSWORD_OPTIONS);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:PasswordOptions (declaration i=24267, owner i=24264)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "PasswordOptions");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:PasswordOptions (declaration"
+                    + " i=24267, owner i=24264) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:PasswordOptions (declaration i=24267, owner i=24264)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:PasswordOptions (declaration i=24267, owner i=24264)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:PasswordOptions (declaration i=24267, owner i=24264)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:PasswordOptions (declaration i=24267, owner i=24264)"
+                + " on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:PasswordOptions (declaration i=24267, owner i=24264)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:PasswordOptions (declaration i=24267, owner i=24264)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof PropertyTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:PasswordOptions (declaration i=24267, owner i=24264)"
+              + " on "
+              + getNodeId());
+    }
+    return (PropertyTypeNode) parent;
   }
 
   @Override
-  public PasswordOptionsMask getPasswordOptions() {
-    return getProperty(UserManagementType.PASSWORD_OPTIONS).orElse(null);
+  public @Nullable PasswordOptionsMask getPasswordOptions() {
+    var node = getPasswordOptionsNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:PasswordOptions (declaration i=24267, owner i=24264)"
+              + " on "
+              + getNodeId());
+    }
+    return (PasswordOptionsMask) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setPasswordOptions(PasswordOptionsMask value) {
-    setProperty(UserManagementType.PASSWORD_OPTIONS, value);
+  public void setPasswordOptions(@Nullable PasswordOptionsMask value) {
+    var node = getPasswordOptionsNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:PasswordOptions (declaration i=24267, owner i=24264)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
-  public PropertyTypeNode getPasswordRestrictionsNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(UserManagementType.PASSWORD_RESTRICTIONS);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable PropertyTypeNode getPasswordRestrictionsNode() {
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:PasswordRestrictions (declaration i=24268, owner i=24264)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "PasswordRestrictions");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:PasswordRestrictions"
+                    + " (declaration i=24268, owner i=24264) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:PasswordRestrictions (declaration i=24268, owner"
+                  + " i=24264) on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:PasswordRestrictions (declaration i=24268, owner"
+                  + " i=24264) on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:PasswordRestrictions (declaration i=24268, owner"
+                  + " i=24264) on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        return null;
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:PasswordRestrictions (declaration i=24268, owner i=24264)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Variable) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:PasswordRestrictions (declaration i=24268, owner i=24264)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof PropertyTypeNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:PasswordRestrictions (declaration i=24268, owner i=24264)"
+              + " on "
+              + getNodeId());
+    }
+    return (PropertyTypeNode) parent;
   }
 
   @Override
-  public LocalizedText getPasswordRestrictions() {
-    return getProperty(UserManagementType.PASSWORD_RESTRICTIONS).orElse(null);
+  public @Nullable LocalizedText getPasswordRestrictions() {
+    var node = getPasswordRestrictionsNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:PasswordRestrictions (declaration i=24268, owner i=24264)"
+              + " on "
+              + getNodeId());
+    }
+    return (LocalizedText) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setPasswordRestrictions(LocalizedText value) {
-    setProperty(UserManagementType.PASSWORD_RESTRICTIONS, value);
+  public void setPasswordRestrictions(@Nullable LocalizedText value) {
+    var node = getPasswordRestrictionsNode();
+    if (node == null) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:PasswordRestrictions (declaration i=24268, owner i=24264)"
+              + " on "
+              + getNodeId());
+    }
+    node.setValue(new DataValue(new Variant(value)));
   }
 
   @Override
   public UaMethodNode getAddUserMethodNode() {
-    Optional<UaNode> methodNode =
-        findNode(
-            "http://opcfoundation.org/UA/",
-            "AddUser",
-            node -> node instanceof UaMethodNode,
-            Reference.HAS_COMPONENT_PREDICATE);
-    return (UaMethodNode) methodNode.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:AddUser (declaration i=24269, owner i=24264)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "AddUser");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:AddUser (declaration i=24269,"
+                    + " owner i=24264) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:AddUser (declaration i=24269, owner i=24264)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:AddUser (declaration i=24269, owner i=24264)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:AddUser (declaration i=24269, owner i=24264)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:AddUser (declaration i=24269, owner i=24264)"
+                + " on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:AddUser (declaration i=24269, owner i=24264)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Method) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:AddUser (declaration i=24269, owner i=24264)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof UaMethodNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:AddUser (declaration i=24269, owner i=24264)"
+              + " on "
+              + getNodeId());
+    }
+    return (UaMethodNode) parent;
+  }
+
+  @Override
+  public MethodBinding bindAddUser(
+      MethodBindings bindings, UserManagementTypeAddUserHandler handler) throws UaException {
+    Objects.requireNonNull(bindings, "bindings");
+    Objects.requireNonNull(handler, "handler");
+    UaMethodNode methodNode = getAddUserMethodNode();
+    if (methodNode == null) {
+      throw new UaException(StatusCodes.Bad_NotFound, "Cannot bind an absent Method");
+    }
+    return bindings.bind(
+        this,
+        methodNode,
+        new AbstractMethodInvocationHandler(methodNode) {
+          @Override
+          public Argument[] getInputArguments() {
+            return new Argument[] {
+              new Argument(
+                  "UserName",
+                  ExpandedNodeId.parse("i=12")
+                      .toNodeId(getNode().getNodeContext().getNamespaceTable())
+                      .orElseThrow(() -> new UaRuntimeException(StatusCodes.Bad_NodeIdUnknown)),
+                  -1,
+                  null,
+                  new LocalizedText(null, "")),
+              new Argument(
+                  "Password",
+                  ExpandedNodeId.parse("i=12")
+                      .toNodeId(getNode().getNodeContext().getNamespaceTable())
+                      .orElseThrow(() -> new UaRuntimeException(StatusCodes.Bad_NodeIdUnknown)),
+                  -1,
+                  null,
+                  new LocalizedText(null, "")),
+              new Argument(
+                  "UserConfiguration",
+                  ExpandedNodeId.parse("i=24279")
+                      .toNodeId(getNode().getNodeContext().getNamespaceTable())
+                      .orElseThrow(() -> new UaRuntimeException(StatusCodes.Bad_NodeIdUnknown)),
+                  -1,
+                  null,
+                  new LocalizedText(null, "")),
+              new Argument(
+                  "Description",
+                  ExpandedNodeId.parse("i=12")
+                      .toNodeId(getNode().getNodeContext().getNamespaceTable())
+                      .orElseThrow(() -> new UaRuntimeException(StatusCodes.Bad_NodeIdUnknown)),
+                  -1,
+                  null,
+                  new LocalizedText(null, ""))
+            };
+          }
+
+          @Override
+          public Argument[] getOutputArguments() {
+            return new Argument[] {};
+          }
+
+          @Override
+          protected int getRequiredInputArgumentCount(Argument[] inputArguments) {
+            return 4;
+          }
+
+          @Override
+          protected CallMethodResult invokeResult(
+              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              throws UaException {
+            StatusCode[] inputResults = new StatusCode[inputValues.length];
+            Arrays.fill(inputResults, StatusCode.GOOD);
+            @Nullable String callbackInput0 = null;
+            if (inputValues.length > 0) {
+              try {
+                @Nullable String convertedInput0;
+                {
+                  Object methodValue = inputValues[0].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    convertedInput0 = (String) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                @Nullable String projectedInput0;
+                {
+                  Object methodValue = inputValues[0].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    projectedInput0 = (String) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                callbackInput0 = projectedInput0;
+              } catch (UaException failure) {
+                inputResults[0] = failure.getStatusCode();
+              }
+            }
+            @Nullable String callbackInput1 = null;
+            if (inputValues.length > 1) {
+              try {
+                @Nullable String convertedInput1;
+                {
+                  Object methodValue = inputValues[1].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    convertedInput1 = (String) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                @Nullable String projectedInput1;
+                {
+                  Object methodValue = inputValues[1].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    projectedInput1 = (String) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                callbackInput1 = projectedInput1;
+              } catch (UaException failure) {
+                inputResults[1] = failure.getStatusCode();
+              }
+            }
+            @Nullable UserConfigurationMask callbackInput2 = null;
+            if (inputValues.length > 2) {
+              try {
+                @Nullable UserConfigurationMask convertedInput2;
+                {
+                  Object methodValue = inputValues[2].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    convertedInput2 =
+                        methodValue == null || methodValue instanceof UserConfigurationMask
+                            ? (UserConfigurationMask) methodValue
+                            : new UserConfigurationMask((UInteger) methodValue);
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                @Nullable UserConfigurationMask projectedInput2;
+                {
+                  Object methodValue = inputValues[2].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    projectedInput2 =
+                        methodValue == null || methodValue instanceof UserConfigurationMask
+                            ? (UserConfigurationMask) methodValue
+                            : new UserConfigurationMask((UInteger) methodValue);
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                callbackInput2 = projectedInput2;
+              } catch (UaException failure) {
+                inputResults[2] = failure.getStatusCode();
+              }
+            }
+            @Nullable String callbackInput3 = null;
+            if (inputValues.length > 3) {
+              try {
+                @Nullable String convertedInput3;
+                {
+                  Object methodValue = inputValues[3].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    convertedInput3 = (String) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                @Nullable String projectedInput3;
+                {
+                  Object methodValue = inputValues[3].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    projectedInput3 = (String) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                callbackInput3 = projectedInput3;
+              } catch (UaException failure) {
+                inputResults[3] = failure.getStatusCode();
+              }
+            }
+            if (Arrays.stream(inputResults).anyMatch(StatusCode::isBad)) {
+              throw new InvalidArgumentException(inputResults);
+            }
+            try {
+              handler.invoke(
+                  context, callbackInput0, callbackInput1, callbackInput2, callbackInput3);
+              return new CallMethodResult(
+                  StatusCode.GOOD, new StatusCode[0], new DiagnosticInfo[0], new Variant[] {});
+            } catch (UaRuntimeException failure) {
+              throw new UaException(failure.getStatusCode().getValue(), failure);
+            } catch (RuntimeException callbackFailure) {
+              throw new UaException(StatusCodes.Bad_InternalError, callbackFailure);
+            }
+          }
+        });
+  }
+
+  @Override
+  public MethodBinding bindAddUserDetailed(
+      MethodBindings bindings, UserManagementTypeAddUserDetailedHandler handler)
+      throws UaException {
+    Objects.requireNonNull(bindings, "bindings");
+    Objects.requireNonNull(handler, "handler");
+    UaMethodNode methodNode = getAddUserMethodNode();
+    if (methodNode == null) {
+      throw new UaException(StatusCodes.Bad_NotFound, "Cannot bind an absent Method");
+    }
+    return bindings.bind(
+        this,
+        methodNode,
+        new AbstractMethodInvocationHandler(methodNode) {
+          @Override
+          public Argument[] getInputArguments() {
+            return new Argument[] {
+              new Argument(
+                  "UserName",
+                  ExpandedNodeId.parse("i=12")
+                      .toNodeId(getNode().getNodeContext().getNamespaceTable())
+                      .orElseThrow(() -> new UaRuntimeException(StatusCodes.Bad_NodeIdUnknown)),
+                  -1,
+                  null,
+                  new LocalizedText(null, "")),
+              new Argument(
+                  "Password",
+                  ExpandedNodeId.parse("i=12")
+                      .toNodeId(getNode().getNodeContext().getNamespaceTable())
+                      .orElseThrow(() -> new UaRuntimeException(StatusCodes.Bad_NodeIdUnknown)),
+                  -1,
+                  null,
+                  new LocalizedText(null, "")),
+              new Argument(
+                  "UserConfiguration",
+                  ExpandedNodeId.parse("i=24279")
+                      .toNodeId(getNode().getNodeContext().getNamespaceTable())
+                      .orElseThrow(() -> new UaRuntimeException(StatusCodes.Bad_NodeIdUnknown)),
+                  -1,
+                  null,
+                  new LocalizedText(null, "")),
+              new Argument(
+                  "Description",
+                  ExpandedNodeId.parse("i=12")
+                      .toNodeId(getNode().getNodeContext().getNamespaceTable())
+                      .orElseThrow(() -> new UaRuntimeException(StatusCodes.Bad_NodeIdUnknown)),
+                  -1,
+                  null,
+                  new LocalizedText(null, ""))
+            };
+          }
+
+          @Override
+          public Argument[] getOutputArguments() {
+            return new Argument[] {};
+          }
+
+          @Override
+          protected int getRequiredInputArgumentCount(Argument[] inputArguments) {
+            return 4;
+          }
+
+          @Override
+          protected CallMethodResult invokeResult(
+              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              throws UaException {
+            StatusCode[] inputResults = new StatusCode[inputValues.length];
+            Arrays.fill(inputResults, StatusCode.GOOD);
+            @Nullable String callbackInput0 = null;
+            if (inputValues.length > 0) {
+              try {
+                @Nullable String convertedInput0;
+                {
+                  Object methodValue = inputValues[0].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    convertedInput0 = (String) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                @Nullable String projectedInput0;
+                {
+                  Object methodValue = inputValues[0].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    projectedInput0 = (String) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                callbackInput0 = projectedInput0;
+              } catch (UaException failure) {
+                inputResults[0] = failure.getStatusCode();
+              }
+            }
+            @Nullable String callbackInput1 = null;
+            if (inputValues.length > 1) {
+              try {
+                @Nullable String convertedInput1;
+                {
+                  Object methodValue = inputValues[1].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    convertedInput1 = (String) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                @Nullable String projectedInput1;
+                {
+                  Object methodValue = inputValues[1].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    projectedInput1 = (String) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                callbackInput1 = projectedInput1;
+              } catch (UaException failure) {
+                inputResults[1] = failure.getStatusCode();
+              }
+            }
+            @Nullable UserConfigurationMask callbackInput2 = null;
+            if (inputValues.length > 2) {
+              try {
+                @Nullable UserConfigurationMask convertedInput2;
+                {
+                  Object methodValue = inputValues[2].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    convertedInput2 =
+                        methodValue == null || methodValue instanceof UserConfigurationMask
+                            ? (UserConfigurationMask) methodValue
+                            : new UserConfigurationMask((UInteger) methodValue);
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                @Nullable UserConfigurationMask projectedInput2;
+                {
+                  Object methodValue = inputValues[2].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    projectedInput2 =
+                        methodValue == null || methodValue instanceof UserConfigurationMask
+                            ? (UserConfigurationMask) methodValue
+                            : new UserConfigurationMask((UInteger) methodValue);
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                callbackInput2 = projectedInput2;
+              } catch (UaException failure) {
+                inputResults[2] = failure.getStatusCode();
+              }
+            }
+            @Nullable String callbackInput3 = null;
+            if (inputValues.length > 3) {
+              try {
+                @Nullable String convertedInput3;
+                {
+                  Object methodValue = inputValues[3].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    convertedInput3 = (String) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                @Nullable String projectedInput3;
+                {
+                  Object methodValue = inputValues[3].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    projectedInput3 = (String) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                callbackInput3 = projectedInput3;
+              } catch (UaException failure) {
+                inputResults[3] = failure.getStatusCode();
+              }
+            }
+            if (Arrays.stream(inputResults).anyMatch(StatusCode::isBad)) {
+              throw new InvalidArgumentException(inputResults);
+            }
+            try {
+              var result =
+                  handler.invoke(
+                      context, callbackInput0, callbackInput1, callbackInput2, callbackInput3);
+              if (result == null) {
+                throw new UaException(
+                    StatusCodes.Bad_InternalError, "A detailed Method handler returned null");
+              }
+              if (!result.hasOutputs()) {
+                return new CallMethodResult(
+                    result.status(),
+                    result.inputResults(),
+                    result.inputDiagnostics(),
+                    new Variant[0]);
+              }
+              return new CallMethodResult(
+                  result.status(), new StatusCode[0], new DiagnosticInfo[0], new Variant[] {});
+            } catch (UaRuntimeException failure) {
+              throw new UaException(failure.getStatusCode().getValue(), failure);
+            } catch (RuntimeException callbackFailure) {
+              throw new UaException(StatusCodes.Bad_InternalError, callbackFailure);
+            }
+          }
+        });
   }
 
   @Override
   public UaMethodNode getModifyUserMethodNode() {
-    Optional<UaNode> methodNode =
-        findNode(
-            "http://opcfoundation.org/UA/",
-            "ModifyUser",
-            node -> node instanceof UaMethodNode,
-            Reference.HAS_COMPONENT_PREDICATE);
-    return (UaMethodNode) methodNode.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:ModifyUser (declaration i=24271, owner i=24264)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "ModifyUser");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:ModifyUser (declaration"
+                    + " i=24271, owner i=24264) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:ModifyUser (declaration i=24271, owner i=24264)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:ModifyUser (declaration i=24271, owner i=24264)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:ModifyUser (declaration i=24271, owner i=24264)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:ModifyUser (declaration i=24271, owner i=24264)"
+                + " on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:ModifyUser (declaration i=24271, owner i=24264)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Method) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:ModifyUser (declaration i=24271, owner i=24264)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof UaMethodNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:ModifyUser (declaration i=24271, owner i=24264)"
+              + " on "
+              + getNodeId());
+    }
+    return (UaMethodNode) parent;
+  }
+
+  @Override
+  public MethodBinding bindModifyUser(
+      MethodBindings bindings, UserManagementTypeModifyUserHandler handler) throws UaException {
+    Objects.requireNonNull(bindings, "bindings");
+    Objects.requireNonNull(handler, "handler");
+    UaMethodNode methodNode = getModifyUserMethodNode();
+    if (methodNode == null) {
+      throw new UaException(StatusCodes.Bad_NotFound, "Cannot bind an absent Method");
+    }
+    return bindings.bind(
+        this,
+        methodNode,
+        new AbstractMethodInvocationHandler(methodNode) {
+          @Override
+          public Argument[] getInputArguments() {
+            return new Argument[] {
+              new Argument(
+                  "UserName",
+                  ExpandedNodeId.parse("i=12")
+                      .toNodeId(getNode().getNodeContext().getNamespaceTable())
+                      .orElseThrow(() -> new UaRuntimeException(StatusCodes.Bad_NodeIdUnknown)),
+                  -1,
+                  null,
+                  new LocalizedText(null, "")),
+              new Argument(
+                  "ModifyPassword",
+                  ExpandedNodeId.parse("i=1")
+                      .toNodeId(getNode().getNodeContext().getNamespaceTable())
+                      .orElseThrow(() -> new UaRuntimeException(StatusCodes.Bad_NodeIdUnknown)),
+                  -1,
+                  null,
+                  new LocalizedText(null, "")),
+              new Argument(
+                  "Password",
+                  ExpandedNodeId.parse("i=12")
+                      .toNodeId(getNode().getNodeContext().getNamespaceTable())
+                      .orElseThrow(() -> new UaRuntimeException(StatusCodes.Bad_NodeIdUnknown)),
+                  -1,
+                  null,
+                  new LocalizedText(null, "")),
+              new Argument(
+                  "ModifyUserConfiguration",
+                  ExpandedNodeId.parse("i=1")
+                      .toNodeId(getNode().getNodeContext().getNamespaceTable())
+                      .orElseThrow(() -> new UaRuntimeException(StatusCodes.Bad_NodeIdUnknown)),
+                  -1,
+                  null,
+                  new LocalizedText(null, "")),
+              new Argument(
+                  "UserConfiguration",
+                  ExpandedNodeId.parse("i=24279")
+                      .toNodeId(getNode().getNodeContext().getNamespaceTable())
+                      .orElseThrow(() -> new UaRuntimeException(StatusCodes.Bad_NodeIdUnknown)),
+                  -1,
+                  null,
+                  new LocalizedText(null, "")),
+              new Argument(
+                  "ModifyDescription",
+                  ExpandedNodeId.parse("i=1")
+                      .toNodeId(getNode().getNodeContext().getNamespaceTable())
+                      .orElseThrow(() -> new UaRuntimeException(StatusCodes.Bad_NodeIdUnknown)),
+                  -1,
+                  null,
+                  new LocalizedText(null, "")),
+              new Argument(
+                  "Description",
+                  ExpandedNodeId.parse("i=12")
+                      .toNodeId(getNode().getNodeContext().getNamespaceTable())
+                      .orElseThrow(() -> new UaRuntimeException(StatusCodes.Bad_NodeIdUnknown)),
+                  -1,
+                  null,
+                  new LocalizedText(null, ""))
+            };
+          }
+
+          @Override
+          public Argument[] getOutputArguments() {
+            return new Argument[] {};
+          }
+
+          @Override
+          protected int getRequiredInputArgumentCount(Argument[] inputArguments) {
+            return 7;
+          }
+
+          @Override
+          protected CallMethodResult invokeResult(
+              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              throws UaException {
+            StatusCode[] inputResults = new StatusCode[inputValues.length];
+            Arrays.fill(inputResults, StatusCode.GOOD);
+            @Nullable String callbackInput0 = null;
+            if (inputValues.length > 0) {
+              try {
+                @Nullable String convertedInput0;
+                {
+                  Object methodValue = inputValues[0].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    convertedInput0 = (String) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                @Nullable String projectedInput0;
+                {
+                  Object methodValue = inputValues[0].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    projectedInput0 = (String) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                callbackInput0 = projectedInput0;
+              } catch (UaException failure) {
+                inputResults[0] = failure.getStatusCode();
+              }
+            }
+            @Nullable Boolean callbackInput1 = null;
+            if (inputValues.length > 1) {
+              try {
+                @Nullable Boolean convertedInput1;
+                {
+                  Object methodValue = inputValues[1].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    convertedInput1 = (Boolean) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                @Nullable Boolean projectedInput1;
+                {
+                  Object methodValue = inputValues[1].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    projectedInput1 = (Boolean) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                callbackInput1 = projectedInput1;
+              } catch (UaException failure) {
+                inputResults[1] = failure.getStatusCode();
+              }
+            }
+            @Nullable String callbackInput2 = null;
+            if (inputValues.length > 2) {
+              try {
+                @Nullable String convertedInput2;
+                {
+                  Object methodValue = inputValues[2].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    convertedInput2 = (String) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                @Nullable String projectedInput2;
+                {
+                  Object methodValue = inputValues[2].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    projectedInput2 = (String) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                callbackInput2 = projectedInput2;
+              } catch (UaException failure) {
+                inputResults[2] = failure.getStatusCode();
+              }
+            }
+            @Nullable Boolean callbackInput3 = null;
+            if (inputValues.length > 3) {
+              try {
+                @Nullable Boolean convertedInput3;
+                {
+                  Object methodValue = inputValues[3].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    convertedInput3 = (Boolean) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                @Nullable Boolean projectedInput3;
+                {
+                  Object methodValue = inputValues[3].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    projectedInput3 = (Boolean) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                callbackInput3 = projectedInput3;
+              } catch (UaException failure) {
+                inputResults[3] = failure.getStatusCode();
+              }
+            }
+            @Nullable UserConfigurationMask callbackInput4 = null;
+            if (inputValues.length > 4) {
+              try {
+                @Nullable UserConfigurationMask convertedInput4;
+                {
+                  Object methodValue = inputValues[4].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    convertedInput4 =
+                        methodValue == null || methodValue instanceof UserConfigurationMask
+                            ? (UserConfigurationMask) methodValue
+                            : new UserConfigurationMask((UInteger) methodValue);
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                @Nullable UserConfigurationMask projectedInput4;
+                {
+                  Object methodValue = inputValues[4].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    projectedInput4 =
+                        methodValue == null || methodValue instanceof UserConfigurationMask
+                            ? (UserConfigurationMask) methodValue
+                            : new UserConfigurationMask((UInteger) methodValue);
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                callbackInput4 = projectedInput4;
+              } catch (UaException failure) {
+                inputResults[4] = failure.getStatusCode();
+              }
+            }
+            @Nullable Boolean callbackInput5 = null;
+            if (inputValues.length > 5) {
+              try {
+                @Nullable Boolean convertedInput5;
+                {
+                  Object methodValue = inputValues[5].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    convertedInput5 = (Boolean) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                @Nullable Boolean projectedInput5;
+                {
+                  Object methodValue = inputValues[5].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    projectedInput5 = (Boolean) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                callbackInput5 = projectedInput5;
+              } catch (UaException failure) {
+                inputResults[5] = failure.getStatusCode();
+              }
+            }
+            @Nullable String callbackInput6 = null;
+            if (inputValues.length > 6) {
+              try {
+                @Nullable String convertedInput6;
+                {
+                  Object methodValue = inputValues[6].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    convertedInput6 = (String) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                @Nullable String projectedInput6;
+                {
+                  Object methodValue = inputValues[6].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    projectedInput6 = (String) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                callbackInput6 = projectedInput6;
+              } catch (UaException failure) {
+                inputResults[6] = failure.getStatusCode();
+              }
+            }
+            if (Arrays.stream(inputResults).anyMatch(StatusCode::isBad)) {
+              throw new InvalidArgumentException(inputResults);
+            }
+            try {
+              handler.invoke(
+                  context,
+                  callbackInput0,
+                  callbackInput1,
+                  callbackInput2,
+                  callbackInput3,
+                  callbackInput4,
+                  callbackInput5,
+                  callbackInput6);
+              return new CallMethodResult(
+                  StatusCode.GOOD, new StatusCode[0], new DiagnosticInfo[0], new Variant[] {});
+            } catch (UaRuntimeException failure) {
+              throw new UaException(failure.getStatusCode().getValue(), failure);
+            } catch (RuntimeException callbackFailure) {
+              throw new UaException(StatusCodes.Bad_InternalError, callbackFailure);
+            }
+          }
+        });
+  }
+
+  @Override
+  public MethodBinding bindModifyUserDetailed(
+      MethodBindings bindings, UserManagementTypeModifyUserDetailedHandler handler)
+      throws UaException {
+    Objects.requireNonNull(bindings, "bindings");
+    Objects.requireNonNull(handler, "handler");
+    UaMethodNode methodNode = getModifyUserMethodNode();
+    if (methodNode == null) {
+      throw new UaException(StatusCodes.Bad_NotFound, "Cannot bind an absent Method");
+    }
+    return bindings.bind(
+        this,
+        methodNode,
+        new AbstractMethodInvocationHandler(methodNode) {
+          @Override
+          public Argument[] getInputArguments() {
+            return new Argument[] {
+              new Argument(
+                  "UserName",
+                  ExpandedNodeId.parse("i=12")
+                      .toNodeId(getNode().getNodeContext().getNamespaceTable())
+                      .orElseThrow(() -> new UaRuntimeException(StatusCodes.Bad_NodeIdUnknown)),
+                  -1,
+                  null,
+                  new LocalizedText(null, "")),
+              new Argument(
+                  "ModifyPassword",
+                  ExpandedNodeId.parse("i=1")
+                      .toNodeId(getNode().getNodeContext().getNamespaceTable())
+                      .orElseThrow(() -> new UaRuntimeException(StatusCodes.Bad_NodeIdUnknown)),
+                  -1,
+                  null,
+                  new LocalizedText(null, "")),
+              new Argument(
+                  "Password",
+                  ExpandedNodeId.parse("i=12")
+                      .toNodeId(getNode().getNodeContext().getNamespaceTable())
+                      .orElseThrow(() -> new UaRuntimeException(StatusCodes.Bad_NodeIdUnknown)),
+                  -1,
+                  null,
+                  new LocalizedText(null, "")),
+              new Argument(
+                  "ModifyUserConfiguration",
+                  ExpandedNodeId.parse("i=1")
+                      .toNodeId(getNode().getNodeContext().getNamespaceTable())
+                      .orElseThrow(() -> new UaRuntimeException(StatusCodes.Bad_NodeIdUnknown)),
+                  -1,
+                  null,
+                  new LocalizedText(null, "")),
+              new Argument(
+                  "UserConfiguration",
+                  ExpandedNodeId.parse("i=24279")
+                      .toNodeId(getNode().getNodeContext().getNamespaceTable())
+                      .orElseThrow(() -> new UaRuntimeException(StatusCodes.Bad_NodeIdUnknown)),
+                  -1,
+                  null,
+                  new LocalizedText(null, "")),
+              new Argument(
+                  "ModifyDescription",
+                  ExpandedNodeId.parse("i=1")
+                      .toNodeId(getNode().getNodeContext().getNamespaceTable())
+                      .orElseThrow(() -> new UaRuntimeException(StatusCodes.Bad_NodeIdUnknown)),
+                  -1,
+                  null,
+                  new LocalizedText(null, "")),
+              new Argument(
+                  "Description",
+                  ExpandedNodeId.parse("i=12")
+                      .toNodeId(getNode().getNodeContext().getNamespaceTable())
+                      .orElseThrow(() -> new UaRuntimeException(StatusCodes.Bad_NodeIdUnknown)),
+                  -1,
+                  null,
+                  new LocalizedText(null, ""))
+            };
+          }
+
+          @Override
+          public Argument[] getOutputArguments() {
+            return new Argument[] {};
+          }
+
+          @Override
+          protected int getRequiredInputArgumentCount(Argument[] inputArguments) {
+            return 7;
+          }
+
+          @Override
+          protected CallMethodResult invokeResult(
+              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              throws UaException {
+            StatusCode[] inputResults = new StatusCode[inputValues.length];
+            Arrays.fill(inputResults, StatusCode.GOOD);
+            @Nullable String callbackInput0 = null;
+            if (inputValues.length > 0) {
+              try {
+                @Nullable String convertedInput0;
+                {
+                  Object methodValue = inputValues[0].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    convertedInput0 = (String) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                @Nullable String projectedInput0;
+                {
+                  Object methodValue = inputValues[0].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    projectedInput0 = (String) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                callbackInput0 = projectedInput0;
+              } catch (UaException failure) {
+                inputResults[0] = failure.getStatusCode();
+              }
+            }
+            @Nullable Boolean callbackInput1 = null;
+            if (inputValues.length > 1) {
+              try {
+                @Nullable Boolean convertedInput1;
+                {
+                  Object methodValue = inputValues[1].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    convertedInput1 = (Boolean) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                @Nullable Boolean projectedInput1;
+                {
+                  Object methodValue = inputValues[1].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    projectedInput1 = (Boolean) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                callbackInput1 = projectedInput1;
+              } catch (UaException failure) {
+                inputResults[1] = failure.getStatusCode();
+              }
+            }
+            @Nullable String callbackInput2 = null;
+            if (inputValues.length > 2) {
+              try {
+                @Nullable String convertedInput2;
+                {
+                  Object methodValue = inputValues[2].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    convertedInput2 = (String) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                @Nullable String projectedInput2;
+                {
+                  Object methodValue = inputValues[2].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    projectedInput2 = (String) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                callbackInput2 = projectedInput2;
+              } catch (UaException failure) {
+                inputResults[2] = failure.getStatusCode();
+              }
+            }
+            @Nullable Boolean callbackInput3 = null;
+            if (inputValues.length > 3) {
+              try {
+                @Nullable Boolean convertedInput3;
+                {
+                  Object methodValue = inputValues[3].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    convertedInput3 = (Boolean) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                @Nullable Boolean projectedInput3;
+                {
+                  Object methodValue = inputValues[3].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    projectedInput3 = (Boolean) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                callbackInput3 = projectedInput3;
+              } catch (UaException failure) {
+                inputResults[3] = failure.getStatusCode();
+              }
+            }
+            @Nullable UserConfigurationMask callbackInput4 = null;
+            if (inputValues.length > 4) {
+              try {
+                @Nullable UserConfigurationMask convertedInput4;
+                {
+                  Object methodValue = inputValues[4].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    convertedInput4 =
+                        methodValue == null || methodValue instanceof UserConfigurationMask
+                            ? (UserConfigurationMask) methodValue
+                            : new UserConfigurationMask((UInteger) methodValue);
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                @Nullable UserConfigurationMask projectedInput4;
+                {
+                  Object methodValue = inputValues[4].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    projectedInput4 =
+                        methodValue == null || methodValue instanceof UserConfigurationMask
+                            ? (UserConfigurationMask) methodValue
+                            : new UserConfigurationMask((UInteger) methodValue);
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                callbackInput4 = projectedInput4;
+              } catch (UaException failure) {
+                inputResults[4] = failure.getStatusCode();
+              }
+            }
+            @Nullable Boolean callbackInput5 = null;
+            if (inputValues.length > 5) {
+              try {
+                @Nullable Boolean convertedInput5;
+                {
+                  Object methodValue = inputValues[5].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    convertedInput5 = (Boolean) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                @Nullable Boolean projectedInput5;
+                {
+                  Object methodValue = inputValues[5].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    projectedInput5 = (Boolean) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                callbackInput5 = projectedInput5;
+              } catch (UaException failure) {
+                inputResults[5] = failure.getStatusCode();
+              }
+            }
+            @Nullable String callbackInput6 = null;
+            if (inputValues.length > 6) {
+              try {
+                @Nullable String convertedInput6;
+                {
+                  Object methodValue = inputValues[6].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    convertedInput6 = (String) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                @Nullable String projectedInput6;
+                {
+                  Object methodValue = inputValues[6].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    projectedInput6 = (String) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                callbackInput6 = projectedInput6;
+              } catch (UaException failure) {
+                inputResults[6] = failure.getStatusCode();
+              }
+            }
+            if (Arrays.stream(inputResults).anyMatch(StatusCode::isBad)) {
+              throw new InvalidArgumentException(inputResults);
+            }
+            try {
+              var result =
+                  handler.invoke(
+                      context,
+                      callbackInput0,
+                      callbackInput1,
+                      callbackInput2,
+                      callbackInput3,
+                      callbackInput4,
+                      callbackInput5,
+                      callbackInput6);
+              if (result == null) {
+                throw new UaException(
+                    StatusCodes.Bad_InternalError, "A detailed Method handler returned null");
+              }
+              if (!result.hasOutputs()) {
+                return new CallMethodResult(
+                    result.status(),
+                    result.inputResults(),
+                    result.inputDiagnostics(),
+                    new Variant[0]);
+              }
+              return new CallMethodResult(
+                  result.status(), new StatusCode[0], new DiagnosticInfo[0], new Variant[] {});
+            } catch (UaRuntimeException failure) {
+              throw new UaException(failure.getStatusCode().getValue(), failure);
+            } catch (RuntimeException callbackFailure) {
+              throw new UaException(StatusCodes.Bad_InternalError, callbackFailure);
+            }
+          }
+        });
   }
 
   @Override
   public UaMethodNode getRemoveUserMethodNode() {
-    Optional<UaNode> methodNode =
-        findNode(
-            "http://opcfoundation.org/UA/",
-            "RemoveUser",
-            node -> node instanceof UaMethodNode,
-            Reference.HAS_COMPONENT_PREDICATE);
-    return (UaMethodNode) methodNode.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:RemoveUser (declaration i=24273, owner i=24264)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "RemoveUser");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:RemoveUser (declaration"
+                    + " i=24273, owner i=24264) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:RemoveUser (declaration i=24273, owner i=24264)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:RemoveUser (declaration i=24273, owner i=24264)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:RemoveUser (declaration i=24273, owner i=24264)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:RemoveUser (declaration i=24273, owner i=24264)"
+                + " on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:RemoveUser (declaration i=24273, owner i=24264)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Method) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:RemoveUser (declaration i=24273, owner i=24264)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof UaMethodNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:RemoveUser (declaration i=24273, owner i=24264)"
+              + " on "
+              + getNodeId());
+    }
+    return (UaMethodNode) parent;
+  }
+
+  @Override
+  public MethodBinding bindRemoveUser(
+      MethodBindings bindings, UserManagementTypeRemoveUserHandler handler) throws UaException {
+    Objects.requireNonNull(bindings, "bindings");
+    Objects.requireNonNull(handler, "handler");
+    UaMethodNode methodNode = getRemoveUserMethodNode();
+    if (methodNode == null) {
+      throw new UaException(StatusCodes.Bad_NotFound, "Cannot bind an absent Method");
+    }
+    return bindings.bind(
+        this,
+        methodNode,
+        new AbstractMethodInvocationHandler(methodNode) {
+          @Override
+          public Argument[] getInputArguments() {
+            return new Argument[] {
+              new Argument(
+                  "UserName",
+                  ExpandedNodeId.parse("i=12")
+                      .toNodeId(getNode().getNodeContext().getNamespaceTable())
+                      .orElseThrow(() -> new UaRuntimeException(StatusCodes.Bad_NodeIdUnknown)),
+                  -1,
+                  null,
+                  new LocalizedText(null, ""))
+            };
+          }
+
+          @Override
+          public Argument[] getOutputArguments() {
+            return new Argument[] {};
+          }
+
+          @Override
+          protected int getRequiredInputArgumentCount(Argument[] inputArguments) {
+            return 1;
+          }
+
+          @Override
+          protected CallMethodResult invokeResult(
+              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              throws UaException {
+            StatusCode[] inputResults = new StatusCode[inputValues.length];
+            Arrays.fill(inputResults, StatusCode.GOOD);
+            @Nullable String callbackInput0 = null;
+            if (inputValues.length > 0) {
+              try {
+                @Nullable String convertedInput0;
+                {
+                  Object methodValue = inputValues[0].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    convertedInput0 = (String) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                @Nullable String projectedInput0;
+                {
+                  Object methodValue = inputValues[0].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    projectedInput0 = (String) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                callbackInput0 = projectedInput0;
+              } catch (UaException failure) {
+                inputResults[0] = failure.getStatusCode();
+              }
+            }
+            if (Arrays.stream(inputResults).anyMatch(StatusCode::isBad)) {
+              throw new InvalidArgumentException(inputResults);
+            }
+            try {
+              handler.invoke(context, callbackInput0);
+              return new CallMethodResult(
+                  StatusCode.GOOD, new StatusCode[0], new DiagnosticInfo[0], new Variant[] {});
+            } catch (UaRuntimeException failure) {
+              throw new UaException(failure.getStatusCode().getValue(), failure);
+            } catch (RuntimeException callbackFailure) {
+              throw new UaException(StatusCodes.Bad_InternalError, callbackFailure);
+            }
+          }
+        });
+  }
+
+  @Override
+  public MethodBinding bindRemoveUserDetailed(
+      MethodBindings bindings, UserManagementTypeRemoveUserDetailedHandler handler)
+      throws UaException {
+    Objects.requireNonNull(bindings, "bindings");
+    Objects.requireNonNull(handler, "handler");
+    UaMethodNode methodNode = getRemoveUserMethodNode();
+    if (methodNode == null) {
+      throw new UaException(StatusCodes.Bad_NotFound, "Cannot bind an absent Method");
+    }
+    return bindings.bind(
+        this,
+        methodNode,
+        new AbstractMethodInvocationHandler(methodNode) {
+          @Override
+          public Argument[] getInputArguments() {
+            return new Argument[] {
+              new Argument(
+                  "UserName",
+                  ExpandedNodeId.parse("i=12")
+                      .toNodeId(getNode().getNodeContext().getNamespaceTable())
+                      .orElseThrow(() -> new UaRuntimeException(StatusCodes.Bad_NodeIdUnknown)),
+                  -1,
+                  null,
+                  new LocalizedText(null, ""))
+            };
+          }
+
+          @Override
+          public Argument[] getOutputArguments() {
+            return new Argument[] {};
+          }
+
+          @Override
+          protected int getRequiredInputArgumentCount(Argument[] inputArguments) {
+            return 1;
+          }
+
+          @Override
+          protected CallMethodResult invokeResult(
+              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              throws UaException {
+            StatusCode[] inputResults = new StatusCode[inputValues.length];
+            Arrays.fill(inputResults, StatusCode.GOOD);
+            @Nullable String callbackInput0 = null;
+            if (inputValues.length > 0) {
+              try {
+                @Nullable String convertedInput0;
+                {
+                  Object methodValue = inputValues[0].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    convertedInput0 = (String) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                @Nullable String projectedInput0;
+                {
+                  Object methodValue = inputValues[0].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    projectedInput0 = (String) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                callbackInput0 = projectedInput0;
+              } catch (UaException failure) {
+                inputResults[0] = failure.getStatusCode();
+              }
+            }
+            if (Arrays.stream(inputResults).anyMatch(StatusCode::isBad)) {
+              throw new InvalidArgumentException(inputResults);
+            }
+            try {
+              var result = handler.invoke(context, callbackInput0);
+              if (result == null) {
+                throw new UaException(
+                    StatusCodes.Bad_InternalError, "A detailed Method handler returned null");
+              }
+              if (!result.hasOutputs()) {
+                return new CallMethodResult(
+                    result.status(),
+                    result.inputResults(),
+                    result.inputDiagnostics(),
+                    new Variant[0]);
+              }
+              return new CallMethodResult(
+                  result.status(), new StatusCode[0], new DiagnosticInfo[0], new Variant[] {});
+            } catch (UaRuntimeException failure) {
+              throw new UaException(failure.getStatusCode().getValue(), failure);
+            } catch (RuntimeException callbackFailure) {
+              throw new UaException(StatusCodes.Bad_InternalError, callbackFailure);
+            }
+          }
+        });
   }
 
   @Override
   public UaMethodNode getChangePasswordMethodNode() {
-    Optional<UaNode> methodNode =
-        findNode(
-            "http://opcfoundation.org/UA/",
-            "ChangePassword",
-            node -> node instanceof UaMethodNode,
-            Reference.HAS_COMPONENT_PREDICATE);
-    return (UaMethodNode) methodNode.orElse(null);
+    UaNode parent = this;
+    {
+      var namespaceTable = parent.getNodeContext().getNamespaceTable();
+      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
+      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
+      if (namespaceIndex == null || referenceId.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeIdInvalid,
+            "http://opcfoundation.org/UA/:ChangePassword (declaration i=24275, owner i=24264)"
+                + " on "
+                + getNodeId());
+      }
+      var browseName = new QualifiedName(namespaceIndex, "ChangePassword");
+      var matches = new LinkedHashMap<NodeId, UaNode>();
+      for (var reference : parent.getReferences()) {
+        if (!reference.isForward()) {
+          continue;
+        }
+        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
+          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
+          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_NodeIdUnknown,
+                "Unavailable ReferenceType "
+                    + reference.getReferenceTypeId()
+                    + " while resolving http://opcfoundation.org/UA/:ChangePassword (declaration"
+                    + " i=24275, owner i=24264) on "
+                    + getNodeId());
+          }
+          if (!(referenceTypeTree.isSubtypeOf(
+              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
+            continue;
+          }
+        }
+        if (!reference.getTargetNodeId().isLocal()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NotSupported,
+              "http://opcfoundation.org/UA/:ChangePassword (declaration i=24275, owner i=24264)"
+                  + " on "
+                  + getNodeId());
+        }
+        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
+        if (targetId.isEmpty()) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdInvalid,
+              "http://opcfoundation.org/UA/:ChangePassword (declaration i=24275, owner i=24264)"
+                  + " on "
+                  + getNodeId());
+        }
+        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
+        var target =
+            local.isPresent()
+                ? local.orElseThrow()
+                : parent
+                    .getNodeContext()
+                    .getServer()
+                    .getAddressSpaceManager()
+                    .getManagedNode(targetId.orElseThrow())
+                    .orElse(null);
+        if (target == null) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_NodeIdUnknown,
+              "http://opcfoundation.org/UA/:ChangePassword (declaration i=24275, owner i=24264)"
+                  + " on "
+                  + getNodeId());
+        }
+        if (browseName.equals(target.getBrowseName())) {
+          matches.put(target.getNodeId(), target);
+        }
+      }
+      if (matches.isEmpty()) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NotFound,
+            "http://opcfoundation.org/UA/:ChangePassword (declaration i=24275, owner i=24264)"
+                + " on "
+                + getNodeId());
+      }
+      if (matches.size() > 1) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_TooManyMatches,
+            "http://opcfoundation.org/UA/:ChangePassword (declaration i=24275, owner i=24264)"
+                + " on "
+                + getNodeId());
+      }
+      parent = matches.values().iterator().next();
+      if (parent.getNodeClass() != NodeClass.Method) {
+        throw new UaRuntimeException(
+            StatusCodes.Bad_NodeClassInvalid,
+            "http://opcfoundation.org/UA/:ChangePassword (declaration i=24275, owner i=24264)"
+                + " on "
+                + getNodeId());
+      }
+    }
+    if (!(parent instanceof UaMethodNode)) {
+      throw new UaRuntimeException(
+          StatusCodes.Bad_TypeMismatch,
+          "http://opcfoundation.org/UA/:ChangePassword (declaration i=24275, owner i=24264)"
+              + " on "
+              + getNodeId());
+    }
+    return (UaMethodNode) parent;
+  }
+
+  @Override
+  public MethodBinding bindChangePassword(
+      MethodBindings bindings, UserManagementTypeChangePasswordHandler handler) throws UaException {
+    Objects.requireNonNull(bindings, "bindings");
+    Objects.requireNonNull(handler, "handler");
+    UaMethodNode methodNode = getChangePasswordMethodNode();
+    if (methodNode == null) {
+      throw new UaException(StatusCodes.Bad_NotFound, "Cannot bind an absent Method");
+    }
+    return bindings.bind(
+        this,
+        methodNode,
+        new AbstractMethodInvocationHandler(methodNode) {
+          @Override
+          public Argument[] getInputArguments() {
+            return new Argument[] {
+              new Argument(
+                  "OldPassword",
+                  ExpandedNodeId.parse("i=12")
+                      .toNodeId(getNode().getNodeContext().getNamespaceTable())
+                      .orElseThrow(() -> new UaRuntimeException(StatusCodes.Bad_NodeIdUnknown)),
+                  -1,
+                  null,
+                  new LocalizedText(null, "")),
+              new Argument(
+                  "NewPassword",
+                  ExpandedNodeId.parse("i=12")
+                      .toNodeId(getNode().getNodeContext().getNamespaceTable())
+                      .orElseThrow(() -> new UaRuntimeException(StatusCodes.Bad_NodeIdUnknown)),
+                  -1,
+                  null,
+                  new LocalizedText(null, ""))
+            };
+          }
+
+          @Override
+          public Argument[] getOutputArguments() {
+            return new Argument[] {};
+          }
+
+          @Override
+          protected int getRequiredInputArgumentCount(Argument[] inputArguments) {
+            return 2;
+          }
+
+          @Override
+          protected CallMethodResult invokeResult(
+              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              throws UaException {
+            StatusCode[] inputResults = new StatusCode[inputValues.length];
+            Arrays.fill(inputResults, StatusCode.GOOD);
+            @Nullable String callbackInput0 = null;
+            if (inputValues.length > 0) {
+              try {
+                @Nullable String convertedInput0;
+                {
+                  Object methodValue = inputValues[0].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    convertedInput0 = (String) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                @Nullable String projectedInput0;
+                {
+                  Object methodValue = inputValues[0].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    projectedInput0 = (String) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                callbackInput0 = projectedInput0;
+              } catch (UaException failure) {
+                inputResults[0] = failure.getStatusCode();
+              }
+            }
+            @Nullable String callbackInput1 = null;
+            if (inputValues.length > 1) {
+              try {
+                @Nullable String convertedInput1;
+                {
+                  Object methodValue = inputValues[1].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    convertedInput1 = (String) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                @Nullable String projectedInput1;
+                {
+                  Object methodValue = inputValues[1].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    projectedInput1 = (String) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                callbackInput1 = projectedInput1;
+              } catch (UaException failure) {
+                inputResults[1] = failure.getStatusCode();
+              }
+            }
+            if (Arrays.stream(inputResults).anyMatch(StatusCode::isBad)) {
+              throw new InvalidArgumentException(inputResults);
+            }
+            try {
+              handler.invoke(context, callbackInput0, callbackInput1);
+              return new CallMethodResult(
+                  StatusCode.GOOD, new StatusCode[0], new DiagnosticInfo[0], new Variant[] {});
+            } catch (UaRuntimeException failure) {
+              throw new UaException(failure.getStatusCode().getValue(), failure);
+            } catch (RuntimeException callbackFailure) {
+              throw new UaException(StatusCodes.Bad_InternalError, callbackFailure);
+            }
+          }
+        });
+  }
+
+  @Override
+  public MethodBinding bindChangePasswordDetailed(
+      MethodBindings bindings, UserManagementTypeChangePasswordDetailedHandler handler)
+      throws UaException {
+    Objects.requireNonNull(bindings, "bindings");
+    Objects.requireNonNull(handler, "handler");
+    UaMethodNode methodNode = getChangePasswordMethodNode();
+    if (methodNode == null) {
+      throw new UaException(StatusCodes.Bad_NotFound, "Cannot bind an absent Method");
+    }
+    return bindings.bind(
+        this,
+        methodNode,
+        new AbstractMethodInvocationHandler(methodNode) {
+          @Override
+          public Argument[] getInputArguments() {
+            return new Argument[] {
+              new Argument(
+                  "OldPassword",
+                  ExpandedNodeId.parse("i=12")
+                      .toNodeId(getNode().getNodeContext().getNamespaceTable())
+                      .orElseThrow(() -> new UaRuntimeException(StatusCodes.Bad_NodeIdUnknown)),
+                  -1,
+                  null,
+                  new LocalizedText(null, "")),
+              new Argument(
+                  "NewPassword",
+                  ExpandedNodeId.parse("i=12")
+                      .toNodeId(getNode().getNodeContext().getNamespaceTable())
+                      .orElseThrow(() -> new UaRuntimeException(StatusCodes.Bad_NodeIdUnknown)),
+                  -1,
+                  null,
+                  new LocalizedText(null, ""))
+            };
+          }
+
+          @Override
+          public Argument[] getOutputArguments() {
+            return new Argument[] {};
+          }
+
+          @Override
+          protected int getRequiredInputArgumentCount(Argument[] inputArguments) {
+            return 2;
+          }
+
+          @Override
+          protected CallMethodResult invokeResult(
+              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              throws UaException {
+            StatusCode[] inputResults = new StatusCode[inputValues.length];
+            Arrays.fill(inputResults, StatusCode.GOOD);
+            @Nullable String callbackInput0 = null;
+            if (inputValues.length > 0) {
+              try {
+                @Nullable String convertedInput0;
+                {
+                  Object methodValue = inputValues[0].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    convertedInput0 = (String) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                @Nullable String projectedInput0;
+                {
+                  Object methodValue = inputValues[0].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    projectedInput0 = (String) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                callbackInput0 = projectedInput0;
+              } catch (UaException failure) {
+                inputResults[0] = failure.getStatusCode();
+              }
+            }
+            @Nullable String callbackInput1 = null;
+            if (inputValues.length > 1) {
+              try {
+                @Nullable String convertedInput1;
+                {
+                  Object methodValue = inputValues[1].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    convertedInput1 = (String) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                @Nullable String projectedInput1;
+                {
+                  Object methodValue = inputValues[1].getValue();
+                  try {
+                    if (methodValue instanceof Matrix && ((Matrix) methodValue).isNull()) {
+                      methodValue = null;
+                    }
+                    projectedInput1 = (String) methodValue;
+                  } catch (UaSerializationException conversionFailure) {
+                    throw new UaException(
+                        conversionFailure.getStatusCode().getValue() == StatusCodes.Bad_OutOfRange
+                            ? StatusCodes.Bad_OutOfRange
+                            : StatusCodes.Bad_TypeMismatch,
+                        conversionFailure);
+                  } catch (ClassCastException | IllegalArgumentException conversionFailure) {
+                    throw new UaException(StatusCodes.Bad_TypeMismatch, conversionFailure);
+                  }
+                }
+                callbackInput1 = projectedInput1;
+              } catch (UaException failure) {
+                inputResults[1] = failure.getStatusCode();
+              }
+            }
+            if (Arrays.stream(inputResults).anyMatch(StatusCode::isBad)) {
+              throw new InvalidArgumentException(inputResults);
+            }
+            try {
+              var result = handler.invoke(context, callbackInput0, callbackInput1);
+              if (result == null) {
+                throw new UaException(
+                    StatusCodes.Bad_InternalError, "A detailed Method handler returned null");
+              }
+              if (!result.hasOutputs()) {
+                return new CallMethodResult(
+                    result.status(),
+                    result.inputResults(),
+                    result.inputDiagnostics(),
+                    new Variant[0]);
+              }
+              return new CallMethodResult(
+                  result.status(), new StatusCode[0], new DiagnosticInfo[0], new Variant[] {});
+            } catch (UaRuntimeException failure) {
+              throw new UaException(failure.getStatusCode().getValue(), failure);
+            } catch (RuntimeException callbackFailure) {
+              throw new UaException(StatusCodes.Bad_InternalError, callbackFailure);
+            }
+          }
+        });
   }
 }

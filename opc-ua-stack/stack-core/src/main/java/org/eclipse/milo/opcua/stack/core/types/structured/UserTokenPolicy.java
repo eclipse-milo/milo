@@ -12,6 +12,8 @@ package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -144,14 +146,14 @@ public class UserTokenPolicy extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 306),
-        new NodeId(0, 22),
+        NodeId.parse("i=306"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "PolicyId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -159,7 +161,7 @@ public class UserTokenPolicy extends Structure implements UaStructuredType {
           new StructureField(
               "TokenType",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 303),
+              NodeId.parse("i=303"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -167,7 +169,7 @@ public class UserTokenPolicy extends Structure implements UaStructuredType {
           new StructureField(
               "IssuedTokenType",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -175,7 +177,7 @@ public class UserTokenPolicy extends Structure implements UaStructuredType {
           new StructureField(
               "IssuerEndpointUrl",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -183,7 +185,7 @@ public class UserTokenPolicy extends Structure implements UaStructuredType {
           new StructureField(
               "SecurityPolicyUri",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -205,7 +207,27 @@ public class UserTokenPolicy extends Structure implements UaStructuredType {
       final String issuerEndpointUrl;
       final String securityPolicyUri;
       policyId = decoder.decodeString("PolicyId");
-      tokenType = UserTokenType.from(decoder.decodeEnum("TokenType"));
+      {
+        Integer enumValue = decoder.decodeEnum("TokenType");
+        if (enumValue != null && !((Object) enumValue instanceof UserTokenType)) {
+          if (!(enumValue instanceof Integer)) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_TypeMismatch,
+                "TokenType: expected"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType or Int32,"
+                    + " got "
+                    + enumValue);
+          }
+          if (UserTokenType.from((Integer) enumValue) == null) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_OutOfRange,
+                "TokenType: unknown"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType value "
+                    + enumValue);
+          }
+        }
+        tokenType = enumValue == null ? null : UserTokenType.from(enumValue);
+      }
       issuedTokenType = decoder.decodeString("IssuedTokenType");
       issuerEndpointUrl = decoder.decodeString("IssuerEndpointUrl");
       securityPolicyUri = decoder.decodeString("SecurityPolicyUri");

@@ -19,6 +19,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.eclipse.milo.opcua.sdk.server.model.objects.AlarmConditionTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.objects.ConditionType;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ConditionTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ExclusiveDeviationAlarmTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ExclusiveRateOfChangeAlarmTypeNode;
@@ -36,6 +37,7 @@ import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.MethodInstantiation
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
@@ -741,10 +743,11 @@ public class ConditionBuilder {
 
     if (adoptedNode instanceof LimitAlarmTypeNode limitNode) {
       return switch (limit) {
-        case HIGH_HIGH -> limitNode.getHighHighLimit();
-        case HIGH -> limitNode.getHighLimit();
-        case LOW -> limitNode.getLowLimit();
-        case LOW_LOW -> limitNode.getLowLowLimit();
+        case HIGH_HIGH ->
+            limitNode.getHighHighLimitNode() != null ? limitNode.getHighHighLimit() : null;
+        case HIGH -> limitNode.getHighLimitNode() != null ? limitNode.getHighLimit() : null;
+        case LOW -> limitNode.getLowLimitNode() != null ? limitNode.getLowLimit() : null;
+        case LOW_LOW -> limitNode.getLowLowLimitNode() != null ? limitNode.getLowLowLimit() : null;
       };
     }
 
@@ -759,10 +762,12 @@ public class ConditionBuilder {
 
     if (adoptedNode instanceof LimitAlarmTypeNode limitNode) {
       return switch (limit) {
-        case HIGH_HIGH -> limitNode.getSeverityHighHigh();
-        case HIGH -> limitNode.getSeverityHigh();
-        case LOW -> limitNode.getSeverityLow();
-        case LOW_LOW -> limitNode.getSeverityLowLow();
+        case HIGH_HIGH ->
+            limitNode.getSeverityHighHighNode() != null ? limitNode.getSeverityHighHigh() : null;
+        case HIGH -> limitNode.getSeverityHighNode() != null ? limitNode.getSeverityHigh() : null;
+        case LOW -> limitNode.getSeverityLowNode() != null ? limitNode.getSeverityLow() : null;
+        case LOW_LOW ->
+            limitNode.getSeverityLowLowNode() != null ? limitNode.getSeverityLowLow() : null;
       };
     }
 
@@ -777,10 +782,12 @@ public class ConditionBuilder {
 
     if (adoptedNode instanceof LimitAlarmTypeNode limitNode) {
       return switch (limit) {
-        case HIGH_HIGH -> limitNode.getHighHighDeadband();
-        case HIGH -> limitNode.getHighDeadband();
-        case LOW -> limitNode.getLowDeadband();
-        case LOW_LOW -> limitNode.getLowLowDeadband();
+        case HIGH_HIGH ->
+            limitNode.getHighHighDeadbandNode() != null ? limitNode.getHighHighDeadband() : null;
+        case HIGH -> limitNode.getHighDeadbandNode() != null ? limitNode.getHighDeadband() : null;
+        case LOW -> limitNode.getLowDeadbandNode() != null ? limitNode.getLowDeadband() : null;
+        case LOW_LOW ->
+            limitNode.getLowLowDeadbandNode() != null ? limitNode.getLowLowDeadband() : null;
       };
     }
 
@@ -865,7 +872,6 @@ public class ConditionBuilder {
 
     Set<String> optionalIncludes = new HashSet<>();
     optionalIncludes.add("TransitionTime");
-    optionalIncludes.add("SupportsFilteredRetain");
 
     if (adopting
         && (assignedNodeIds.containsKey(BrowsePath.of(new QualifiedName(0, "ConfirmedState")))
@@ -1052,11 +1058,11 @@ public class ConditionBuilder {
     node.setSeverity(severity);
 
     node.setConditionName(conditionName != null ? conditionName : browseName.name());
-    node.setConditionClassId(conditionClassId);
-    node.setConditionClassName(conditionClassName);
+    initializeConditionClassId(node);
+    initializeConditionClassName(node);
     node.setBranchId(NodeId.NULL_VALUE);
     node.setRetain(false);
-    node.setSupportsFilteredRetain(false);
+    node.setProperty(ConditionType.SUPPORTS_FILTERED_RETAIN, false);
 
     if (node instanceof AlarmConditionTypeNode alarmNode) {
       initializeAlarmNode(alarmNode);
@@ -1100,11 +1106,15 @@ public class ConditionBuilder {
     if (conditionNameConfigured || node.getConditionName() == null) {
       node.setConditionName(conditionName != null ? conditionName : browseName.name());
     }
-    if (conditionClassConfigured || node.getConditionClassId() == null) {
-      node.setConditionClassId(conditionClassId);
+    if (conditionClassConfigured
+        || node.getConditionClassIdNode() == null
+        || node.getConditionClassId() == null) {
+      initializeConditionClassId(node);
     }
-    if (conditionClassConfigured || node.getConditionClassName() == null) {
-      node.setConditionClassName(conditionClassName);
+    if (conditionClassConfigured
+        || node.getConditionClassNameNode() == null
+        || node.getConditionClassName() == null) {
+      initializeConditionClassName(node);
     }
     if (node.getBranchId() == null) {
       node.setBranchId(NodeId.NULL_VALUE);
@@ -1112,9 +1122,7 @@ public class ConditionBuilder {
     if (node.getRetain() == null) {
       node.setRetain(false);
     }
-    if (node.getSupportsFilteredRetain() == null) {
-      node.setSupportsFilteredRetain(false);
-    }
+    initializeSupportsFilteredRetain(node);
 
     if (node instanceof AlarmConditionTypeNode alarmNode) {
       if (inputNodeConfigured || alarmNode.getInputNode() == null) {
@@ -1135,6 +1143,42 @@ public class ConditionBuilder {
 
     if (node instanceof LimitAlarmTypeNode limitNode) {
       initializeLimitNode(limitNode);
+    }
+  }
+
+  private void initializeConditionClassId(ConditionTypeNode node) {
+    if (node.getConditionClassIdNode() == null) {
+      node.setProperty(ConditionType.CONDITION_CLASS_ID, conditionClassId);
+    } else {
+      node.setConditionClassId(conditionClassId);
+    }
+  }
+
+  private void initializeConditionClassName(ConditionTypeNode node) {
+    if (node.getConditionClassNameNode() == null) {
+      node.setProperty(ConditionType.CONDITION_CLASS_NAME, conditionClassName);
+    } else {
+      node.setConditionClassName(conditionClassName);
+    }
+  }
+
+  private static void initializeSupportsFilteredRetain(ConditionTypeNode node) {
+    // This type-level property has no modelling rule, so it is not instantiated automatically.
+    // Catch absence only from its local node lookup; malformed references and value reads fail.
+    boolean missing;
+    try {
+      node.getSupportsFilteredRetainNode();
+      missing = false;
+    } catch (UaRuntimeException e) {
+      if (e.getStatusCode().getValue() != StatusCodes.Bad_NotFound) {
+        throw e;
+      }
+      missing = true;
+    }
+    if (missing) {
+      node.setProperty(ConditionType.SUPPORTS_FILTERED_RETAIN, false);
+    } else if (node.getSupportsFilteredRetain() == null) {
+      node.setSupportsFilteredRetain(false);
     }
   }
 
@@ -1230,10 +1274,14 @@ public class ConditionBuilder {
 
   private @Nullable EUInformation storedEngineeringUnits() {
     if (adoptedNode instanceof ExclusiveRateOfChangeAlarmTypeNode rateOfChangeNode) {
-      return rateOfChangeNode.getEngineeringUnits();
+      return rateOfChangeNode.getEngineeringUnitsNode() != null
+          ? rateOfChangeNode.getEngineeringUnits()
+          : null;
     }
     if (adoptedNode instanceof NonExclusiveRateOfChangeAlarmTypeNode rateOfChangeNode) {
-      return rateOfChangeNode.getEngineeringUnits();
+      return rateOfChangeNode.getEngineeringUnitsNode() != null
+          ? rateOfChangeNode.getEngineeringUnits()
+          : null;
     }
     return null;
   }

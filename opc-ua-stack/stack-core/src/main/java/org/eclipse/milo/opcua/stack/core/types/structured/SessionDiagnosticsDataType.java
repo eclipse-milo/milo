@@ -564,14 +564,14 @@ public class SessionDiagnosticsDataType extends Structure implements UaStructure
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 867),
-        new NodeId(0, 22),
+        NodeId.parse("i=867"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "SessionId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -579,7 +579,7 @@ public class SessionDiagnosticsDataType extends Structure implements UaStructure
           new StructureField(
               "SessionName",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -587,7 +587,7 @@ public class SessionDiagnosticsDataType extends Structure implements UaStructure
           new StructureField(
               "ClientDescription",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 308),
+              NodeId.parse("i=308"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -595,7 +595,7 @@ public class SessionDiagnosticsDataType extends Structure implements UaStructure
           new StructureField(
               "ServerUri",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -603,7 +603,7 @@ public class SessionDiagnosticsDataType extends Structure implements UaStructure
           new StructureField(
               "EndpointUrl",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -611,7 +611,7 @@ public class SessionDiagnosticsDataType extends Structure implements UaStructure
           new StructureField(
               "LocaleIds",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 295),
+              NodeId.parse("i=295"),
               1,
               null,
               UInteger.valueOf(0),
@@ -619,7 +619,7 @@ public class SessionDiagnosticsDataType extends Structure implements UaStructure
           new StructureField(
               "ActualSessionTimeout",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 290),
+              NodeId.parse("i=290"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -627,7 +627,7 @@ public class SessionDiagnosticsDataType extends Structure implements UaStructure
           new StructureField(
               "MaxResponseMessageSize",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -635,7 +635,7 @@ public class SessionDiagnosticsDataType extends Structure implements UaStructure
           new StructureField(
               "ClientConnectionTime",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 294),
+              NodeId.parse("i=294"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -643,7 +643,7 @@ public class SessionDiagnosticsDataType extends Structure implements UaStructure
           new StructureField(
               "ClientLastContactTime",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 294),
+              NodeId.parse("i=294"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -651,7 +651,7 @@ public class SessionDiagnosticsDataType extends Structure implements UaStructure
           new StructureField(
               "CurrentSubscriptionsCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -659,7 +659,7 @@ public class SessionDiagnosticsDataType extends Structure implements UaStructure
           new StructureField(
               "CurrentMonitoredItemsCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -667,7 +667,7 @@ public class SessionDiagnosticsDataType extends Structure implements UaStructure
           new StructureField(
               "CurrentPublishRequestsInQueue",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -675,7 +675,7 @@ public class SessionDiagnosticsDataType extends Structure implements UaStructure
           new StructureField(
               "TotalRequestCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 871),
+              NodeId.parse("i=871"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -683,7 +683,7 @@ public class SessionDiagnosticsDataType extends Structure implements UaStructure
           new StructureField(
               "UnauthorizedRequestCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -691,7 +691,7 @@ public class SessionDiagnosticsDataType extends Structure implements UaStructure
           new StructureField(
               "ReadCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 871),
+              NodeId.parse("i=871"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -699,7 +699,7 @@ public class SessionDiagnosticsDataType extends Structure implements UaStructure
           new StructureField(
               "HistoryReadCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 871),
+              NodeId.parse("i=871"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -707,7 +707,7 @@ public class SessionDiagnosticsDataType extends Structure implements UaStructure
           new StructureField(
               "WriteCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 871),
+              NodeId.parse("i=871"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -715,7 +715,7 @@ public class SessionDiagnosticsDataType extends Structure implements UaStructure
           new StructureField(
               "HistoryUpdateCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 871),
+              NodeId.parse("i=871"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -723,7 +723,7 @@ public class SessionDiagnosticsDataType extends Structure implements UaStructure
           new StructureField(
               "CallCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 871),
+              NodeId.parse("i=871"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -731,7 +731,7 @@ public class SessionDiagnosticsDataType extends Structure implements UaStructure
           new StructureField(
               "CreateMonitoredItemsCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 871),
+              NodeId.parse("i=871"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -739,7 +739,7 @@ public class SessionDiagnosticsDataType extends Structure implements UaStructure
           new StructureField(
               "ModifyMonitoredItemsCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 871),
+              NodeId.parse("i=871"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -747,7 +747,7 @@ public class SessionDiagnosticsDataType extends Structure implements UaStructure
           new StructureField(
               "SetMonitoringModeCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 871),
+              NodeId.parse("i=871"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -755,7 +755,7 @@ public class SessionDiagnosticsDataType extends Structure implements UaStructure
           new StructureField(
               "SetTriggeringCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 871),
+              NodeId.parse("i=871"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -763,7 +763,7 @@ public class SessionDiagnosticsDataType extends Structure implements UaStructure
           new StructureField(
               "DeleteMonitoredItemsCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 871),
+              NodeId.parse("i=871"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -771,7 +771,7 @@ public class SessionDiagnosticsDataType extends Structure implements UaStructure
           new StructureField(
               "CreateSubscriptionCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 871),
+              NodeId.parse("i=871"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -779,7 +779,7 @@ public class SessionDiagnosticsDataType extends Structure implements UaStructure
           new StructureField(
               "ModifySubscriptionCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 871),
+              NodeId.parse("i=871"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -787,7 +787,7 @@ public class SessionDiagnosticsDataType extends Structure implements UaStructure
           new StructureField(
               "SetPublishingModeCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 871),
+              NodeId.parse("i=871"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -795,7 +795,7 @@ public class SessionDiagnosticsDataType extends Structure implements UaStructure
           new StructureField(
               "PublishCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 871),
+              NodeId.parse("i=871"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -803,7 +803,7 @@ public class SessionDiagnosticsDataType extends Structure implements UaStructure
           new StructureField(
               "RepublishCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 871),
+              NodeId.parse("i=871"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -811,7 +811,7 @@ public class SessionDiagnosticsDataType extends Structure implements UaStructure
           new StructureField(
               "TransferSubscriptionsCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 871),
+              NodeId.parse("i=871"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -819,7 +819,7 @@ public class SessionDiagnosticsDataType extends Structure implements UaStructure
           new StructureField(
               "DeleteSubscriptionsCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 871),
+              NodeId.parse("i=871"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -827,7 +827,7 @@ public class SessionDiagnosticsDataType extends Structure implements UaStructure
           new StructureField(
               "AddNodesCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 871),
+              NodeId.parse("i=871"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -835,7 +835,7 @@ public class SessionDiagnosticsDataType extends Structure implements UaStructure
           new StructureField(
               "AddReferencesCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 871),
+              NodeId.parse("i=871"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -843,7 +843,7 @@ public class SessionDiagnosticsDataType extends Structure implements UaStructure
           new StructureField(
               "DeleteNodesCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 871),
+              NodeId.parse("i=871"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -851,7 +851,7 @@ public class SessionDiagnosticsDataType extends Structure implements UaStructure
           new StructureField(
               "DeleteReferencesCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 871),
+              NodeId.parse("i=871"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -859,7 +859,7 @@ public class SessionDiagnosticsDataType extends Structure implements UaStructure
           new StructureField(
               "BrowseCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 871),
+              NodeId.parse("i=871"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -867,7 +867,7 @@ public class SessionDiagnosticsDataType extends Structure implements UaStructure
           new StructureField(
               "BrowseNextCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 871),
+              NodeId.parse("i=871"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -875,7 +875,7 @@ public class SessionDiagnosticsDataType extends Structure implements UaStructure
           new StructureField(
               "TranslateBrowsePathsToNodeIdsCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 871),
+              NodeId.parse("i=871"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -883,7 +883,7 @@ public class SessionDiagnosticsDataType extends Structure implements UaStructure
           new StructureField(
               "QueryFirstCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 871),
+              NodeId.parse("i=871"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -891,7 +891,7 @@ public class SessionDiagnosticsDataType extends Structure implements UaStructure
           new StructureField(
               "QueryNextCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 871),
+              NodeId.parse("i=871"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -899,7 +899,7 @@ public class SessionDiagnosticsDataType extends Structure implements UaStructure
           new StructureField(
               "RegisterNodesCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 871),
+              NodeId.parse("i=871"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -907,7 +907,7 @@ public class SessionDiagnosticsDataType extends Structure implements UaStructure
           new StructureField(
               "UnregisterNodesCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 871),
+              NodeId.parse("i=871"),
               -1,
               null,
               UInteger.valueOf(0),

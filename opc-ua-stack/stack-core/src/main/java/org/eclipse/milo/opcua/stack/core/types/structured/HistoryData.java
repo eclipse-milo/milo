@@ -99,14 +99,14 @@ public class HistoryData extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 658),
-        new NodeId(0, 22),
+        NodeId.parse("i=658"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "DataValues",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 23),
+              NodeId.parse("i=23"),
               1,
               null,
               UInteger.valueOf(0),

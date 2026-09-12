@@ -113,14 +113,14 @@ public class IssuedIdentityToken extends UserIdentityToken implements UaStructur
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 940),
-        new NodeId(0, 316),
+        NodeId.parse("i=940"),
+        NodeId.parse("i=316"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "PolicyId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -128,7 +128,7 @@ public class IssuedIdentityToken extends UserIdentityToken implements UaStructur
           new StructureField(
               "TokenData",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15),
+              NodeId.parse("i=15"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -136,7 +136,7 @@ public class IssuedIdentityToken extends UserIdentityToken implements UaStructur
           new StructureField(
               "EncryptionAlgorithm",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),

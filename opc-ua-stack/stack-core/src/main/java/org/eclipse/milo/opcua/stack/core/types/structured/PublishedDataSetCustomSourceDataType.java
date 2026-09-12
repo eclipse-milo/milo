@@ -100,14 +100,14 @@ public class PublishedDataSetCustomSourceDataType extends PublishedDataSetSource
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 25529),
-        new NodeId(0, 15580),
+        NodeId.parse("i=25529"),
+        NodeId.parse("i=15580"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "CyclicDataSet",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),

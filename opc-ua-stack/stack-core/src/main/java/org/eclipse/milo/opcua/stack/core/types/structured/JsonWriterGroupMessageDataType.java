@@ -99,14 +99,14 @@ public class JsonWriterGroupMessageDataType extends WriterGroupMessageDataType
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 15719),
-        new NodeId(0, 15616),
+        NodeId.parse("i=15719"),
+        NodeId.parse("i=15616"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "NetworkMessageContentMask",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15654),
+              NodeId.parse("i=15654"),
               -1,
               null,
               UInteger.valueOf(0),

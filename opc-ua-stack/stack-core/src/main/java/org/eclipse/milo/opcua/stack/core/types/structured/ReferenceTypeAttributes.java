@@ -128,14 +128,14 @@ public class ReferenceTypeAttributes extends NodeAttributes implements UaStructu
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 369),
-        new NodeId(0, 349),
+        NodeId.parse("i=369"),
+        NodeId.parse("i=349"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "SpecifiedAttributes",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -143,7 +143,7 @@ public class ReferenceTypeAttributes extends NodeAttributes implements UaStructu
           new StructureField(
               "DisplayName",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 21),
+              NodeId.parse("i=21"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -151,7 +151,7 @@ public class ReferenceTypeAttributes extends NodeAttributes implements UaStructu
           new StructureField(
               "Description",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 21),
+              NodeId.parse("i=21"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -159,7 +159,7 @@ public class ReferenceTypeAttributes extends NodeAttributes implements UaStructu
           new StructureField(
               "WriteMask",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -167,7 +167,7 @@ public class ReferenceTypeAttributes extends NodeAttributes implements UaStructu
           new StructureField(
               "UserWriteMask",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -175,7 +175,7 @@ public class ReferenceTypeAttributes extends NodeAttributes implements UaStructu
           new StructureField(
               "IsAbstract",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -183,7 +183,7 @@ public class ReferenceTypeAttributes extends NodeAttributes implements UaStructu
           new StructureField(
               "Symmetric",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -191,7 +191,7 @@ public class ReferenceTypeAttributes extends NodeAttributes implements UaStructu
           new StructureField(
               "InverseName",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 21),
+              NodeId.parse("i=21"),
               -1,
               null,
               UInteger.valueOf(0),

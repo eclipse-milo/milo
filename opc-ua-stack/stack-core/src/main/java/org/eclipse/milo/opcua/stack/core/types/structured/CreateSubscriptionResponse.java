@@ -143,14 +143,14 @@ public class CreateSubscriptionResponse extends Structure implements UaResponseM
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 790),
-        new NodeId(0, 22),
+        NodeId.parse("i=790"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "ResponseHeader",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 392),
+              NodeId.parse("i=392"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -158,7 +158,7 @@ public class CreateSubscriptionResponse extends Structure implements UaResponseM
           new StructureField(
               "SubscriptionId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 288),
+              NodeId.parse("i=288"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -166,7 +166,7 @@ public class CreateSubscriptionResponse extends Structure implements UaResponseM
           new StructureField(
               "RevisedPublishingInterval",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 290),
+              NodeId.parse("i=290"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -174,7 +174,7 @@ public class CreateSubscriptionResponse extends Structure implements UaResponseM
           new StructureField(
               "RevisedLifetimeCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 289),
+              NodeId.parse("i=289"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -182,7 +182,7 @@ public class CreateSubscriptionResponse extends Structure implements UaResponseM
           new StructureField(
               "RevisedMaxKeepAliveCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 289),
+              NodeId.parse("i=289"),
               -1,
               null,
               UInteger.valueOf(0),

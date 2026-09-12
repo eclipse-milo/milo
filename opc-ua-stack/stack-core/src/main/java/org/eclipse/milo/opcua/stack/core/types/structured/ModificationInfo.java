@@ -12,6 +12,8 @@ package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -121,14 +123,14 @@ public class ModificationInfo extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 11226),
-        new NodeId(0, 22),
+        NodeId.parse("i=11226"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "ModificationTime",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 294),
+              NodeId.parse("i=294"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -136,7 +138,7 @@ public class ModificationInfo extends Structure implements UaStructuredType {
           new StructureField(
               "UpdateType",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 11234),
+              NodeId.parse("i=11234"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -144,7 +146,7 @@ public class ModificationInfo extends Structure implements UaStructuredType {
           new StructureField(
               "UserName",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -164,7 +166,27 @@ public class ModificationInfo extends Structure implements UaStructuredType {
       final HistoryUpdateType updateType;
       final String userName;
       modificationTime = decoder.decodeDateTime("ModificationTime");
-      updateType = HistoryUpdateType.from(decoder.decodeEnum("UpdateType"));
+      {
+        Integer enumValue = decoder.decodeEnum("UpdateType");
+        if (enumValue != null && !((Object) enumValue instanceof HistoryUpdateType)) {
+          if (!(enumValue instanceof Integer)) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_TypeMismatch,
+                "UpdateType: expected"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.HistoryUpdateType or"
+                    + " Int32, got "
+                    + enumValue);
+          }
+          if (HistoryUpdateType.from((Integer) enumValue) == null) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_OutOfRange,
+                "UpdateType: unknown"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.HistoryUpdateType value "
+                    + enumValue);
+          }
+        }
+        updateType = enumValue == null ? null : HistoryUpdateType.from(enumValue);
+      }
       userName = decoder.decodeString("UserName");
       return new ModificationInfo(modificationTime, updateType, userName);
     }

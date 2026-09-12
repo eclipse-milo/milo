@@ -111,14 +111,14 @@ public class BrokerConnectionTransportDataType extends ConnectionTransportDataTy
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 15479),
-        new NodeId(0, 15618),
+        NodeId.parse("i=15479"),
+        NodeId.parse("i=15618"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "ResourceUri",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -126,7 +126,7 @@ public class BrokerConnectionTransportDataType extends ConnectionTransportDataTy
           new StructureField(
               "AuthenticationProfileUri",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),

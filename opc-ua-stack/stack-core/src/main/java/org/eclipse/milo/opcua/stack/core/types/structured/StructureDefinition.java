@@ -12,6 +12,8 @@ package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -132,14 +134,14 @@ public class StructureDefinition extends DataTypeDefinition implements UaStructu
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 122),
-        new NodeId(0, 97),
+        NodeId.parse("i=122"),
+        NodeId.parse("i=97"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "DefaultEncodingId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -147,7 +149,7 @@ public class StructureDefinition extends DataTypeDefinition implements UaStructu
           new StructureField(
               "BaseDataType",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -155,7 +157,7 @@ public class StructureDefinition extends DataTypeDefinition implements UaStructu
           new StructureField(
               "StructureType",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 98),
+              NodeId.parse("i=98"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -163,7 +165,7 @@ public class StructureDefinition extends DataTypeDefinition implements UaStructu
           new StructureField(
               "Fields",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 101),
+              NodeId.parse("i=101"),
               1,
               null,
               UInteger.valueOf(0),
@@ -185,7 +187,27 @@ public class StructureDefinition extends DataTypeDefinition implements UaStructu
       final StructureField[] fields;
       defaultEncodingId = decoder.decodeNodeId("DefaultEncodingId");
       baseDataType = decoder.decodeNodeId("BaseDataType");
-      structureType = StructureType.from(decoder.decodeEnum("StructureType"));
+      {
+        Integer enumValue = decoder.decodeEnum("StructureType");
+        if (enumValue != null && !((Object) enumValue instanceof StructureType)) {
+          if (!(enumValue instanceof Integer)) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_TypeMismatch,
+                "StructureType: expected"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.StructureType or Int32,"
+                    + " got "
+                    + enumValue);
+          }
+          if (StructureType.from((Integer) enumValue) == null) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_OutOfRange,
+                "StructureType: unknown"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.StructureType value "
+                    + enumValue);
+          }
+        }
+        structureType = enumValue == null ? null : StructureType.from(enumValue);
+      }
       fields = (StructureField[]) decoder.decodeStructArray("Fields", StructureField.TYPE_ID);
       return new StructureDefinition(defaultEncodingId, baseDataType, structureType, fields);
     }

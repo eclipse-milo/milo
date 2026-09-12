@@ -98,14 +98,14 @@ public class EnumDefinition extends DataTypeDefinition implements UaStructuredTy
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 123),
-        new NodeId(0, 97),
+        NodeId.parse("i=123"),
+        NodeId.parse("i=97"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "Fields",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 102),
+              NodeId.parse("i=102"),
               1,
               null,
               UInteger.valueOf(0),

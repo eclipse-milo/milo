@@ -143,14 +143,14 @@ public class MonitoringParameters extends Structure implements UaStructuredType 
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 742),
-        new NodeId(0, 22),
+        NodeId.parse("i=742"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "ClientHandle",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 288),
+              NodeId.parse("i=288"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -158,7 +158,7 @@ public class MonitoringParameters extends Structure implements UaStructuredType 
           new StructureField(
               "SamplingInterval",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 290),
+              NodeId.parse("i=290"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -166,7 +166,7 @@ public class MonitoringParameters extends Structure implements UaStructuredType 
           new StructureField(
               "Filter",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 22),
+              NodeId.parse("i=22"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -174,7 +174,7 @@ public class MonitoringParameters extends Structure implements UaStructuredType 
           new StructureField(
               "QueueSize",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 289),
+              NodeId.parse("i=289"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -182,7 +182,7 @@ public class MonitoringParameters extends Structure implements UaStructuredType 
           new StructureField(
               "DiscardOldest",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),

@@ -12,6 +12,8 @@ package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -111,14 +113,14 @@ public class ContentFilterElement extends Structure implements UaStructuredType 
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 585),
-        new NodeId(0, 22),
+        NodeId.parse("i=585"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "FilterOperator",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 576),
+              NodeId.parse("i=576"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -126,7 +128,7 @@ public class ContentFilterElement extends Structure implements UaStructuredType 
           new StructureField(
               "FilterOperands",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 22),
+              NodeId.parse("i=22"),
               1,
               null,
               UInteger.valueOf(0),
@@ -144,7 +146,27 @@ public class ContentFilterElement extends Structure implements UaStructuredType 
     public ContentFilterElement decodeType(EncodingContext context, UaDecoder decoder) {
       final FilterOperator filterOperator;
       final ExtensionObject[] filterOperands;
-      filterOperator = FilterOperator.from(decoder.decodeEnum("FilterOperator"));
+      {
+        Integer enumValue = decoder.decodeEnum("FilterOperator");
+        if (enumValue != null && !((Object) enumValue instanceof FilterOperator)) {
+          if (!(enumValue instanceof Integer)) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_TypeMismatch,
+                "FilterOperator: expected"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.FilterOperator or Int32,"
+                    + " got "
+                    + enumValue);
+          }
+          if (FilterOperator.from((Integer) enumValue) == null) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_OutOfRange,
+                "FilterOperator: unknown"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.FilterOperator value "
+                    + enumValue);
+          }
+        }
+        filterOperator = enumValue == null ? null : FilterOperator.from(enumValue);
+      }
       filterOperands = decoder.decodeExtensionObjectArray("FilterOperands");
       return new ContentFilterElement(filterOperator, filterOperands);
     }

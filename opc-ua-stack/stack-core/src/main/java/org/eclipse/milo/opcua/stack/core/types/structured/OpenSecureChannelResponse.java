@@ -128,14 +128,14 @@ public class OpenSecureChannelResponse extends Structure implements UaResponseMe
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 449),
-        new NodeId(0, 22),
+        NodeId.parse("i=449"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "ResponseHeader",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 392),
+              NodeId.parse("i=392"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -143,7 +143,7 @@ public class OpenSecureChannelResponse extends Structure implements UaResponseMe
           new StructureField(
               "ServerProtocolVersion",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -151,7 +151,7 @@ public class OpenSecureChannelResponse extends Structure implements UaResponseMe
           new StructureField(
               "SecurityToken",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 441),
+              NodeId.parse("i=441"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -159,7 +159,7 @@ public class OpenSecureChannelResponse extends Structure implements UaResponseMe
           new StructureField(
               "ServerNonce",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15),
+              NodeId.parse("i=15"),
               -1,
               null,
               UInteger.valueOf(0),

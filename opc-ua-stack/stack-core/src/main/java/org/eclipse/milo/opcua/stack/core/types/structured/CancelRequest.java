@@ -107,14 +107,14 @@ public class CancelRequest extends Structure implements UaRequestMessageType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 479),
-        new NodeId(0, 22),
+        NodeId.parse("i=479"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "RequestHeader",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 389),
+              NodeId.parse("i=389"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -122,7 +122,7 @@ public class CancelRequest extends Structure implements UaRequestMessageType {
           new StructureField(
               "RequestHandle",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 288),
+              NodeId.parse("i=288"),
               -1,
               null,
               UInteger.valueOf(0),

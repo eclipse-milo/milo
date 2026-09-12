@@ -123,14 +123,14 @@ public class PubSubConfigurationValueDataType extends Structure implements UaStr
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 25532),
-        new NodeId(0, 22),
+        NodeId.parse("i=25532"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "ConfigurationElement",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 25519),
+              NodeId.parse("i=25519"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -138,7 +138,7 @@ public class PubSubConfigurationValueDataType extends Structure implements UaStr
           new StructureField(
               "Name",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -146,7 +146,7 @@ public class PubSubConfigurationValueDataType extends Structure implements UaStr
           new StructureField(
               "Identifier",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 24),
+              NodeId.parse("i=24"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -181,7 +181,8 @@ public class PubSubConfigurationValueDataType extends Structure implements UaStr
           value.getConfigurationElement(),
           PubSubConfigurationRefDataType.TYPE_ID);
       encoder.encodeString("Name", value.getName());
-      encoder.encodeVariant("Identifier", value.getIdentifier());
+      encoder.encodeVariant(
+          "Identifier", value.getIdentifier() == null ? Variant.NULL_VALUE : value.getIdentifier());
     }
   }
 }

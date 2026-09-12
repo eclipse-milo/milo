@@ -61,6 +61,9 @@ public abstract class DataSetReaderMessageDataType extends Structure implements 
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 15706), new NodeId(0, 22), StructureType.Structure, new StructureField[] {});
+        NodeId.parse("i=15706"),
+        NodeId.parse("i=22"),
+        StructureType.Structure,
+        new StructureField[] {});
   }
 }

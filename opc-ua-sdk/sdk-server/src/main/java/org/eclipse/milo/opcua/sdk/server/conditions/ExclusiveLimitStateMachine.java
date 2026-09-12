@@ -13,6 +13,7 @@ package org.eclipse.milo.opcua.sdk.server.conditions;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ExclusiveLimitStateMachineTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.FiniteStateVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.FiniteTransitionVariableTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.variables.TransitionVariableType;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
@@ -52,7 +53,9 @@ final class ExclusiveLimitStateMachine {
     if (state == null) {
       setCurrentStateUnavailable();
     }
-    if (lastTransition != null && lastTransition.getTransitionTime() == null) {
+    if (lastTransition != null
+        && (lastTransition.getTransitionTimeNode() == null
+            || lastTransition.getTransitionTime() == null)) {
       setLastTransition(null, null, null, DateTime.NULL_VALUE);
     }
   }
@@ -110,7 +113,11 @@ final class ExclusiveLimitStateMachine {
 
     lastTransition.setValue(new DataValue(new Variant(transitionName)));
     lastTransition.setId(transitionId != null ? transitionId : NodeId.NULL_VALUE);
-    lastTransition.setTransitionTime(time);
+    if (lastTransition.getTransitionTimeNode() == null) {
+      lastTransition.setProperty(TransitionVariableType.TRANSITION_TIME, time);
+    } else {
+      lastTransition.setTransitionTime(time);
+    }
   }
 
   private static @Nullable NodeId transitionId(

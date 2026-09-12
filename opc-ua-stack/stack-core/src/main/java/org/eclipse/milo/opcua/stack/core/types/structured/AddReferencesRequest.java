@@ -109,14 +109,14 @@ public class AddReferencesRequest extends Structure implements UaRequestMessageT
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 494),
-        new NodeId(0, 22),
+        NodeId.parse("i=494"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "RequestHeader",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 389),
+              NodeId.parse("i=389"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -124,7 +124,7 @@ public class AddReferencesRequest extends Structure implements UaRequestMessageT
           new StructureField(
               "ReferencesToAdd",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 379),
+              NodeId.parse("i=379"),
               1,
               null,
               UInteger.valueOf(0),

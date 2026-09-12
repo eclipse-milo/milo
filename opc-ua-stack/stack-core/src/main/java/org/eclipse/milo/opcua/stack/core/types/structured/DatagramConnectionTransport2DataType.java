@@ -140,14 +140,14 @@ public class DatagramConnectionTransport2DataType extends DatagramConnectionTran
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 23864),
-        new NodeId(0, 17467),
+        NodeId.parse("i=23864"),
+        NodeId.parse("i=17467"),
         StructureType.StructureWithSubtypedValues,
         new StructureField[] {
           new StructureField(
               "DiscoveryAddress",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15502),
+              NodeId.parse("i=15502"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -155,7 +155,7 @@ public class DatagramConnectionTransport2DataType extends DatagramConnectionTran
           new StructureField(
               "DiscoveryAnnounceRate",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -163,7 +163,7 @@ public class DatagramConnectionTransport2DataType extends DatagramConnectionTran
           new StructureField(
               "DiscoveryMaxMessageSize",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -171,7 +171,7 @@ public class DatagramConnectionTransport2DataType extends DatagramConnectionTran
           new StructureField(
               "QosCategory",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -179,7 +179,7 @@ public class DatagramConnectionTransport2DataType extends DatagramConnectionTran
           new StructureField(
               "DatagramQos",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 23603),
+              NodeId.parse("i=23603"),
               1,
               null,
               UInteger.valueOf(0),
@@ -204,7 +204,8 @@ public class DatagramConnectionTransport2DataType extends DatagramConnectionTran
       final QosDataType[] datagramQos;
       {
         ExtensionObject xo = decoder.decodeExtensionObject("DiscoveryAddress");
-        discoveryAddress = (NetworkAddressDataType) xo.decode(context);
+        discoveryAddress =
+            xo == null || xo.isNull() ? null : (NetworkAddressDataType) xo.decode(context);
       }
       discoveryAnnounceRate = decoder.decodeUInt32("DiscoveryAnnounceRate");
       discoveryMaxMessageSize = decoder.decodeUInt32("DiscoveryMaxMessageSize");
@@ -214,7 +215,8 @@ public class DatagramConnectionTransport2DataType extends DatagramConnectionTran
         if (xos != null) {
           datagramQos = new QosDataType[xos.length];
           for (int i = 0; i < xos.length; i++) {
-            datagramQos[i] = (QosDataType) xos[i].decode(context);
+            ExtensionObject xo = xos[i];
+            datagramQos[i] = xo == null || xo.isNull() ? null : (QosDataType) xo.decode(context);
           }
         } else {
           datagramQos = null;
@@ -232,7 +234,9 @@ public class DatagramConnectionTransport2DataType extends DatagramConnectionTran
     public void encodeType(
         EncodingContext context, UaEncoder encoder, DatagramConnectionTransport2DataType value) {
       {
-        ExtensionObject xo = ExtensionObject.encode(context, value.getDiscoveryAddress());
+        NetworkAddressDataType fieldValue = value.getDiscoveryAddress();
+        ExtensionObject xo =
+            fieldValue == null ? null : ExtensionObject.encode(context, fieldValue);
         encoder.encodeExtensionObject("DiscoveryAddress", xo);
       }
       encoder.encodeUInt32("DiscoveryAnnounceRate", value.getDiscoveryAnnounceRate());
@@ -240,11 +244,11 @@ public class DatagramConnectionTransport2DataType extends DatagramConnectionTran
       encoder.encodeString("QosCategory", value.getQosCategory());
       {
         ExtensionObject[] xos = null;
-        QosDataType[] datagramQos = value.getDatagramQos();
-        if (datagramQos != null) {
-          xos = new ExtensionObject[datagramQos.length];
+        QosDataType[] elements = value.getDatagramQos();
+        if (elements != null) {
+          xos = new ExtensionObject[elements.length];
           for (int i = 0; i < xos.length; i++) {
-            xos[i] = ExtensionObject.encode(context, datagramQos[i]);
+            xos[i] = elements[i] == null ? null : ExtensionObject.encode(context, elements[i]);
           }
         }
         encoder.encodeExtensionObjectArray("DatagramQos", xos);

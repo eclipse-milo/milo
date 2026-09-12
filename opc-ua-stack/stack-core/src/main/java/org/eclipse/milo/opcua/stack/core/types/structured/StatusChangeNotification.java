@@ -109,14 +109,14 @@ public class StatusChangeNotification extends NotificationData implements UaStru
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 820),
-        new NodeId(0, 945),
+        NodeId.parse("i=820"),
+        NodeId.parse("i=945"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "Status",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 19),
+              NodeId.parse("i=19"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -124,7 +124,7 @@ public class StatusChangeNotification extends NotificationData implements UaStru
           new StructureField(
               "DiagnosticInfo",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 25),
+              NodeId.parse("i=25"),
               -1,
               null,
               UInteger.valueOf(0),

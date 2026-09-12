@@ -123,14 +123,14 @@ public class ThreeDCartesianCoordinates extends CartesianCoordinates implements 
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 18819),
-        new NodeId(0, 18809),
+        NodeId.parse("i=18819"),
+        NodeId.parse("i=18809"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "X",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 11),
+              NodeId.parse("i=11"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -138,7 +138,7 @@ public class ThreeDCartesianCoordinates extends CartesianCoordinates implements 
           new StructureField(
               "Y",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 11),
+              NodeId.parse("i=11"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -146,7 +146,7 @@ public class ThreeDCartesianCoordinates extends CartesianCoordinates implements 
           new StructureField(
               "Z",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 11),
+              NodeId.parse("i=11"),
               -1,
               null,
               UInteger.valueOf(0),

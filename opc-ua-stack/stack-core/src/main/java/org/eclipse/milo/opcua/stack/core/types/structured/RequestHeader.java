@@ -167,14 +167,14 @@ public class RequestHeader extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 391),
-        new NodeId(0, 22),
+        NodeId.parse("i=391"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "AuthenticationToken",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 388),
+              NodeId.parse("i=388"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -182,7 +182,7 @@ public class RequestHeader extends Structure implements UaStructuredType {
           new StructureField(
               "Timestamp",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 294),
+              NodeId.parse("i=294"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -190,7 +190,7 @@ public class RequestHeader extends Structure implements UaStructuredType {
           new StructureField(
               "RequestHandle",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 288),
+              NodeId.parse("i=288"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -198,7 +198,7 @@ public class RequestHeader extends Structure implements UaStructuredType {
           new StructureField(
               "ReturnDiagnostics",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -206,7 +206,7 @@ public class RequestHeader extends Structure implements UaStructuredType {
           new StructureField(
               "AuditEntryId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -214,7 +214,7 @@ public class RequestHeader extends Structure implements UaStructuredType {
           new StructureField(
               "TimeoutHint",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -222,7 +222,7 @@ public class RequestHeader extends Structure implements UaStructuredType {
           new StructureField(
               "AdditionalHeader",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 22),
+              NodeId.parse("i=22"),
               -1,
               null,
               UInteger.valueOf(0),

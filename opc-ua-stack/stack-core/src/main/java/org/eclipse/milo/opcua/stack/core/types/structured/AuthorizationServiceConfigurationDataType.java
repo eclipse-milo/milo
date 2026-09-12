@@ -130,14 +130,14 @@ public class AuthorizationServiceConfigurationDataType extends BaseConfiguration
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 23755),
-        new NodeId(0, 15435),
+        NodeId.parse("i=23755"),
+        NodeId.parse("i=15435"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "Name",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -145,7 +145,7 @@ public class AuthorizationServiceConfigurationDataType extends BaseConfiguration
           new StructureField(
               "RecordProperties",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 14533),
+              NodeId.parse("i=14533"),
               1,
               null,
               UInteger.valueOf(0),
@@ -153,7 +153,7 @@ public class AuthorizationServiceConfigurationDataType extends BaseConfiguration
           new StructureField(
               "ServiceUri",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 23751),
+              NodeId.parse("i=23751"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -161,7 +161,7 @@ public class AuthorizationServiceConfigurationDataType extends BaseConfiguration
           new StructureField(
               "ServiceCertificates",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 23724),
+              NodeId.parse("i=23724"),
               1,
               null,
               UInteger.valueOf(0),
@@ -169,7 +169,7 @@ public class AuthorizationServiceConfigurationDataType extends BaseConfiguration
           new StructureField(
               "IssuerEndpointSettings",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),

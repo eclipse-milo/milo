@@ -143,14 +143,14 @@ public class BitFieldDefinition extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 32422),
-        new NodeId(0, 22),
+        NodeId.parse("i=32422"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "Name",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -158,7 +158,7 @@ public class BitFieldDefinition extends Structure implements UaStructuredType {
           new StructureField(
               "Description",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 21),
+              NodeId.parse("i=21"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -166,7 +166,7 @@ public class BitFieldDefinition extends Structure implements UaStructuredType {
           new StructureField(
               "Reserved",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -174,7 +174,7 @@ public class BitFieldDefinition extends Structure implements UaStructuredType {
           new StructureField(
               "StartingBitPosition",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -182,7 +182,7 @@ public class BitFieldDefinition extends Structure implements UaStructuredType {
           new StructureField(
               "EndingBitPosition",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),

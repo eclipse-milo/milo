@@ -129,14 +129,14 @@ public class CurrencyUnitType extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 23507),
-        new NodeId(0, 22),
+        NodeId.parse("i=23507"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "NumericCode",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 4),
+              NodeId.parse("i=4"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -144,7 +144,7 @@ public class CurrencyUnitType extends Structure implements UaStructuredType {
           new StructureField(
               "Exponent",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 2),
+              NodeId.parse("i=2"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -152,7 +152,7 @@ public class CurrencyUnitType extends Structure implements UaStructuredType {
           new StructureField(
               "AlphabeticCode",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -160,7 +160,7 @@ public class CurrencyUnitType extends Structure implements UaStructuredType {
           new StructureField(
               "Currency",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 21),
+              NodeId.parse("i=21"),
               -1,
               null,
               UInteger.valueOf(0),

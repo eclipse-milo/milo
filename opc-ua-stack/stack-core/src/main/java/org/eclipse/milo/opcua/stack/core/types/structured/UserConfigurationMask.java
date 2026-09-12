@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUI32;
 import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
@@ -51,6 +52,35 @@ public class UserConfigurationMask extends OptionSetUI32<UserConfigurationMask.F
     joiner.add("noChangeByUser=" + getNoChangeByUser());
     joiner.add("mustChangePassword=" + getMustChangePassword());
     return joiner.toString();
+  }
+
+  public static EnumDefinition definition() {
+    return new EnumDefinition(
+        new EnumField[] {
+          new EnumField(
+              0L,
+              LocalizedText.NULL_VALUE,
+              new LocalizedText("", "The user cannot be deleted."),
+              "NoDelete"),
+          new EnumField(
+              1L,
+              LocalizedText.NULL_VALUE,
+              new LocalizedText("", "The user is disabled."),
+              "Disabled"),
+          new EnumField(
+              2L,
+              LocalizedText.NULL_VALUE,
+              new LocalizedText("", "The user cannot change the password."),
+              "NoChangeByUser"),
+          new EnumField(
+              3L,
+              LocalizedText.NULL_VALUE,
+              new LocalizedText(
+                  "",
+                  "The user must change the password to get the assigned roles. If the password is"
+                      + " not changed, the user has only the Role Anonymous."),
+              "MustChangePassword")
+        });
   }
 
   public static UserConfigurationMask of(UserConfigurationMask.Field... fields) {

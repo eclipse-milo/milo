@@ -12,6 +12,8 @@ package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -110,14 +112,14 @@ public class ConfigurationUpdateTargetType extends Structure implements UaStruct
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 16541),
-        new NodeId(0, 22),
+        NodeId.parse("i=16541"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "Path",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -125,7 +127,7 @@ public class ConfigurationUpdateTargetType extends Structure implements UaStruct
           new StructureField(
               "UpdateType",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15539),
+              NodeId.parse("i=15539"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -144,7 +146,28 @@ public class ConfigurationUpdateTargetType extends Structure implements UaStruct
       final String path;
       final ConfigurationUpdateType updateType;
       path = decoder.decodeString("Path");
-      updateType = ConfigurationUpdateType.from(decoder.decodeEnum("UpdateType"));
+      {
+        Integer enumValue = decoder.decodeEnum("UpdateType");
+        if (enumValue != null && !((Object) enumValue instanceof ConfigurationUpdateType)) {
+          if (!(enumValue instanceof Integer)) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_TypeMismatch,
+                "UpdateType: expected"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.ConfigurationUpdateType"
+                    + " or Int32, got "
+                    + enumValue);
+          }
+          if (ConfigurationUpdateType.from((Integer) enumValue) == null) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_OutOfRange,
+                "UpdateType: unknown"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.ConfigurationUpdateType"
+                    + " value "
+                    + enumValue);
+          }
+        }
+        updateType = enumValue == null ? null : ConfigurationUpdateType.from(enumValue);
+      }
       return new ConfigurationUpdateTargetType(path, updateType);
     }
 

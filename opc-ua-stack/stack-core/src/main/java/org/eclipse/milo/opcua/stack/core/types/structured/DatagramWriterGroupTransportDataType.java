@@ -111,14 +111,14 @@ public class DatagramWriterGroupTransportDataType extends WriterGroupTransportDa
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 21155),
-        new NodeId(0, 15611),
+        NodeId.parse("i=21155"),
+        NodeId.parse("i=15611"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "MessageRepeatCount",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 3),
+              NodeId.parse("i=3"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -126,7 +126,7 @@ public class DatagramWriterGroupTransportDataType extends WriterGroupTransportDa
           new StructureField(
               "MessageRepeatDelay",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 290),
+              NodeId.parse("i=290"),
               -1,
               null,
               UInteger.valueOf(0),

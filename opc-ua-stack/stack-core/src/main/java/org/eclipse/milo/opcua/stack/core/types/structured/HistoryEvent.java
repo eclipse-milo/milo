@@ -98,14 +98,14 @@ public class HistoryEvent extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 661),
-        new NodeId(0, 22),
+        NodeId.parse("i=661"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "Events",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 920),
+              NodeId.parse("i=920"),
               1,
               null,
               UInteger.valueOf(0),

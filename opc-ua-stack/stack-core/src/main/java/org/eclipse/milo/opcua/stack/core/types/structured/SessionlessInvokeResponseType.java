@@ -116,14 +116,14 @@ public class SessionlessInvokeResponseType extends Structure implements UaStruct
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 21001),
-        new NodeId(0, 22),
+        NodeId.parse("i=21001"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "NamespaceUris",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               1,
               null,
               UInteger.valueOf(0),
@@ -131,7 +131,7 @@ public class SessionlessInvokeResponseType extends Structure implements UaStruct
           new StructureField(
               "ServerUris",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               1,
               null,
               UInteger.valueOf(0),
@@ -139,7 +139,7 @@ public class SessionlessInvokeResponseType extends Structure implements UaStruct
           new StructureField(
               "ServiceId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),

@@ -11,272 +11,136 @@
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
 import org.eclipse.milo.opcua.sdk.core.nodes.MethodNode;
-import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
-import org.eclipse.milo.opcua.sdk.server.methods.Out;
-import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.sdk.server.methods.MethodBinding;
+import org.eclipse.milo.opcua.sdk.server.methods.MethodBindings;
+import org.eclipse.milo.opcua.sdk.server.model.methods.PubSubConfigurationTypeCloseAndUpdateDetailedHandler;
+import org.eclipse.milo.opcua.sdk.server.model.methods.PubSubConfigurationTypeCloseAndUpdateHandler;
+import org.eclipse.milo.opcua.sdk.server.model.methods.PubSubConfigurationTypeReserveIdsDetailedHandler;
+import org.eclipse.milo.opcua.sdk.server.model.methods.PubSubConfigurationTypeReserveIdsHandler;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
-import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
-import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
-import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
-import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
-import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConfigurationRefDataType;
-import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConfigurationValueDataType;
-import org.eclipse.milo.opcua.stack.core.util.Lazy;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 
 /**
  * @see <a
  *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.3/#9.1.3.7.1">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.3/#9.1.3.7.1</a>
  */
 public interface PubSubConfigurationType extends FileType {
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.3/#9.1.3.7.5
+   *
+   * <p>Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   MethodNode getReserveIdsMethodNode();
 
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.3/#9.1.3.7.5
+   *
+   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
+   * must already exist and have compatible effective metadata; binding does not create nodes or
+   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
+   * registration.
+   *
+   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
+   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
+   * handler replacement is authoritative. An observed displacement prevents further binds through
+   * that registry.
+   *
+   * @return an explicit registration lifetime
+   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
+   *     preempting ConditionManager makes binding unsupported
+   * @throws UaRuntimeException if strict local lookup fails
+   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
+   *     the Method
+   */
+  MethodBinding bindReserveIds(
+      MethodBindings bindings, PubSubConfigurationTypeReserveIdsHandler handler) throws UaException;
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.3/#9.1.3.7.5
+   *
+   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
+   * must already exist and have compatible effective metadata; binding does not create nodes or
+   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
+   * registration.
+   *
+   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
+   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
+   * handler replacement is authoritative. An observed displacement prevents further binds through
+   * that registry.
+   *
+   * @return an explicit registration lifetime
+   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
+   *     preempting ConditionManager makes binding unsupported
+   * @throws UaRuntimeException if strict local lookup fails
+   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
+   *     the Method
+   */
+  MethodBinding bindReserveIdsDetailed(
+      MethodBindings bindings, PubSubConfigurationTypeReserveIdsDetailedHandler handler)
+      throws UaException;
+
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.3/#9.1.3.7.6
+   *
+   * <p>Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   *
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
+   *     resolution fails, or a checked conversion fails
+   */
   MethodNode getCloseAndUpdateMethodNode();
 
-  abstract class ReserveIdsMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.3/#9.1.3.7.6
+   *
+   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
+   * must already exist and have compatible effective metadata; binding does not create nodes or
+   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
+   * registration.
+   *
+   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
+   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
+   * handler replacement is authoritative. An observed displacement prevents further binds through
+   * that registry.
+   *
+   * @return an explicit registration lifetime
+   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
+   *     preempting ConditionManager makes binding unsupported
+   * @throws UaRuntimeException if strict local lookup fails
+   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
+   *     the Method
+   */
+  MethodBinding bindCloseAndUpdate(
+      MethodBindings bindings, PubSubConfigurationTypeCloseAndUpdateHandler handler)
+      throws UaException;
 
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-    public ReserveIdsMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "TransportProfileUri",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "NumReqWriterGroupIds",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "NumReqDataSetWriterIds",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "DefaultPublisherId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "WriterGroupIds",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", "")),
-              new Argument(
-                  "DataSetWriterIds",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      String transportProfileUri = (String) inputValues[0].getValue();
-      UShort numReqWriterGroupIds = (UShort) inputValues[1].getValue();
-      UShort numReqDataSetWriterIds = (UShort) inputValues[2].getValue();
-      Out<Object> defaultPublisherId = new Out<>();
-      Out<UShort[]> writerGroupIds = new Out<>();
-      Out<UShort[]> dataSetWriterIds = new Out<>();
-      invoke(
-          context,
-          transportProfileUri,
-          numReqWriterGroupIds,
-          numReqDataSetWriterIds,
-          defaultPublisherId,
-          writerGroupIds,
-          dataSetWriterIds);
-      return new Variant[] {
-        new Variant(defaultPublisherId.get()),
-        new Variant(writerGroupIds.get()),
-        new Variant(dataSetWriterIds.get())
-      };
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context,
-        String transportProfileUri,
-        UShort numReqWriterGroupIds,
-        UShort numReqDataSetWriterIds,
-        Out<Object> defaultPublisherId,
-        Out<UShort[]> writerGroupIds,
-        Out<UShort[]> dataSetWriterIds)
-        throws UaException;
-  }
-
-  abstract class CloseAndUpdateMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-    public CloseAndUpdateMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "FileHandle",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "RequireCompleteUpdate",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "ConfigurationReferences",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=25519")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "ChangesApplied",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "ReferencesResults",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=19")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", "")),
-              new Argument(
-                  "ConfigurationValues",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=25520")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", "")),
-              new Argument(
-                  "ConfigurationObjects",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      UInteger fileHandle = (UInteger) inputValues[0].getValue();
-      Boolean requireCompleteUpdate = (Boolean) inputValues[1].getValue();
-      PubSubConfigurationRefDataType[] configurationReferences =
-          (PubSubConfigurationRefDataType[]) inputValues[2].getValue();
-      Out<Boolean> changesApplied = new Out<>();
-      Out<StatusCode[]> referencesResults = new Out<>();
-      Out<PubSubConfigurationValueDataType[]> configurationValues = new Out<>();
-      Out<NodeId[]> configurationObjects = new Out<>();
-      invoke(
-          context,
-          fileHandle,
-          requireCompleteUpdate,
-          configurationReferences,
-          changesApplied,
-          referencesResults,
-          configurationValues,
-          configurationObjects);
-      return new Variant[] {
-        new Variant(changesApplied.get()),
-        new Variant(referencesResults.get()),
-        new Variant(configurationValues.get()),
-        new Variant(configurationObjects.get())
-      };
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context,
-        UInteger fileHandle,
-        Boolean requireCompleteUpdate,
-        PubSubConfigurationRefDataType[] configurationReferences,
-        Out<Boolean> changesApplied,
-        Out<StatusCode[]> referencesResults,
-        Out<PubSubConfigurationValueDataType[]> configurationValues,
-        Out<NodeId[]> configurationObjects)
-        throws UaException;
-  }
+  /**
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.3/#9.1.3.7.6
+   *
+   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
+   * must already exist and have compatible effective metadata; binding does not create nodes or
+   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
+   * registration.
+   *
+   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
+   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
+   * handler replacement is authoritative. An observed displacement prevents further binds through
+   * that registry.
+   *
+   * @return an explicit registration lifetime
+   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
+   *     preempting ConditionManager makes binding unsupported
+   * @throws UaRuntimeException if strict local lookup fails
+   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
+   *     the Method
+   */
+  MethodBinding bindCloseAndUpdateDetailed(
+      MethodBindings bindings, PubSubConfigurationTypeCloseAndUpdateDetailedHandler handler)
+      throws UaException;
 }

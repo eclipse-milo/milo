@@ -119,14 +119,14 @@ public class ModelChangeStructureDataType extends Structure implements UaStructu
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 879),
-        new NodeId(0, 22),
+        NodeId.parse("i=879"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "Affected",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -134,7 +134,7 @@ public class ModelChangeStructureDataType extends Structure implements UaStructu
           new StructureField(
               "AffectedType",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -142,7 +142,7 @@ public class ModelChangeStructureDataType extends Structure implements UaStructu
           new StructureField(
               "Verb",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 3),
+              NodeId.parse("i=3"),
               -1,
               null,
               UInteger.valueOf(0),

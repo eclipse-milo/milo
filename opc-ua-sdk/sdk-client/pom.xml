@@ -30,6 +30,11 @@
 
   <dependencies>
     <dependency>
+      <groupId>com.digitalpetri.opcua</groupId>
+      <artifactId>uanodeset-runtime</artifactId>
+      <version>${uanodeset-runtime.version}</version>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.milo</groupId>
       <artifactId>milo-transport</artifactId>
       <version>${project.version}</version>

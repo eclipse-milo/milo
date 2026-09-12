@@ -122,14 +122,14 @@ public class AddNodesResponse extends Structure implements UaResponseMessageType
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 491),
-        new NodeId(0, 22),
+        NodeId.parse("i=491"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "ResponseHeader",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 392),
+              NodeId.parse("i=392"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -137,7 +137,7 @@ public class AddNodesResponse extends Structure implements UaResponseMessageType
           new StructureField(
               "Results",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 483),
+              NodeId.parse("i=483"),
               1,
               null,
               UInteger.valueOf(0),
@@ -145,7 +145,7 @@ public class AddNodesResponse extends Structure implements UaResponseMessageType
           new StructureField(
               "DiagnosticInfos",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 25),
+              NodeId.parse("i=25"),
               1,
               null,
               UInteger.valueOf(0),

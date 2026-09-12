@@ -122,14 +122,14 @@ public class PublishedEventsDataType extends PublishedDataSetSourceDataType
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 15681),
-        new NodeId(0, 15580),
+        NodeId.parse("i=15681"),
+        NodeId.parse("i=15580"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "EventNotifier",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -137,7 +137,7 @@ public class PublishedEventsDataType extends PublishedDataSetSourceDataType
           new StructureField(
               "SelectedFields",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 601),
+              NodeId.parse("i=601"),
               1,
               null,
               UInteger.valueOf(0),
@@ -145,7 +145,7 @@ public class PublishedEventsDataType extends PublishedDataSetSourceDataType
           new StructureField(
               "Filter",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 586),
+              NodeId.parse("i=586"),
               -1,
               null,
               UInteger.valueOf(0),

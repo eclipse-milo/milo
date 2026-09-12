@@ -12,6 +12,8 @@ package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -108,14 +110,14 @@ public class SortRuleElement extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 18650),
-        new NodeId(0, 22),
+        NodeId.parse("i=18650"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "SortOrder",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 18646),
+              NodeId.parse("i=18646"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -123,7 +125,7 @@ public class SortRuleElement extends Structure implements UaStructuredType {
           new StructureField(
               "EventField",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 601),
+              NodeId.parse("i=601"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -141,7 +143,27 @@ public class SortRuleElement extends Structure implements UaStructuredType {
     public SortRuleElement decodeType(EncodingContext context, UaDecoder decoder) {
       final SortOrderType sortOrder;
       final SimpleAttributeOperand eventField;
-      sortOrder = SortOrderType.from(decoder.decodeEnum("SortOrder"));
+      {
+        Integer enumValue = decoder.decodeEnum("SortOrder");
+        if (enumValue != null && !((Object) enumValue instanceof SortOrderType)) {
+          if (!(enumValue instanceof Integer)) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_TypeMismatch,
+                "SortOrder: expected"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.SortOrderType or Int32,"
+                    + " got "
+                    + enumValue);
+          }
+          if (SortOrderType.from((Integer) enumValue) == null) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_OutOfRange,
+                "SortOrder: unknown"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.SortOrderType value "
+                    + enumValue);
+          }
+        }
+        sortOrder = enumValue == null ? null : SortOrderType.from(enumValue);
+      }
       eventField =
           (SimpleAttributeOperand)
               decoder.decodeStruct("EventField", SimpleAttributeOperand.TYPE_ID);

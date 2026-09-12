@@ -152,14 +152,14 @@ public class JsonServerEndpointsMessage extends Structure implements UaStructure
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 0),
-        new NodeId(0, 22),
+        NodeId.parse("i=0"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "MessageId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -167,7 +167,7 @@ public class JsonServerEndpointsMessage extends Structure implements UaStructure
           new StructureField(
               "MessageType",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -175,7 +175,7 @@ public class JsonServerEndpointsMessage extends Structure implements UaStructure
           new StructureField(
               "PublisherId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -183,7 +183,7 @@ public class JsonServerEndpointsMessage extends Structure implements UaStructure
           new StructureField(
               "Timestamp",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 294),
+              NodeId.parse("i=294"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -191,7 +191,7 @@ public class JsonServerEndpointsMessage extends Structure implements UaStructure
           new StructureField(
               "Description",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 308),
+              NodeId.parse("i=308"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -199,7 +199,7 @@ public class JsonServerEndpointsMessage extends Structure implements UaStructure
           new StructureField(
               "Endpoints",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 312),
+              NodeId.parse("i=312"),
               1,
               null,
               UInteger.valueOf(0),

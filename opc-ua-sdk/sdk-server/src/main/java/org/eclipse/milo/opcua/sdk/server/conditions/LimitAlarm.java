@@ -95,7 +95,8 @@ public abstract class LimitAlarm extends AlarmCondition {
 
     if (activeStateEffectiveTransitionTime != null
         && currentValue(activeStateEffectiveTransitionTime) == null) {
-      DateTime transitionTime = activeState.getTransitionTime();
+      DateTime transitionTime =
+          activeState.getTransitionTimeNode() != null ? activeState.getTransitionTime() : null;
       activeStateEffectiveTransitionTime.setValue(
           new DataValue(
               new Variant(transitionTime != null ? transitionTime : DateTime.NULL_VALUE)));

@@ -12,6 +12,8 @@ package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -155,14 +157,14 @@ public class AddReferencesItem extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 381),
-        new NodeId(0, 22),
+        NodeId.parse("i=381"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "SourceNodeId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -170,7 +172,7 @@ public class AddReferencesItem extends Structure implements UaStructuredType {
           new StructureField(
               "ReferenceTypeId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -178,7 +180,7 @@ public class AddReferencesItem extends Structure implements UaStructuredType {
           new StructureField(
               "IsForward",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -186,7 +188,7 @@ public class AddReferencesItem extends Structure implements UaStructuredType {
           new StructureField(
               "TargetServerUri",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -194,7 +196,7 @@ public class AddReferencesItem extends Structure implements UaStructuredType {
           new StructureField(
               "TargetNodeId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 18),
+              NodeId.parse("i=18"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -202,7 +204,7 @@ public class AddReferencesItem extends Structure implements UaStructuredType {
           new StructureField(
               "TargetNodeClass",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 257),
+              NodeId.parse("i=257"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -229,7 +231,26 @@ public class AddReferencesItem extends Structure implements UaStructuredType {
       isForward = decoder.decodeBoolean("IsForward");
       targetServerUri = decoder.decodeString("TargetServerUri");
       targetNodeId = decoder.decodeExpandedNodeId("TargetNodeId");
-      targetNodeClass = NodeClass.from(decoder.decodeEnum("TargetNodeClass"));
+      {
+        Integer enumValue = decoder.decodeEnum("TargetNodeClass");
+        if (enumValue != null && !((Object) enumValue instanceof NodeClass)) {
+          if (!(enumValue instanceof Integer)) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_TypeMismatch,
+                "TargetNodeClass: expected"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass or Int32, got "
+                    + enumValue);
+          }
+          if (NodeClass.from((Integer) enumValue) == null) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_OutOfRange,
+                "TargetNodeClass: unknown"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass value "
+                    + enumValue);
+          }
+        }
+        targetNodeClass = enumValue == null ? null : NodeClass.from(enumValue);
+      }
       return new AddReferencesItem(
           sourceNodeId, referenceTypeId, isForward, targetServerUri, targetNodeId, targetNodeClass);
     }

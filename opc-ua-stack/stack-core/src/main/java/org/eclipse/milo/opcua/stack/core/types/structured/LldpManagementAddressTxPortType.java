@@ -12,6 +12,8 @@ package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -156,14 +158,14 @@ public class LldpManagementAddressTxPortType extends Structure implements UaStru
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 19079),
-        new NodeId(0, 22),
+        NodeId.parse("i=19079"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "AddressSubtype",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -171,7 +173,7 @@ public class LldpManagementAddressTxPortType extends Structure implements UaStru
           new StructureField(
               "ManAddress",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -179,7 +181,7 @@ public class LldpManagementAddressTxPortType extends Structure implements UaStru
           new StructureField(
               "TxEnable",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -187,7 +189,7 @@ public class LldpManagementAddressTxPortType extends Structure implements UaStru
           new StructureField(
               "AddrLen",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -195,7 +197,7 @@ public class LldpManagementAddressTxPortType extends Structure implements UaStru
           new StructureField(
               "IfSubtype",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 18951),
+              NodeId.parse("i=18951"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -203,7 +205,7 @@ public class LldpManagementAddressTxPortType extends Structure implements UaStru
           new StructureField(
               "IfId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -229,7 +231,27 @@ public class LldpManagementAddressTxPortType extends Structure implements UaStru
       manAddress = decoder.decodeString("ManAddress");
       txEnable = decoder.decodeBoolean("TxEnable");
       addrLen = decoder.decodeUInt32("AddrLen");
-      ifSubtype = ManAddrIfSubtype.from(decoder.decodeEnum("IfSubtype"));
+      {
+        Integer enumValue = decoder.decodeEnum("IfSubtype");
+        if (enumValue != null && !((Object) enumValue instanceof ManAddrIfSubtype)) {
+          if (!(enumValue instanceof Integer)) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_TypeMismatch,
+                "IfSubtype: expected"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.ManAddrIfSubtype or"
+                    + " Int32, got "
+                    + enumValue);
+          }
+          if (ManAddrIfSubtype.from((Integer) enumValue) == null) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_OutOfRange,
+                "IfSubtype: unknown"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.ManAddrIfSubtype value "
+                    + enumValue);
+          }
+        }
+        ifSubtype = enumValue == null ? null : ManAddrIfSubtype.from(enumValue);
+      }
       ifId = decoder.decodeUInt32("IfId");
       return new LldpManagementAddressTxPortType(
           addressSubtype, manAddress, txEnable, addrLen, ifSubtype, ifId);

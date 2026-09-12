@@ -186,14 +186,14 @@ public class JsonActionNetworkMessage extends Structure implements UaStructuredT
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 0),
-        new NodeId(0, 22),
+        NodeId.parse("i=0"),
+        NodeId.parse("i=22"),
         StructureType.StructureWithSubtypedValues,
         new StructureField[] {
           new StructureField(
               "MessageId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -201,7 +201,7 @@ public class JsonActionNetworkMessage extends Structure implements UaStructuredT
           new StructureField(
               "MessageType",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -209,7 +209,7 @@ public class JsonActionNetworkMessage extends Structure implements UaStructuredT
           new StructureField(
               "PublisherId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -217,7 +217,7 @@ public class JsonActionNetworkMessage extends Structure implements UaStructuredT
           new StructureField(
               "Timestamp",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 294),
+              NodeId.parse("i=294"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -225,7 +225,7 @@ public class JsonActionNetworkMessage extends Structure implements UaStructuredT
           new StructureField(
               "ResponseAddress",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -233,7 +233,7 @@ public class JsonActionNetworkMessage extends Structure implements UaStructuredT
           new StructureField(
               "CorrelationData",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15),
+              NodeId.parse("i=15"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -241,7 +241,7 @@ public class JsonActionNetworkMessage extends Structure implements UaStructuredT
           new StructureField(
               "RequestorId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -249,7 +249,7 @@ public class JsonActionNetworkMessage extends Structure implements UaStructuredT
           new StructureField(
               "TimeoutHint",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 290),
+              NodeId.parse("i=290"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -257,7 +257,7 @@ public class JsonActionNetworkMessage extends Structure implements UaStructuredT
           new StructureField(
               "Messages",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 22),
+              NodeId.parse("i=22"),
               1,
               null,
               UInteger.valueOf(0),

@@ -38,14 +38,14 @@ public class EnumValueType extends Structure implements UaStructuredType {
 
   public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15082");
 
-  private final Long value;
+  private final Long value2;
 
   private final LocalizedText displayName;
 
   private final LocalizedText description;
 
-  public EnumValueType(Long value, LocalizedText displayName, LocalizedText description) {
-    this.value = value;
+  public EnumValueType(Long value2, LocalizedText displayName, LocalizedText description) {
+    this.value2 = value2;
     this.displayName = displayName;
     this.description = description;
   }
@@ -71,7 +71,7 @@ public class EnumValueType extends Structure implements UaStructuredType {
   }
 
   public Long getValue() {
-    return value;
+    return value2;
   }
 
   public LocalizedText getDisplayName() {
@@ -117,14 +117,14 @@ public class EnumValueType extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 8251),
-        new NodeId(0, 22),
+        NodeId.parse("i=8251"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "Value",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 8),
+              NodeId.parse("i=8"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -132,7 +132,7 @@ public class EnumValueType extends Structure implements UaStructuredType {
           new StructureField(
               "DisplayName",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 21),
+              NodeId.parse("i=21"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -140,7 +140,7 @@ public class EnumValueType extends Structure implements UaStructuredType {
           new StructureField(
               "Description",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 21),
+              NodeId.parse("i=21"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -156,13 +156,13 @@ public class EnumValueType extends Structure implements UaStructuredType {
 
     @Override
     public EnumValueType decodeType(EncodingContext context, UaDecoder decoder) {
-      final Long value;
+      final Long value2;
       final LocalizedText displayName;
       final LocalizedText description;
-      value = decoder.decodeInt64("Value");
+      value2 = decoder.decodeInt64("Value");
       displayName = decoder.decodeLocalizedText("DisplayName");
       description = decoder.decodeLocalizedText("Description");
-      return new EnumValueType(value, displayName, description);
+      return new EnumValueType(value2, displayName, description);
     }
 
     @Override

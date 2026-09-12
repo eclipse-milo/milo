@@ -39,10 +39,10 @@ public class ContentFilter extends Structure implements UaStructuredType {
 
   public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15205");
 
-  private final ContentFilterElement @Nullable [] elements;
+  private final ContentFilterElement @Nullable [] elements2;
 
-  public ContentFilter(ContentFilterElement @Nullable [] elements) {
-    this.elements = elements;
+  public ContentFilter(ContentFilterElement @Nullable [] elements2) {
+    this.elements2 = elements2;
   }
 
   @Override
@@ -66,7 +66,7 @@ public class ContentFilter extends Structure implements UaStructuredType {
   }
 
   public ContentFilterElement @Nullable [] getElements() {
-    return elements;
+    return elements2;
   }
 
   @Override
@@ -98,14 +98,14 @@ public class ContentFilter extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 588),
-        new NodeId(0, 22),
+        NodeId.parse("i=588"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "Elements",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 583),
+              NodeId.parse("i=583"),
               1,
               null,
               UInteger.valueOf(0),
@@ -121,11 +121,11 @@ public class ContentFilter extends Structure implements UaStructuredType {
 
     @Override
     public ContentFilter decodeType(EncodingContext context, UaDecoder decoder) {
-      final ContentFilterElement[] elements;
-      elements =
+      final ContentFilterElement[] elements2;
+      elements2 =
           (ContentFilterElement[])
               decoder.decodeStructArray("Elements", ContentFilterElement.TYPE_ID);
-      return new ContentFilter(elements);
+      return new ContentFilter(elements2);
     }
 
     @Override

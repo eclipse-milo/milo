@@ -133,14 +133,14 @@ public class PubSubConfigurationRefDataType extends Structure implements UaStruc
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 25531),
-        new NodeId(0, 22),
+        NodeId.parse("i=25531"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "ConfigurationMask",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 25517),
+              NodeId.parse("i=25517"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -148,7 +148,7 @@ public class PubSubConfigurationRefDataType extends Structure implements UaStruc
           new StructureField(
               "ElementIndex",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 5),
+              NodeId.parse("i=5"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -156,7 +156,7 @@ public class PubSubConfigurationRefDataType extends Structure implements UaStruc
           new StructureField(
               "ConnectionIndex",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 5),
+              NodeId.parse("i=5"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -164,7 +164,7 @@ public class PubSubConfigurationRefDataType extends Structure implements UaStruc
           new StructureField(
               "GroupIndex",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 5),
+              NodeId.parse("i=5"),
               -1,
               null,
               UInteger.valueOf(0),

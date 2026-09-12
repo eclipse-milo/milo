@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUI32;
 import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
@@ -76,6 +77,68 @@ public class PasswordOptionsMask extends OptionSetUI32<PasswordOptionsMask.Field
     joiner.add("requiresDigitCharacters=" + getRequiresDigitCharacters());
     joiner.add("requiresSpecialCharacters=" + getRequiresSpecialCharacters());
     return joiner.toString();
+  }
+
+  public static EnumDefinition definition() {
+    return new EnumDefinition(
+        new EnumField[] {
+          new EnumField(
+              0L,
+              LocalizedText.NULL_VALUE,
+              new LocalizedText(
+                  "",
+                  "Indicates if the server supports the feature to require a password change after"
+                      + " the creation of the user."),
+              "SupportInitialPasswordChange"),
+          new EnumField(
+              1L,
+              LocalizedText.NULL_VALUE,
+              new LocalizedText("", "Indicates if the server supports to disable a user."),
+              "SupportDisableUser"),
+          new EnumField(
+              2L,
+              LocalizedText.NULL_VALUE,
+              new LocalizedText(
+                  "", "Indicates if the server supports the configuration NoDelete for a user."),
+              "SupportDisableDeleteForUser"),
+          new EnumField(
+              3L,
+              LocalizedText.NULL_VALUE,
+              new LocalizedText(
+                  "",
+                  "Indicates if the server supports the configuration NoChangeByUser for a user."),
+              "SupportNoChangeForUser"),
+          new EnumField(
+              4L,
+              LocalizedText.NULL_VALUE,
+              new LocalizedText(
+                  "",
+                  "Indicates if the server supports to management of a description for the user."),
+              "SupportDescriptionForUser"),
+          new EnumField(
+              5L,
+              LocalizedText.NULL_VALUE,
+              new LocalizedText(
+                  "", "Indicates if a upper case ASCII character is required in a password."),
+              "RequiresUpperCaseCharacters"),
+          new EnumField(
+              6L,
+              LocalizedText.NULL_VALUE,
+              new LocalizedText(
+                  "", "Indicates if a lower case ASCII character is required in a password."),
+              "RequiresLowerCaseCharacters"),
+          new EnumField(
+              7L,
+              LocalizedText.NULL_VALUE,
+              new LocalizedText(
+                  "", "Indicates if a digit ASCII character is required in a password."),
+              "RequiresDigitCharacters"),
+          new EnumField(
+              8L,
+              LocalizedText.NULL_VALUE,
+              new LocalizedText("", "Indicates if a special character is required in a password."),
+              "RequiresSpecialCharacters")
+        });
   }
 
   public static PasswordOptionsMask of(PasswordOptionsMask.Field... fields) {

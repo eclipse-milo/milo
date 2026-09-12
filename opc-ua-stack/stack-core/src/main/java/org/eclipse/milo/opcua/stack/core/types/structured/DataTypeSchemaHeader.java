@@ -128,14 +128,14 @@ public abstract class DataTypeSchemaHeader extends Structure implements UaStruct
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 15676),
-        new NodeId(0, 22),
+        NodeId.parse("i=15676"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "Namespaces",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               1,
               null,
               UInteger.valueOf(0),
@@ -143,7 +143,7 @@ public abstract class DataTypeSchemaHeader extends Structure implements UaStruct
           new StructureField(
               "StructureDataTypes",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15487),
+              NodeId.parse("i=15487"),
               1,
               null,
               UInteger.valueOf(0),
@@ -151,7 +151,7 @@ public abstract class DataTypeSchemaHeader extends Structure implements UaStruct
           new StructureField(
               "EnumDataTypes",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15488),
+              NodeId.parse("i=15488"),
               1,
               null,
               UInteger.valueOf(0),
@@ -159,7 +159,7 @@ public abstract class DataTypeSchemaHeader extends Structure implements UaStruct
           new StructureField(
               "SimpleDataTypes",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15005),
+              NodeId.parse("i=15005"),
               1,
               null,
               UInteger.valueOf(0),

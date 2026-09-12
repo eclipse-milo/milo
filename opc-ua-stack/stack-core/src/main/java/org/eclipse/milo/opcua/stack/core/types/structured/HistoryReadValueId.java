@@ -130,14 +130,14 @@ public class HistoryReadValueId extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 637),
-        new NodeId(0, 22),
+        NodeId.parse("i=637"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "NodeId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -145,7 +145,7 @@ public class HistoryReadValueId extends Structure implements UaStructuredType {
           new StructureField(
               "IndexRange",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 291),
+              NodeId.parse("i=291"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -153,7 +153,7 @@ public class HistoryReadValueId extends Structure implements UaStructuredType {
           new StructureField(
               "DataEncoding",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 20),
+              NodeId.parse("i=20"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -161,7 +161,7 @@ public class HistoryReadValueId extends Structure implements UaStructuredType {
           new StructureField(
               "ContinuationPoint",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 521),
+              NodeId.parse("i=521"),
               -1,
               null,
               UInteger.valueOf(0),

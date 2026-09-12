@@ -110,14 +110,14 @@ public class PublishedActionDataType extends PublishedDataSetSourceDataType
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 18599),
-        new NodeId(0, 15580),
+        NodeId.parse("i=18599"),
+        NodeId.parse("i=15580"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "RequestDataSetMetaData",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 14523),
+              NodeId.parse("i=14523"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -125,7 +125,7 @@ public class PublishedActionDataType extends PublishedDataSetSourceDataType
           new StructureField(
               "ActionTargets",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 18593),
+              NodeId.parse("i=18593"),
               1,
               null,
               UInteger.valueOf(0),

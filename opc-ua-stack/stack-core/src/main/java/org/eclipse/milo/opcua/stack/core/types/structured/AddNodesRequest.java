@@ -108,14 +108,14 @@ public class AddNodesRequest extends Structure implements UaRequestMessageType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 488),
-        new NodeId(0, 22),
+        NodeId.parse("i=488"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "RequestHeader",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 389),
+              NodeId.parse("i=389"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -123,7 +123,7 @@ public class AddNodesRequest extends Structure implements UaRequestMessageType {
           new StructureField(
               "NodesToAdd",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 376),
+              NodeId.parse("i=376"),
               1,
               null,
               UInteger.valueOf(0),

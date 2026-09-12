@@ -197,14 +197,14 @@ public class ProgramDiagnosticDataType extends Structure implements UaStructured
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 896),
-        new NodeId(0, 22),
+        NodeId.parse("i=896"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "CreateSessionId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -212,7 +212,7 @@ public class ProgramDiagnosticDataType extends Structure implements UaStructured
           new StructureField(
               "CreateClientName",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -220,7 +220,7 @@ public class ProgramDiagnosticDataType extends Structure implements UaStructured
           new StructureField(
               "InvocationCreationTime",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 294),
+              NodeId.parse("i=294"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -228,7 +228,7 @@ public class ProgramDiagnosticDataType extends Structure implements UaStructured
           new StructureField(
               "LastTransitionTime",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 294),
+              NodeId.parse("i=294"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -236,7 +236,7 @@ public class ProgramDiagnosticDataType extends Structure implements UaStructured
           new StructureField(
               "LastMethodCall",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -244,7 +244,7 @@ public class ProgramDiagnosticDataType extends Structure implements UaStructured
           new StructureField(
               "LastMethodSessionId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -252,7 +252,7 @@ public class ProgramDiagnosticDataType extends Structure implements UaStructured
           new StructureField(
               "LastMethodInputArguments",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 296),
+              NodeId.parse("i=296"),
               1,
               null,
               UInteger.valueOf(0),
@@ -260,7 +260,7 @@ public class ProgramDiagnosticDataType extends Structure implements UaStructured
           new StructureField(
               "LastMethodOutputArguments",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 296),
+              NodeId.parse("i=296"),
               1,
               null,
               UInteger.valueOf(0),
@@ -268,7 +268,7 @@ public class ProgramDiagnosticDataType extends Structure implements UaStructured
           new StructureField(
               "LastMethodCallTime",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 294),
+              NodeId.parse("i=294"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -276,7 +276,7 @@ public class ProgramDiagnosticDataType extends Structure implements UaStructured
           new StructureField(
               "LastMethodReturnStatus",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 299),
+              NodeId.parse("i=299"),
               -1,
               null,
               UInteger.valueOf(0),

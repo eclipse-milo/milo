@@ -12,6 +12,8 @@ package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -190,14 +192,14 @@ public class SessionSecurityDiagnosticsDataType extends Structure implements UaS
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 870),
-        new NodeId(0, 22),
+        NodeId.parse("i=870"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "SessionId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -205,7 +207,7 @@ public class SessionSecurityDiagnosticsDataType extends Structure implements UaS
           new StructureField(
               "ClientUserIdOfSession",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -213,7 +215,7 @@ public class SessionSecurityDiagnosticsDataType extends Structure implements UaS
           new StructureField(
               "ClientUserIdHistory",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               1,
               null,
               UInteger.valueOf(0),
@@ -221,7 +223,7 @@ public class SessionSecurityDiagnosticsDataType extends Structure implements UaS
           new StructureField(
               "AuthenticationMechanism",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -229,7 +231,7 @@ public class SessionSecurityDiagnosticsDataType extends Structure implements UaS
           new StructureField(
               "Encoding",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -237,7 +239,7 @@ public class SessionSecurityDiagnosticsDataType extends Structure implements UaS
           new StructureField(
               "TransportProtocol",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -245,7 +247,7 @@ public class SessionSecurityDiagnosticsDataType extends Structure implements UaS
           new StructureField(
               "SecurityMode",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 302),
+              NodeId.parse("i=302"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -253,7 +255,7 @@ public class SessionSecurityDiagnosticsDataType extends Structure implements UaS
           new StructureField(
               "SecurityPolicyUri",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -261,7 +263,7 @@ public class SessionSecurityDiagnosticsDataType extends Structure implements UaS
           new StructureField(
               "ClientCertificate",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15),
+              NodeId.parse("i=15"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -293,7 +295,28 @@ public class SessionSecurityDiagnosticsDataType extends Structure implements UaS
       authenticationMechanism = decoder.decodeString("AuthenticationMechanism");
       encoding = decoder.decodeString("Encoding");
       transportProtocol = decoder.decodeString("TransportProtocol");
-      securityMode = MessageSecurityMode.from(decoder.decodeEnum("SecurityMode"));
+      {
+        Integer enumValue = decoder.decodeEnum("SecurityMode");
+        if (enumValue != null && !((Object) enumValue instanceof MessageSecurityMode)) {
+          if (!(enumValue instanceof Integer)) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_TypeMismatch,
+                "SecurityMode: expected"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode or"
+                    + " Int32, got "
+                    + enumValue);
+          }
+          if (MessageSecurityMode.from((Integer) enumValue) == null) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_OutOfRange,
+                "SecurityMode: unknown"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode"
+                    + " value "
+                    + enumValue);
+          }
+        }
+        securityMode = enumValue == null ? null : MessageSecurityMode.from(enumValue);
+      }
       securityPolicyUri = decoder.decodeString("SecurityPolicyUri");
       clientCertificate = decoder.decodeByteString("ClientCertificate");
       return new SessionSecurityDiagnosticsDataType(

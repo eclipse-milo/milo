@@ -108,14 +108,14 @@ public class ConfigurationVersionDataType extends Structure implements UaStructu
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 14847),
-        new NodeId(0, 22),
+        NodeId.parse("i=14847"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "MajorVersion",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 20998),
+              NodeId.parse("i=20998"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -123,7 +123,7 @@ public class ConfigurationVersionDataType extends Structure implements UaStructu
           new StructureField(
               "MinorVersion",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 20998),
+              NodeId.parse("i=20998"),
               -1,
               null,
               UInteger.valueOf(0),

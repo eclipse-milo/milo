@@ -110,14 +110,14 @@ public class HistoryUpdateRequest extends Structure implements UaRequestMessageT
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 700),
-        new NodeId(0, 22),
+        NodeId.parse("i=700"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "RequestHeader",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 389),
+              NodeId.parse("i=389"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -125,7 +125,7 @@ public class HistoryUpdateRequest extends Structure implements UaRequestMessageT
           new StructureField(
               "HistoryUpdateDetails",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 22),
+              NodeId.parse("i=22"),
               1,
               null,
               UInteger.valueOf(0),

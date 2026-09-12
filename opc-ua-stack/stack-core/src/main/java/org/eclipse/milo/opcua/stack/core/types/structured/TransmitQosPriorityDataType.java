@@ -99,14 +99,14 @@ public class TransmitQosPriorityDataType extends TransmitQosDataType implements 
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 23857),
-        new NodeId(0, 23604),
+        NodeId.parse("i=23857"),
+        NodeId.parse("i=23604"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "PriorityLabel",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),

@@ -12,6 +12,8 @@ package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -133,14 +135,14 @@ public class LldpManagementAddressType extends Structure implements UaStructured
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 19080),
-        new NodeId(0, 22),
+        NodeId.parse("i=19080"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "AddressSubtype",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -148,7 +150,7 @@ public class LldpManagementAddressType extends Structure implements UaStructured
           new StructureField(
               "Address",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -156,7 +158,7 @@ public class LldpManagementAddressType extends Structure implements UaStructured
           new StructureField(
               "IfSubtype",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 18951),
+              NodeId.parse("i=18951"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -164,7 +166,7 @@ public class LldpManagementAddressType extends Structure implements UaStructured
           new StructureField(
               "IfId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -186,7 +188,27 @@ public class LldpManagementAddressType extends Structure implements UaStructured
       final UInteger ifId;
       addressSubtype = decoder.decodeUInt32("AddressSubtype");
       address = decoder.decodeString("Address");
-      ifSubtype = ManAddrIfSubtype.from(decoder.decodeEnum("IfSubtype"));
+      {
+        Integer enumValue = decoder.decodeEnum("IfSubtype");
+        if (enumValue != null && !((Object) enumValue instanceof ManAddrIfSubtype)) {
+          if (!(enumValue instanceof Integer)) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_TypeMismatch,
+                "IfSubtype: expected"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.ManAddrIfSubtype or"
+                    + " Int32, got "
+                    + enumValue);
+          }
+          if (ManAddrIfSubtype.from((Integer) enumValue) == null) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_OutOfRange,
+                "IfSubtype: unknown"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.ManAddrIfSubtype value "
+                    + enumValue);
+          }
+        }
+        ifSubtype = enumValue == null ? null : ManAddrIfSubtype.from(enumValue);
+      }
       ifId = decoder.decodeUInt32("IfId");
       return new LldpManagementAddressType(addressSubtype, address, ifSubtype, ifId);
     }

@@ -42,8 +42,8 @@ public class EnumField extends EnumValueType implements UaStructuredType {
   private final @Nullable String name;
 
   public EnumField(
-      Long value, LocalizedText displayName, LocalizedText description, @Nullable String name) {
-    super(value, displayName, description);
+      Long value2, LocalizedText displayName, LocalizedText description, @Nullable String name) {
+    super(value2, displayName, description);
     this.name = name;
   }
 
@@ -102,14 +102,14 @@ public class EnumField extends EnumValueType implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 14845),
-        new NodeId(0, 7594),
+        NodeId.parse("i=14845"),
+        NodeId.parse("i=7594"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "Value",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 8),
+              NodeId.parse("i=8"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -117,7 +117,7 @@ public class EnumField extends EnumValueType implements UaStructuredType {
           new StructureField(
               "DisplayName",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 21),
+              NodeId.parse("i=21"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -125,7 +125,7 @@ public class EnumField extends EnumValueType implements UaStructuredType {
           new StructureField(
               "Description",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 21),
+              NodeId.parse("i=21"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -133,7 +133,7 @@ public class EnumField extends EnumValueType implements UaStructuredType {
           new StructureField(
               "Name",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -149,15 +149,15 @@ public class EnumField extends EnumValueType implements UaStructuredType {
 
     @Override
     public EnumField decodeType(EncodingContext context, UaDecoder decoder) {
-      final Long value;
+      final Long value2;
       final LocalizedText displayName;
       final LocalizedText description;
       final String name;
-      value = decoder.decodeInt64("Value");
+      value2 = decoder.decodeInt64("Value");
       displayName = decoder.decodeLocalizedText("DisplayName");
       description = decoder.decodeLocalizedText("Description");
       name = decoder.decodeString("Name");
-      return new EnumField(value, displayName, description, name);
+      return new EnumField(value2, displayName, description, name);
     }
 
     @Override

@@ -182,14 +182,14 @@ public class EndpointConfiguration extends Structure implements UaStructuredType
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 333),
-        new NodeId(0, 22),
+        NodeId.parse("i=333"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "OperationTimeout",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 6),
+              NodeId.parse("i=6"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -197,7 +197,7 @@ public class EndpointConfiguration extends Structure implements UaStructuredType
           new StructureField(
               "UseBinaryEncoding",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -205,7 +205,7 @@ public class EndpointConfiguration extends Structure implements UaStructuredType
           new StructureField(
               "MaxStringLength",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 6),
+              NodeId.parse("i=6"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -213,7 +213,7 @@ public class EndpointConfiguration extends Structure implements UaStructuredType
           new StructureField(
               "MaxByteStringLength",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 6),
+              NodeId.parse("i=6"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -221,7 +221,7 @@ public class EndpointConfiguration extends Structure implements UaStructuredType
           new StructureField(
               "MaxArrayLength",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 6),
+              NodeId.parse("i=6"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -229,7 +229,7 @@ public class EndpointConfiguration extends Structure implements UaStructuredType
           new StructureField(
               "MaxMessageSize",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 6),
+              NodeId.parse("i=6"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -237,7 +237,7 @@ public class EndpointConfiguration extends Structure implements UaStructuredType
           new StructureField(
               "MaxBufferSize",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 6),
+              NodeId.parse("i=6"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -245,7 +245,7 @@ public class EndpointConfiguration extends Structure implements UaStructuredType
           new StructureField(
               "ChannelLifetime",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 6),
+              NodeId.parse("i=6"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -253,7 +253,7 @@ public class EndpointConfiguration extends Structure implements UaStructuredType
           new StructureField(
               "SecurityTokenLifetime",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 6),
+              NodeId.parse("i=6"),
               -1,
               null,
               UInteger.valueOf(0),

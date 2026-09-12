@@ -108,14 +108,14 @@ public class SignedSoftwareCertificate extends Structure implements UaStructured
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 346),
-        new NodeId(0, 22),
+        NodeId.parse("i=346"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "CertificateData",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15),
+              NodeId.parse("i=15"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -123,7 +123,7 @@ public class SignedSoftwareCertificate extends Structure implements UaStructured
           new StructureField(
               "Signature",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15),
+              NodeId.parse("i=15"),
               -1,
               null,
               UInteger.valueOf(0),

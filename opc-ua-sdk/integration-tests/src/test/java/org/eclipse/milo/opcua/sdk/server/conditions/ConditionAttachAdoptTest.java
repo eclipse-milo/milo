@@ -42,6 +42,7 @@ import org.eclipse.milo.opcua.sdk.server.model.objects.NonExclusiveLimitAlarmTyp
 import org.eclipse.milo.opcua.sdk.server.model.variables.FiniteStateVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.FiniteTransitionVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.variables.TwoStateVariableType;
 import org.eclipse.milo.opcua.sdk.server.model.variables.TwoStateVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
@@ -410,7 +411,7 @@ public class ConditionAttachAdoptTest extends AbstractClientServerTest {
                         && NodeIds.HasTypeDefinition.equals(reference.getReferenceTypeId())
                         && NodeIds.ExclusiveLimitAlarmType.expanded()
                             .equals(reference.getTargetNodeId())));
-    assertNull(((ExclusiveLimitAlarmTypeNode) genericBehavior.getNode()).getHighLimit());
+    assertNull(((ExclusiveLimitAlarmTypeNode) genericBehavior.getNode()).getHighLimitNode());
   }
 
   // Part 9 leaves compound-input reduction to the application. Attaching stock behavior to a
@@ -583,7 +584,7 @@ public class ConditionAttachAdoptTest extends AbstractClientServerTest {
                 lowOnly.getConditionId(),
                 builder -> builder.highSeverity(ushort(700))));
     assertEquals(before, ConditionNodeTraversal.discoverAssignedNodeIds(lowOnly.getNode()));
-    assertNull(lowOnly.getNode().getSeverityHigh());
+    assertNull(lowOnly.getNode().getSeverityHighNode());
 
     assertThrows(
         IllegalArgumentException.class,
@@ -1188,7 +1189,7 @@ public class ConditionAttachAdoptTest extends AbstractClientServerTest {
       TwoStateVariableTypeNode state, boolean id, String text, DateTime time) {
     state.setValue(new DataValue(new Variant(LocalizedText.english(text))));
     state.setId(id);
-    state.setTransitionTime(time);
+    state.setProperty(TwoStateVariableType.TRANSITION_TIME, time);
   }
 
   private static long behaviorFilterCount(UaVariableNode node, Condition.BehaviorFilterKind kind) {

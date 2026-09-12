@@ -111,14 +111,14 @@ public class DataChangeNotification extends NotificationData implements UaStruct
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 811),
-        new NodeId(0, 945),
+        NodeId.parse("i=811"),
+        NodeId.parse("i=945"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "MonitoredItems",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 806),
+              NodeId.parse("i=806"),
               1,
               null,
               UInteger.valueOf(0),
@@ -126,7 +126,7 @@ public class DataChangeNotification extends NotificationData implements UaStruct
           new StructureField(
               "DiagnosticInfos",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 25),
+              NodeId.parse("i=25"),
               1,
               null,
               UInteger.valueOf(0),

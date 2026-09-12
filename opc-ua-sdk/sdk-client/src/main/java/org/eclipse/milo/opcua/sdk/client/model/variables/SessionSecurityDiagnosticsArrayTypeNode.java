@@ -10,16 +10,22 @@
 
 package org.eclipse.milo.opcua.sdk.client.model.variables;
 
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
+import org.eclipse.milo.opcua.sdk.core.ValueRanks;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -30,8 +36,12 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelExType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
+import org.eclipse.milo.opcua.stack.core.types.structured.BrowsePath;
+import org.eclipse.milo.opcua.stack.core.types.structured.RelativePath;
+import org.eclipse.milo.opcua.stack.core.types.structured.RelativePathElement;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SessionSecurityDiagnosticsDataType;
+import org.jspecify.annotations.Nullable;
 
 public class SessionSecurityDiagnosticsArrayTypeNode extends BaseDataVariableTypeNode
     implements SessionSecurityDiagnosticsArrayType {
@@ -80,25 +90,53 @@ public class SessionSecurityDiagnosticsArrayTypeNode extends BaseDataVariableTyp
   }
 
   @Override
-  public SessionSecurityDiagnosticsDataType getSessionSecurityDiagnostics() throws UaException {
-    SessionSecurityDiagnosticsTypeNode node = getSessionSecurityDiagnosticsNode();
-    return cast(node.getValue().getValue().getValue(), SessionSecurityDiagnosticsDataType.class);
-  }
-
-  @Override
-  public void setSessionSecurityDiagnostics(SessionSecurityDiagnosticsDataType value)
+  public @Nullable SessionSecurityDiagnosticsDataType getSessionSecurityDiagnostics()
       throws UaException {
     SessionSecurityDiagnosticsTypeNode node = getSessionSecurityDiagnosticsNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
+    if (node == null) {
+      throw new UaException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:SessionSecurityDiagnostics (declaration i=12860, owner"
+              + " i=2243) on "
+              + getNodeId());
+    }
+    return (SessionSecurityDiagnosticsDataType)
+        decodeValue(
+            node.getValue().getValue().getValue(),
+            SessionSecurityDiagnosticsDataType.class,
+            ValueRanks.Scalar);
   }
 
   @Override
-  public SessionSecurityDiagnosticsDataType readSessionSecurityDiagnostics() throws UaException {
+  public void setSessionSecurityDiagnostics(@Nullable SessionSecurityDiagnosticsDataType value)
+      throws UaException {
+    SessionSecurityDiagnosticsTypeNode node = getSessionSecurityDiagnosticsNode();
+    if (node == null) {
+      throw new UaException(
+          StatusCodes.Bad_NotFound,
+          "http://opcfoundation.org/UA/:SessionSecurityDiagnostics (declaration i=12860, owner"
+              + " i=2243) on "
+              + getNodeId());
+    }
+    node.setValue(
+        new Variant(
+            encodeValue(value, SessionSecurityDiagnosticsDataType.class, ValueRanks.Scalar)));
+  }
+
+  @Override
+  public @Nullable SessionSecurityDiagnosticsDataType readSessionSecurityDiagnostics()
+      throws UaException {
     try {
       return readSessionSecurityDiagnosticsAsync().get();
     } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
+      Throwable cause = e.getCause();
+      while (cause instanceof CompletionException || cause instanceof ExecutionException) {
+        cause = cause.getCause();
+      }
+      if (cause instanceof UaException failure) {
+        throw failure;
+      }
+      throw new UaException(cause);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new UaException(StatusCodes.Bad_UnexpectedError, e);
@@ -106,10 +144,13 @@ public class SessionSecurityDiagnosticsArrayTypeNode extends BaseDataVariableTyp
   }
 
   @Override
-  public void writeSessionSecurityDiagnostics(SessionSecurityDiagnosticsDataType value)
+  public void writeSessionSecurityDiagnostics(@Nullable SessionSecurityDiagnosticsDataType value)
       throws UaException {
     try {
-      writeSessionSecurityDiagnosticsAsync(value).get();
+      StatusCode statusCode = writeSessionSecurityDiagnosticsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -119,21 +160,65 @@ public class SessionSecurityDiagnosticsArrayTypeNode extends BaseDataVariableTyp
   }
 
   @Override
-  public CompletableFuture<? extends SessionSecurityDiagnosticsDataType>
+  public CompletableFuture<? extends @Nullable SessionSecurityDiagnosticsDataType>
       readSessionSecurityDiagnosticsAsync() {
     return getSessionSecurityDiagnosticsNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), SessionSecurityDiagnosticsDataType.class));
+        .thenCompose(
+            node -> {
+              if (node == null) {
+                throw new CompletionException(
+                    new UaException(
+                        StatusCodes.Bad_NotFound,
+                        "http://opcfoundation.org/UA/:SessionSecurityDiagnostics (declaration"
+                            + " i=12860, owner i=2243) on "
+                            + getNodeId()));
+              }
+              return node.readAttributeAsync(AttributeId.Value);
+            })
+        .thenApply(
+            v -> {
+              if (!v.getStatusCode().isGood()) {
+                throw new CompletionException(new UaException(v.getStatusCode()));
+              }
+              try {
+                return (SessionSecurityDiagnosticsDataType)
+                    decodeValue(
+                        v.getValue().getValue(),
+                        SessionSecurityDiagnosticsDataType.class,
+                        ValueRanks.Scalar);
+              } catch (UaRuntimeException e) {
+                throw new CompletionException(new UaException(e));
+              }
+            });
   }
 
   @Override
   public CompletableFuture<StatusCode> writeSessionSecurityDiagnosticsAsync(
-      SessionSecurityDiagnosticsDataType sessionSecurityDiagnostics) {
-    ExtensionObject encoded =
-        ExtensionObject.encode(client.getStaticEncodingContext(), sessionSecurityDiagnostics);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
+      @Nullable SessionSecurityDiagnosticsDataType sessionSecurityDiagnostics) {
     return getSessionSecurityDiagnosticsNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+        .thenCompose(
+            node -> {
+              if (node == null) {
+                throw new CompletionException(
+                    new UaException(
+                        StatusCodes.Bad_NotFound,
+                        "http://opcfoundation.org/UA/:SessionSecurityDiagnostics (declaration"
+                            + " i=12860, owner i=2243) on "
+                            + getNodeId()));
+              }
+              try {
+                DataValue value =
+                    DataValue.valueOnly(
+                        new Variant(
+                            encodeValue(
+                                sessionSecurityDiagnostics,
+                                SessionSecurityDiagnosticsDataType.class,
+                                ValueRanks.Scalar)));
+                return node.writeAttributeAsync(AttributeId.Value, value);
+              } catch (Exception e) {
+                return CompletableFuture.failedFuture(e);
+              }
+            });
   }
 
   @Override
@@ -141,7 +226,14 @@ public class SessionSecurityDiagnosticsArrayTypeNode extends BaseDataVariableTyp
     try {
       return getSessionSecurityDiagnosticsNodeAsync().get();
     } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
+      Throwable cause = e.getCause();
+      while (cause instanceof CompletionException || cause instanceof ExecutionException) {
+        cause = cause.getCause();
+      }
+      if (cause instanceof UaException failure) {
+        throw failure;
+      }
+      throw new UaException(cause);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new UaException(StatusCodes.Bad_UnexpectedError, e);
@@ -151,12 +243,222 @@ public class SessionSecurityDiagnosticsArrayTypeNode extends BaseDataVariableTyp
   @Override
   public CompletableFuture<? extends SessionSecurityDiagnosticsTypeNode>
       getSessionSecurityDiagnosticsNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "SessionSecurityDiagnostics",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (SessionSecurityDiagnosticsTypeNode) node);
+    CompletableFuture<SessionSecurityDiagnosticsTypeNode> result = new CompletableFuture<>();
+    try {
+      CompletableFuture<NodeId> lookup = CompletableFuture.completedFuture(getNodeId());
+      CompletableFuture<UaNode> hop0 =
+          lookup.thenCompose(
+              parent -> {
+                NodeId parentId = parent;
+                if (result.isCancelled()) {
+                  return CompletableFuture.failedFuture(new CancellationException());
+                }
+                if (parentId == null) {
+                  return CompletableFuture.completedFuture(null);
+                }
+                CompletableFuture<Void> namespaceReady;
+                if (client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/") == null
+                    || client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/")
+                        == null) {
+                  namespaceReady = client.readNamespaceTableAsync().thenApply(ignored -> null);
+                } else {
+                  namespaceReady = CompletableFuture.completedFuture(null);
+                }
+                return namespaceReady.thenCompose(
+                    ignored -> {
+                      if (result.isCancelled()) {
+                        return CompletableFuture.failedFuture(new CancellationException());
+                      }
+                      var namespaceIndex =
+                          client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/");
+                      var referenceId =
+                          ExpandedNodeId.parse("i=47").toNodeId(client.getNamespaceTable());
+                      if (namespaceIndex == null || referenceId.isEmpty()) {
+                        return CompletableFuture.failedFuture(
+                            new UaException(
+                                StatusCodes.Bad_NodeIdInvalid,
+                                "http://opcfoundation.org/UA/:SessionSecurityDiagnostics"
+                                    + " (declaration i=12860, owner i=2243) on "
+                                    + getNodeId()));
+                      }
+                      var browsePath =
+                          new BrowsePath(
+                              parentId,
+                              new RelativePath(
+                                  new RelativePathElement[] {
+                                    new RelativePathElement(
+                                        referenceId.orElseThrow(),
+                                        false,
+                                        true,
+                                        new QualifiedName(
+                                            namespaceIndex, "SessionSecurityDiagnostics"))
+                                  }));
+                      return client
+                          .translateBrowsePathsAsync(List.of(browsePath))
+                          .thenCompose(
+                              response -> {
+                                if (result.isCancelled()) {
+                                  return CompletableFuture.failedFuture(
+                                      new CancellationException());
+                                }
+                                var results = response == null ? null : response.getResults();
+                                if (results == null
+                                    || results.length != 1
+                                    || results[0] == null
+                                    || results[0].getStatusCode() == null) {
+                                  return CompletableFuture.failedFuture(
+                                      new UaException(
+                                          StatusCodes.Bad_UnexpectedError,
+                                          "http://opcfoundation.org/UA/:SessionSecurityDiagnostics"
+                                              + " (declaration i=12860, owner i=2243) on "
+                                              + getNodeId()));
+                                }
+                                var operation = results[0];
+                                if (operation.getStatusCode().getValue()
+                                    == StatusCodes.Bad_NoMatch) {
+                                  return CompletableFuture.failedFuture(
+                                      new UaException(
+                                          StatusCodes.Bad_NotFound,
+                                          "http://opcfoundation.org/UA/:SessionSecurityDiagnostics"
+                                              + " (declaration i=12860, owner i=2243) on "
+                                              + getNodeId()));
+                                }
+                                if (!operation.getStatusCode().isGood()) {
+                                  return CompletableFuture.failedFuture(
+                                      new UaException(
+                                          operation.getStatusCode(),
+                                          "http://opcfoundation.org/UA/:SessionSecurityDiagnostics"
+                                              + " (declaration i=12860, owner i=2243)"));
+                                }
+                                var targets = operation.getTargets();
+                                if (targets == null || targets.length == 0) {
+                                  return CompletableFuture.failedFuture(
+                                      new UaException(
+                                          StatusCodes.Bad_UnexpectedError,
+                                          "http://opcfoundation.org/UA/:SessionSecurityDiagnostics"
+                                              + " (declaration i=12860, owner i=2243) on "
+                                              + getNodeId()));
+                                }
+                                var identities = new ArrayList<CompletableFuture<NodeId>>();
+                                for (var target : targets) {
+                                  if (target == null
+                                      || target.getTargetId() == null
+                                      || target.getRemainingPathIndex() == null
+                                      || target.getRemainingPathIndex().longValue()
+                                          != 0xffffffffL) {
+                                    return CompletableFuture.failedFuture(
+                                        new UaException(
+                                            StatusCodes.Bad_UnexpectedError,
+                                            "http://opcfoundation.org/UA/:SessionSecurityDiagnostics"
+                                                + " (declaration i=12860, owner i=2243) on "
+                                                + getNodeId()));
+                                  }
+                                  if (!target.getTargetId().isLocal()) {
+                                    return CompletableFuture.failedFuture(
+                                        new UaException(
+                                            StatusCodes.Bad_NotSupported,
+                                            "http://opcfoundation.org/UA/:SessionSecurityDiagnostics"
+                                                + " (declaration i=12860, owner i=2243) on "
+                                                + getNodeId()));
+                                  }
+                                  if (result.isCancelled()) {
+                                    return CompletableFuture.failedFuture(
+                                        new CancellationException());
+                                  }
+                                  var localTarget =
+                                      target.getTargetId().toNodeId(client.getNamespaceTable());
+                                  if (localTarget.isPresent()) {
+                                    identities.add(
+                                        CompletableFuture.completedFuture(
+                                            localTarget.orElseThrow()));
+                                  } else {
+                                    identities.add(
+                                        client
+                                            .readNamespaceTableAsync()
+                                            .thenCompose(
+                                                namespaceTable -> {
+                                                  var resolvedTarget =
+                                                      target.getTargetId().toNodeId(namespaceTable);
+                                                  if (resolvedTarget.isEmpty()) {
+                                                    return CompletableFuture.failedFuture(
+                                                        new UaException(
+                                                            StatusCodes.Bad_NodeIdInvalid,
+                                                            "http://opcfoundation.org/UA/:SessionSecurityDiagnostics"
+                                                                + " (declaration i=12860, owner"
+                                                                + " i=2243) on "
+                                                                + getNodeId()));
+                                                  }
+                                                  return CompletableFuture.completedFuture(
+                                                      resolvedTarget.orElseThrow());
+                                                }));
+                                  }
+                                }
+                                return CompletableFuture.allOf(
+                                        identities.toArray(CompletableFuture[]::new))
+                                    .thenCompose(
+                                        ready -> {
+                                          if (result.isCancelled()) {
+                                            return CompletableFuture.failedFuture(
+                                                new CancellationException());
+                                          }
+                                          var unique = new LinkedHashSet<NodeId>();
+                                          identities.forEach(
+                                              identity -> unique.add(identity.join()));
+                                          if (unique.stream().anyMatch(NodeId::isNull)) {
+                                            return CompletableFuture.failedFuture(
+                                                new UaException(
+                                                    StatusCodes.Bad_NodeIdInvalid,
+                                                    "http://opcfoundation.org/UA/:SessionSecurityDiagnostics"
+                                                        + " (declaration i=12860, owner i=2243) on "
+                                                        + getNodeId()));
+                                          }
+                                          if (unique.size() != 1) {
+                                            return CompletableFuture.failedFuture(
+                                                new UaException(
+                                                    StatusCodes.Bad_TooManyMatches,
+                                                    "http://opcfoundation.org/UA/:SessionSecurityDiagnostics"
+                                                        + " (declaration i=12860, owner i=2243) on "
+                                                        + getNodeId()));
+                                          }
+                                          return client
+                                              .getAddressSpace()
+                                              .getNodeAsync(unique.iterator().next())
+                                              .thenCompose(
+                                                  node -> {
+                                                    if (node == null
+                                                        || node.getNodeClass()
+                                                            != NodeClass.Variable) {
+                                                      return CompletableFuture.failedFuture(
+                                                          new UaException(
+                                                              StatusCodes.Bad_NodeClassInvalid,
+                                                              "http://opcfoundation.org/UA/:SessionSecurityDiagnostics"
+                                                                  + " (declaration i=12860, owner"
+                                                                  + " i=2243) on "
+                                                                  + getNodeId()));
+                                                    }
+                                                    return CompletableFuture.completedFuture(node);
+                                                  });
+                                        });
+                              });
+                    });
+              });
+      hop0.whenComplete(
+          (node, failure) -> {
+            if (failure != null) {
+              result.completeExceptionally(failure);
+            } else if (node != null && !(node instanceof SessionSecurityDiagnosticsTypeNode)) {
+              result.completeExceptionally(
+                  new UaException(
+                      StatusCodes.Bad_TypeMismatch,
+                      "http://opcfoundation.org/UA/:SessionSecurityDiagnostics (declaration"
+                          + " i=12860, owner i=2243)"));
+            } else {
+              result.complete((SessionSecurityDiagnosticsTypeNode) node);
+            }
+          });
+    } catch (Exception e) {
+      result.completeExceptionally(e);
+    }
+    return result;
   }
 }

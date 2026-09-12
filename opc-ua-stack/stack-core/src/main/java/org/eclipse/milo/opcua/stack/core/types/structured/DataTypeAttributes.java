@@ -106,14 +106,14 @@ public class DataTypeAttributes extends NodeAttributes implements UaStructuredTy
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 372),
-        new NodeId(0, 349),
+        NodeId.parse("i=372"),
+        NodeId.parse("i=349"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "SpecifiedAttributes",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -121,7 +121,7 @@ public class DataTypeAttributes extends NodeAttributes implements UaStructuredTy
           new StructureField(
               "DisplayName",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 21),
+              NodeId.parse("i=21"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -129,7 +129,7 @@ public class DataTypeAttributes extends NodeAttributes implements UaStructuredTy
           new StructureField(
               "Description",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 21),
+              NodeId.parse("i=21"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -137,7 +137,7 @@ public class DataTypeAttributes extends NodeAttributes implements UaStructuredTy
           new StructureField(
               "WriteMask",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -145,7 +145,7 @@ public class DataTypeAttributes extends NodeAttributes implements UaStructuredTy
           new StructureField(
               "UserWriteMask",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -153,7 +153,7 @@ public class DataTypeAttributes extends NodeAttributes implements UaStructuredTy
           new StructureField(
               "IsAbstract",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),

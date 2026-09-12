@@ -106,14 +106,14 @@ public abstract class BaseConfigurationDataType extends Structure implements UaS
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 16538),
-        new NodeId(0, 22),
+        NodeId.parse("i=16538"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "ConfigurationVersion",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 20998),
+              NodeId.parse("i=20998"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -121,7 +121,7 @@ public abstract class BaseConfigurationDataType extends Structure implements UaS
           new StructureField(
               "ConfigurationProperties",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 14533),
+              NodeId.parse("i=14533"),
               1,
               null,
               UInteger.valueOf(0),

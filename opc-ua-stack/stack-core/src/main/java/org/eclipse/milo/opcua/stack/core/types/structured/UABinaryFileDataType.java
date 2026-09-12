@@ -129,14 +129,14 @@ public class UABinaryFileDataType extends DataTypeSchemaHeader implements UaStru
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 15422),
-        new NodeId(0, 15534),
+        NodeId.parse("i=15422"),
+        NodeId.parse("i=15534"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "Namespaces",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               1,
               null,
               UInteger.valueOf(0),
@@ -144,7 +144,7 @@ public class UABinaryFileDataType extends DataTypeSchemaHeader implements UaStru
           new StructureField(
               "StructureDataTypes",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15487),
+              NodeId.parse("i=15487"),
               1,
               null,
               UInteger.valueOf(0),
@@ -152,7 +152,7 @@ public class UABinaryFileDataType extends DataTypeSchemaHeader implements UaStru
           new StructureField(
               "EnumDataTypes",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15488),
+              NodeId.parse("i=15488"),
               1,
               null,
               UInteger.valueOf(0),
@@ -160,7 +160,7 @@ public class UABinaryFileDataType extends DataTypeSchemaHeader implements UaStru
           new StructureField(
               "SimpleDataTypes",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15005),
+              NodeId.parse("i=15005"),
               1,
               null,
               UInteger.valueOf(0),
@@ -168,7 +168,7 @@ public class UABinaryFileDataType extends DataTypeSchemaHeader implements UaStru
           new StructureField(
               "SchemaLocation",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -176,7 +176,7 @@ public class UABinaryFileDataType extends DataTypeSchemaHeader implements UaStru
           new StructureField(
               "FileHeader",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 14533),
+              NodeId.parse("i=14533"),
               1,
               null,
               UInteger.valueOf(0),
@@ -184,7 +184,7 @@ public class UABinaryFileDataType extends DataTypeSchemaHeader implements UaStru
           new StructureField(
               "Body",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 24),
+              NodeId.parse("i=24"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -239,7 +239,7 @@ public class UABinaryFileDataType extends DataTypeSchemaHeader implements UaStru
           "SimpleDataTypes", value.getSimpleDataTypes(), SimpleTypeDescription.TYPE_ID);
       encoder.encodeString("SchemaLocation", value.getSchemaLocation());
       encoder.encodeStructArray("FileHeader", value.getFileHeader(), KeyValuePair.TYPE_ID);
-      encoder.encodeVariant("Body", value.getBody());
+      encoder.encodeVariant("Body", value.getBody() == null ? Variant.NULL_VALUE : value.getBody());
     }
   }
 }

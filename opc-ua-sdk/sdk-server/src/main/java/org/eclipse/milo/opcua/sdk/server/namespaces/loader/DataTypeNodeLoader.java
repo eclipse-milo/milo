@@ -60,6 +60,8 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.TsnListenerStatus;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TsnStreamState;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TsnTalkerStatus;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
+import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelExType;
+import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ActionMethodDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ActionTargetDataType;
@@ -67,6 +69,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.AddNodesItem;
 import org.eclipse.milo.opcua.stack.core.types.structured.AddReferencesItem;
 import org.eclipse.milo.opcua.stack.core.types.structured.AdditionalParametersType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AggregateConfiguration;
+import org.eclipse.milo.opcua.stack.core.types.structured.AlarmMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.AliasCategoryUpdateDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AliasNameDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AliasNameVerboseDataType;
@@ -79,6 +82,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription
 import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationIdentityDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.types.structured.AttributeOperand;
+import org.eclipse.milo.opcua.stack.core.types.structured.AttributeWriteMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.AuthorizationServiceConfigurationDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AxisInformation;
 import org.eclipse.milo.opcua.stack.core.types.structured.BaseConfigurationDataType;
@@ -98,6 +102,8 @@ import org.eclipse.milo.opcua.stack.core.types.structured.ConnectionTransportDat
 import org.eclipse.milo.opcua.stack.core.types.structured.ContentFilter;
 import org.eclipse.milo.opcua.stack.core.types.structured.ContentFilterElement;
 import org.eclipse.milo.opcua.stack.core.types.structured.CurrencyUnitType;
+import org.eclipse.milo.opcua.stack.core.types.structured.DataSetFieldContentMask;
+import org.eclipse.milo.opcua.stack.core.types.structured.DataSetFieldFlags;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetMetaDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetReaderDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetReaderMessageDataType;
@@ -131,6 +137,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.EnumField;
 import org.eclipse.milo.opcua.stack.core.types.structured.EnumValueType;
 import org.eclipse.milo.opcua.stack.core.types.structured.EphemeralKeyType;
 import org.eclipse.milo.opcua.stack.core.types.structured.EventFilter;
+import org.eclipse.milo.opcua.stack.core.types.structured.EventNotifierType;
 import org.eclipse.milo.opcua.stack.core.types.structured.FieldMetaData;
 import org.eclipse.milo.opcua.stack.core.types.structured.FieldTargetDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.FilterOperand;
@@ -140,16 +147,20 @@ import org.eclipse.milo.opcua.stack.core.types.structured.HistoryEventFieldList;
 import org.eclipse.milo.opcua.stack.core.types.structured.HistoryModifiedEvent;
 import org.eclipse.milo.opcua.stack.core.types.structured.IdentityMappingRuleType;
 import org.eclipse.milo.opcua.stack.core.types.structured.IssuedIdentityToken;
+import org.eclipse.milo.opcua.stack.core.types.structured.JsonDataSetMessageContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.JsonDataSetReaderMessageDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.JsonDataSetWriterMessageDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.JsonNetworkMessageContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.JsonWriterGroupMessageDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.KeyValuePair;
 import org.eclipse.milo.opcua.stack.core.types.structured.LinearConversionDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.LiteralOperand;
 import org.eclipse.milo.opcua.stack.core.types.structured.LldpManagementAddressTxPortType;
 import org.eclipse.milo.opcua.stack.core.types.structured.LldpManagementAddressType;
+import org.eclipse.milo.opcua.stack.core.types.structured.LldpSystemCapabilitiesMap;
 import org.eclipse.milo.opcua.stack.core.types.structured.LldpTlvType;
 import org.eclipse.milo.opcua.stack.core.types.structured.LogRecord;
+import org.eclipse.milo.opcua.stack.core.types.structured.LogRecordMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.LogRecordsDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.MdnsDiscoveryConfiguration;
 import org.eclipse.milo.opcua.stack.core.types.structured.ModelChangeStructureDataType;
@@ -162,6 +173,8 @@ import org.eclipse.milo.opcua.stack.core.types.structured.NetworkGroupDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.NumberRange;
 import org.eclipse.milo.opcua.stack.core.types.structured.OptionSet;
 import org.eclipse.milo.opcua.stack.core.types.structured.Orientation;
+import org.eclipse.milo.opcua.stack.core.types.structured.PasswordOptionsMask;
+import org.eclipse.milo.opcua.stack.core.types.structured.PermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PortableNodeId;
 import org.eclipse.milo.opcua.stack.core.types.structured.PortableQualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.structured.PriorityMappingEntryType;
@@ -170,6 +183,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.ProgramDiagnosticDataT
 import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConfiguration2DataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConfigurationDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConfigurationRefDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConfigurationRefMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConfigurationValueDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConnectionDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PubSubGroupDataType;
@@ -235,12 +249,16 @@ import org.eclipse.milo.opcua.stack.core.types.structured.TransactionErrorType;
 import org.eclipse.milo.opcua.stack.core.types.structured.TransmitQosDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.TransmitQosPriorityDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.TrustListDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.TrustListValidationOptions;
 import org.eclipse.milo.opcua.stack.core.types.structured.UABinaryFileDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.UadpDataSetMessageContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.UadpDataSetReaderMessageDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.UadpDataSetWriterMessageDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.UadpNetworkMessageContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.UadpWriterGroupMessageDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.Union;
 import org.eclipse.milo.opcua.stack.core.types.structured.UnsignedRationalNumber;
+import org.eclipse.milo.opcua.stack.core.types.structured.UserConfigurationMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserIdentityToken;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserManagementDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserNameIdentityToken;
@@ -267,7 +285,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 24),
+            NodeId.parse("i=24"),
             new QualifiedName(0, "BaseDataType"),
             new LocalizedText("", "BaseDataType"),
             LocalizedText.NULL_VALUE,
@@ -285,7 +303,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 26),
+            NodeId.parse("i=26"),
             new QualifiedName(0, "Number"),
             new LocalizedText("", "Number"),
             LocalizedText.NULL_VALUE,
@@ -297,7 +315,8 @@ class DataTypeNodeLoader {
             true,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 26), new NodeId(0, 45), new NodeId(0, 24).expanded(), false));
+        new Reference(
+            NodeId.parse("i=26"), NodeId.parse("i=45"), NodeId.parse("i=24").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -305,7 +324,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 27),
+            NodeId.parse("i=27"),
             new QualifiedName(0, "Integer"),
             new LocalizedText("", "Integer"),
             LocalizedText.NULL_VALUE,
@@ -317,7 +336,8 @@ class DataTypeNodeLoader {
             true,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 27), new NodeId(0, 45), new NodeId(0, 26).expanded(), false));
+        new Reference(
+            NodeId.parse("i=27"), NodeId.parse("i=45"), NodeId.parse("i=26").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -325,7 +345,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 28),
+            NodeId.parse("i=28"),
             new QualifiedName(0, "UInteger"),
             new LocalizedText("", "UInteger"),
             LocalizedText.NULL_VALUE,
@@ -337,7 +357,8 @@ class DataTypeNodeLoader {
             true,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 28), new NodeId(0, 45), new NodeId(0, 26).expanded(), false));
+        new Reference(
+            NodeId.parse("i=28"), NodeId.parse("i=45"), NodeId.parse("i=26").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -345,7 +366,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 29),
+            NodeId.parse("i=29"),
             new QualifiedName(0, "Enumeration"),
             new LocalizedText("", "Enumeration"),
             LocalizedText.NULL_VALUE,
@@ -357,7 +378,8 @@ class DataTypeNodeLoader {
             true,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 29), new NodeId(0, 45), new NodeId(0, 24).expanded(), false));
+        new Reference(
+            NodeId.parse("i=29"), NodeId.parse("i=45"), NodeId.parse("i=24").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -365,7 +387,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 1),
+            NodeId.parse("i=1"),
             new QualifiedName(0, "Boolean"),
             new LocalizedText("", "Boolean"),
             LocalizedText.NULL_VALUE,
@@ -377,7 +399,8 @@ class DataTypeNodeLoader {
             false,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 1), new NodeId(0, 45), new NodeId(0, 24).expanded(), false));
+        new Reference(
+            NodeId.parse("i=1"), NodeId.parse("i=45"), NodeId.parse("i=24").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -385,7 +408,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 2),
+            NodeId.parse("i=2"),
             new QualifiedName(0, "SByte"),
             new LocalizedText("", "SByte"),
             LocalizedText.NULL_VALUE,
@@ -397,7 +420,8 @@ class DataTypeNodeLoader {
             false,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 2), new NodeId(0, 45), new NodeId(0, 27).expanded(), false));
+        new Reference(
+            NodeId.parse("i=2"), NodeId.parse("i=45"), NodeId.parse("i=27").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -405,7 +429,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 3),
+            NodeId.parse("i=3"),
             new QualifiedName(0, "Byte"),
             new LocalizedText("", "Byte"),
             LocalizedText.NULL_VALUE,
@@ -417,7 +441,8 @@ class DataTypeNodeLoader {
             false,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 3), new NodeId(0, 45), new NodeId(0, 28).expanded(), false));
+        new Reference(
+            NodeId.parse("i=3"), NodeId.parse("i=45"), NodeId.parse("i=28").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -425,7 +450,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 4),
+            NodeId.parse("i=4"),
             new QualifiedName(0, "Int16"),
             new LocalizedText("", "Int16"),
             LocalizedText.NULL_VALUE,
@@ -437,7 +462,8 @@ class DataTypeNodeLoader {
             false,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 4), new NodeId(0, 45), new NodeId(0, 27).expanded(), false));
+        new Reference(
+            NodeId.parse("i=4"), NodeId.parse("i=45"), NodeId.parse("i=27").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -445,7 +471,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 5),
+            NodeId.parse("i=5"),
             new QualifiedName(0, "UInt16"),
             new LocalizedText("", "UInt16"),
             LocalizedText.NULL_VALUE,
@@ -457,7 +483,8 @@ class DataTypeNodeLoader {
             false,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 5), new NodeId(0, 45), new NodeId(0, 28).expanded(), false));
+        new Reference(
+            NodeId.parse("i=5"), NodeId.parse("i=45"), NodeId.parse("i=28").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -465,7 +492,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 6),
+            NodeId.parse("i=6"),
             new QualifiedName(0, "Int32"),
             new LocalizedText("", "Int32"),
             LocalizedText.NULL_VALUE,
@@ -477,7 +504,8 @@ class DataTypeNodeLoader {
             false,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 6), new NodeId(0, 45), new NodeId(0, 27).expanded(), false));
+        new Reference(
+            NodeId.parse("i=6"), NodeId.parse("i=45"), NodeId.parse("i=27").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -485,7 +513,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 7),
+            NodeId.parse("i=7"),
             new QualifiedName(0, "UInt32"),
             new LocalizedText("", "UInt32"),
             LocalizedText.NULL_VALUE,
@@ -497,7 +525,8 @@ class DataTypeNodeLoader {
             false,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 7), new NodeId(0, 45), new NodeId(0, 28).expanded(), false));
+        new Reference(
+            NodeId.parse("i=7"), NodeId.parse("i=45"), NodeId.parse("i=28").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -505,7 +534,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 8),
+            NodeId.parse("i=8"),
             new QualifiedName(0, "Int64"),
             new LocalizedText("", "Int64"),
             LocalizedText.NULL_VALUE,
@@ -517,7 +546,8 @@ class DataTypeNodeLoader {
             false,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 8), new NodeId(0, 45), new NodeId(0, 27).expanded(), false));
+        new Reference(
+            NodeId.parse("i=8"), NodeId.parse("i=45"), NodeId.parse("i=27").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -525,7 +555,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 9),
+            NodeId.parse("i=9"),
             new QualifiedName(0, "UInt64"),
             new LocalizedText("", "UInt64"),
             LocalizedText.NULL_VALUE,
@@ -537,7 +567,8 @@ class DataTypeNodeLoader {
             false,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 9), new NodeId(0, 45), new NodeId(0, 28).expanded(), false));
+        new Reference(
+            NodeId.parse("i=9"), NodeId.parse("i=45"), NodeId.parse("i=28").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -545,7 +576,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 10),
+            NodeId.parse("i=10"),
             new QualifiedName(0, "Float"),
             new LocalizedText("", "Float"),
             LocalizedText.NULL_VALUE,
@@ -557,7 +588,8 @@ class DataTypeNodeLoader {
             false,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 10), new NodeId(0, 45), new NodeId(0, 26).expanded(), false));
+        new Reference(
+            NodeId.parse("i=10"), NodeId.parse("i=45"), NodeId.parse("i=26").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -565,7 +597,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 11),
+            NodeId.parse("i=11"),
             new QualifiedName(0, "Double"),
             new LocalizedText("", "Double"),
             LocalizedText.NULL_VALUE,
@@ -577,7 +609,8 @@ class DataTypeNodeLoader {
             false,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 11), new NodeId(0, 45), new NodeId(0, 26).expanded(), false));
+        new Reference(
+            NodeId.parse("i=11"), NodeId.parse("i=45"), NodeId.parse("i=26").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -585,7 +618,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 12),
+            NodeId.parse("i=12"),
             new QualifiedName(0, "String"),
             new LocalizedText("", "String"),
             LocalizedText.NULL_VALUE,
@@ -597,7 +630,8 @@ class DataTypeNodeLoader {
             false,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 12), new NodeId(0, 45), new NodeId(0, 24).expanded(), false));
+        new Reference(
+            NodeId.parse("i=12"), NodeId.parse("i=45"), NodeId.parse("i=24").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -605,7 +639,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 13),
+            NodeId.parse("i=13"),
             new QualifiedName(0, "DateTime"),
             new LocalizedText("", "DateTime"),
             LocalizedText.NULL_VALUE,
@@ -617,7 +651,8 @@ class DataTypeNodeLoader {
             false,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 13), new NodeId(0, 45), new NodeId(0, 24).expanded(), false));
+        new Reference(
+            NodeId.parse("i=13"), NodeId.parse("i=45"), NodeId.parse("i=24").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -625,7 +660,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 14),
+            NodeId.parse("i=14"),
             new QualifiedName(0, "Guid"),
             new LocalizedText("", "Guid"),
             LocalizedText.NULL_VALUE,
@@ -637,7 +672,8 @@ class DataTypeNodeLoader {
             false,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 14), new NodeId(0, 45), new NodeId(0, 24).expanded(), false));
+        new Reference(
+            NodeId.parse("i=14"), NodeId.parse("i=45"), NodeId.parse("i=24").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -645,7 +681,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15),
+            NodeId.parse("i=15"),
             new QualifiedName(0, "ByteString"),
             new LocalizedText("", "ByteString"),
             LocalizedText.NULL_VALUE,
@@ -657,7 +693,8 @@ class DataTypeNodeLoader {
             false,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 15), new NodeId(0, 45), new NodeId(0, 24).expanded(), false));
+        new Reference(
+            NodeId.parse("i=15"), NodeId.parse("i=45"), NodeId.parse("i=24").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -665,7 +702,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 16),
+            NodeId.parse("i=16"),
             new QualifiedName(0, "XmlElement"),
             new LocalizedText("", "XmlElement"),
             LocalizedText.NULL_VALUE,
@@ -677,7 +714,8 @@ class DataTypeNodeLoader {
             false,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 16), new NodeId(0, 45), new NodeId(0, 24).expanded(), false));
+        new Reference(
+            NodeId.parse("i=16"), NodeId.parse("i=45"), NodeId.parse("i=24").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -685,7 +723,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 17),
+            NodeId.parse("i=17"),
             new QualifiedName(0, "NodeId"),
             new LocalizedText("", "NodeId"),
             LocalizedText.NULL_VALUE,
@@ -697,7 +735,8 @@ class DataTypeNodeLoader {
             false,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 17), new NodeId(0, 45), new NodeId(0, 24).expanded(), false));
+        new Reference(
+            NodeId.parse("i=17"), NodeId.parse("i=45"), NodeId.parse("i=24").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -705,7 +744,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 18),
+            NodeId.parse("i=18"),
             new QualifiedName(0, "ExpandedNodeId"),
             new LocalizedText("", "ExpandedNodeId"),
             LocalizedText.NULL_VALUE,
@@ -717,7 +756,8 @@ class DataTypeNodeLoader {
             false,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 18), new NodeId(0, 45), new NodeId(0, 24).expanded(), false));
+        new Reference(
+            NodeId.parse("i=18"), NodeId.parse("i=45"), NodeId.parse("i=24").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -725,7 +765,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 19),
+            NodeId.parse("i=19"),
             new QualifiedName(0, "StatusCode"),
             new LocalizedText("", "StatusCode"),
             LocalizedText.NULL_VALUE,
@@ -737,7 +777,8 @@ class DataTypeNodeLoader {
             false,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 19), new NodeId(0, 45), new NodeId(0, 24).expanded(), false));
+        new Reference(
+            NodeId.parse("i=19"), NodeId.parse("i=45"), NodeId.parse("i=24").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -745,7 +786,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 20),
+            NodeId.parse("i=20"),
             new QualifiedName(0, "QualifiedName"),
             new LocalizedText("", "QualifiedName"),
             LocalizedText.NULL_VALUE,
@@ -757,7 +798,8 @@ class DataTypeNodeLoader {
             false,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 20), new NodeId(0, 45), new NodeId(0, 24).expanded(), false));
+        new Reference(
+            NodeId.parse("i=20"), NodeId.parse("i=45"), NodeId.parse("i=24").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -765,7 +807,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 21),
+            NodeId.parse("i=21"),
             new QualifiedName(0, "LocalizedText"),
             new LocalizedText("", "LocalizedText"),
             LocalizedText.NULL_VALUE,
@@ -777,7 +819,8 @@ class DataTypeNodeLoader {
             false,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 21), new NodeId(0, 45), new NodeId(0, 24).expanded(), false));
+        new Reference(
+            NodeId.parse("i=21"), NodeId.parse("i=45"), NodeId.parse("i=24").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -785,7 +828,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 22),
+            NodeId.parse("i=22"),
             new QualifiedName(0, "Structure"),
             new LocalizedText("", "Structure"),
             LocalizedText.NULL_VALUE,
@@ -797,7 +840,8 @@ class DataTypeNodeLoader {
             true,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 22), new NodeId(0, 45), new NodeId(0, 24).expanded(), false));
+        new Reference(
+            NodeId.parse("i=22"), NodeId.parse("i=45"), NodeId.parse("i=24").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -805,7 +849,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 23),
+            NodeId.parse("i=23"),
             new QualifiedName(0, "DataValue"),
             new LocalizedText("", "DataValue"),
             LocalizedText.NULL_VALUE,
@@ -817,7 +861,8 @@ class DataTypeNodeLoader {
             false,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 23), new NodeId(0, 45), new NodeId(0, 24).expanded(), false));
+        new Reference(
+            NodeId.parse("i=23"), NodeId.parse("i=45"), NodeId.parse("i=24").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -825,7 +870,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 25),
+            NodeId.parse("i=25"),
             new QualifiedName(0, "DiagnosticInfo"),
             new LocalizedText("", "DiagnosticInfo"),
             LocalizedText.NULL_VALUE,
@@ -837,7 +882,8 @@ class DataTypeNodeLoader {
             false,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 25), new NodeId(0, 45), new NodeId(0, 24).expanded(), false));
+        new Reference(
+            NodeId.parse("i=25"), NodeId.parse("i=45"), NodeId.parse("i=24").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -845,7 +891,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 30),
+            NodeId.parse("i=30"),
             new QualifiedName(0, "Image"),
             new LocalizedText("", "Image"),
             LocalizedText.NULL_VALUE,
@@ -857,7 +903,8 @@ class DataTypeNodeLoader {
             true,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 30), new NodeId(0, 45), new NodeId(0, 15).expanded(), false));
+        new Reference(
+            NodeId.parse("i=30"), NodeId.parse("i=45"), NodeId.parse("i=15").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -865,7 +912,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 50),
+            NodeId.parse("i=50"),
             new QualifiedName(0, "Decimal"),
             new LocalizedText("", "Decimal"),
             LocalizedText.NULL_VALUE,
@@ -877,7 +924,8 @@ class DataTypeNodeLoader {
             false,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 50), new NodeId(0, 45), new NodeId(0, 26).expanded(), false));
+        new Reference(
+            NodeId.parse("i=50"), NodeId.parse("i=45"), NodeId.parse("i=26").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -885,7 +933,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 120),
+            NodeId.parse("i=120"),
             new QualifiedName(0, "NamingRuleType"),
             new LocalizedText("", "NamingRuleType"),
             LocalizedText.NULL_VALUE,
@@ -898,9 +946,10 @@ class DataTypeNodeLoader {
             NamingRuleType.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 120), new NodeId(0, 46), new NodeId(0, 12169).expanded(), true));
+            NodeId.parse("i=120"), NodeId.parse("i=46"), NodeId.parse("i=12169").expanded(), true));
     node.addReference(
-        new Reference(new NodeId(0, 120), new NodeId(0, 45), new NodeId(0, 29).expanded(), false));
+        new Reference(
+            NodeId.parse("i=120"), NodeId.parse("i=45"), NodeId.parse("i=29").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -908,7 +957,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 2000),
+            NodeId.parse("i=2000"),
             new QualifiedName(0, "ImageBMP"),
             new LocalizedText("", "ImageBMP"),
             LocalizedText.NULL_VALUE,
@@ -920,7 +969,8 @@ class DataTypeNodeLoader {
             false,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 2000), new NodeId(0, 45), new NodeId(0, 30).expanded(), false));
+        new Reference(
+            NodeId.parse("i=2000"), NodeId.parse("i=45"), NodeId.parse("i=30").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -928,7 +978,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 2001),
+            NodeId.parse("i=2001"),
             new QualifiedName(0, "ImageGIF"),
             new LocalizedText("", "ImageGIF"),
             LocalizedText.NULL_VALUE,
@@ -940,7 +990,8 @@ class DataTypeNodeLoader {
             false,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 2001), new NodeId(0, 45), new NodeId(0, 30).expanded(), false));
+        new Reference(
+            NodeId.parse("i=2001"), NodeId.parse("i=45"), NodeId.parse("i=30").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -948,7 +999,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 2002),
+            NodeId.parse("i=2002"),
             new QualifiedName(0, "ImageJPG"),
             new LocalizedText("", "ImageJPG"),
             LocalizedText.NULL_VALUE,
@@ -960,7 +1011,8 @@ class DataTypeNodeLoader {
             false,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 2002), new NodeId(0, 45), new NodeId(0, 30).expanded(), false));
+        new Reference(
+            NodeId.parse("i=2002"), NodeId.parse("i=45"), NodeId.parse("i=30").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -968,7 +1020,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 2003),
+            NodeId.parse("i=2003"),
             new QualifiedName(0, "ImagePNG"),
             new LocalizedText("", "ImagePNG"),
             LocalizedText.NULL_VALUE,
@@ -980,7 +1032,8 @@ class DataTypeNodeLoader {
             false,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 2003), new NodeId(0, 45), new NodeId(0, 30).expanded(), false));
+        new Reference(
+            NodeId.parse("i=2003"), NodeId.parse("i=45"), NodeId.parse("i=30").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -988,7 +1041,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 16307),
+            NodeId.parse("i=16307"),
             new QualifiedName(0, "AudioDataType"),
             new LocalizedText("", "AudioDataType"),
             LocalizedText.NULL_VALUE,
@@ -1001,7 +1054,7 @@ class DataTypeNodeLoader {
             null);
     node.addReference(
         new Reference(
-            new NodeId(0, 16307), new NodeId(0, 45), new NodeId(0, 15).expanded(), false));
+            NodeId.parse("i=16307"), NodeId.parse("i=45"), NodeId.parse("i=15").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -1009,7 +1062,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 12756),
+            NodeId.parse("i=12756"),
             new QualifiedName(0, "Union"),
             new LocalizedText("", "Union"),
             LocalizedText.NULL_VALUE,
@@ -1022,7 +1075,7 @@ class DataTypeNodeLoader {
             Union.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 12756), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=12756"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -1030,7 +1083,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 23751),
+            NodeId.parse("i=23751"),
             new QualifiedName(0, "UriString"),
             new LocalizedText("", "UriString"),
             LocalizedText.NULL_VALUE,
@@ -1043,7 +1096,7 @@ class DataTypeNodeLoader {
             null);
     node.addReference(
         new Reference(
-            new NodeId(0, 23751), new NodeId(0, 45), new NodeId(0, 12).expanded(), false));
+            NodeId.parse("i=23751"), NodeId.parse("i=45"), NodeId.parse("i=12").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -1051,7 +1104,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 32417),
+            NodeId.parse("i=32417"),
             new QualifiedName(0, "RedundantServerMode"),
             new LocalizedText("", "RedundantServerMode"),
             LocalizedText.NULL_VALUE,
@@ -1064,10 +1117,13 @@ class DataTypeNodeLoader {
             RedundantServerMode.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 32417), new NodeId(0, 46), new NodeId(0, 32418).expanded(), true));
+            NodeId.parse("i=32417"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=32418").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 32417), new NodeId(0, 45), new NodeId(0, 29).expanded(), false));
+            NodeId.parse("i=32417"), NodeId.parse("i=45"), NodeId.parse("i=29").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -1075,7 +1131,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 11737),
+            NodeId.parse("i=11737"),
             new QualifiedName(0, "BitFieldMaskDataType"),
             new LocalizedText("", "BitFieldMaskDataType"),
             LocalizedText.NULL_VALUE,
@@ -1087,7 +1143,8 @@ class DataTypeNodeLoader {
             false,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 11737), new NodeId(0, 45), new NodeId(0, 9).expanded(), false));
+        new Reference(
+            NodeId.parse("i=11737"), NodeId.parse("i=45"), NodeId.parse("i=9").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -1095,7 +1152,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 24263),
+            NodeId.parse("i=24263"),
             new QualifiedName(0, "SemanticVersionString"),
             new LocalizedText("", "SemanticVersionString"),
             LocalizedText.NULL_VALUE,
@@ -1108,7 +1165,7 @@ class DataTypeNodeLoader {
             null);
     node.addReference(
         new Reference(
-            new NodeId(0, 24263), new NodeId(0, 45), new NodeId(0, 12).expanded(), false));
+            NodeId.parse("i=24263"), NodeId.parse("i=45"), NodeId.parse("i=12").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -1116,7 +1173,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 14533),
+            NodeId.parse("i=14533"),
             new QualifiedName(0, "KeyValuePair"),
             new LocalizedText("", "KeyValuePair"),
             LocalizedText.NULL_VALUE,
@@ -1129,7 +1186,7 @@ class DataTypeNodeLoader {
             KeyValuePair.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 14533), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=14533"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -1137,7 +1194,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 16313),
+            NodeId.parse("i=16313"),
             new QualifiedName(0, "AdditionalParametersType"),
             new LocalizedText("", "AdditionalParametersType"),
             LocalizedText.NULL_VALUE,
@@ -1150,7 +1207,7 @@ class DataTypeNodeLoader {
             AdditionalParametersType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 16313), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=16313"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -1158,7 +1215,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 17548),
+            NodeId.parse("i=17548"),
             new QualifiedName(0, "EphemeralKeyType"),
             new LocalizedText("", "EphemeralKeyType"),
             LocalizedText.NULL_VALUE,
@@ -1171,7 +1228,7 @@ class DataTypeNodeLoader {
             EphemeralKeyType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 17548), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=17548"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -1179,7 +1236,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15528),
+            NodeId.parse("i=15528"),
             new QualifiedName(0, "EndpointType"),
             new LocalizedText("", "EndpointType"),
             LocalizedText.NULL_VALUE,
@@ -1192,7 +1249,7 @@ class DataTypeNodeLoader {
             EndpointType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15528), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=15528"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -1200,7 +1257,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 31917),
+            NodeId.parse("i=31917"),
             new QualifiedName(0, "Handle"),
             new LocalizedText("", "Handle"),
             LocalizedText.NULL_VALUE,
@@ -1212,7 +1269,8 @@ class DataTypeNodeLoader {
             false,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 31917), new NodeId(0, 45), new NodeId(0, 7).expanded(), false));
+        new Reference(
+            NodeId.parse("i=31917"), NodeId.parse("i=45"), NodeId.parse("i=7").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -1220,7 +1278,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 31918),
+            NodeId.parse("i=31918"),
             new QualifiedName(0, "TrimmedString"),
             new LocalizedText("", "TrimmedString"),
             LocalizedText.NULL_VALUE,
@@ -1233,7 +1291,7 @@ class DataTypeNodeLoader {
             null);
     node.addReference(
         new Reference(
-            new NodeId(0, 31918), new NodeId(0, 45), new NodeId(0, 12).expanded(), false));
+            NodeId.parse("i=31918"), NodeId.parse("i=45"), NodeId.parse("i=12").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -1241,7 +1299,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 32421),
+            NodeId.parse("i=32421"),
             new QualifiedName(0, "BitFieldDefinition"),
             new LocalizedText("", "BitFieldDefinition"),
             LocalizedText.NULL_VALUE,
@@ -1254,7 +1312,7 @@ class DataTypeNodeLoader {
             BitFieldDefinition.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 32421), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=32421"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -1262,7 +1320,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 18806),
+            NodeId.parse("i=18806"),
             new QualifiedName(0, "RationalNumber"),
             new LocalizedText("", "RationalNumber"),
             LocalizedText.NULL_VALUE,
@@ -1275,7 +1333,7 @@ class DataTypeNodeLoader {
             RationalNumber.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 18806), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=18806"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -1283,7 +1341,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 18807),
+            NodeId.parse("i=18807"),
             new QualifiedName(0, "Vector"),
             new LocalizedText("", "Vector"),
             LocalizedText.NULL_VALUE,
@@ -1296,7 +1354,7 @@ class DataTypeNodeLoader {
             Vector.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 18807), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=18807"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -1304,7 +1362,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 18808),
+            NodeId.parse("i=18808"),
             new QualifiedName(0, "3DVector"),
             new LocalizedText("", "3DVector"),
             LocalizedText.NULL_VALUE,
@@ -1317,7 +1375,10 @@ class DataTypeNodeLoader {
             ThreeDVector.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 18808), new NodeId(0, 45), new NodeId(0, 18807).expanded(), false));
+            NodeId.parse("i=18808"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=18807").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1325,7 +1386,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 18809),
+            NodeId.parse("i=18809"),
             new QualifiedName(0, "CartesianCoordinates"),
             new LocalizedText("", "CartesianCoordinates"),
             LocalizedText.NULL_VALUE,
@@ -1338,7 +1399,7 @@ class DataTypeNodeLoader {
             CartesianCoordinates.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 18809), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=18809"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -1346,7 +1407,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 18810),
+            NodeId.parse("i=18810"),
             new QualifiedName(0, "3DCartesianCoordinates"),
             new LocalizedText("", "3DCartesianCoordinates"),
             LocalizedText.NULL_VALUE,
@@ -1359,7 +1420,10 @@ class DataTypeNodeLoader {
             ThreeDCartesianCoordinates.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 18810), new NodeId(0, 45), new NodeId(0, 18809).expanded(), false));
+            NodeId.parse("i=18810"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=18809").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1367,7 +1431,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 18811),
+            NodeId.parse("i=18811"),
             new QualifiedName(0, "Orientation"),
             new LocalizedText("", "Orientation"),
             LocalizedText.NULL_VALUE,
@@ -1380,7 +1444,7 @@ class DataTypeNodeLoader {
             Orientation.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 18811), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=18811"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -1388,7 +1452,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 18812),
+            NodeId.parse("i=18812"),
             new QualifiedName(0, "3DOrientation"),
             new LocalizedText("", "3DOrientation"),
             LocalizedText.NULL_VALUE,
@@ -1401,7 +1465,10 @@ class DataTypeNodeLoader {
             ThreeDOrientation.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 18812), new NodeId(0, 45), new NodeId(0, 18811).expanded(), false));
+            NodeId.parse("i=18812"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=18811").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1409,7 +1476,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 18813),
+            NodeId.parse("i=18813"),
             new QualifiedName(0, "Frame"),
             new LocalizedText("", "Frame"),
             LocalizedText.NULL_VALUE,
@@ -1422,7 +1489,7 @@ class DataTypeNodeLoader {
             Frame.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 18813), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=18813"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -1430,7 +1497,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 18814),
+            NodeId.parse("i=18814"),
             new QualifiedName(0, "3DFrame"),
             new LocalizedText("", "3DFrame"),
             LocalizedText.NULL_VALUE,
@@ -1443,7 +1510,10 @@ class DataTypeNodeLoader {
             ThreeDFrame.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 18814), new NodeId(0, 45), new NodeId(0, 18813).expanded(), false));
+            NodeId.parse("i=18814"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=18813").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1451,7 +1521,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 11939),
+            NodeId.parse("i=11939"),
             new QualifiedName(0, "OpenFileMode"),
             new LocalizedText("", "OpenFileMode"),
             LocalizedText.NULL_VALUE,
@@ -1464,10 +1534,13 @@ class DataTypeNodeLoader {
             OpenFileMode.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 11939), new NodeId(0, 46), new NodeId(0, 11940).expanded(), true));
+            NodeId.parse("i=11939"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=11940").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 11939), new NodeId(0, 45), new NodeId(0, 29).expanded(), false));
+            NodeId.parse("i=11939"), NodeId.parse("i=45"), NodeId.parse("i=29").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -1475,7 +1548,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15632),
+            NodeId.parse("i=15632"),
             new QualifiedName(0, "IdentityCriteriaType"),
             new LocalizedText("", "IdentityCriteriaType"),
             LocalizedText.NULL_VALUE,
@@ -1488,10 +1561,13 @@ class DataTypeNodeLoader {
             IdentityCriteriaType.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 15632), new NodeId(0, 46), new NodeId(0, 15633).expanded(), true));
+            NodeId.parse("i=15632"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15633").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15632), new NodeId(0, 45), new NodeId(0, 29).expanded(), false));
+            NodeId.parse("i=15632"), NodeId.parse("i=45"), NodeId.parse("i=29").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -1499,7 +1575,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15634),
+            NodeId.parse("i=15634"),
             new QualifiedName(0, "IdentityMappingRuleType"),
             new LocalizedText("", "IdentityMappingRuleType"),
             LocalizedText.NULL_VALUE,
@@ -1512,7 +1588,7 @@ class DataTypeNodeLoader {
             IdentityMappingRuleType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15634), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=15634"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -1520,7 +1596,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 23498),
+            NodeId.parse("i=23498"),
             new QualifiedName(0, "CurrencyUnitType"),
             new LocalizedText("", "CurrencyUnitType"),
             LocalizedText.NULL_VALUE,
@@ -1533,7 +1609,7 @@ class DataTypeNodeLoader {
             CurrencyUnitType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 23498), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=23498"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -1541,7 +1617,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 23903),
+            NodeId.parse("i=23903"),
             new QualifiedName(0, "NumberRange"),
             new LocalizedText("", "NumberRange"),
             LocalizedText.NULL_VALUE,
@@ -1554,7 +1630,7 @@ class DataTypeNodeLoader {
             NumberRange.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 23903), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=23903"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -1562,7 +1638,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 32434),
+            NodeId.parse("i=32434"),
             new QualifiedName(0, "AnnotationDataType"),
             new LocalizedText("", "AnnotationDataType"),
             LocalizedText.NULL_VALUE,
@@ -1575,7 +1651,7 @@ class DataTypeNodeLoader {
             AnnotationDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 32434), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=32434"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -1583,7 +1659,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 32435),
+            NodeId.parse("i=32435"),
             new QualifiedName(0, "LinearConversionDataType"),
             new LocalizedText("", "LinearConversionDataType"),
             LocalizedText.NULL_VALUE,
@@ -1596,7 +1672,7 @@ class DataTypeNodeLoader {
             LinearConversionDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 32435), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=32435"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -1604,7 +1680,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 32436),
+            NodeId.parse("i=32436"),
             new QualifiedName(0, "ConversionLimitEnum"),
             new LocalizedText("", "ConversionLimitEnum"),
             LocalizedText.NULL_VALUE,
@@ -1617,10 +1693,13 @@ class DataTypeNodeLoader {
             ConversionLimitEnum.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 32436), new NodeId(0, 46), new NodeId(0, 32437).expanded(), true));
+            NodeId.parse("i=32436"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=32437").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 32436), new NodeId(0, 45), new NodeId(0, 29).expanded(), false));
+            NodeId.parse("i=32436"), NodeId.parse("i=45"), NodeId.parse("i=29").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -1628,7 +1707,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 32438),
+            NodeId.parse("i=32438"),
             new QualifiedName(0, "QuantityDimension"),
             new LocalizedText("", "QuantityDimension"),
             LocalizedText.NULL_VALUE,
@@ -1641,7 +1720,7 @@ class DataTypeNodeLoader {
             QuantityDimension.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 32438), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=32438"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -1649,7 +1728,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 32251),
+            NodeId.parse("i=32251"),
             new QualifiedName(0, "AlarmMask"),
             new LocalizedText("", "AlarmMask"),
             LocalizedText.NULL_VALUE,
@@ -1659,12 +1738,16 @@ class DataTypeNodeLoader {
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             false,
-            null);
+            AlarmMask.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 32251), new NodeId(0, 46), new NodeId(0, 32252).expanded(), true));
+            NodeId.parse("i=32251"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=32252").expanded(),
+            true));
     node.addReference(
-        new Reference(new NodeId(0, 32251), new NodeId(0, 45), new NodeId(0, 5).expanded(), false));
+        new Reference(
+            NodeId.parse("i=32251"), NodeId.parse("i=45"), NodeId.parse("i=5").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -1672,7 +1755,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 23564),
+            NodeId.parse("i=23564"),
             new QualifiedName(0, "TrustListValidationOptions"),
             new LocalizedText("", "TrustListValidationOptions"),
             LocalizedText.NULL_VALUE,
@@ -1682,12 +1765,16 @@ class DataTypeNodeLoader {
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             false,
-            null);
+            TrustListValidationOptions.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 23564), new NodeId(0, 46), new NodeId(0, 23565).expanded(), true));
+            NodeId.parse("i=23564"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=23565").expanded(),
+            true));
     node.addReference(
-        new Reference(new NodeId(0, 23564), new NodeId(0, 45), new NodeId(0, 7).expanded(), false));
+        new Reference(
+            NodeId.parse("i=23564"), NodeId.parse("i=45"), NodeId.parse("i=7").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -1695,7 +1782,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 12552),
+            NodeId.parse("i=12552"),
             new QualifiedName(0, "TrustListMasks"),
             new LocalizedText("", "TrustListMasks"),
             LocalizedText.NULL_VALUE,
@@ -1708,10 +1795,13 @@ class DataTypeNodeLoader {
             TrustListMasks.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 12552), new NodeId(0, 46), new NodeId(0, 12553).expanded(), true));
+            NodeId.parse("i=12552"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=12553").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 12552), new NodeId(0, 45), new NodeId(0, 29).expanded(), false));
+            NodeId.parse("i=12552"), NodeId.parse("i=45"), NodeId.parse("i=29").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -1719,7 +1809,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 12554),
+            NodeId.parse("i=12554"),
             new QualifiedName(0, "TrustListDataType"),
             new LocalizedText("", "TrustListDataType"),
             LocalizedText.NULL_VALUE,
@@ -1732,7 +1822,7 @@ class DataTypeNodeLoader {
             TrustListDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 12554), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=12554"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -1740,7 +1830,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15434),
+            NodeId.parse("i=15434"),
             new QualifiedName(0, "BaseConfigurationDataType"),
             new LocalizedText("", "BaseConfigurationDataType"),
             LocalizedText.NULL_VALUE,
@@ -1753,7 +1843,7 @@ class DataTypeNodeLoader {
             BaseConfigurationDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15434), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=15434"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -1761,7 +1851,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15435),
+            NodeId.parse("i=15435"),
             new QualifiedName(0, "BaseConfigurationRecordDataType"),
             new LocalizedText("", "BaseConfigurationRecordDataType"),
             LocalizedText.NULL_VALUE,
@@ -1774,7 +1864,7 @@ class DataTypeNodeLoader {
             BaseConfigurationRecordDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15435), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=15435"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -1782,7 +1872,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15436),
+            NodeId.parse("i=15436"),
             new QualifiedName(0, "CertificateGroupDataType"),
             new LocalizedText("", "CertificateGroupDataType"),
             LocalizedText.NULL_VALUE,
@@ -1795,7 +1885,10 @@ class DataTypeNodeLoader {
             CertificateGroupDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15436), new NodeId(0, 45), new NodeId(0, 15435).expanded(), false));
+            NodeId.parse("i=15436"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=15435").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1803,7 +1896,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15538),
+            NodeId.parse("i=15538"),
             new QualifiedName(0, "ConfigurationUpdateTargetType"),
             new LocalizedText("", "ConfigurationUpdateTargetType"),
             LocalizedText.NULL_VALUE,
@@ -1816,7 +1909,7 @@ class DataTypeNodeLoader {
             ConfigurationUpdateTargetType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15538), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=15538"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -1824,7 +1917,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15539),
+            NodeId.parse("i=15539"),
             new QualifiedName(0, "ConfigurationUpdateType"),
             new LocalizedText("", "ConfigurationUpdateType"),
             LocalizedText.NULL_VALUE,
@@ -1837,10 +1930,13 @@ class DataTypeNodeLoader {
             ConfigurationUpdateType.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 15539), new NodeId(0, 46), new NodeId(0, 15540).expanded(), true));
+            NodeId.parse("i=15539"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15540").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15539), new NodeId(0, 45), new NodeId(0, 29).expanded(), false));
+            NodeId.parse("i=15539"), NodeId.parse("i=45"), NodeId.parse("i=29").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -1848,7 +1944,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 32285),
+            NodeId.parse("i=32285"),
             new QualifiedName(0, "TransactionErrorType"),
             new LocalizedText("", "TransactionErrorType"),
             LocalizedText.NULL_VALUE,
@@ -1861,7 +1957,7 @@ class DataTypeNodeLoader {
             TransactionErrorType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 32285), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=32285"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -1869,7 +1965,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 23743),
+            NodeId.parse("i=23743"),
             new QualifiedName(0, "ApplicationConfigurationDataType"),
             new LocalizedText("", "ApplicationConfigurationDataType"),
             LocalizedText.NULL_VALUE,
@@ -1882,7 +1978,10 @@ class DataTypeNodeLoader {
             ApplicationConfigurationDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 23743), new NodeId(0, 45), new NodeId(0, 15434).expanded(), false));
+            NodeId.parse("i=23743"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=15434").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1890,7 +1989,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15556),
+            NodeId.parse("i=15556"),
             new QualifiedName(0, "ApplicationIdentityDataType"),
             new LocalizedText("", "ApplicationIdentityDataType"),
             LocalizedText.NULL_VALUE,
@@ -1903,7 +2002,10 @@ class DataTypeNodeLoader {
             ApplicationIdentityDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15556), new NodeId(0, 45), new NodeId(0, 15435).expanded(), false));
+            NodeId.parse("i=15556"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=15435").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1911,7 +2013,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15557),
+            NodeId.parse("i=15557"),
             new QualifiedName(0, "EndpointDataType"),
             new LocalizedText("", "EndpointDataType"),
             LocalizedText.NULL_VALUE,
@@ -1924,7 +2026,10 @@ class DataTypeNodeLoader {
             EndpointDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15557), new NodeId(0, 45), new NodeId(0, 15435).expanded(), false));
+            NodeId.parse("i=15557"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=15435").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1932,7 +2037,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15558),
+            NodeId.parse("i=15558"),
             new QualifiedName(0, "ServerEndpointDataType"),
             new LocalizedText("", "ServerEndpointDataType"),
             LocalizedText.NULL_VALUE,
@@ -1945,7 +2050,10 @@ class DataTypeNodeLoader {
             ServerEndpointDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15558), new NodeId(0, 45), new NodeId(0, 15557).expanded(), false));
+            NodeId.parse("i=15558"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=15557").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1953,7 +2061,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15559),
+            NodeId.parse("i=15559"),
             new QualifiedName(0, "SecuritySettingsDataType"),
             new LocalizedText("", "SecuritySettingsDataType"),
             LocalizedText.NULL_VALUE,
@@ -1966,7 +2074,10 @@ class DataTypeNodeLoader {
             SecuritySettingsDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15559), new NodeId(0, 45), new NodeId(0, 15435).expanded(), false));
+            NodeId.parse("i=15559"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=15435").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1974,7 +2085,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15560),
+            NodeId.parse("i=15560"),
             new QualifiedName(0, "UserTokenSettingsDataType"),
             new LocalizedText("", "UserTokenSettingsDataType"),
             LocalizedText.NULL_VALUE,
@@ -1987,7 +2098,10 @@ class DataTypeNodeLoader {
             UserTokenSettingsDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15560), new NodeId(0, 45), new NodeId(0, 15435).expanded(), false));
+            NodeId.parse("i=15560"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=15435").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -1995,7 +2109,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 23724),
+            NodeId.parse("i=23724"),
             new QualifiedName(0, "ServiceCertificateDataType"),
             new LocalizedText("", "ServiceCertificateDataType"),
             LocalizedText.NULL_VALUE,
@@ -2008,7 +2122,7 @@ class DataTypeNodeLoader {
             ServiceCertificateDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 23724), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=23724"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -2016,7 +2130,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 23744),
+            NodeId.parse("i=23744"),
             new QualifiedName(0, "AuthorizationServiceConfigurationDataType"),
             new LocalizedText("", "AuthorizationServiceConfigurationDataType"),
             LocalizedText.NULL_VALUE,
@@ -2029,7 +2143,10 @@ class DataTypeNodeLoader {
             AuthorizationServiceConfigurationDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 23744), new NodeId(0, 45), new NodeId(0, 15435).expanded(), false));
+            NodeId.parse("i=23744"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=15435").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2037,7 +2154,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15534),
+            NodeId.parse("i=15534"),
             new QualifiedName(0, "DataTypeSchemaHeader"),
             new LocalizedText("", "DataTypeSchemaHeader"),
             LocalizedText.NULL_VALUE,
@@ -2050,7 +2167,7 @@ class DataTypeNodeLoader {
             DataTypeSchemaHeader.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15534), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=15534"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -2058,7 +2175,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 14525),
+            NodeId.parse("i=14525"),
             new QualifiedName(0, "DataTypeDescription"),
             new LocalizedText("", "DataTypeDescription"),
             LocalizedText.NULL_VALUE,
@@ -2071,7 +2188,7 @@ class DataTypeNodeLoader {
             DataTypeDescription.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 14525), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=14525"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -2079,7 +2196,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15487),
+            NodeId.parse("i=15487"),
             new QualifiedName(0, "StructureDescription"),
             new LocalizedText("", "StructureDescription"),
             LocalizedText.NULL_VALUE,
@@ -2092,7 +2209,10 @@ class DataTypeNodeLoader {
             StructureDescription.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15487), new NodeId(0, 45), new NodeId(0, 14525).expanded(), false));
+            NodeId.parse("i=15487"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=14525").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2100,7 +2220,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15488),
+            NodeId.parse("i=15488"),
             new QualifiedName(0, "EnumDescription"),
             new LocalizedText("", "EnumDescription"),
             LocalizedText.NULL_VALUE,
@@ -2113,7 +2233,10 @@ class DataTypeNodeLoader {
             EnumDescription.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15488), new NodeId(0, 45), new NodeId(0, 14525).expanded(), false));
+            NodeId.parse("i=15488"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=14525").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2121,7 +2244,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15005),
+            NodeId.parse("i=15005"),
             new QualifiedName(0, "SimpleTypeDescription"),
             new LocalizedText("", "SimpleTypeDescription"),
             LocalizedText.NULL_VALUE,
@@ -2134,7 +2257,10 @@ class DataTypeNodeLoader {
             SimpleTypeDescription.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15005), new NodeId(0, 45), new NodeId(0, 14525).expanded(), false));
+            NodeId.parse("i=15005"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=14525").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2142,7 +2268,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15006),
+            NodeId.parse("i=15006"),
             new QualifiedName(0, "UABinaryFileDataType"),
             new LocalizedText("", "UABinaryFileDataType"),
             LocalizedText.NULL_VALUE,
@@ -2155,7 +2281,10 @@ class DataTypeNodeLoader {
             UABinaryFileDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15006), new NodeId(0, 45), new NodeId(0, 15534).expanded(), false));
+            NodeId.parse("i=15006"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=15534").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2163,7 +2292,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 24105),
+            NodeId.parse("i=24105"),
             new QualifiedName(0, "PortableQualifiedName"),
             new LocalizedText("", "PortableQualifiedName"),
             LocalizedText.NULL_VALUE,
@@ -2176,7 +2305,7 @@ class DataTypeNodeLoader {
             PortableQualifiedName.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 24105), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=24105"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -2184,7 +2313,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 24106),
+            NodeId.parse("i=24106"),
             new QualifiedName(0, "PortableNodeId"),
             new LocalizedText("", "PortableNodeId"),
             LocalizedText.NULL_VALUE,
@@ -2197,7 +2326,7 @@ class DataTypeNodeLoader {
             PortableNodeId.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 24106), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=24106"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -2205,7 +2334,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 24107),
+            NodeId.parse("i=24107"),
             new QualifiedName(0, "UnsignedRationalNumber"),
             new LocalizedText("", "UnsignedRationalNumber"),
             LocalizedText.NULL_VALUE,
@@ -2218,7 +2347,7 @@ class DataTypeNodeLoader {
             UnsignedRationalNumber.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 24107), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=24107"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -2226,7 +2355,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 14647),
+            NodeId.parse("i=14647"),
             new QualifiedName(0, "PubSubState"),
             new LocalizedText("", "PubSubState"),
             LocalizedText.NULL_VALUE,
@@ -2239,10 +2368,13 @@ class DataTypeNodeLoader {
             PubSubState.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 14647), new NodeId(0, 46), new NodeId(0, 14648).expanded(), true));
+            NodeId.parse("i=14647"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=14648").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 14647), new NodeId(0, 45), new NodeId(0, 29).expanded(), false));
+            NodeId.parse("i=14647"), NodeId.parse("i=45"), NodeId.parse("i=29").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -2250,7 +2382,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 14523),
+            NodeId.parse("i=14523"),
             new QualifiedName(0, "DataSetMetaDataType"),
             new LocalizedText("", "DataSetMetaDataType"),
             LocalizedText.NULL_VALUE,
@@ -2263,7 +2395,10 @@ class DataTypeNodeLoader {
             DataSetMetaDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 14523), new NodeId(0, 45), new NodeId(0, 15534).expanded(), false));
+            NodeId.parse("i=14523"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=15534").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2271,7 +2406,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 14524),
+            NodeId.parse("i=14524"),
             new QualifiedName(0, "FieldMetaData"),
             new LocalizedText("", "FieldMetaData"),
             LocalizedText.NULL_VALUE,
@@ -2284,7 +2419,7 @@ class DataTypeNodeLoader {
             FieldMetaData.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 14524), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=14524"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -2292,7 +2427,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15904),
+            NodeId.parse("i=15904"),
             new QualifiedName(0, "DataSetFieldFlags"),
             new LocalizedText("", "DataSetFieldFlags"),
             LocalizedText.NULL_VALUE,
@@ -2302,12 +2437,16 @@ class DataTypeNodeLoader {
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             false,
-            null);
+            DataSetFieldFlags.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 15904), new NodeId(0, 46), new NodeId(0, 15577).expanded(), true));
+            NodeId.parse("i=15904"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15577").expanded(),
+            true));
     node.addReference(
-        new Reference(new NodeId(0, 15904), new NodeId(0, 45), new NodeId(0, 5).expanded(), false));
+        new Reference(
+            NodeId.parse("i=15904"), NodeId.parse("i=45"), NodeId.parse("i=5").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -2315,7 +2454,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 14593),
+            NodeId.parse("i=14593"),
             new QualifiedName(0, "ConfigurationVersionDataType"),
             new LocalizedText("", "ConfigurationVersionDataType"),
             LocalizedText.NULL_VALUE,
@@ -2328,7 +2467,7 @@ class DataTypeNodeLoader {
             ConfigurationVersionDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 14593), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=14593"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -2336,7 +2475,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15578),
+            NodeId.parse("i=15578"),
             new QualifiedName(0, "PublishedDataSetDataType"),
             new LocalizedText("", "PublishedDataSetDataType"),
             LocalizedText.NULL_VALUE,
@@ -2349,7 +2488,7 @@ class DataTypeNodeLoader {
             PublishedDataSetDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15578), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=15578"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -2357,7 +2496,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15580),
+            NodeId.parse("i=15580"),
             new QualifiedName(0, "PublishedDataSetSourceDataType"),
             new LocalizedText("", "PublishedDataSetSourceDataType"),
             LocalizedText.NULL_VALUE,
@@ -2370,7 +2509,7 @@ class DataTypeNodeLoader {
             PublishedDataSetSourceDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15580), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=15580"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -2378,7 +2517,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 14273),
+            NodeId.parse("i=14273"),
             new QualifiedName(0, "PublishedVariableDataType"),
             new LocalizedText("", "PublishedVariableDataType"),
             LocalizedText.NULL_VALUE,
@@ -2391,7 +2530,7 @@ class DataTypeNodeLoader {
             PublishedVariableDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 14273), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=14273"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -2399,7 +2538,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15581),
+            NodeId.parse("i=15581"),
             new QualifiedName(0, "PublishedDataItemsDataType"),
             new LocalizedText("", "PublishedDataItemsDataType"),
             LocalizedText.NULL_VALUE,
@@ -2412,7 +2551,10 @@ class DataTypeNodeLoader {
             PublishedDataItemsDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15581), new NodeId(0, 45), new NodeId(0, 15580).expanded(), false));
+            NodeId.parse("i=15581"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=15580").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2420,7 +2562,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15582),
+            NodeId.parse("i=15582"),
             new QualifiedName(0, "PublishedEventsDataType"),
             new LocalizedText("", "PublishedEventsDataType"),
             LocalizedText.NULL_VALUE,
@@ -2433,7 +2575,10 @@ class DataTypeNodeLoader {
             PublishedEventsDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15582), new NodeId(0, 45), new NodeId(0, 15580).expanded(), false));
+            NodeId.parse("i=15582"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=15580").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2441,7 +2586,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 25269),
+            NodeId.parse("i=25269"),
             new QualifiedName(0, "PublishedDataSetCustomSourceDataType"),
             new LocalizedText("", "PublishedDataSetCustomSourceDataType"),
             LocalizedText.NULL_VALUE,
@@ -2454,7 +2599,10 @@ class DataTypeNodeLoader {
             PublishedDataSetCustomSourceDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 25269), new NodeId(0, 45), new NodeId(0, 15580).expanded(), false));
+            NodeId.parse("i=25269"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=15580").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2462,7 +2610,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 18593),
+            NodeId.parse("i=18593"),
             new QualifiedName(0, "ActionTargetDataType"),
             new LocalizedText("", "ActionTargetDataType"),
             LocalizedText.NULL_VALUE,
@@ -2475,7 +2623,7 @@ class DataTypeNodeLoader {
             ActionTargetDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 18593), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=18593"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -2483,7 +2631,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 18594),
+            NodeId.parse("i=18594"),
             new QualifiedName(0, "PublishedActionDataType"),
             new LocalizedText("", "PublishedActionDataType"),
             LocalizedText.NULL_VALUE,
@@ -2496,7 +2644,10 @@ class DataTypeNodeLoader {
             PublishedActionDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 18594), new NodeId(0, 45), new NodeId(0, 15580).expanded(), false));
+            NodeId.parse("i=18594"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=15580").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2504,7 +2655,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 18595),
+            NodeId.parse("i=18595"),
             new QualifiedName(0, "ActionState"),
             new LocalizedText("", "ActionState"),
             LocalizedText.NULL_VALUE,
@@ -2517,10 +2668,13 @@ class DataTypeNodeLoader {
             ActionState.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 18595), new NodeId(0, 46), new NodeId(0, 18596).expanded(), true));
+            NodeId.parse("i=18595"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=18596").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 18595), new NodeId(0, 45), new NodeId(0, 29).expanded(), false));
+            NodeId.parse("i=18595"), NodeId.parse("i=45"), NodeId.parse("i=29").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -2528,7 +2682,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 18597),
+            NodeId.parse("i=18597"),
             new QualifiedName(0, "ActionMethodDataType"),
             new LocalizedText("", "ActionMethodDataType"),
             LocalizedText.NULL_VALUE,
@@ -2541,7 +2695,7 @@ class DataTypeNodeLoader {
             ActionMethodDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 18597), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=18597"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -2549,7 +2703,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 18793),
+            NodeId.parse("i=18793"),
             new QualifiedName(0, "PublishedActionMethodDataType"),
             new LocalizedText("", "PublishedActionMethodDataType"),
             LocalizedText.NULL_VALUE,
@@ -2562,7 +2716,10 @@ class DataTypeNodeLoader {
             PublishedActionMethodDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 18793), new NodeId(0, 45), new NodeId(0, 18594).expanded(), false));
+            NodeId.parse("i=18793"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=18594").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2570,7 +2727,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15583),
+            NodeId.parse("i=15583"),
             new QualifiedName(0, "DataSetFieldContentMask"),
             new LocalizedText("", "DataSetFieldContentMask"),
             LocalizedText.NULL_VALUE,
@@ -2580,12 +2737,16 @@ class DataTypeNodeLoader {
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             false,
-            null);
+            DataSetFieldContentMask.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 15583), new NodeId(0, 46), new NodeId(0, 15584).expanded(), true));
+            NodeId.parse("i=15583"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15584").expanded(),
+            true));
     node.addReference(
-        new Reference(new NodeId(0, 15583), new NodeId(0, 45), new NodeId(0, 7).expanded(), false));
+        new Reference(
+            NodeId.parse("i=15583"), NodeId.parse("i=45"), NodeId.parse("i=7").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -2593,7 +2754,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15597),
+            NodeId.parse("i=15597"),
             new QualifiedName(0, "DataSetWriterDataType"),
             new LocalizedText("", "DataSetWriterDataType"),
             LocalizedText.NULL_VALUE,
@@ -2606,7 +2767,7 @@ class DataTypeNodeLoader {
             DataSetWriterDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15597), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=15597"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -2614,7 +2775,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15598),
+            NodeId.parse("i=15598"),
             new QualifiedName(0, "DataSetWriterTransportDataType"),
             new LocalizedText("", "DataSetWriterTransportDataType"),
             LocalizedText.NULL_VALUE,
@@ -2627,7 +2788,7 @@ class DataTypeNodeLoader {
             DataSetWriterTransportDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15598), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=15598"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -2635,7 +2796,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15605),
+            NodeId.parse("i=15605"),
             new QualifiedName(0, "DataSetWriterMessageDataType"),
             new LocalizedText("", "DataSetWriterMessageDataType"),
             LocalizedText.NULL_VALUE,
@@ -2648,7 +2809,7 @@ class DataTypeNodeLoader {
             DataSetWriterMessageDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15605), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=15605"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -2656,7 +2817,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15609),
+            NodeId.parse("i=15609"),
             new QualifiedName(0, "PubSubGroupDataType"),
             new LocalizedText("", "PubSubGroupDataType"),
             LocalizedText.NULL_VALUE,
@@ -2669,7 +2830,7 @@ class DataTypeNodeLoader {
             PubSubGroupDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15609), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=15609"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -2677,7 +2838,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15480),
+            NodeId.parse("i=15480"),
             new QualifiedName(0, "WriterGroupDataType"),
             new LocalizedText("", "WriterGroupDataType"),
             LocalizedText.NULL_VALUE,
@@ -2690,7 +2851,10 @@ class DataTypeNodeLoader {
             WriterGroupDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15480), new NodeId(0, 45), new NodeId(0, 15609).expanded(), false));
+            NodeId.parse("i=15480"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=15609").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2698,7 +2862,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15611),
+            NodeId.parse("i=15611"),
             new QualifiedName(0, "WriterGroupTransportDataType"),
             new LocalizedText("", "WriterGroupTransportDataType"),
             LocalizedText.NULL_VALUE,
@@ -2711,7 +2875,7 @@ class DataTypeNodeLoader {
             WriterGroupTransportDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15611), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=15611"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -2719,7 +2883,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15616),
+            NodeId.parse("i=15616"),
             new QualifiedName(0, "WriterGroupMessageDataType"),
             new LocalizedText("", "WriterGroupMessageDataType"),
             LocalizedText.NULL_VALUE,
@@ -2732,7 +2896,7 @@ class DataTypeNodeLoader {
             WriterGroupMessageDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15616), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=15616"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -2740,7 +2904,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15617),
+            NodeId.parse("i=15617"),
             new QualifiedName(0, "PubSubConnectionDataType"),
             new LocalizedText("", "PubSubConnectionDataType"),
             LocalizedText.NULL_VALUE,
@@ -2753,7 +2917,7 @@ class DataTypeNodeLoader {
             PubSubConnectionDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15617), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=15617"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -2761,7 +2925,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15618),
+            NodeId.parse("i=15618"),
             new QualifiedName(0, "ConnectionTransportDataType"),
             new LocalizedText("", "ConnectionTransportDataType"),
             LocalizedText.NULL_VALUE,
@@ -2774,7 +2938,7 @@ class DataTypeNodeLoader {
             ConnectionTransportDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15618), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=15618"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -2782,7 +2946,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15502),
+            NodeId.parse("i=15502"),
             new QualifiedName(0, "NetworkAddressDataType"),
             new LocalizedText("", "NetworkAddressDataType"),
             LocalizedText.NULL_VALUE,
@@ -2795,7 +2959,7 @@ class DataTypeNodeLoader {
             NetworkAddressDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15502), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=15502"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -2803,7 +2967,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15510),
+            NodeId.parse("i=15510"),
             new QualifiedName(0, "NetworkAddressUrlDataType"),
             new LocalizedText("", "NetworkAddressUrlDataType"),
             LocalizedText.NULL_VALUE,
@@ -2816,7 +2980,10 @@ class DataTypeNodeLoader {
             NetworkAddressUrlDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15510), new NodeId(0, 45), new NodeId(0, 15502).expanded(), false));
+            NodeId.parse("i=15510"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=15502").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2824,7 +2991,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15520),
+            NodeId.parse("i=15520"),
             new QualifiedName(0, "ReaderGroupDataType"),
             new LocalizedText("", "ReaderGroupDataType"),
             LocalizedText.NULL_VALUE,
@@ -2837,7 +3004,10 @@ class DataTypeNodeLoader {
             ReaderGroupDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15520), new NodeId(0, 45), new NodeId(0, 15609).expanded(), false));
+            NodeId.parse("i=15520"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=15609").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2845,7 +3015,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15621),
+            NodeId.parse("i=15621"),
             new QualifiedName(0, "ReaderGroupTransportDataType"),
             new LocalizedText("", "ReaderGroupTransportDataType"),
             LocalizedText.NULL_VALUE,
@@ -2858,7 +3028,7 @@ class DataTypeNodeLoader {
             ReaderGroupTransportDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15621), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=15621"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -2866,7 +3036,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15622),
+            NodeId.parse("i=15622"),
             new QualifiedName(0, "ReaderGroupMessageDataType"),
             new LocalizedText("", "ReaderGroupMessageDataType"),
             LocalizedText.NULL_VALUE,
@@ -2879,7 +3049,7 @@ class DataTypeNodeLoader {
             ReaderGroupMessageDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15622), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=15622"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -2887,7 +3057,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15623),
+            NodeId.parse("i=15623"),
             new QualifiedName(0, "DataSetReaderDataType"),
             new LocalizedText("", "DataSetReaderDataType"),
             LocalizedText.NULL_VALUE,
@@ -2900,7 +3070,7 @@ class DataTypeNodeLoader {
             DataSetReaderDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15623), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=15623"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -2908,7 +3078,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15628),
+            NodeId.parse("i=15628"),
             new QualifiedName(0, "DataSetReaderTransportDataType"),
             new LocalizedText("", "DataSetReaderTransportDataType"),
             LocalizedText.NULL_VALUE,
@@ -2921,7 +3091,7 @@ class DataTypeNodeLoader {
             DataSetReaderTransportDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15628), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=15628"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -2929,7 +3099,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15629),
+            NodeId.parse("i=15629"),
             new QualifiedName(0, "DataSetReaderMessageDataType"),
             new LocalizedText("", "DataSetReaderMessageDataType"),
             LocalizedText.NULL_VALUE,
@@ -2942,7 +3112,7 @@ class DataTypeNodeLoader {
             DataSetReaderMessageDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15629), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=15629"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -2950,7 +3120,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15630),
+            NodeId.parse("i=15630"),
             new QualifiedName(0, "SubscribedDataSetDataType"),
             new LocalizedText("", "SubscribedDataSetDataType"),
             LocalizedText.NULL_VALUE,
@@ -2963,7 +3133,7 @@ class DataTypeNodeLoader {
             SubscribedDataSetDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15630), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=15630"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -2971,7 +3141,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15631),
+            NodeId.parse("i=15631"),
             new QualifiedName(0, "TargetVariablesDataType"),
             new LocalizedText("", "TargetVariablesDataType"),
             LocalizedText.NULL_VALUE,
@@ -2984,7 +3154,10 @@ class DataTypeNodeLoader {
             TargetVariablesDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15631), new NodeId(0, 45), new NodeId(0, 15630).expanded(), false));
+            NodeId.parse("i=15631"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=15630").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -2992,7 +3165,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 14744),
+            NodeId.parse("i=14744"),
             new QualifiedName(0, "FieldTargetDataType"),
             new LocalizedText("", "FieldTargetDataType"),
             LocalizedText.NULL_VALUE,
@@ -3005,7 +3178,7 @@ class DataTypeNodeLoader {
             FieldTargetDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 14744), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=14744"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -3013,7 +3186,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15874),
+            NodeId.parse("i=15874"),
             new QualifiedName(0, "OverrideValueHandling"),
             new LocalizedText("", "OverrideValueHandling"),
             LocalizedText.NULL_VALUE,
@@ -3026,10 +3199,13 @@ class DataTypeNodeLoader {
             OverrideValueHandling.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 15874), new NodeId(0, 46), new NodeId(0, 15875).expanded(), true));
+            NodeId.parse("i=15874"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15875").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15874), new NodeId(0, 45), new NodeId(0, 29).expanded(), false));
+            NodeId.parse("i=15874"), NodeId.parse("i=45"), NodeId.parse("i=29").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -3037,7 +3213,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15635),
+            NodeId.parse("i=15635"),
             new QualifiedName(0, "SubscribedDataSetMirrorDataType"),
             new LocalizedText("", "SubscribedDataSetMirrorDataType"),
             LocalizedText.NULL_VALUE,
@@ -3050,7 +3226,10 @@ class DataTypeNodeLoader {
             SubscribedDataSetMirrorDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15635), new NodeId(0, 45), new NodeId(0, 15630).expanded(), false));
+            NodeId.parse("i=15635"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=15630").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3058,7 +3237,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15530),
+            NodeId.parse("i=15530"),
             new QualifiedName(0, "PubSubConfigurationDataType"),
             new LocalizedText("", "PubSubConfigurationDataType"),
             LocalizedText.NULL_VALUE,
@@ -3071,7 +3250,7 @@ class DataTypeNodeLoader {
             PubSubConfigurationDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15530), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=15530"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -3079,7 +3258,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 23599),
+            NodeId.parse("i=23599"),
             new QualifiedName(0, "StandaloneSubscribedDataSetRefDataType"),
             new LocalizedText("", "StandaloneSubscribedDataSetRefDataType"),
             LocalizedText.NULL_VALUE,
@@ -3092,7 +3271,10 @@ class DataTypeNodeLoader {
             StandaloneSubscribedDataSetRefDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 23599), new NodeId(0, 45), new NodeId(0, 15630).expanded(), false));
+            NodeId.parse("i=23599"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=15630").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3100,7 +3282,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 23600),
+            NodeId.parse("i=23600"),
             new QualifiedName(0, "StandaloneSubscribedDataSetDataType"),
             new LocalizedText("", "StandaloneSubscribedDataSetDataType"),
             LocalizedText.NULL_VALUE,
@@ -3113,7 +3295,10 @@ class DataTypeNodeLoader {
             StandaloneSubscribedDataSetDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 23600), new NodeId(0, 45), new NodeId(0, 15630).expanded(), false));
+            NodeId.parse("i=23600"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=15630").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3121,7 +3306,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 23601),
+            NodeId.parse("i=23601"),
             new QualifiedName(0, "SecurityGroupDataType"),
             new LocalizedText("", "SecurityGroupDataType"),
             LocalizedText.NULL_VALUE,
@@ -3134,7 +3319,7 @@ class DataTypeNodeLoader {
             SecurityGroupDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 23601), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=23601"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -3142,7 +3327,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 25270),
+            NodeId.parse("i=25270"),
             new QualifiedName(0, "PubSubKeyPushTargetDataType"),
             new LocalizedText("", "PubSubKeyPushTargetDataType"),
             LocalizedText.NULL_VALUE,
@@ -3155,7 +3340,7 @@ class DataTypeNodeLoader {
             PubSubKeyPushTargetDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 25270), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=25270"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -3163,7 +3348,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 23602),
+            NodeId.parse("i=23602"),
             new QualifiedName(0, "PubSubConfiguration2DataType"),
             new LocalizedText("", "PubSubConfiguration2DataType"),
             LocalizedText.NULL_VALUE,
@@ -3176,7 +3361,10 @@ class DataTypeNodeLoader {
             PubSubConfiguration2DataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 23602), new NodeId(0, 45), new NodeId(0, 15530).expanded(), false));
+            NodeId.parse("i=23602"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=15530").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3184,7 +3372,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 20408),
+            NodeId.parse("i=20408"),
             new QualifiedName(0, "DataSetOrderingType"),
             new LocalizedText("", "DataSetOrderingType"),
             LocalizedText.NULL_VALUE,
@@ -3197,10 +3385,13 @@ class DataTypeNodeLoader {
             DataSetOrderingType.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 20408), new NodeId(0, 46), new NodeId(0, 15641).expanded(), true));
+            NodeId.parse("i=20408"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15641").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 20408), new NodeId(0, 45), new NodeId(0, 29).expanded(), false));
+            NodeId.parse("i=20408"), NodeId.parse("i=45"), NodeId.parse("i=29").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -3208,7 +3399,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15642),
+            NodeId.parse("i=15642"),
             new QualifiedName(0, "UadpNetworkMessageContentMask"),
             new LocalizedText("", "UadpNetworkMessageContentMask"),
             LocalizedText.NULL_VALUE,
@@ -3218,12 +3409,16 @@ class DataTypeNodeLoader {
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             false,
-            null);
+            UadpNetworkMessageContentMask.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 15642), new NodeId(0, 46), new NodeId(0, 15643).expanded(), true));
+            NodeId.parse("i=15642"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15643").expanded(),
+            true));
     node.addReference(
-        new Reference(new NodeId(0, 15642), new NodeId(0, 45), new NodeId(0, 7).expanded(), false));
+        new Reference(
+            NodeId.parse("i=15642"), NodeId.parse("i=45"), NodeId.parse("i=7").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -3231,7 +3426,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15645),
+            NodeId.parse("i=15645"),
             new QualifiedName(0, "UadpWriterGroupMessageDataType"),
             new LocalizedText("", "UadpWriterGroupMessageDataType"),
             LocalizedText.NULL_VALUE,
@@ -3244,7 +3439,10 @@ class DataTypeNodeLoader {
             UadpWriterGroupMessageDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15645), new NodeId(0, 45), new NodeId(0, 15616).expanded(), false));
+            NodeId.parse("i=15645"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=15616").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3252,7 +3450,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15646),
+            NodeId.parse("i=15646"),
             new QualifiedName(0, "UadpDataSetMessageContentMask"),
             new LocalizedText("", "UadpDataSetMessageContentMask"),
             LocalizedText.NULL_VALUE,
@@ -3262,12 +3460,16 @@ class DataTypeNodeLoader {
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             false,
-            null);
+            UadpDataSetMessageContentMask.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 15646), new NodeId(0, 46), new NodeId(0, 15647).expanded(), true));
+            NodeId.parse("i=15646"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15647").expanded(),
+            true));
     node.addReference(
-        new Reference(new NodeId(0, 15646), new NodeId(0, 45), new NodeId(0, 7).expanded(), false));
+        new Reference(
+            NodeId.parse("i=15646"), NodeId.parse("i=45"), NodeId.parse("i=7").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -3275,7 +3477,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15652),
+            NodeId.parse("i=15652"),
             new QualifiedName(0, "UadpDataSetWriterMessageDataType"),
             new LocalizedText("", "UadpDataSetWriterMessageDataType"),
             LocalizedText.NULL_VALUE,
@@ -3288,7 +3490,10 @@ class DataTypeNodeLoader {
             UadpDataSetWriterMessageDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15652), new NodeId(0, 45), new NodeId(0, 15605).expanded(), false));
+            NodeId.parse("i=15652"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=15605").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3296,7 +3501,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15653),
+            NodeId.parse("i=15653"),
             new QualifiedName(0, "UadpDataSetReaderMessageDataType"),
             new LocalizedText("", "UadpDataSetReaderMessageDataType"),
             LocalizedText.NULL_VALUE,
@@ -3309,7 +3514,10 @@ class DataTypeNodeLoader {
             UadpDataSetReaderMessageDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15653), new NodeId(0, 45), new NodeId(0, 15629).expanded(), false));
+            NodeId.parse("i=15653"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=15629").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3317,7 +3525,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15654),
+            NodeId.parse("i=15654"),
             new QualifiedName(0, "JsonNetworkMessageContentMask"),
             new LocalizedText("", "JsonNetworkMessageContentMask"),
             LocalizedText.NULL_VALUE,
@@ -3327,12 +3535,16 @@ class DataTypeNodeLoader {
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             false,
-            null);
+            JsonNetworkMessageContentMask.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 15654), new NodeId(0, 46), new NodeId(0, 15655).expanded(), true));
+            NodeId.parse("i=15654"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15655").expanded(),
+            true));
     node.addReference(
-        new Reference(new NodeId(0, 15654), new NodeId(0, 45), new NodeId(0, 7).expanded(), false));
+        new Reference(
+            NodeId.parse("i=15654"), NodeId.parse("i=45"), NodeId.parse("i=7").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -3340,7 +3552,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15657),
+            NodeId.parse("i=15657"),
             new QualifiedName(0, "JsonWriterGroupMessageDataType"),
             new LocalizedText("", "JsonWriterGroupMessageDataType"),
             LocalizedText.NULL_VALUE,
@@ -3353,7 +3565,10 @@ class DataTypeNodeLoader {
             JsonWriterGroupMessageDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15657), new NodeId(0, 45), new NodeId(0, 15616).expanded(), false));
+            NodeId.parse("i=15657"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=15616").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3361,7 +3576,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15658),
+            NodeId.parse("i=15658"),
             new QualifiedName(0, "JsonDataSetMessageContentMask"),
             new LocalizedText("", "JsonDataSetMessageContentMask"),
             LocalizedText.NULL_VALUE,
@@ -3371,12 +3586,16 @@ class DataTypeNodeLoader {
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             false,
-            null);
+            JsonDataSetMessageContentMask.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 15658), new NodeId(0, 46), new NodeId(0, 15659).expanded(), true));
+            NodeId.parse("i=15658"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15659").expanded(),
+            true));
     node.addReference(
-        new Reference(new NodeId(0, 15658), new NodeId(0, 45), new NodeId(0, 7).expanded(), false));
+        new Reference(
+            NodeId.parse("i=15658"), NodeId.parse("i=45"), NodeId.parse("i=7").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -3384,7 +3603,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15664),
+            NodeId.parse("i=15664"),
             new QualifiedName(0, "JsonDataSetWriterMessageDataType"),
             new LocalizedText("", "JsonDataSetWriterMessageDataType"),
             LocalizedText.NULL_VALUE,
@@ -3397,7 +3616,10 @@ class DataTypeNodeLoader {
             JsonDataSetWriterMessageDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15664), new NodeId(0, 45), new NodeId(0, 15605).expanded(), false));
+            NodeId.parse("i=15664"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=15605").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3405,7 +3627,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15665),
+            NodeId.parse("i=15665"),
             new QualifiedName(0, "JsonDataSetReaderMessageDataType"),
             new LocalizedText("", "JsonDataSetReaderMessageDataType"),
             LocalizedText.NULL_VALUE,
@@ -3418,7 +3640,10 @@ class DataTypeNodeLoader {
             JsonDataSetReaderMessageDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15665), new NodeId(0, 45), new NodeId(0, 15629).expanded(), false));
+            NodeId.parse("i=15665"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=15629").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3426,7 +3651,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 23603),
+            NodeId.parse("i=23603"),
             new QualifiedName(0, "QosDataType"),
             new LocalizedText("", "QosDataType"),
             LocalizedText.NULL_VALUE,
@@ -3439,7 +3664,7 @@ class DataTypeNodeLoader {
             QosDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 23603), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=23603"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -3447,7 +3672,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 23604),
+            NodeId.parse("i=23604"),
             new QualifiedName(0, "TransmitQosDataType"),
             new LocalizedText("", "TransmitQosDataType"),
             LocalizedText.NULL_VALUE,
@@ -3460,7 +3685,10 @@ class DataTypeNodeLoader {
             TransmitQosDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 23604), new NodeId(0, 45), new NodeId(0, 23603).expanded(), false));
+            NodeId.parse("i=23604"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=23603").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3468,7 +3696,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 23605),
+            NodeId.parse("i=23605"),
             new QualifiedName(0, "TransmitQosPriorityDataType"),
             new LocalizedText("", "TransmitQosPriorityDataType"),
             LocalizedText.NULL_VALUE,
@@ -3481,7 +3709,10 @@ class DataTypeNodeLoader {
             TransmitQosPriorityDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 23605), new NodeId(0, 45), new NodeId(0, 23604).expanded(), false));
+            NodeId.parse("i=23605"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=23604").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3489,7 +3720,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 23608),
+            NodeId.parse("i=23608"),
             new QualifiedName(0, "ReceiveQosDataType"),
             new LocalizedText("", "ReceiveQosDataType"),
             LocalizedText.NULL_VALUE,
@@ -3502,7 +3733,10 @@ class DataTypeNodeLoader {
             ReceiveQosDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 23608), new NodeId(0, 45), new NodeId(0, 23603).expanded(), false));
+            NodeId.parse("i=23608"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=23603").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3510,7 +3744,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 23609),
+            NodeId.parse("i=23609"),
             new QualifiedName(0, "ReceiveQosPriorityDataType"),
             new LocalizedText("", "ReceiveQosPriorityDataType"),
             LocalizedText.NULL_VALUE,
@@ -3523,7 +3757,10 @@ class DataTypeNodeLoader {
             ReceiveQosPriorityDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 23609), new NodeId(0, 45), new NodeId(0, 23608).expanded(), false));
+            NodeId.parse("i=23609"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=23608").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3531,7 +3768,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 17467),
+            NodeId.parse("i=17467"),
             new QualifiedName(0, "DatagramConnectionTransportDataType"),
             new LocalizedText("", "DatagramConnectionTransportDataType"),
             LocalizedText.NULL_VALUE,
@@ -3544,7 +3781,10 @@ class DataTypeNodeLoader {
             DatagramConnectionTransportDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 17467), new NodeId(0, 45), new NodeId(0, 15618).expanded(), false));
+            NodeId.parse("i=17467"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=15618").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3552,7 +3792,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 23612),
+            NodeId.parse("i=23612"),
             new QualifiedName(0, "DatagramConnectionTransport2DataType"),
             new LocalizedText("", "DatagramConnectionTransport2DataType"),
             LocalizedText.NULL_VALUE,
@@ -3565,7 +3805,10 @@ class DataTypeNodeLoader {
             DatagramConnectionTransport2DataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 23612), new NodeId(0, 45), new NodeId(0, 17467).expanded(), false));
+            NodeId.parse("i=23612"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=17467").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3573,7 +3816,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15532),
+            NodeId.parse("i=15532"),
             new QualifiedName(0, "DatagramWriterGroupTransportDataType"),
             new LocalizedText("", "DatagramWriterGroupTransportDataType"),
             LocalizedText.NULL_VALUE,
@@ -3586,7 +3829,10 @@ class DataTypeNodeLoader {
             DatagramWriterGroupTransportDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15532), new NodeId(0, 45), new NodeId(0, 15611).expanded(), false));
+            NodeId.parse("i=15532"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=15611").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3594,7 +3840,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 23613),
+            NodeId.parse("i=23613"),
             new QualifiedName(0, "DatagramWriterGroupTransport2DataType"),
             new LocalizedText("", "DatagramWriterGroupTransport2DataType"),
             LocalizedText.NULL_VALUE,
@@ -3607,7 +3853,10 @@ class DataTypeNodeLoader {
             DatagramWriterGroupTransport2DataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 23613), new NodeId(0, 45), new NodeId(0, 15532).expanded(), false));
+            NodeId.parse("i=23613"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=15532").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3615,7 +3864,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 23614),
+            NodeId.parse("i=23614"),
             new QualifiedName(0, "DatagramDataSetReaderTransportDataType"),
             new LocalizedText("", "DatagramDataSetReaderTransportDataType"),
             LocalizedText.NULL_VALUE,
@@ -3628,7 +3877,10 @@ class DataTypeNodeLoader {
             DatagramDataSetReaderTransportDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 23614), new NodeId(0, 45), new NodeId(0, 15628).expanded(), false));
+            NodeId.parse("i=23614"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=15628").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3636,7 +3888,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 18794),
+            NodeId.parse("i=18794"),
             new QualifiedName(0, "DtlsPubSubConnectionDataType"),
             new LocalizedText("", "DtlsPubSubConnectionDataType"),
             LocalizedText.NULL_VALUE,
@@ -3649,7 +3901,7 @@ class DataTypeNodeLoader {
             DtlsPubSubConnectionDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 18794), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=18794"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -3657,7 +3909,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15007),
+            NodeId.parse("i=15007"),
             new QualifiedName(0, "BrokerConnectionTransportDataType"),
             new LocalizedText("", "BrokerConnectionTransportDataType"),
             LocalizedText.NULL_VALUE,
@@ -3670,7 +3922,10 @@ class DataTypeNodeLoader {
             BrokerConnectionTransportDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15007), new NodeId(0, 45), new NodeId(0, 15618).expanded(), false));
+            NodeId.parse("i=15007"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=15618").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3678,7 +3933,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15008),
+            NodeId.parse("i=15008"),
             new QualifiedName(0, "BrokerTransportQualityOfService"),
             new LocalizedText("", "BrokerTransportQualityOfService"),
             LocalizedText.NULL_VALUE,
@@ -3691,10 +3946,13 @@ class DataTypeNodeLoader {
             BrokerTransportQualityOfService.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 15008), new NodeId(0, 46), new NodeId(0, 15009).expanded(), true));
+            NodeId.parse("i=15008"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15009").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 15008), new NodeId(0, 45), new NodeId(0, 29).expanded(), false));
+            NodeId.parse("i=15008"), NodeId.parse("i=45"), NodeId.parse("i=29").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -3702,7 +3960,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15667),
+            NodeId.parse("i=15667"),
             new QualifiedName(0, "BrokerWriterGroupTransportDataType"),
             new LocalizedText("", "BrokerWriterGroupTransportDataType"),
             LocalizedText.NULL_VALUE,
@@ -3715,7 +3973,10 @@ class DataTypeNodeLoader {
             BrokerWriterGroupTransportDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15667), new NodeId(0, 45), new NodeId(0, 15611).expanded(), false));
+            NodeId.parse("i=15667"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=15611").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3723,7 +3984,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15669),
+            NodeId.parse("i=15669"),
             new QualifiedName(0, "BrokerDataSetWriterTransportDataType"),
             new LocalizedText("", "BrokerDataSetWriterTransportDataType"),
             LocalizedText.NULL_VALUE,
@@ -3736,7 +3997,10 @@ class DataTypeNodeLoader {
             BrokerDataSetWriterTransportDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15669), new NodeId(0, 45), new NodeId(0, 15598).expanded(), false));
+            NodeId.parse("i=15669"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=15598").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3744,7 +4008,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15670),
+            NodeId.parse("i=15670"),
             new QualifiedName(0, "BrokerDataSetReaderTransportDataType"),
             new LocalizedText("", "BrokerDataSetReaderTransportDataType"),
             LocalizedText.NULL_VALUE,
@@ -3757,7 +4021,10 @@ class DataTypeNodeLoader {
             BrokerDataSetReaderTransportDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 15670), new NodeId(0, 45), new NodeId(0, 15628).expanded(), false));
+            NodeId.parse("i=15670"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=15628").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -3765,7 +4032,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 25517),
+            NodeId.parse("i=25517"),
             new QualifiedName(0, "PubSubConfigurationRefMask"),
             new LocalizedText("", "PubSubConfigurationRefMask"),
             LocalizedText.NULL_VALUE,
@@ -3775,12 +4042,16 @@ class DataTypeNodeLoader {
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             false,
-            null);
+            PubSubConfigurationRefMask.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 25517), new NodeId(0, 46), new NodeId(0, 25518).expanded(), true));
+            NodeId.parse("i=25517"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=25518").expanded(),
+            true));
     node.addReference(
-        new Reference(new NodeId(0, 25517), new NodeId(0, 45), new NodeId(0, 7).expanded(), false));
+        new Reference(
+            NodeId.parse("i=25517"), NodeId.parse("i=45"), NodeId.parse("i=7").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -3788,7 +4059,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 25519),
+            NodeId.parse("i=25519"),
             new QualifiedName(0, "PubSubConfigurationRefDataType"),
             new LocalizedText("", "PubSubConfigurationRefDataType"),
             LocalizedText.NULL_VALUE,
@@ -3801,7 +4072,7 @@ class DataTypeNodeLoader {
             PubSubConfigurationRefDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 25519), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=25519"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -3809,7 +4080,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 25520),
+            NodeId.parse("i=25520"),
             new QualifiedName(0, "PubSubConfigurationValueDataType"),
             new LocalizedText("", "PubSubConfigurationValueDataType"),
             LocalizedText.NULL_VALUE,
@@ -3822,7 +4093,7 @@ class DataTypeNodeLoader {
             PubSubConfigurationValueDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 25520), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=25520"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -3830,7 +4101,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 19723),
+            NodeId.parse("i=19723"),
             new QualifiedName(0, "DiagnosticsLevel"),
             new LocalizedText("", "DiagnosticsLevel"),
             LocalizedText.NULL_VALUE,
@@ -3843,10 +4114,13 @@ class DataTypeNodeLoader {
             DiagnosticsLevel.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 19723), new NodeId(0, 46), new NodeId(0, 19724).expanded(), true));
+            NodeId.parse("i=19723"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=19724").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 19723), new NodeId(0, 45), new NodeId(0, 29).expanded(), false));
+            NodeId.parse("i=19723"), NodeId.parse("i=45"), NodeId.parse("i=29").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -3854,7 +4128,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 19730),
+            NodeId.parse("i=19730"),
             new QualifiedName(0, "PubSubDiagnosticsCounterClassification"),
             new LocalizedText("", "PubSubDiagnosticsCounterClassification"),
             LocalizedText.NULL_VALUE,
@@ -3867,10 +4141,13 @@ class DataTypeNodeLoader {
             PubSubDiagnosticsCounterClassification.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 19730), new NodeId(0, 46), new NodeId(0, 19731).expanded(), true));
+            NodeId.parse("i=19730"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=19731").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 19730), new NodeId(0, 45), new NodeId(0, 29).expanded(), false));
+            NodeId.parse("i=19730"), NodeId.parse("i=45"), NodeId.parse("i=29").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -3878,7 +4155,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 23468),
+            NodeId.parse("i=23468"),
             new QualifiedName(0, "AliasNameDataType"),
             new LocalizedText("", "AliasNameDataType"),
             LocalizedText.NULL_VALUE,
@@ -3891,7 +4168,7 @@ class DataTypeNodeLoader {
             AliasNameDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 23468), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=23468"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -3899,7 +4176,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 24051),
+            NodeId.parse("i=24051"),
             new QualifiedName(0, "AliasNameVerboseDataType"),
             new LocalizedText("", "AliasNameVerboseDataType"),
             LocalizedText.NULL_VALUE,
@@ -3912,7 +4189,7 @@ class DataTypeNodeLoader {
             AliasNameVerboseDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 24051), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=24051"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -3920,7 +4197,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 24052),
+            NodeId.parse("i=24052"),
             new QualifiedName(0, "AliasCategoryUpdateDataType"),
             new LocalizedText("", "AliasCategoryUpdateDataType"),
             LocalizedText.NULL_VALUE,
@@ -3933,7 +4210,7 @@ class DataTypeNodeLoader {
             AliasCategoryUpdateDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 24052), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=24052"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -3941,7 +4218,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 24053),
+            NodeId.parse("i=24053"),
             new QualifiedName(0, "AliasUpdateDataType"),
             new LocalizedText("", "AliasUpdateDataType"),
             LocalizedText.NULL_VALUE,
@@ -3954,13 +4231,19 @@ class DataTypeNodeLoader {
             AliasUpdateDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 24053), new NodeId(0, 46), new NodeId(0, 24499).expanded(), true));
+            NodeId.parse("i=24053"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=24499").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 24053), new NodeId(0, 46), new NodeId(0, 24500).expanded(), true));
+            NodeId.parse("i=24053"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=24500").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 24053), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=24053"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -3968,7 +4251,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 24277),
+            NodeId.parse("i=24277"),
             new QualifiedName(0, "PasswordOptionsMask"),
             new LocalizedText("", "PasswordOptionsMask"),
             LocalizedText.NULL_VALUE,
@@ -3978,12 +4261,16 @@ class DataTypeNodeLoader {
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             false,
-            null);
+            PasswordOptionsMask.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 24277), new NodeId(0, 46), new NodeId(0, 24278).expanded(), true));
+            NodeId.parse("i=24277"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=24278").expanded(),
+            true));
     node.addReference(
-        new Reference(new NodeId(0, 24277), new NodeId(0, 45), new NodeId(0, 7).expanded(), false));
+        new Reference(
+            NodeId.parse("i=24277"), NodeId.parse("i=45"), NodeId.parse("i=7").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -3991,7 +4278,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 24279),
+            NodeId.parse("i=24279"),
             new QualifiedName(0, "UserConfigurationMask"),
             new LocalizedText("", "UserConfigurationMask"),
             LocalizedText.NULL_VALUE,
@@ -4001,12 +4288,16 @@ class DataTypeNodeLoader {
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             false,
-            null);
+            UserConfigurationMask.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 24279), new NodeId(0, 46), new NodeId(0, 24280).expanded(), true));
+            NodeId.parse("i=24279"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=24280").expanded(),
+            true));
     node.addReference(
-        new Reference(new NodeId(0, 24279), new NodeId(0, 45), new NodeId(0, 7).expanded(), false));
+        new Reference(
+            NodeId.parse("i=24279"), NodeId.parse("i=45"), NodeId.parse("i=7").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -4014,7 +4305,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 24281),
+            NodeId.parse("i=24281"),
             new QualifiedName(0, "UserManagementDataType"),
             new LocalizedText("", "UserManagementDataType"),
             LocalizedText.NULL_VALUE,
@@ -4027,7 +4318,7 @@ class DataTypeNodeLoader {
             UserManagementDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 24281), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=24281"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -4035,7 +4326,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 25726),
+            NodeId.parse("i=25726"),
             new QualifiedName(0, "EncodedTicket"),
             new LocalizedText("", "EncodedTicket"),
             LocalizedText.NULL_VALUE,
@@ -4048,7 +4339,7 @@ class DataTypeNodeLoader {
             null);
     node.addReference(
         new Reference(
-            new NodeId(0, 25726), new NodeId(0, 45), new NodeId(0, 12).expanded(), false));
+            NodeId.parse("i=25726"), NodeId.parse("i=45"), NodeId.parse("i=12").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -4056,7 +4347,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 24210),
+            NodeId.parse("i=24210"),
             new QualifiedName(0, "Duplex"),
             new LocalizedText("", "Duplex"),
             LocalizedText.NULL_VALUE,
@@ -4069,10 +4360,13 @@ class DataTypeNodeLoader {
             Duplex.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 24210), new NodeId(0, 46), new NodeId(0, 24235).expanded(), true));
+            NodeId.parse("i=24210"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=24235").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 24210), new NodeId(0, 45), new NodeId(0, 29).expanded(), false));
+            NodeId.parse("i=24210"), NodeId.parse("i=45"), NodeId.parse("i=29").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -4080,7 +4374,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 24212),
+            NodeId.parse("i=24212"),
             new QualifiedName(0, "InterfaceAdminStatus"),
             new LocalizedText("", "InterfaceAdminStatus"),
             LocalizedText.NULL_VALUE,
@@ -4093,10 +4387,13 @@ class DataTypeNodeLoader {
             InterfaceAdminStatus.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 24212), new NodeId(0, 46), new NodeId(0, 24236).expanded(), true));
+            NodeId.parse("i=24212"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=24236").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 24212), new NodeId(0, 45), new NodeId(0, 29).expanded(), false));
+            NodeId.parse("i=24212"), NodeId.parse("i=45"), NodeId.parse("i=29").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -4104,7 +4401,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 24214),
+            NodeId.parse("i=24214"),
             new QualifiedName(0, "InterfaceOperStatus"),
             new LocalizedText("", "InterfaceOperStatus"),
             LocalizedText.NULL_VALUE,
@@ -4117,10 +4414,13 @@ class DataTypeNodeLoader {
             InterfaceOperStatus.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 24214), new NodeId(0, 46), new NodeId(0, 24237).expanded(), true));
+            NodeId.parse("i=24214"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=24237").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 24214), new NodeId(0, 45), new NodeId(0, 29).expanded(), false));
+            NodeId.parse("i=24214"), NodeId.parse("i=45"), NodeId.parse("i=29").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -4128,7 +4428,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 24216),
+            NodeId.parse("i=24216"),
             new QualifiedName(0, "NegotiationStatus"),
             new LocalizedText("", "NegotiationStatus"),
             LocalizedText.NULL_VALUE,
@@ -4141,10 +4441,13 @@ class DataTypeNodeLoader {
             NegotiationStatus.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 24216), new NodeId(0, 46), new NodeId(0, 24238).expanded(), true));
+            NodeId.parse("i=24216"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=24238").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 24216), new NodeId(0, 45), new NodeId(0, 29).expanded(), false));
+            NodeId.parse("i=24216"), NodeId.parse("i=45"), NodeId.parse("i=29").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -4152,7 +4455,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 24218),
+            NodeId.parse("i=24218"),
             new QualifiedName(0, "TsnFailureCode"),
             new LocalizedText("", "TsnFailureCode"),
             LocalizedText.NULL_VALUE,
@@ -4165,10 +4468,13 @@ class DataTypeNodeLoader {
             TsnFailureCode.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 24218), new NodeId(0, 46), new NodeId(0, 24239).expanded(), true));
+            NodeId.parse("i=24218"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=24239").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 24218), new NodeId(0, 45), new NodeId(0, 29).expanded(), false));
+            NodeId.parse("i=24218"), NodeId.parse("i=45"), NodeId.parse("i=29").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -4176,7 +4482,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 24220),
+            NodeId.parse("i=24220"),
             new QualifiedName(0, "TsnStreamState"),
             new LocalizedText("", "TsnStreamState"),
             LocalizedText.NULL_VALUE,
@@ -4189,10 +4495,13 @@ class DataTypeNodeLoader {
             TsnStreamState.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 24220), new NodeId(0, 46), new NodeId(0, 24240).expanded(), true));
+            NodeId.parse("i=24220"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=24240").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 24220), new NodeId(0, 45), new NodeId(0, 29).expanded(), false));
+            NodeId.parse("i=24220"), NodeId.parse("i=45"), NodeId.parse("i=29").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -4200,7 +4509,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 24222),
+            NodeId.parse("i=24222"),
             new QualifiedName(0, "TsnTalkerStatus"),
             new LocalizedText("", "TsnTalkerStatus"),
             LocalizedText.NULL_VALUE,
@@ -4213,10 +4522,13 @@ class DataTypeNodeLoader {
             TsnTalkerStatus.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 24222), new NodeId(0, 46), new NodeId(0, 24241).expanded(), true));
+            NodeId.parse("i=24222"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=24241").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 24222), new NodeId(0, 45), new NodeId(0, 29).expanded(), false));
+            NodeId.parse("i=24222"), NodeId.parse("i=45"), NodeId.parse("i=29").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -4224,7 +4536,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 24224),
+            NodeId.parse("i=24224"),
             new QualifiedName(0, "TsnListenerStatus"),
             new LocalizedText("", "TsnListenerStatus"),
             LocalizedText.NULL_VALUE,
@@ -4237,10 +4549,13 @@ class DataTypeNodeLoader {
             TsnListenerStatus.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 24224), new NodeId(0, 46), new NodeId(0, 24242).expanded(), true));
+            NodeId.parse("i=24224"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=24242").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 24224), new NodeId(0, 45), new NodeId(0, 29).expanded(), false));
+            NodeId.parse("i=24224"), NodeId.parse("i=45"), NodeId.parse("i=29").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -4248,7 +4563,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 18947),
+            NodeId.parse("i=18947"),
             new QualifiedName(0, "ChassisIdSubtype"),
             new LocalizedText("", "ChassisIdSubtype"),
             LocalizedText.NULL_VALUE,
@@ -4261,10 +4576,13 @@ class DataTypeNodeLoader {
             ChassisIdSubtype.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 18947), new NodeId(0, 46), new NodeId(0, 18948).expanded(), true));
+            NodeId.parse("i=18947"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=18948").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 18947), new NodeId(0, 45), new NodeId(0, 29).expanded(), false));
+            NodeId.parse("i=18947"), NodeId.parse("i=45"), NodeId.parse("i=29").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -4272,7 +4590,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 18949),
+            NodeId.parse("i=18949"),
             new QualifiedName(0, "PortIdSubtype"),
             new LocalizedText("", "PortIdSubtype"),
             LocalizedText.NULL_VALUE,
@@ -4285,10 +4603,13 @@ class DataTypeNodeLoader {
             PortIdSubtype.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 18949), new NodeId(0, 46), new NodeId(0, 18950).expanded(), true));
+            NodeId.parse("i=18949"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=18950").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 18949), new NodeId(0, 45), new NodeId(0, 29).expanded(), false));
+            NodeId.parse("i=18949"), NodeId.parse("i=45"), NodeId.parse("i=29").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -4296,7 +4617,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 18951),
+            NodeId.parse("i=18951"),
             new QualifiedName(0, "ManAddrIfSubtype"),
             new LocalizedText("", "ManAddrIfSubtype"),
             LocalizedText.NULL_VALUE,
@@ -4309,10 +4630,13 @@ class DataTypeNodeLoader {
             ManAddrIfSubtype.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 18951), new NodeId(0, 46), new NodeId(0, 18952).expanded(), true));
+            NodeId.parse("i=18951"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=18952").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 18951), new NodeId(0, 45), new NodeId(0, 29).expanded(), false));
+            NodeId.parse("i=18951"), NodeId.parse("i=45"), NodeId.parse("i=29").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -4320,7 +4644,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 25220),
+            NodeId.parse("i=25220"),
             new QualifiedName(0, "PriorityMappingEntryType"),
             new LocalizedText("", "PriorityMappingEntryType"),
             LocalizedText.NULL_VALUE,
@@ -4333,7 +4657,7 @@ class DataTypeNodeLoader {
             PriorityMappingEntryType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 25220), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=25220"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -4341,7 +4665,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 18953),
+            NodeId.parse("i=18953"),
             new QualifiedName(0, "LldpManagementAddressTxPortType"),
             new LocalizedText("", "LldpManagementAddressTxPortType"),
             LocalizedText.NULL_VALUE,
@@ -4354,7 +4678,7 @@ class DataTypeNodeLoader {
             LldpManagementAddressTxPortType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 18953), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=18953"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -4362,7 +4686,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 18954),
+            NodeId.parse("i=18954"),
             new QualifiedName(0, "LldpManagementAddressType"),
             new LocalizedText("", "LldpManagementAddressType"),
             LocalizedText.NULL_VALUE,
@@ -4375,7 +4699,7 @@ class DataTypeNodeLoader {
             LldpManagementAddressType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 18954), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=18954"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -4383,7 +4707,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 18955),
+            NodeId.parse("i=18955"),
             new QualifiedName(0, "LldpTlvType"),
             new LocalizedText("", "LldpTlvType"),
             LocalizedText.NULL_VALUE,
@@ -4396,7 +4720,7 @@ class DataTypeNodeLoader {
             LldpTlvType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 18955), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=18955"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -4404,7 +4728,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 18956),
+            NodeId.parse("i=18956"),
             new QualifiedName(0, "LldpSystemCapabilitiesMap"),
             new LocalizedText("", "LldpSystemCapabilitiesMap"),
             LocalizedText.NULL_VALUE,
@@ -4414,12 +4738,16 @@ class DataTypeNodeLoader {
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             false,
-            null);
+            LldpSystemCapabilitiesMap.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 18956), new NodeId(0, 46), new NodeId(0, 18957).expanded(), true));
+            NodeId.parse("i=18956"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=18957").expanded(),
+            true));
     node.addReference(
-        new Reference(new NodeId(0, 18956), new NodeId(0, 45), new NodeId(0, 7).expanded(), false));
+        new Reference(
+            NodeId.parse("i=18956"), NodeId.parse("i=45"), NodeId.parse("i=7").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -4427,7 +4755,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 32659),
+            NodeId.parse("i=32659"),
             new QualifiedName(0, "ReferenceDescriptionDataType"),
             new LocalizedText("", "ReferenceDescriptionDataType"),
             LocalizedText.NULL_VALUE,
@@ -4440,7 +4768,7 @@ class DataTypeNodeLoader {
             ReferenceDescriptionDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 32659), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=32659"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -4448,7 +4776,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 32660),
+            NodeId.parse("i=32660"),
             new QualifiedName(0, "ReferenceListEntryDataType"),
             new LocalizedText("", "ReferenceListEntryDataType"),
             LocalizedText.NULL_VALUE,
@@ -4461,7 +4789,7 @@ class DataTypeNodeLoader {
             ReferenceListEntryDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 32660), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=32660"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -4469,7 +4797,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 19361),
+            NodeId.parse("i=19361"),
             new QualifiedName(0, "LogRecord"),
             new LocalizedText("", "LogRecord"),
             LocalizedText.NULL_VALUE,
@@ -4482,7 +4810,7 @@ class DataTypeNodeLoader {
             LogRecord.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 19361), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=19361"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -4490,7 +4818,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 19745),
+            NodeId.parse("i=19745"),
             new QualifiedName(0, "LogRecordsDataType"),
             new LocalizedText("", "LogRecordsDataType"),
             LocalizedText.NULL_VALUE,
@@ -4503,7 +4831,7 @@ class DataTypeNodeLoader {
             LogRecordsDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 19745), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=19745"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -4511,7 +4839,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 19746),
+            NodeId.parse("i=19746"),
             new QualifiedName(0, "SpanContextDataType"),
             new LocalizedText("", "SpanContextDataType"),
             LocalizedText.NULL_VALUE,
@@ -4524,7 +4852,7 @@ class DataTypeNodeLoader {
             SpanContextDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 19746), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=19746"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -4532,7 +4860,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 19747),
+            NodeId.parse("i=19747"),
             new QualifiedName(0, "TraceContextDataType"),
             new LocalizedText("", "TraceContextDataType"),
             LocalizedText.NULL_VALUE,
@@ -4545,7 +4873,10 @@ class DataTypeNodeLoader {
             TraceContextDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 19747), new NodeId(0, 45), new NodeId(0, 19746).expanded(), false));
+            NodeId.parse("i=19747"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=19746").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -4553,7 +4884,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 19748),
+            NodeId.parse("i=19748"),
             new QualifiedName(0, "NameValuePair"),
             new LocalizedText("", "NameValuePair"),
             LocalizedText.NULL_VALUE,
@@ -4566,7 +4897,7 @@ class DataTypeNodeLoader {
             NameValuePair.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 19748), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=19748"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -4574,7 +4905,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 19749),
+            NodeId.parse("i=19749"),
             new QualifiedName(0, "LogRecordMask"),
             new LocalizedText("", "LogRecordMask"),
             LocalizedText.NULL_VALUE,
@@ -4584,12 +4915,16 @@ class DataTypeNodeLoader {
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             false,
-            null);
+            LogRecordMask.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 19749), new NodeId(0, 46), new NodeId(0, 19750).expanded(), true));
+            NodeId.parse("i=19749"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=19750").expanded(),
+            true));
     node.addReference(
-        new Reference(new NodeId(0, 19749), new NodeId(0, 45), new NodeId(0, 7).expanded(), false));
+        new Reference(
+            NodeId.parse("i=19749"), NodeId.parse("i=45"), NodeId.parse("i=7").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -4597,7 +4932,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 256),
+            NodeId.parse("i=256"),
             new QualifiedName(0, "IdType"),
             new LocalizedText("", "IdType"),
             LocalizedText.NULL_VALUE,
@@ -4609,9 +4944,11 @@ class DataTypeNodeLoader {
             false,
             IdType.definition());
     node.addReference(
-        new Reference(new NodeId(0, 256), new NodeId(0, 46), new NodeId(0, 7591).expanded(), true));
+        new Reference(
+            NodeId.parse("i=256"), NodeId.parse("i=46"), NodeId.parse("i=7591").expanded(), true));
     node.addReference(
-        new Reference(new NodeId(0, 256), new NodeId(0, 45), new NodeId(0, 29).expanded(), false));
+        new Reference(
+            NodeId.parse("i=256"), NodeId.parse("i=45"), NodeId.parse("i=29").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -4619,7 +4956,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 257),
+            NodeId.parse("i=257"),
             new QualifiedName(0, "NodeClass"),
             new LocalizedText("", "NodeClass"),
             LocalizedText.NULL_VALUE,
@@ -4632,9 +4969,10 @@ class DataTypeNodeLoader {
             NodeClass.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 257), new NodeId(0, 46), new NodeId(0, 11878).expanded(), true));
+            NodeId.parse("i=257"), NodeId.parse("i=46"), NodeId.parse("i=11878").expanded(), true));
     node.addReference(
-        new Reference(new NodeId(0, 257), new NodeId(0, 45), new NodeId(0, 29).expanded(), false));
+        new Reference(
+            NodeId.parse("i=257"), NodeId.parse("i=45"), NodeId.parse("i=29").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -4642,7 +4980,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 94),
+            NodeId.parse("i=94"),
             new QualifiedName(0, "PermissionType"),
             new LocalizedText("", "PermissionType"),
             LocalizedText.NULL_VALUE,
@@ -4652,11 +4990,13 @@ class DataTypeNodeLoader {
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             false,
-            null);
+            PermissionType.definition());
     node.addReference(
-        new Reference(new NodeId(0, 94), new NodeId(0, 46), new NodeId(0, 15030).expanded(), true));
+        new Reference(
+            NodeId.parse("i=94"), NodeId.parse("i=46"), NodeId.parse("i=15030").expanded(), true));
     node.addReference(
-        new Reference(new NodeId(0, 94), new NodeId(0, 45), new NodeId(0, 7).expanded(), false));
+        new Reference(
+            NodeId.parse("i=94"), NodeId.parse("i=45"), NodeId.parse("i=7").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -4664,7 +5004,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15031),
+            NodeId.parse("i=15031"),
             new QualifiedName(0, "AccessLevelType"),
             new LocalizedText("", "AccessLevelType"),
             LocalizedText.NULL_VALUE,
@@ -4674,12 +5014,16 @@ class DataTypeNodeLoader {
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             false,
-            null);
+            AccessLevelType.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 15031), new NodeId(0, 46), new NodeId(0, 15032).expanded(), true));
+            NodeId.parse("i=15031"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15032").expanded(),
+            true));
     node.addReference(
-        new Reference(new NodeId(0, 15031), new NodeId(0, 45), new NodeId(0, 3).expanded(), false));
+        new Reference(
+            NodeId.parse("i=15031"), NodeId.parse("i=45"), NodeId.parse("i=3").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -4687,7 +5031,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15406),
+            NodeId.parse("i=15406"),
             new QualifiedName(0, "AccessLevelExType"),
             new LocalizedText("", "AccessLevelExType"),
             LocalizedText.NULL_VALUE,
@@ -4697,12 +5041,16 @@ class DataTypeNodeLoader {
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             false,
-            null);
+            AccessLevelExType.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 15406), new NodeId(0, 46), new NodeId(0, 15407).expanded(), true));
+            NodeId.parse("i=15406"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15407").expanded(),
+            true));
     node.addReference(
-        new Reference(new NodeId(0, 15406), new NodeId(0, 45), new NodeId(0, 7).expanded(), false));
+        new Reference(
+            NodeId.parse("i=15406"), NodeId.parse("i=45"), NodeId.parse("i=7").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -4710,7 +5058,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 15033),
+            NodeId.parse("i=15033"),
             new QualifiedName(0, "EventNotifierType"),
             new LocalizedText("", "EventNotifierType"),
             LocalizedText.NULL_VALUE,
@@ -4720,12 +5068,16 @@ class DataTypeNodeLoader {
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             false,
-            null);
+            EventNotifierType.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 15033), new NodeId(0, 46), new NodeId(0, 15034).expanded(), true));
+            NodeId.parse("i=15033"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=15034").expanded(),
+            true));
     node.addReference(
-        new Reference(new NodeId(0, 15033), new NodeId(0, 45), new NodeId(0, 3).expanded(), false));
+        new Reference(
+            NodeId.parse("i=15033"), NodeId.parse("i=45"), NodeId.parse("i=3").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -4733,7 +5085,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 95),
+            NodeId.parse("i=95"),
             new QualifiedName(0, "AccessRestrictionType"),
             new LocalizedText("", "AccessRestrictionType"),
             LocalizedText.NULL_VALUE,
@@ -4743,11 +5095,13 @@ class DataTypeNodeLoader {
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             false,
-            null);
+            AccessRestrictionType.definition());
     node.addReference(
-        new Reference(new NodeId(0, 95), new NodeId(0, 46), new NodeId(0, 15035).expanded(), true));
+        new Reference(
+            NodeId.parse("i=95"), NodeId.parse("i=46"), NodeId.parse("i=15035").expanded(), true));
     node.addReference(
-        new Reference(new NodeId(0, 95), new NodeId(0, 45), new NodeId(0, 5).expanded(), false));
+        new Reference(
+            NodeId.parse("i=95"), NodeId.parse("i=45"), NodeId.parse("i=5").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -4755,7 +5109,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 96),
+            NodeId.parse("i=96"),
             new QualifiedName(0, "RolePermissionType"),
             new LocalizedText("", "RolePermissionType"),
             LocalizedText.NULL_VALUE,
@@ -4767,7 +5121,8 @@ class DataTypeNodeLoader {
             false,
             RolePermissionType.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 96), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+        new Reference(
+            NodeId.parse("i=96"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -4775,7 +5130,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 97),
+            NodeId.parse("i=97"),
             new QualifiedName(0, "DataTypeDefinition"),
             new LocalizedText("", "DataTypeDefinition"),
             LocalizedText.NULL_VALUE,
@@ -4787,7 +5142,8 @@ class DataTypeNodeLoader {
             true,
             DataTypeDefinition.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 97), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+        new Reference(
+            NodeId.parse("i=97"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -4795,7 +5151,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 98),
+            NodeId.parse("i=98"),
             new QualifiedName(0, "StructureType"),
             new LocalizedText("", "StructureType"),
             LocalizedText.NULL_VALUE,
@@ -4807,9 +5163,11 @@ class DataTypeNodeLoader {
             false,
             StructureType.definition());
     node.addReference(
-        new Reference(new NodeId(0, 98), new NodeId(0, 46), new NodeId(0, 14528).expanded(), true));
+        new Reference(
+            NodeId.parse("i=98"), NodeId.parse("i=46"), NodeId.parse("i=14528").expanded(), true));
     node.addReference(
-        new Reference(new NodeId(0, 98), new NodeId(0, 45), new NodeId(0, 29).expanded(), false));
+        new Reference(
+            NodeId.parse("i=98"), NodeId.parse("i=45"), NodeId.parse("i=29").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -4817,7 +5175,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 101),
+            NodeId.parse("i=101"),
             new QualifiedName(0, "StructureField"),
             new LocalizedText("", "StructureField"),
             LocalizedText.NULL_VALUE,
@@ -4829,7 +5187,8 @@ class DataTypeNodeLoader {
             false,
             StructureField.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 101), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+        new Reference(
+            NodeId.parse("i=101"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -4837,7 +5196,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 99),
+            NodeId.parse("i=99"),
             new QualifiedName(0, "StructureDefinition"),
             new LocalizedText("", "StructureDefinition"),
             LocalizedText.NULL_VALUE,
@@ -4849,7 +5208,8 @@ class DataTypeNodeLoader {
             false,
             StructureDefinition.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 99), new NodeId(0, 45), new NodeId(0, 97).expanded(), false));
+        new Reference(
+            NodeId.parse("i=99"), NodeId.parse("i=45"), NodeId.parse("i=97").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -4857,7 +5217,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 100),
+            NodeId.parse("i=100"),
             new QualifiedName(0, "EnumDefinition"),
             new LocalizedText("", "EnumDefinition"),
             LocalizedText.NULL_VALUE,
@@ -4869,7 +5229,8 @@ class DataTypeNodeLoader {
             false,
             EnumDefinition.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 100), new NodeId(0, 45), new NodeId(0, 97).expanded(), false));
+        new Reference(
+            NodeId.parse("i=100"), NodeId.parse("i=45"), NodeId.parse("i=97").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -4877,7 +5238,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 296),
+            NodeId.parse("i=296"),
             new QualifiedName(0, "Argument"),
             new LocalizedText("", "Argument"),
             LocalizedText.NULL_VALUE,
@@ -4889,7 +5250,8 @@ class DataTypeNodeLoader {
             false,
             Argument.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 296), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+        new Reference(
+            NodeId.parse("i=296"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -4897,7 +5259,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 7594),
+            NodeId.parse("i=7594"),
             new QualifiedName(0, "EnumValueType"),
             new LocalizedText("", "EnumValueType"),
             LocalizedText.NULL_VALUE,
@@ -4909,7 +5271,8 @@ class DataTypeNodeLoader {
             false,
             EnumValueType.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 7594), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+        new Reference(
+            NodeId.parse("i=7594"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -4917,7 +5280,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 102),
+            NodeId.parse("i=102"),
             new QualifiedName(0, "EnumField"),
             new LocalizedText("", "EnumField"),
             LocalizedText.NULL_VALUE,
@@ -4930,7 +5293,7 @@ class DataTypeNodeLoader {
             EnumField.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 102), new NodeId(0, 45), new NodeId(0, 7594).expanded(), false));
+            NodeId.parse("i=102"), NodeId.parse("i=45"), NodeId.parse("i=7594").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -4938,7 +5301,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 12755),
+            NodeId.parse("i=12755"),
             new QualifiedName(0, "OptionSet"),
             new LocalizedText("", "OptionSet"),
             LocalizedText.NULL_VALUE,
@@ -4951,7 +5314,7 @@ class DataTypeNodeLoader {
             OptionSet.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 12755), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=12755"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -4959,7 +5322,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 12877),
+            NodeId.parse("i=12877"),
             new QualifiedName(0, "NormalizedString"),
             new LocalizedText("", "NormalizedString"),
             LocalizedText.NULL_VALUE,
@@ -4972,7 +5335,7 @@ class DataTypeNodeLoader {
             null);
     node.addReference(
         new Reference(
-            new NodeId(0, 12877), new NodeId(0, 45), new NodeId(0, 12).expanded(), false));
+            NodeId.parse("i=12877"), NodeId.parse("i=45"), NodeId.parse("i=12").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -4980,7 +5343,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 12878),
+            NodeId.parse("i=12878"),
             new QualifiedName(0, "DecimalString"),
             new LocalizedText("", "DecimalString"),
             LocalizedText.NULL_VALUE,
@@ -4993,7 +5356,7 @@ class DataTypeNodeLoader {
             null);
     node.addReference(
         new Reference(
-            new NodeId(0, 12878), new NodeId(0, 45), new NodeId(0, 12).expanded(), false));
+            NodeId.parse("i=12878"), NodeId.parse("i=45"), NodeId.parse("i=12").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5001,7 +5364,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 12879),
+            NodeId.parse("i=12879"),
             new QualifiedName(0, "DurationString"),
             new LocalizedText("", "DurationString"),
             LocalizedText.NULL_VALUE,
@@ -5014,7 +5377,7 @@ class DataTypeNodeLoader {
             null);
     node.addReference(
         new Reference(
-            new NodeId(0, 12879), new NodeId(0, 45), new NodeId(0, 12).expanded(), false));
+            NodeId.parse("i=12879"), NodeId.parse("i=45"), NodeId.parse("i=12").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5022,7 +5385,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 12880),
+            NodeId.parse("i=12880"),
             new QualifiedName(0, "TimeString"),
             new LocalizedText("", "TimeString"),
             LocalizedText.NULL_VALUE,
@@ -5035,7 +5398,7 @@ class DataTypeNodeLoader {
             null);
     node.addReference(
         new Reference(
-            new NodeId(0, 12880), new NodeId(0, 45), new NodeId(0, 12).expanded(), false));
+            NodeId.parse("i=12880"), NodeId.parse("i=45"), NodeId.parse("i=12").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5043,7 +5406,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 12881),
+            NodeId.parse("i=12881"),
             new QualifiedName(0, "DateString"),
             new LocalizedText("", "DateString"),
             LocalizedText.NULL_VALUE,
@@ -5056,7 +5419,7 @@ class DataTypeNodeLoader {
             null);
     node.addReference(
         new Reference(
-            new NodeId(0, 12881), new NodeId(0, 45), new NodeId(0, 12).expanded(), false));
+            NodeId.parse("i=12881"), NodeId.parse("i=45"), NodeId.parse("i=12").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5064,7 +5427,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 290),
+            NodeId.parse("i=290"),
             new QualifiedName(0, "Duration"),
             new LocalizedText("", "Duration"),
             LocalizedText.NULL_VALUE,
@@ -5076,7 +5439,8 @@ class DataTypeNodeLoader {
             false,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 290), new NodeId(0, 45), new NodeId(0, 11).expanded(), false));
+        new Reference(
+            NodeId.parse("i=290"), NodeId.parse("i=45"), NodeId.parse("i=11").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5084,7 +5448,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 294),
+            NodeId.parse("i=294"),
             new QualifiedName(0, "UtcTime"),
             new LocalizedText("", "UtcTime"),
             LocalizedText.NULL_VALUE,
@@ -5096,7 +5460,8 @@ class DataTypeNodeLoader {
             false,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 294), new NodeId(0, 45), new NodeId(0, 13).expanded(), false));
+        new Reference(
+            NodeId.parse("i=294"), NodeId.parse("i=45"), NodeId.parse("i=13").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5104,7 +5469,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 295),
+            NodeId.parse("i=295"),
             new QualifiedName(0, "LocaleId"),
             new LocalizedText("", "LocaleId"),
             LocalizedText.NULL_VALUE,
@@ -5116,7 +5481,8 @@ class DataTypeNodeLoader {
             false,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 295), new NodeId(0, 45), new NodeId(0, 12).expanded(), false));
+        new Reference(
+            NodeId.parse("i=295"), NodeId.parse("i=45"), NodeId.parse("i=12").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5124,7 +5490,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 8912),
+            NodeId.parse("i=8912"),
             new QualifiedName(0, "TimeZoneDataType"),
             new LocalizedText("", "TimeZoneDataType"),
             LocalizedText.NULL_VALUE,
@@ -5136,7 +5502,8 @@ class DataTypeNodeLoader {
             false,
             TimeZoneDataType.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 8912), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+        new Reference(
+            NodeId.parse("i=8912"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5144,7 +5511,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 17588),
+            NodeId.parse("i=17588"),
             new QualifiedName(0, "Index"),
             new LocalizedText("", "Index"),
             LocalizedText.NULL_VALUE,
@@ -5156,7 +5523,8 @@ class DataTypeNodeLoader {
             false,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 17588), new NodeId(0, 45), new NodeId(0, 7).expanded(), false));
+        new Reference(
+            NodeId.parse("i=17588"), NodeId.parse("i=45"), NodeId.parse("i=7").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5164,7 +5532,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 288),
+            NodeId.parse("i=288"),
             new QualifiedName(0, "IntegerId"),
             new LocalizedText("", "IntegerId"),
             LocalizedText.NULL_VALUE,
@@ -5176,7 +5544,8 @@ class DataTypeNodeLoader {
             false,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 288), new NodeId(0, 45), new NodeId(0, 7).expanded(), false));
+        new Reference(
+            NodeId.parse("i=288"), NodeId.parse("i=45"), NodeId.parse("i=7").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5184,7 +5553,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 307),
+            NodeId.parse("i=307"),
             new QualifiedName(0, "ApplicationType"),
             new LocalizedText("", "ApplicationType"),
             LocalizedText.NULL_VALUE,
@@ -5196,9 +5565,11 @@ class DataTypeNodeLoader {
             false,
             ApplicationType.definition());
     node.addReference(
-        new Reference(new NodeId(0, 307), new NodeId(0, 46), new NodeId(0, 7597).expanded(), true));
+        new Reference(
+            NodeId.parse("i=307"), NodeId.parse("i=46"), NodeId.parse("i=7597").expanded(), true));
     node.addReference(
-        new Reference(new NodeId(0, 307), new NodeId(0, 45), new NodeId(0, 29).expanded(), false));
+        new Reference(
+            NodeId.parse("i=307"), NodeId.parse("i=45"), NodeId.parse("i=29").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5206,7 +5577,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 308),
+            NodeId.parse("i=308"),
             new QualifiedName(0, "ApplicationDescription"),
             new LocalizedText("", "ApplicationDescription"),
             LocalizedText.NULL_VALUE,
@@ -5218,7 +5589,8 @@ class DataTypeNodeLoader {
             false,
             ApplicationDescription.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 308), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+        new Reference(
+            NodeId.parse("i=308"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5226,7 +5598,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 20998),
+            NodeId.parse("i=20998"),
             new QualifiedName(0, "VersionTime"),
             new LocalizedText("", "VersionTime"),
             LocalizedText.NULL_VALUE,
@@ -5238,7 +5610,8 @@ class DataTypeNodeLoader {
             false,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 20998), new NodeId(0, 45), new NodeId(0, 7).expanded(), false));
+        new Reference(
+            NodeId.parse("i=20998"), NodeId.parse("i=45"), NodeId.parse("i=7").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5246,7 +5619,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 12189),
+            NodeId.parse("i=12189"),
             new QualifiedName(0, "ServerOnNetwork"),
             new LocalizedText("", "ServerOnNetwork"),
             LocalizedText.NULL_VALUE,
@@ -5259,7 +5632,7 @@ class DataTypeNodeLoader {
             ServerOnNetwork.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 12189), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=12189"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5267,7 +5640,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 311),
+            NodeId.parse("i=311"),
             new QualifiedName(0, "ApplicationInstanceCertificate"),
             new LocalizedText("", "ApplicationInstanceCertificate"),
             LocalizedText.NULL_VALUE,
@@ -5279,7 +5652,8 @@ class DataTypeNodeLoader {
             false,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 311), new NodeId(0, 45), new NodeId(0, 15).expanded(), false));
+        new Reference(
+            NodeId.parse("i=311"), NodeId.parse("i=45"), NodeId.parse("i=15").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5287,7 +5661,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 302),
+            NodeId.parse("i=302"),
             new QualifiedName(0, "MessageSecurityMode"),
             new LocalizedText("", "MessageSecurityMode"),
             LocalizedText.NULL_VALUE,
@@ -5299,9 +5673,11 @@ class DataTypeNodeLoader {
             false,
             MessageSecurityMode.definition());
     node.addReference(
-        new Reference(new NodeId(0, 302), new NodeId(0, 46), new NodeId(0, 7595).expanded(), true));
+        new Reference(
+            NodeId.parse("i=302"), NodeId.parse("i=46"), NodeId.parse("i=7595").expanded(), true));
     node.addReference(
-        new Reference(new NodeId(0, 302), new NodeId(0, 45), new NodeId(0, 29).expanded(), false));
+        new Reference(
+            NodeId.parse("i=302"), NodeId.parse("i=45"), NodeId.parse("i=29").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5309,7 +5685,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 303),
+            NodeId.parse("i=303"),
             new QualifiedName(0, "UserTokenType"),
             new LocalizedText("", "UserTokenType"),
             LocalizedText.NULL_VALUE,
@@ -5321,9 +5697,11 @@ class DataTypeNodeLoader {
             false,
             UserTokenType.definition());
     node.addReference(
-        new Reference(new NodeId(0, 303), new NodeId(0, 46), new NodeId(0, 7596).expanded(), true));
+        new Reference(
+            NodeId.parse("i=303"), NodeId.parse("i=46"), NodeId.parse("i=7596").expanded(), true));
     node.addReference(
-        new Reference(new NodeId(0, 303), new NodeId(0, 45), new NodeId(0, 29).expanded(), false));
+        new Reference(
+            NodeId.parse("i=303"), NodeId.parse("i=45"), NodeId.parse("i=29").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5331,7 +5709,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 304),
+            NodeId.parse("i=304"),
             new QualifiedName(0, "UserTokenPolicy"),
             new LocalizedText("", "UserTokenPolicy"),
             LocalizedText.NULL_VALUE,
@@ -5343,7 +5721,8 @@ class DataTypeNodeLoader {
             false,
             UserTokenPolicy.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 304), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+        new Reference(
+            NodeId.parse("i=304"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5351,7 +5730,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 312),
+            NodeId.parse("i=312"),
             new QualifiedName(0, "EndpointDescription"),
             new LocalizedText("", "EndpointDescription"),
             LocalizedText.NULL_VALUE,
@@ -5363,7 +5742,8 @@ class DataTypeNodeLoader {
             false,
             EndpointDescription.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 312), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+        new Reference(
+            NodeId.parse("i=312"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5371,7 +5751,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 432),
+            NodeId.parse("i=432"),
             new QualifiedName(0, "RegisteredServer"),
             new LocalizedText("", "RegisteredServer"),
             LocalizedText.NULL_VALUE,
@@ -5383,7 +5763,8 @@ class DataTypeNodeLoader {
             false,
             RegisteredServer.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 432), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+        new Reference(
+            NodeId.parse("i=432"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5391,7 +5772,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 12890),
+            NodeId.parse("i=12890"),
             new QualifiedName(0, "DiscoveryConfiguration"),
             new LocalizedText("", "DiscoveryConfiguration"),
             LocalizedText.NULL_VALUE,
@@ -5404,7 +5785,7 @@ class DataTypeNodeLoader {
             DiscoveryConfiguration.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 12890), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=12890"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5412,7 +5793,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 12891),
+            NodeId.parse("i=12891"),
             new QualifiedName(0, "MdnsDiscoveryConfiguration"),
             new LocalizedText("", "MdnsDiscoveryConfiguration"),
             LocalizedText.NULL_VALUE,
@@ -5425,7 +5806,10 @@ class DataTypeNodeLoader {
             MdnsDiscoveryConfiguration.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 12891), new NodeId(0, 45), new NodeId(0, 12890).expanded(), false));
+            NodeId.parse("i=12891"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=12890").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -5433,7 +5817,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 315),
+            NodeId.parse("i=315"),
             new QualifiedName(0, "SecurityTokenRequestType"),
             new LocalizedText("", "SecurityTokenRequestType"),
             LocalizedText.NULL_VALUE,
@@ -5445,9 +5829,11 @@ class DataTypeNodeLoader {
             false,
             SecurityTokenRequestType.definition());
     node.addReference(
-        new Reference(new NodeId(0, 315), new NodeId(0, 46), new NodeId(0, 7598).expanded(), true));
+        new Reference(
+            NodeId.parse("i=315"), NodeId.parse("i=46"), NodeId.parse("i=7598").expanded(), true));
     node.addReference(
-        new Reference(new NodeId(0, 315), new NodeId(0, 45), new NodeId(0, 29).expanded(), false));
+        new Reference(
+            NodeId.parse("i=315"), NodeId.parse("i=45"), NodeId.parse("i=29").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5455,7 +5841,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 344),
+            NodeId.parse("i=344"),
             new QualifiedName(0, "SignedSoftwareCertificate"),
             new LocalizedText("", "SignedSoftwareCertificate"),
             LocalizedText.NULL_VALUE,
@@ -5467,7 +5853,8 @@ class DataTypeNodeLoader {
             false,
             SignedSoftwareCertificate.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 344), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+        new Reference(
+            NodeId.parse("i=344"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5475,7 +5862,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 388),
+            NodeId.parse("i=388"),
             new QualifiedName(0, "SessionAuthenticationToken"),
             new LocalizedText("", "SessionAuthenticationToken"),
             LocalizedText.NULL_VALUE,
@@ -5487,7 +5874,8 @@ class DataTypeNodeLoader {
             false,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 388), new NodeId(0, 45), new NodeId(0, 17).expanded(), false));
+        new Reference(
+            NodeId.parse("i=388"), NodeId.parse("i=45"), NodeId.parse("i=17").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5495,7 +5883,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 456),
+            NodeId.parse("i=456"),
             new QualifiedName(0, "SignatureData"),
             new LocalizedText("", "SignatureData"),
             LocalizedText.NULL_VALUE,
@@ -5507,7 +5895,8 @@ class DataTypeNodeLoader {
             false,
             SignatureData.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 456), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+        new Reference(
+            NodeId.parse("i=456"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5515,7 +5904,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 316),
+            NodeId.parse("i=316"),
             new QualifiedName(0, "UserIdentityToken"),
             new LocalizedText("", "UserIdentityToken"),
             LocalizedText.NULL_VALUE,
@@ -5527,7 +5916,8 @@ class DataTypeNodeLoader {
             true,
             UserIdentityToken.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 316), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+        new Reference(
+            NodeId.parse("i=316"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5535,7 +5925,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 319),
+            NodeId.parse("i=319"),
             new QualifiedName(0, "AnonymousIdentityToken"),
             new LocalizedText("", "AnonymousIdentityToken"),
             LocalizedText.NULL_VALUE,
@@ -5547,7 +5937,8 @@ class DataTypeNodeLoader {
             false,
             AnonymousIdentityToken.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 319), new NodeId(0, 45), new NodeId(0, 316).expanded(), false));
+        new Reference(
+            NodeId.parse("i=319"), NodeId.parse("i=45"), NodeId.parse("i=316").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5555,7 +5946,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 322),
+            NodeId.parse("i=322"),
             new QualifiedName(0, "UserNameIdentityToken"),
             new LocalizedText("", "UserNameIdentityToken"),
             LocalizedText.NULL_VALUE,
@@ -5567,7 +5958,8 @@ class DataTypeNodeLoader {
             false,
             UserNameIdentityToken.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 322), new NodeId(0, 45), new NodeId(0, 316).expanded(), false));
+        new Reference(
+            NodeId.parse("i=322"), NodeId.parse("i=45"), NodeId.parse("i=316").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5575,7 +5967,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 325),
+            NodeId.parse("i=325"),
             new QualifiedName(0, "X509IdentityToken"),
             new LocalizedText("", "X509IdentityToken"),
             LocalizedText.NULL_VALUE,
@@ -5587,7 +5979,8 @@ class DataTypeNodeLoader {
             false,
             X509IdentityToken.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 325), new NodeId(0, 45), new NodeId(0, 316).expanded(), false));
+        new Reference(
+            NodeId.parse("i=325"), NodeId.parse("i=45"), NodeId.parse("i=316").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5595,7 +5988,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 938),
+            NodeId.parse("i=938"),
             new QualifiedName(0, "IssuedIdentityToken"),
             new LocalizedText("", "IssuedIdentityToken"),
             LocalizedText.NULL_VALUE,
@@ -5607,7 +6000,8 @@ class DataTypeNodeLoader {
             false,
             IssuedIdentityToken.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 938), new NodeId(0, 45), new NodeId(0, 316).expanded(), false));
+        new Reference(
+            NodeId.parse("i=938"), NodeId.parse("i=45"), NodeId.parse("i=316").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5615,7 +6009,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 348),
+            NodeId.parse("i=348"),
             new QualifiedName(0, "NodeAttributesMask"),
             new LocalizedText("", "NodeAttributesMask"),
             LocalizedText.NULL_VALUE,
@@ -5628,9 +6022,10 @@ class DataTypeNodeLoader {
             NodeAttributesMask.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 348), new NodeId(0, 46), new NodeId(0, 11881).expanded(), true));
+            NodeId.parse("i=348"), NodeId.parse("i=46"), NodeId.parse("i=11881").expanded(), true));
     node.addReference(
-        new Reference(new NodeId(0, 348), new NodeId(0, 45), new NodeId(0, 29).expanded(), false));
+        new Reference(
+            NodeId.parse("i=348"), NodeId.parse("i=45"), NodeId.parse("i=29").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5638,7 +6033,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 376),
+            NodeId.parse("i=376"),
             new QualifiedName(0, "AddNodesItem"),
             new LocalizedText("", "AddNodesItem"),
             LocalizedText.NULL_VALUE,
@@ -5650,7 +6045,8 @@ class DataTypeNodeLoader {
             false,
             AddNodesItem.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 376), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+        new Reference(
+            NodeId.parse("i=376"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5658,7 +6054,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 379),
+            NodeId.parse("i=379"),
             new QualifiedName(0, "AddReferencesItem"),
             new LocalizedText("", "AddReferencesItem"),
             LocalizedText.NULL_VALUE,
@@ -5670,7 +6066,8 @@ class DataTypeNodeLoader {
             false,
             AddReferencesItem.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 379), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+        new Reference(
+            NodeId.parse("i=379"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5678,7 +6075,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 382),
+            NodeId.parse("i=382"),
             new QualifiedName(0, "DeleteNodesItem"),
             new LocalizedText("", "DeleteNodesItem"),
             LocalizedText.NULL_VALUE,
@@ -5690,7 +6087,8 @@ class DataTypeNodeLoader {
             false,
             DeleteNodesItem.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 382), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+        new Reference(
+            NodeId.parse("i=382"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5698,7 +6096,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 385),
+            NodeId.parse("i=385"),
             new QualifiedName(0, "DeleteReferencesItem"),
             new LocalizedText("", "DeleteReferencesItem"),
             LocalizedText.NULL_VALUE,
@@ -5710,7 +6108,8 @@ class DataTypeNodeLoader {
             false,
             DeleteReferencesItem.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 385), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+        new Reference(
+            NodeId.parse("i=385"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5718,7 +6117,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 347),
+            NodeId.parse("i=347"),
             new QualifiedName(0, "AttributeWriteMask"),
             new LocalizedText("", "AttributeWriteMask"),
             LocalizedText.NULL_VALUE,
@@ -5728,12 +6127,13 @@ class DataTypeNodeLoader {
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             false,
-            null);
+            AttributeWriteMask.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 347), new NodeId(0, 46), new NodeId(0, 15036).expanded(), true));
+            NodeId.parse("i=347"), NodeId.parse("i=46"), NodeId.parse("i=15036").expanded(), true));
     node.addReference(
-        new Reference(new NodeId(0, 347), new NodeId(0, 45), new NodeId(0, 7).expanded(), false));
+        new Reference(
+            NodeId.parse("i=347"), NodeId.parse("i=45"), NodeId.parse("i=7").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5741,7 +6141,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 521),
+            NodeId.parse("i=521"),
             new QualifiedName(0, "ContinuationPoint"),
             new LocalizedText("", "ContinuationPoint"),
             LocalizedText.NULL_VALUE,
@@ -5753,7 +6153,8 @@ class DataTypeNodeLoader {
             false,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 521), new NodeId(0, 45), new NodeId(0, 15).expanded(), false));
+        new Reference(
+            NodeId.parse("i=521"), NodeId.parse("i=45"), NodeId.parse("i=15").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5761,7 +6162,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 537),
+            NodeId.parse("i=537"),
             new QualifiedName(0, "RelativePathElement"),
             new LocalizedText("", "RelativePathElement"),
             LocalizedText.NULL_VALUE,
@@ -5773,7 +6174,8 @@ class DataTypeNodeLoader {
             false,
             RelativePathElement.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 537), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+        new Reference(
+            NodeId.parse("i=537"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5781,7 +6183,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 540),
+            NodeId.parse("i=540"),
             new QualifiedName(0, "RelativePath"),
             new LocalizedText("", "RelativePath"),
             LocalizedText.NULL_VALUE,
@@ -5793,7 +6195,8 @@ class DataTypeNodeLoader {
             false,
             RelativePath.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 540), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+        new Reference(
+            NodeId.parse("i=540"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5801,7 +6204,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 289),
+            NodeId.parse("i=289"),
             new QualifiedName(0, "Counter"),
             new LocalizedText("", "Counter"),
             LocalizedText.NULL_VALUE,
@@ -5813,7 +6216,8 @@ class DataTypeNodeLoader {
             false,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 289), new NodeId(0, 45), new NodeId(0, 7).expanded(), false));
+        new Reference(
+            NodeId.parse("i=289"), NodeId.parse("i=45"), NodeId.parse("i=7").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5821,7 +6225,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 291),
+            NodeId.parse("i=291"),
             new QualifiedName(0, "NumericRange"),
             new LocalizedText("", "NumericRange"),
             LocalizedText.NULL_VALUE,
@@ -5833,7 +6237,8 @@ class DataTypeNodeLoader {
             false,
             null);
     node.addReference(
-        new Reference(new NodeId(0, 291), new NodeId(0, 45), new NodeId(0, 12).expanded(), false));
+        new Reference(
+            NodeId.parse("i=291"), NodeId.parse("i=45"), NodeId.parse("i=12").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5841,7 +6246,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 331),
+            NodeId.parse("i=331"),
             new QualifiedName(0, "EndpointConfiguration"),
             new LocalizedText("", "EndpointConfiguration"),
             LocalizedText.NULL_VALUE,
@@ -5853,7 +6258,8 @@ class DataTypeNodeLoader {
             false,
             EndpointConfiguration.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 331), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+        new Reference(
+            NodeId.parse("i=331"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5861,7 +6267,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 576),
+            NodeId.parse("i=576"),
             new QualifiedName(0, "FilterOperator"),
             new LocalizedText("", "FilterOperator"),
             LocalizedText.NULL_VALUE,
@@ -5873,9 +6279,11 @@ class DataTypeNodeLoader {
             false,
             FilterOperator.definition());
     node.addReference(
-        new Reference(new NodeId(0, 576), new NodeId(0, 46), new NodeId(0, 7605).expanded(), true));
+        new Reference(
+            NodeId.parse("i=576"), NodeId.parse("i=46"), NodeId.parse("i=7605").expanded(), true));
     node.addReference(
-        new Reference(new NodeId(0, 576), new NodeId(0, 45), new NodeId(0, 29).expanded(), false));
+        new Reference(
+            NodeId.parse("i=576"), NodeId.parse("i=45"), NodeId.parse("i=29").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5883,7 +6291,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 583),
+            NodeId.parse("i=583"),
             new QualifiedName(0, "ContentFilterElement"),
             new LocalizedText("", "ContentFilterElement"),
             LocalizedText.NULL_VALUE,
@@ -5895,7 +6303,8 @@ class DataTypeNodeLoader {
             false,
             ContentFilterElement.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 583), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+        new Reference(
+            NodeId.parse("i=583"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5903,7 +6312,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 586),
+            NodeId.parse("i=586"),
             new QualifiedName(0, "ContentFilter"),
             new LocalizedText("", "ContentFilter"),
             LocalizedText.NULL_VALUE,
@@ -5915,7 +6324,8 @@ class DataTypeNodeLoader {
             false,
             ContentFilter.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 586), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+        new Reference(
+            NodeId.parse("i=586"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5923,7 +6333,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 589),
+            NodeId.parse("i=589"),
             new QualifiedName(0, "FilterOperand"),
             new LocalizedText("", "FilterOperand"),
             LocalizedText.NULL_VALUE,
@@ -5935,7 +6345,8 @@ class DataTypeNodeLoader {
             true,
             FilterOperand.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 589), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+        new Reference(
+            NodeId.parse("i=589"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5943,7 +6354,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 592),
+            NodeId.parse("i=592"),
             new QualifiedName(0, "ElementOperand"),
             new LocalizedText("", "ElementOperand"),
             LocalizedText.NULL_VALUE,
@@ -5955,7 +6366,8 @@ class DataTypeNodeLoader {
             false,
             ElementOperand.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 592), new NodeId(0, 45), new NodeId(0, 589).expanded(), false));
+        new Reference(
+            NodeId.parse("i=592"), NodeId.parse("i=45"), NodeId.parse("i=589").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5963,7 +6375,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 595),
+            NodeId.parse("i=595"),
             new QualifiedName(0, "LiteralOperand"),
             new LocalizedText("", "LiteralOperand"),
             LocalizedText.NULL_VALUE,
@@ -5975,7 +6387,8 @@ class DataTypeNodeLoader {
             false,
             LiteralOperand.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 595), new NodeId(0, 45), new NodeId(0, 589).expanded(), false));
+        new Reference(
+            NodeId.parse("i=595"), NodeId.parse("i=45"), NodeId.parse("i=589").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -5983,7 +6396,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 598),
+            NodeId.parse("i=598"),
             new QualifiedName(0, "AttributeOperand"),
             new LocalizedText("", "AttributeOperand"),
             LocalizedText.NULL_VALUE,
@@ -5995,7 +6408,8 @@ class DataTypeNodeLoader {
             false,
             AttributeOperand.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 598), new NodeId(0, 45), new NodeId(0, 589).expanded(), false));
+        new Reference(
+            NodeId.parse("i=598"), NodeId.parse("i=45"), NodeId.parse("i=589").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -6003,7 +6417,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 601),
+            NodeId.parse("i=601"),
             new QualifiedName(0, "SimpleAttributeOperand"),
             new LocalizedText("", "SimpleAttributeOperand"),
             LocalizedText.NULL_VALUE,
@@ -6015,7 +6429,8 @@ class DataTypeNodeLoader {
             false,
             SimpleAttributeOperand.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 601), new NodeId(0, 45), new NodeId(0, 589).expanded(), false));
+        new Reference(
+            NodeId.parse("i=601"), NodeId.parse("i=45"), NodeId.parse("i=589").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -6023,7 +6438,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 11216),
+            NodeId.parse("i=11216"),
             new QualifiedName(0, "ModificationInfo"),
             new LocalizedText("", "ModificationInfo"),
             LocalizedText.NULL_VALUE,
@@ -6036,7 +6451,7 @@ class DataTypeNodeLoader {
             ModificationInfo.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 11216), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=11216"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -6044,7 +6459,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 659),
+            NodeId.parse("i=659"),
             new QualifiedName(0, "HistoryEvent"),
             new LocalizedText("", "HistoryEvent"),
             LocalizedText.NULL_VALUE,
@@ -6056,7 +6471,8 @@ class DataTypeNodeLoader {
             false,
             HistoryEvent.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 659), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+        new Reference(
+            NodeId.parse("i=659"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -6064,7 +6480,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 32824),
+            NodeId.parse("i=32824"),
             new QualifiedName(0, "HistoryModifiedEvent"),
             new LocalizedText("", "HistoryModifiedEvent"),
             LocalizedText.NULL_VALUE,
@@ -6077,7 +6493,10 @@ class DataTypeNodeLoader {
             HistoryModifiedEvent.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 32824), new NodeId(0, 45), new NodeId(0, 659).expanded(), false));
+            NodeId.parse("i=32824"),
+            NodeId.parse("i=45"),
+            NodeId.parse("i=659").expanded(),
+            false));
     this.nodeManager.addNode(node);
   }
 
@@ -6085,7 +6504,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 11234),
+            NodeId.parse("i=11234"),
             new QualifiedName(0, "HistoryUpdateType"),
             new LocalizedText("", "HistoryUpdateType"),
             LocalizedText.NULL_VALUE,
@@ -6098,10 +6517,13 @@ class DataTypeNodeLoader {
             HistoryUpdateType.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 11234), new NodeId(0, 46), new NodeId(0, 11884).expanded(), true));
+            NodeId.parse("i=11234"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=11884").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 11234), new NodeId(0, 45), new NodeId(0, 29).expanded(), false));
+            NodeId.parse("i=11234"), NodeId.parse("i=45"), NodeId.parse("i=29").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -6109,7 +6531,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 11293),
+            NodeId.parse("i=11293"),
             new QualifiedName(0, "PerformUpdateType"),
             new LocalizedText("", "PerformUpdateType"),
             LocalizedText.NULL_VALUE,
@@ -6122,10 +6544,13 @@ class DataTypeNodeLoader {
             PerformUpdateType.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 11293), new NodeId(0, 46), new NodeId(0, 11885).expanded(), true));
+            NodeId.parse("i=11293"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=11885").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 11293), new NodeId(0, 45), new NodeId(0, 29).expanded(), false));
+            NodeId.parse("i=11293"), NodeId.parse("i=45"), NodeId.parse("i=29").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -6133,7 +6558,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 719),
+            NodeId.parse("i=719"),
             new QualifiedName(0, "MonitoringFilter"),
             new LocalizedText("", "MonitoringFilter"),
             LocalizedText.NULL_VALUE,
@@ -6145,7 +6570,8 @@ class DataTypeNodeLoader {
             false,
             MonitoringFilter.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 719), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+        new Reference(
+            NodeId.parse("i=719"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -6153,7 +6579,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 725),
+            NodeId.parse("i=725"),
             new QualifiedName(0, "EventFilter"),
             new LocalizedText("", "EventFilter"),
             LocalizedText.NULL_VALUE,
@@ -6165,7 +6591,8 @@ class DataTypeNodeLoader {
             false,
             EventFilter.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 725), new NodeId(0, 45), new NodeId(0, 719).expanded(), false));
+        new Reference(
+            NodeId.parse("i=725"), NodeId.parse("i=45"), NodeId.parse("i=719").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -6173,7 +6600,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 948),
+            NodeId.parse("i=948"),
             new QualifiedName(0, "AggregateConfiguration"),
             new LocalizedText("", "AggregateConfiguration"),
             LocalizedText.NULL_VALUE,
@@ -6185,7 +6612,8 @@ class DataTypeNodeLoader {
             false,
             AggregateConfiguration.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 948), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+        new Reference(
+            NodeId.parse("i=948"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -6193,7 +6621,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 920),
+            NodeId.parse("i=920"),
             new QualifiedName(0, "HistoryEventFieldList"),
             new LocalizedText("", "HistoryEventFieldList"),
             LocalizedText.NULL_VALUE,
@@ -6205,7 +6633,8 @@ class DataTypeNodeLoader {
             false,
             HistoryEventFieldList.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 920), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+        new Reference(
+            NodeId.parse("i=920"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -6213,7 +6642,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 338),
+            NodeId.parse("i=338"),
             new QualifiedName(0, "BuildInfo"),
             new LocalizedText("", "BuildInfo"),
             LocalizedText.NULL_VALUE,
@@ -6225,7 +6654,8 @@ class DataTypeNodeLoader {
             false,
             BuildInfo.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 338), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+        new Reference(
+            NodeId.parse("i=338"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -6233,7 +6663,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 851),
+            NodeId.parse("i=851"),
             new QualifiedName(0, "RedundancySupport"),
             new LocalizedText("", "RedundancySupport"),
             LocalizedText.NULL_VALUE,
@@ -6245,9 +6675,11 @@ class DataTypeNodeLoader {
             false,
             RedundancySupport.definition());
     node.addReference(
-        new Reference(new NodeId(0, 851), new NodeId(0, 46), new NodeId(0, 7611).expanded(), true));
+        new Reference(
+            NodeId.parse("i=851"), NodeId.parse("i=46"), NodeId.parse("i=7611").expanded(), true));
     node.addReference(
-        new Reference(new NodeId(0, 851), new NodeId(0, 45), new NodeId(0, 29).expanded(), false));
+        new Reference(
+            NodeId.parse("i=851"), NodeId.parse("i=45"), NodeId.parse("i=29").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -6255,7 +6687,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 852),
+            NodeId.parse("i=852"),
             new QualifiedName(0, "ServerState"),
             new LocalizedText("", "ServerState"),
             LocalizedText.NULL_VALUE,
@@ -6267,9 +6699,11 @@ class DataTypeNodeLoader {
             false,
             ServerState.definition());
     node.addReference(
-        new Reference(new NodeId(0, 852), new NodeId(0, 46), new NodeId(0, 7612).expanded(), true));
+        new Reference(
+            NodeId.parse("i=852"), NodeId.parse("i=46"), NodeId.parse("i=7612").expanded(), true));
     node.addReference(
-        new Reference(new NodeId(0, 852), new NodeId(0, 45), new NodeId(0, 29).expanded(), false));
+        new Reference(
+            NodeId.parse("i=852"), NodeId.parse("i=45"), NodeId.parse("i=29").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -6277,7 +6711,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 853),
+            NodeId.parse("i=853"),
             new QualifiedName(0, "RedundantServerDataType"),
             new LocalizedText("", "RedundantServerDataType"),
             LocalizedText.NULL_VALUE,
@@ -6289,7 +6723,8 @@ class DataTypeNodeLoader {
             false,
             RedundantServerDataType.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 853), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+        new Reference(
+            NodeId.parse("i=853"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -6297,7 +6732,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 11943),
+            NodeId.parse("i=11943"),
             new QualifiedName(0, "EndpointUrlListDataType"),
             new LocalizedText("", "EndpointUrlListDataType"),
             LocalizedText.NULL_VALUE,
@@ -6310,7 +6745,7 @@ class DataTypeNodeLoader {
             EndpointUrlListDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 11943), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=11943"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -6318,7 +6753,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 11944),
+            NodeId.parse("i=11944"),
             new QualifiedName(0, "NetworkGroupDataType"),
             new LocalizedText("", "NetworkGroupDataType"),
             LocalizedText.NULL_VALUE,
@@ -6331,7 +6766,7 @@ class DataTypeNodeLoader {
             NetworkGroupDataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 11944), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=11944"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -6339,7 +6774,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 856),
+            NodeId.parse("i=856"),
             new QualifiedName(0, "SamplingIntervalDiagnosticsDataType"),
             new LocalizedText("", "SamplingIntervalDiagnosticsDataType"),
             LocalizedText.NULL_VALUE,
@@ -6351,7 +6786,8 @@ class DataTypeNodeLoader {
             false,
             SamplingIntervalDiagnosticsDataType.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 856), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+        new Reference(
+            NodeId.parse("i=856"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -6359,7 +6795,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 859),
+            NodeId.parse("i=859"),
             new QualifiedName(0, "ServerDiagnosticsSummaryDataType"),
             new LocalizedText("", "ServerDiagnosticsSummaryDataType"),
             LocalizedText.NULL_VALUE,
@@ -6371,7 +6807,8 @@ class DataTypeNodeLoader {
             false,
             ServerDiagnosticsSummaryDataType.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 859), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+        new Reference(
+            NodeId.parse("i=859"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -6379,7 +6816,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 862),
+            NodeId.parse("i=862"),
             new QualifiedName(0, "ServerStatusDataType"),
             new LocalizedText("", "ServerStatusDataType"),
             LocalizedText.NULL_VALUE,
@@ -6391,7 +6828,8 @@ class DataTypeNodeLoader {
             false,
             ServerStatusDataType.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 862), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+        new Reference(
+            NodeId.parse("i=862"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -6399,7 +6837,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 865),
+            NodeId.parse("i=865"),
             new QualifiedName(0, "SessionDiagnosticsDataType"),
             new LocalizedText("", "SessionDiagnosticsDataType"),
             LocalizedText.NULL_VALUE,
@@ -6411,7 +6849,8 @@ class DataTypeNodeLoader {
             false,
             SessionDiagnosticsDataType.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 865), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+        new Reference(
+            NodeId.parse("i=865"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -6419,7 +6858,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 868),
+            NodeId.parse("i=868"),
             new QualifiedName(0, "SessionSecurityDiagnosticsDataType"),
             new LocalizedText("", "SessionSecurityDiagnosticsDataType"),
             LocalizedText.NULL_VALUE,
@@ -6431,7 +6870,8 @@ class DataTypeNodeLoader {
             false,
             SessionSecurityDiagnosticsDataType.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 868), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+        new Reference(
+            NodeId.parse("i=868"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -6439,7 +6879,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 871),
+            NodeId.parse("i=871"),
             new QualifiedName(0, "ServiceCounterDataType"),
             new LocalizedText("", "ServiceCounterDataType"),
             LocalizedText.NULL_VALUE,
@@ -6451,7 +6891,8 @@ class DataTypeNodeLoader {
             false,
             ServiceCounterDataType.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 871), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+        new Reference(
+            NodeId.parse("i=871"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -6459,7 +6900,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 299),
+            NodeId.parse("i=299"),
             new QualifiedName(0, "StatusResult"),
             new LocalizedText("", "StatusResult"),
             LocalizedText.NULL_VALUE,
@@ -6471,7 +6912,8 @@ class DataTypeNodeLoader {
             false,
             StatusResult.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 299), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+        new Reference(
+            NodeId.parse("i=299"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -6479,7 +6921,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 874),
+            NodeId.parse("i=874"),
             new QualifiedName(0, "SubscriptionDiagnosticsDataType"),
             new LocalizedText("", "SubscriptionDiagnosticsDataType"),
             LocalizedText.NULL_VALUE,
@@ -6491,7 +6933,8 @@ class DataTypeNodeLoader {
             false,
             SubscriptionDiagnosticsDataType.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 874), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+        new Reference(
+            NodeId.parse("i=874"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -6499,7 +6942,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 877),
+            NodeId.parse("i=877"),
             new QualifiedName(0, "ModelChangeStructureDataType"),
             new LocalizedText("", "ModelChangeStructureDataType"),
             LocalizedText.NULL_VALUE,
@@ -6511,7 +6954,8 @@ class DataTypeNodeLoader {
             false,
             ModelChangeStructureDataType.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 877), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+        new Reference(
+            NodeId.parse("i=877"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -6519,7 +6963,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 897),
+            NodeId.parse("i=897"),
             new QualifiedName(0, "SemanticChangeStructureDataType"),
             new LocalizedText("", "SemanticChangeStructureDataType"),
             LocalizedText.NULL_VALUE,
@@ -6531,7 +6975,8 @@ class DataTypeNodeLoader {
             false,
             SemanticChangeStructureDataType.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 897), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+        new Reference(
+            NodeId.parse("i=897"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -6539,7 +6984,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 884),
+            NodeId.parse("i=884"),
             new QualifiedName(0, "Range"),
             new LocalizedText("", "Range"),
             LocalizedText.NULL_VALUE,
@@ -6551,7 +6996,8 @@ class DataTypeNodeLoader {
             false,
             Range.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 884), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+        new Reference(
+            NodeId.parse("i=884"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -6559,7 +7005,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 887),
+            NodeId.parse("i=887"),
             new QualifiedName(0, "EUInformation"),
             new LocalizedText("", "EUInformation"),
             LocalizedText.NULL_VALUE,
@@ -6571,7 +7017,8 @@ class DataTypeNodeLoader {
             false,
             EUInformation.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 887), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+        new Reference(
+            NodeId.parse("i=887"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -6579,7 +7026,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 12077),
+            NodeId.parse("i=12077"),
             new QualifiedName(0, "AxisScaleEnumeration"),
             new LocalizedText("", "AxisScaleEnumeration"),
             LocalizedText.NULL_VALUE,
@@ -6592,10 +7039,13 @@ class DataTypeNodeLoader {
             AxisScaleEnumeration.definition());
     node.addReference(
         new Reference(
-            new NodeId(0, 12077), new NodeId(0, 46), new NodeId(0, 12078).expanded(), true));
+            NodeId.parse("i=12077"),
+            NodeId.parse("i=46"),
+            NodeId.parse("i=12078").expanded(),
+            true));
     node.addReference(
         new Reference(
-            new NodeId(0, 12077), new NodeId(0, 45), new NodeId(0, 29).expanded(), false));
+            NodeId.parse("i=12077"), NodeId.parse("i=45"), NodeId.parse("i=29").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -6603,7 +7053,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 12171),
+            NodeId.parse("i=12171"),
             new QualifiedName(0, "ComplexNumberType"),
             new LocalizedText("", "ComplexNumberType"),
             LocalizedText.NULL_VALUE,
@@ -6616,7 +7066,7 @@ class DataTypeNodeLoader {
             ComplexNumberType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 12171), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=12171"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -6624,7 +7074,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 12172),
+            NodeId.parse("i=12172"),
             new QualifiedName(0, "DoubleComplexNumberType"),
             new LocalizedText("", "DoubleComplexNumberType"),
             LocalizedText.NULL_VALUE,
@@ -6637,7 +7087,7 @@ class DataTypeNodeLoader {
             DoubleComplexNumberType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 12172), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=12172"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -6645,7 +7095,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 12079),
+            NodeId.parse("i=12079"),
             new QualifiedName(0, "AxisInformation"),
             new LocalizedText("", "AxisInformation"),
             LocalizedText.NULL_VALUE,
@@ -6658,7 +7108,7 @@ class DataTypeNodeLoader {
             AxisInformation.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 12079), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=12079"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -6666,7 +7116,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 12080),
+            NodeId.parse("i=12080"),
             new QualifiedName(0, "XVType"),
             new LocalizedText("", "XVType"),
             LocalizedText.NULL_VALUE,
@@ -6679,7 +7129,7 @@ class DataTypeNodeLoader {
             XVType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 12080), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=12080"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -6687,7 +7137,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 894),
+            NodeId.parse("i=894"),
             new QualifiedName(0, "ProgramDiagnosticDataType"),
             new LocalizedText("", "ProgramDiagnosticDataType"),
             LocalizedText.NULL_VALUE,
@@ -6699,7 +7149,8 @@ class DataTypeNodeLoader {
             false,
             ProgramDiagnosticDataType.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 894), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+        new Reference(
+            NodeId.parse("i=894"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -6707,7 +7158,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 24033),
+            NodeId.parse("i=24033"),
             new QualifiedName(0, "ProgramDiagnostic2DataType"),
             new LocalizedText("", "ProgramDiagnostic2DataType"),
             LocalizedText.NULL_VALUE,
@@ -6720,7 +7171,7 @@ class DataTypeNodeLoader {
             ProgramDiagnostic2DataType.definition(context.getNamespaceTable()));
     node.addReference(
         new Reference(
-            new NodeId(0, 24033), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+            NodeId.parse("i=24033"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -6728,7 +7179,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 891),
+            NodeId.parse("i=891"),
             new QualifiedName(0, "Annotation"),
             new LocalizedText("", "Annotation"),
             LocalizedText.NULL_VALUE,
@@ -6740,7 +7191,8 @@ class DataTypeNodeLoader {
             false,
             Annotation.definition(context.getNamespaceTable()));
     node.addReference(
-        new Reference(new NodeId(0, 891), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+        new Reference(
+            NodeId.parse("i=891"), NodeId.parse("i=45"), NodeId.parse("i=22").expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -6748,7 +7200,7 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
-            new NodeId(0, 890),
+            NodeId.parse("i=890"),
             new QualifiedName(0, "ExceptionDeviationFormat"),
             new LocalizedText("", "ExceptionDeviationFormat"),
             LocalizedText.NULL_VALUE,
@@ -6760,9 +7212,11 @@ class DataTypeNodeLoader {
             false,
             ExceptionDeviationFormat.definition());
     node.addReference(
-        new Reference(new NodeId(0, 890), new NodeId(0, 46), new NodeId(0, 7614).expanded(), true));
+        new Reference(
+            NodeId.parse("i=890"), NodeId.parse("i=46"), NodeId.parse("i=7614").expanded(), true));
     node.addReference(
-        new Reference(new NodeId(0, 890), new NodeId(0, 45), new NodeId(0, 29).expanded(), false));
+        new Reference(
+            NodeId.parse("i=890"), NodeId.parse("i=45"), NodeId.parse("i=29").expanded(), false));
     this.nodeManager.addNode(node);
   }
 

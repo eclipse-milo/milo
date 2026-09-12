@@ -12,6 +12,8 @@ package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -144,14 +146,14 @@ public class AxisInformation extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 12089),
-        new NodeId(0, 22),
+        NodeId.parse("i=12089"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "EngineeringUnits",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 887),
+              NodeId.parse("i=887"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -159,7 +161,7 @@ public class AxisInformation extends Structure implements UaStructuredType {
           new StructureField(
               "EURange",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 884),
+              NodeId.parse("i=884"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -167,7 +169,7 @@ public class AxisInformation extends Structure implements UaStructuredType {
           new StructureField(
               "Title",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 21),
+              NodeId.parse("i=21"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -175,7 +177,7 @@ public class AxisInformation extends Structure implements UaStructuredType {
           new StructureField(
               "AxisScaleType",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12077),
+              NodeId.parse("i=12077"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -183,7 +185,7 @@ public class AxisInformation extends Structure implements UaStructuredType {
           new StructureField(
               "AxisSteps",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 11),
+              NodeId.parse("i=11"),
               1,
               null,
               UInteger.valueOf(0),
@@ -208,7 +210,28 @@ public class AxisInformation extends Structure implements UaStructuredType {
           (EUInformation) decoder.decodeStruct("EngineeringUnits", EUInformation.TYPE_ID);
       euRange = (Range) decoder.decodeStruct("EURange", Range.TYPE_ID);
       title = decoder.decodeLocalizedText("Title");
-      axisScaleType = AxisScaleEnumeration.from(decoder.decodeEnum("AxisScaleType"));
+      {
+        Integer enumValue = decoder.decodeEnum("AxisScaleType");
+        if (enumValue != null && !((Object) enumValue instanceof AxisScaleEnumeration)) {
+          if (!(enumValue instanceof Integer)) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_TypeMismatch,
+                "AxisScaleType: expected"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.AxisScaleEnumeration or"
+                    + " Int32, got "
+                    + enumValue);
+          }
+          if (AxisScaleEnumeration.from((Integer) enumValue) == null) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_OutOfRange,
+                "AxisScaleType: unknown"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.AxisScaleEnumeration"
+                    + " value "
+                    + enumValue);
+          }
+        }
+        axisScaleType = enumValue == null ? null : AxisScaleEnumeration.from(enumValue);
+      }
       axisSteps = decoder.decodeDoubleArray("AxisSteps");
       return new AxisInformation(engineeringUnits, euRange, title, axisScaleType, axisSteps);
     }

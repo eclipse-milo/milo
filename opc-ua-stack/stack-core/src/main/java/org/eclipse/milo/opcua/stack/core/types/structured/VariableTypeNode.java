@@ -12,6 +12,8 @@ package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -39,7 +41,7 @@ public class VariableTypeNode extends TypeNode implements UaStructuredType {
 
   public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15075");
 
-  private final Variant value;
+  private final Variant value2;
 
   private final NodeId dataType;
 
@@ -61,7 +63,7 @@ public class VariableTypeNode extends TypeNode implements UaStructuredType {
       RolePermissionType @Nullable [] userRolePermissions,
       UShort accessRestrictions,
       ReferenceNode @Nullable [] references,
-      Variant value,
+      Variant value2,
       NodeId dataType,
       Integer valueRank,
       UInteger @Nullable [] arrayDimensions,
@@ -78,7 +80,7 @@ public class VariableTypeNode extends TypeNode implements UaStructuredType {
         userRolePermissions,
         accessRestrictions,
         references);
-    this.value = value;
+    this.value2 = value2;
     this.dataType = dataType;
     this.valueRank = valueRank;
     this.arrayDimensions = arrayDimensions;
@@ -106,7 +108,7 @@ public class VariableTypeNode extends TypeNode implements UaStructuredType {
   }
 
   public Variant getValue() {
-    return value;
+    return value2;
   }
 
   public NodeId getDataType() {
@@ -168,14 +170,14 @@ public class VariableTypeNode extends TypeNode implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 272),
-        new NodeId(0, 11880),
+        NodeId.parse("i=272"),
+        NodeId.parse("i=11880"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "NodeId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -183,7 +185,7 @@ public class VariableTypeNode extends TypeNode implements UaStructuredType {
           new StructureField(
               "NodeClass",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 257),
+              NodeId.parse("i=257"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -191,7 +193,7 @@ public class VariableTypeNode extends TypeNode implements UaStructuredType {
           new StructureField(
               "BrowseName",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 20),
+              NodeId.parse("i=20"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -199,7 +201,7 @@ public class VariableTypeNode extends TypeNode implements UaStructuredType {
           new StructureField(
               "DisplayName",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 21),
+              NodeId.parse("i=21"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -207,7 +209,7 @@ public class VariableTypeNode extends TypeNode implements UaStructuredType {
           new StructureField(
               "Description",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 21),
+              NodeId.parse("i=21"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -215,7 +217,7 @@ public class VariableTypeNode extends TypeNode implements UaStructuredType {
           new StructureField(
               "WriteMask",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -223,7 +225,7 @@ public class VariableTypeNode extends TypeNode implements UaStructuredType {
           new StructureField(
               "UserWriteMask",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -231,7 +233,7 @@ public class VariableTypeNode extends TypeNode implements UaStructuredType {
           new StructureField(
               "RolePermissions",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 96),
+              NodeId.parse("i=96"),
               1,
               null,
               UInteger.valueOf(0),
@@ -239,7 +241,7 @@ public class VariableTypeNode extends TypeNode implements UaStructuredType {
           new StructureField(
               "UserRolePermissions",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 96),
+              NodeId.parse("i=96"),
               1,
               null,
               UInteger.valueOf(0),
@@ -247,7 +249,7 @@ public class VariableTypeNode extends TypeNode implements UaStructuredType {
           new StructureField(
               "AccessRestrictions",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 5),
+              NodeId.parse("i=5"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -255,7 +257,7 @@ public class VariableTypeNode extends TypeNode implements UaStructuredType {
           new StructureField(
               "References",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 285),
+              NodeId.parse("i=285"),
               1,
               null,
               UInteger.valueOf(0),
@@ -263,7 +265,7 @@ public class VariableTypeNode extends TypeNode implements UaStructuredType {
           new StructureField(
               "Value",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 24),
+              NodeId.parse("i=24"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -271,7 +273,7 @@ public class VariableTypeNode extends TypeNode implements UaStructuredType {
           new StructureField(
               "DataType",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -279,7 +281,7 @@ public class VariableTypeNode extends TypeNode implements UaStructuredType {
           new StructureField(
               "ValueRank",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 6),
+              NodeId.parse("i=6"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -287,7 +289,7 @@ public class VariableTypeNode extends TypeNode implements UaStructuredType {
           new StructureField(
               "ArrayDimensions",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               1,
               null,
               UInteger.valueOf(0),
@@ -295,7 +297,7 @@ public class VariableTypeNode extends TypeNode implements UaStructuredType {
           new StructureField(
               "IsAbstract",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -322,13 +324,32 @@ public class VariableTypeNode extends TypeNode implements UaStructuredType {
       final RolePermissionType[] userRolePermissions;
       final UShort accessRestrictions;
       final ReferenceNode[] references;
-      final Variant value;
+      final Variant value2;
       final NodeId dataType;
       final Integer valueRank;
       final UInteger[] arrayDimensions;
       final Boolean isAbstract;
       nodeId = decoder.decodeNodeId("NodeId");
-      nodeClass = NodeClass.from(decoder.decodeEnum("NodeClass"));
+      {
+        Integer enumValue = decoder.decodeEnum("NodeClass");
+        if (enumValue != null && !((Object) enumValue instanceof NodeClass)) {
+          if (!(enumValue instanceof Integer)) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_TypeMismatch,
+                "NodeClass: expected org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass"
+                    + " or Int32, got "
+                    + enumValue);
+          }
+          if (NodeClass.from((Integer) enumValue) == null) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_OutOfRange,
+                "NodeClass: unknown org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass"
+                    + " value "
+                    + enumValue);
+          }
+        }
+        nodeClass = enumValue == null ? null : NodeClass.from(enumValue);
+      }
       browseName = decoder.decodeQualifiedName("BrowseName");
       displayName = decoder.decodeLocalizedText("DisplayName");
       description = decoder.decodeLocalizedText("Description");
@@ -342,7 +363,7 @@ public class VariableTypeNode extends TypeNode implements UaStructuredType {
               decoder.decodeStructArray("UserRolePermissions", RolePermissionType.TYPE_ID);
       accessRestrictions = decoder.decodeUInt16("AccessRestrictions");
       references = (ReferenceNode[]) decoder.decodeStructArray("References", ReferenceNode.TYPE_ID);
-      value = decoder.decodeVariant("Value");
+      value2 = decoder.decodeVariant("Value");
       dataType = decoder.decodeNodeId("DataType");
       valueRank = decoder.decodeInt32("ValueRank");
       arrayDimensions = decoder.decodeUInt32Array("ArrayDimensions");
@@ -359,7 +380,7 @@ public class VariableTypeNode extends TypeNode implements UaStructuredType {
           userRolePermissions,
           accessRestrictions,
           references,
-          value,
+          value2,
           dataType,
           valueRank,
           arrayDimensions,
@@ -381,7 +402,8 @@ public class VariableTypeNode extends TypeNode implements UaStructuredType {
           "UserRolePermissions", value.getUserRolePermissions(), RolePermissionType.TYPE_ID);
       encoder.encodeUInt16("AccessRestrictions", value.getAccessRestrictions());
       encoder.encodeStructArray("References", value.getReferences(), ReferenceNode.TYPE_ID);
-      encoder.encodeVariant("Value", value.getValue());
+      encoder.encodeVariant(
+          "Value", value.getValue() == null ? Variant.NULL_VALUE : value.getValue());
       encoder.encodeNodeId("DataType", value.getDataType());
       encoder.encodeInt32("ValueRank", value.getValueRank());
       encoder.encodeUInt32Array("ArrayDimensions", value.getArrayDimensions());

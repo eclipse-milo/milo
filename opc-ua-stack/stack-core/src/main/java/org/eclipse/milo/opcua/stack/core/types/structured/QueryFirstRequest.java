@@ -154,14 +154,14 @@ public class QueryFirstRequest extends Structure implements UaRequestMessageType
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 615),
-        new NodeId(0, 22),
+        NodeId.parse("i=615"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "RequestHeader",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 389),
+              NodeId.parse("i=389"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -169,7 +169,7 @@ public class QueryFirstRequest extends Structure implements UaRequestMessageType
           new StructureField(
               "View",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 511),
+              NodeId.parse("i=511"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -177,7 +177,7 @@ public class QueryFirstRequest extends Structure implements UaRequestMessageType
           new StructureField(
               "NodeTypes",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 573),
+              NodeId.parse("i=573"),
               1,
               null,
               UInteger.valueOf(0),
@@ -185,7 +185,7 @@ public class QueryFirstRequest extends Structure implements UaRequestMessageType
           new StructureField(
               "Filter",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 586),
+              NodeId.parse("i=586"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -193,7 +193,7 @@ public class QueryFirstRequest extends Structure implements UaRequestMessageType
           new StructureField(
               "MaxDataSetsToReturn",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 289),
+              NodeId.parse("i=289"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -201,7 +201,7 @@ public class QueryFirstRequest extends Structure implements UaRequestMessageType
           new StructureField(
               "MaxReferencesToReturn",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 289),
+              NodeId.parse("i=289"),
               -1,
               null,
               UInteger.valueOf(0),

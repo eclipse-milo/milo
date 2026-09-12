@@ -196,14 +196,14 @@ public class JsonActionMetaDataMessage extends Structure implements UaStructured
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 0),
-        new NodeId(0, 22),
+        NodeId.parse("i=0"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "MessageId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -211,7 +211,7 @@ public class JsonActionMetaDataMessage extends Structure implements UaStructured
           new StructureField(
               "MessageType",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -219,7 +219,7 @@ public class JsonActionMetaDataMessage extends Structure implements UaStructured
           new StructureField(
               "PublisherId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -227,7 +227,7 @@ public class JsonActionMetaDataMessage extends Structure implements UaStructured
           new StructureField(
               "DataSetWriterId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 5),
+              NodeId.parse("i=5"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -235,7 +235,7 @@ public class JsonActionMetaDataMessage extends Structure implements UaStructured
           new StructureField(
               "DataSetWriterName",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -243,7 +243,7 @@ public class JsonActionMetaDataMessage extends Structure implements UaStructured
           new StructureField(
               "Timestamp",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 294),
+              NodeId.parse("i=294"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -251,7 +251,7 @@ public class JsonActionMetaDataMessage extends Structure implements UaStructured
           new StructureField(
               "ActionTargets",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 18593),
+              NodeId.parse("i=18593"),
               1,
               null,
               UInteger.valueOf(0),
@@ -259,7 +259,7 @@ public class JsonActionMetaDataMessage extends Structure implements UaStructured
           new StructureField(
               "Request",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 14523),
+              NodeId.parse("i=14523"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -267,7 +267,7 @@ public class JsonActionMetaDataMessage extends Structure implements UaStructured
           new StructureField(
               "Response",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 14523),
+              NodeId.parse("i=14523"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -275,7 +275,7 @@ public class JsonActionMetaDataMessage extends Structure implements UaStructured
           new StructureField(
               "ActionMethods",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 18597),
+              NodeId.parse("i=18597"),
               1,
               null,
               UInteger.valueOf(0),

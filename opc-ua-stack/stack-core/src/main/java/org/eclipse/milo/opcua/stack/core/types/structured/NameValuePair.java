@@ -42,11 +42,11 @@ public class NameValuePair extends Structure implements UaStructuredType {
 
   private final @Nullable String name;
 
-  private final Variant value;
+  private final Variant value2;
 
-  public NameValuePair(@Nullable String name, Variant value) {
+  public NameValuePair(@Nullable String name, Variant value2) {
     this.name = name;
-    this.value = value;
+    this.value2 = value2;
   }
 
   @Override
@@ -74,7 +74,7 @@ public class NameValuePair extends Structure implements UaStructuredType {
   }
 
   public Variant getValue() {
-    return value;
+    return value2;
   }
 
   @Override
@@ -109,14 +109,14 @@ public class NameValuePair extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 19756),
-        new NodeId(0, 22),
+        NodeId.parse("i=19756"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "Name",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -124,7 +124,7 @@ public class NameValuePair extends Structure implements UaStructuredType {
           new StructureField(
               "Value",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 24),
+              NodeId.parse("i=24"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -141,16 +141,17 @@ public class NameValuePair extends Structure implements UaStructuredType {
     @Override
     public NameValuePair decodeType(EncodingContext context, UaDecoder decoder) {
       final String name;
-      final Variant value;
+      final Variant value2;
       name = decoder.decodeString("Name");
-      value = decoder.decodeVariant("Value");
-      return new NameValuePair(name, value);
+      value2 = decoder.decodeVariant("Value");
+      return new NameValuePair(name, value2);
     }
 
     @Override
     public void encodeType(EncodingContext context, UaEncoder encoder, NameValuePair value) {
       encoder.encodeString("Name", value.getName());
-      encoder.encodeVariant("Value", value.getValue());
+      encoder.encodeVariant(
+          "Value", value.getValue() == null ? Variant.NULL_VALUE : value.getValue());
     }
   }
 }

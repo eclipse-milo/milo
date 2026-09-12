@@ -110,14 +110,14 @@ public class MdnsDiscoveryConfiguration extends DiscoveryConfiguration implement
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 12901),
-        new NodeId(0, 12890),
+        NodeId.parse("i=12901"),
+        NodeId.parse("i=12890"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "MdnsServerName",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -125,7 +125,7 @@ public class MdnsDiscoveryConfiguration extends DiscoveryConfiguration implement
           new StructureField(
               "ServerCapabilities",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               1,
               null,
               UInteger.valueOf(0),

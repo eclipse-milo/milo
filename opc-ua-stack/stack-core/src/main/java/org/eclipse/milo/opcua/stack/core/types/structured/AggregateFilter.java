@@ -132,14 +132,14 @@ public class AggregateFilter extends MonitoringFilter implements UaStructuredTyp
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 730),
-        new NodeId(0, 719),
+        NodeId.parse("i=730"),
+        NodeId.parse("i=719"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "StartTime",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 294),
+              NodeId.parse("i=294"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -147,7 +147,7 @@ public class AggregateFilter extends MonitoringFilter implements UaStructuredTyp
           new StructureField(
               "AggregateType",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -155,7 +155,7 @@ public class AggregateFilter extends MonitoringFilter implements UaStructuredTyp
           new StructureField(
               "ProcessingInterval",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 290),
+              NodeId.parse("i=290"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -163,7 +163,7 @@ public class AggregateFilter extends MonitoringFilter implements UaStructuredTyp
           new StructureField(
               "AggregateConfiguration",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 948),
+              NodeId.parse("i=948"),
               -1,
               null,
               UInteger.valueOf(0),

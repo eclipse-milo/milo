@@ -168,14 +168,14 @@ public class PublishResponse extends Structure implements UaResponseMessageType 
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 829),
-        new NodeId(0, 22),
+        NodeId.parse("i=829"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "ResponseHeader",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 392),
+              NodeId.parse("i=392"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -183,7 +183,7 @@ public class PublishResponse extends Structure implements UaResponseMessageType 
           new StructureField(
               "SubscriptionId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 288),
+              NodeId.parse("i=288"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -191,7 +191,7 @@ public class PublishResponse extends Structure implements UaResponseMessageType 
           new StructureField(
               "AvailableSequenceNumbers",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 289),
+              NodeId.parse("i=289"),
               1,
               null,
               UInteger.valueOf(0),
@@ -199,7 +199,7 @@ public class PublishResponse extends Structure implements UaResponseMessageType 
           new StructureField(
               "MoreNotifications",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -207,7 +207,7 @@ public class PublishResponse extends Structure implements UaResponseMessageType 
           new StructureField(
               "NotificationMessage",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 803),
+              NodeId.parse("i=803"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -215,7 +215,7 @@ public class PublishResponse extends Structure implements UaResponseMessageType 
           new StructureField(
               "Results",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 19),
+              NodeId.parse("i=19"),
               1,
               null,
               UInteger.valueOf(0),
@@ -223,7 +223,7 @@ public class PublishResponse extends Structure implements UaResponseMessageType 
           new StructureField(
               "DiagnosticInfos",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 25),
+              NodeId.parse("i=25"),
               1,
               null,
               UInteger.valueOf(0),

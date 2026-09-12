@@ -12,6 +12,8 @@ package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -179,14 +181,14 @@ public class EndpointDescription extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 314),
-        new NodeId(0, 22),
+        NodeId.parse("i=314"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "EndpointUrl",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -194,7 +196,7 @@ public class EndpointDescription extends Structure implements UaStructuredType {
           new StructureField(
               "Server",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 308),
+              NodeId.parse("i=308"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -202,7 +204,7 @@ public class EndpointDescription extends Structure implements UaStructuredType {
           new StructureField(
               "ServerCertificate",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 311),
+              NodeId.parse("i=311"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -210,7 +212,7 @@ public class EndpointDescription extends Structure implements UaStructuredType {
           new StructureField(
               "SecurityMode",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 302),
+              NodeId.parse("i=302"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -218,7 +220,7 @@ public class EndpointDescription extends Structure implements UaStructuredType {
           new StructureField(
               "SecurityPolicyUri",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -226,7 +228,7 @@ public class EndpointDescription extends Structure implements UaStructuredType {
           new StructureField(
               "UserIdentityTokens",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 304),
+              NodeId.parse("i=304"),
               1,
               null,
               UInteger.valueOf(0),
@@ -234,7 +236,7 @@ public class EndpointDescription extends Structure implements UaStructuredType {
           new StructureField(
               "TransportProfileUri",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -242,7 +244,7 @@ public class EndpointDescription extends Structure implements UaStructuredType {
           new StructureField(
               "SecurityLevel",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 3),
+              NodeId.parse("i=3"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -270,7 +272,28 @@ public class EndpointDescription extends Structure implements UaStructuredType {
       server =
           (ApplicationDescription) decoder.decodeStruct("Server", ApplicationDescription.TYPE_ID);
       serverCertificate = decoder.decodeByteString("ServerCertificate");
-      securityMode = MessageSecurityMode.from(decoder.decodeEnum("SecurityMode"));
+      {
+        Integer enumValue = decoder.decodeEnum("SecurityMode");
+        if (enumValue != null && !((Object) enumValue instanceof MessageSecurityMode)) {
+          if (!(enumValue instanceof Integer)) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_TypeMismatch,
+                "SecurityMode: expected"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode or"
+                    + " Int32, got "
+                    + enumValue);
+          }
+          if (MessageSecurityMode.from((Integer) enumValue) == null) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_OutOfRange,
+                "SecurityMode: unknown"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode"
+                    + " value "
+                    + enumValue);
+          }
+        }
+        securityMode = enumValue == null ? null : MessageSecurityMode.from(enumValue);
+      }
       securityPolicyUri = decoder.decodeString("SecurityPolicyUri");
       userIdentityTokens =
           (UserTokenPolicy[])

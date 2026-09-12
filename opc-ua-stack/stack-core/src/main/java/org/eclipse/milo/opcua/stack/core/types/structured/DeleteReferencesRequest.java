@@ -109,14 +109,14 @@ public class DeleteReferencesRequest extends Structure implements UaRequestMessa
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 506),
-        new NodeId(0, 22),
+        NodeId.parse("i=506"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "RequestHeader",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 389),
+              NodeId.parse("i=389"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -124,7 +124,7 @@ public class DeleteReferencesRequest extends Structure implements UaRequestMessa
           new StructureField(
               "ReferencesToDelete",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 385),
+              NodeId.parse("i=385"),
               1,
               null,
               UInteger.valueOf(0),

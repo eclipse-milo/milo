@@ -144,14 +144,14 @@ public class DtlsPubSubConnectionDataType extends Structure implements UaStructu
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 18930),
-        new NodeId(0, 22),
+        NodeId.parse("i=18930"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "ClientCipherSuite",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -159,7 +159,7 @@ public class DtlsPubSubConnectionDataType extends Structure implements UaStructu
           new StructureField(
               "ServerCipherSuites",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               1,
               null,
               UInteger.valueOf(0),
@@ -167,7 +167,7 @@ public class DtlsPubSubConnectionDataType extends Structure implements UaStructu
           new StructureField(
               "ZeroRTT",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -175,7 +175,7 @@ public class DtlsPubSubConnectionDataType extends Structure implements UaStructu
           new StructureField(
               "CertificateGroupId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -183,7 +183,7 @@ public class DtlsPubSubConnectionDataType extends Structure implements UaStructu
           new StructureField(
               "VerifyClientCertificate",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),

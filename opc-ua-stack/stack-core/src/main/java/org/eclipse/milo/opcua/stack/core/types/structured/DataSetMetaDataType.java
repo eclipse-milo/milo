@@ -151,14 +151,14 @@ public class DataSetMetaDataType extends DataTypeSchemaHeader implements UaStruc
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 124),
-        new NodeId(0, 15534),
+        NodeId.parse("i=124"),
+        NodeId.parse("i=15534"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "Namespaces",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               1,
               null,
               UInteger.valueOf(0),
@@ -166,7 +166,7 @@ public class DataSetMetaDataType extends DataTypeSchemaHeader implements UaStruc
           new StructureField(
               "StructureDataTypes",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15487),
+              NodeId.parse("i=15487"),
               1,
               null,
               UInteger.valueOf(0),
@@ -174,7 +174,7 @@ public class DataSetMetaDataType extends DataTypeSchemaHeader implements UaStruc
           new StructureField(
               "EnumDataTypes",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15488),
+              NodeId.parse("i=15488"),
               1,
               null,
               UInteger.valueOf(0),
@@ -182,7 +182,7 @@ public class DataSetMetaDataType extends DataTypeSchemaHeader implements UaStruc
           new StructureField(
               "SimpleDataTypes",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 15005),
+              NodeId.parse("i=15005"),
               1,
               null,
               UInteger.valueOf(0),
@@ -190,7 +190,7 @@ public class DataSetMetaDataType extends DataTypeSchemaHeader implements UaStruc
           new StructureField(
               "Name",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -198,7 +198,7 @@ public class DataSetMetaDataType extends DataTypeSchemaHeader implements UaStruc
           new StructureField(
               "Description",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 21),
+              NodeId.parse("i=21"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -206,7 +206,7 @@ public class DataSetMetaDataType extends DataTypeSchemaHeader implements UaStruc
           new StructureField(
               "Fields",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 14524),
+              NodeId.parse("i=14524"),
               1,
               null,
               UInteger.valueOf(0),
@@ -214,7 +214,7 @@ public class DataSetMetaDataType extends DataTypeSchemaHeader implements UaStruc
           new StructureField(
               "DataSetClassId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 14),
+              NodeId.parse("i=14"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -222,7 +222,7 @@ public class DataSetMetaDataType extends DataTypeSchemaHeader implements UaStruc
           new StructureField(
               "ConfigurationVersion",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 14593),
+              NodeId.parse("i=14593"),
               -1,
               null,
               UInteger.valueOf(0),

@@ -133,14 +133,14 @@ public class SimpleAttributeOperand extends FilterOperand implements UaStructure
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 603),
-        new NodeId(0, 589),
+        NodeId.parse("i=603"),
+        NodeId.parse("i=589"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "TypeDefinitionId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -148,7 +148,7 @@ public class SimpleAttributeOperand extends FilterOperand implements UaStructure
           new StructureField(
               "BrowsePath",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 20),
+              NodeId.parse("i=20"),
               1,
               null,
               UInteger.valueOf(0),
@@ -156,7 +156,7 @@ public class SimpleAttributeOperand extends FilterOperand implements UaStructure
           new StructureField(
               "AttributeId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 288),
+              NodeId.parse("i=288"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -164,7 +164,7 @@ public class SimpleAttributeOperand extends FilterOperand implements UaStructure
           new StructureField(
               "IndexRange",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 291),
+              NodeId.parse("i=291"),
               -1,
               null,
               UInteger.valueOf(0),

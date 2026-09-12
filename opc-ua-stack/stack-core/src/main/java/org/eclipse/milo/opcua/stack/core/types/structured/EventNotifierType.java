@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUI8;
 import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
@@ -46,6 +47,16 @@ public class EventNotifierType extends OptionSetUI8<EventNotifierType.Field> {
     joiner.add("historyRead=" + getHistoryRead());
     joiner.add("historyWrite=" + getHistoryWrite());
     return joiner.toString();
+  }
+
+  public static EnumDefinition definition() {
+    return new EnumDefinition(
+        new EnumField[] {
+          new EnumField(
+              0L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "SubscribeToEvents"),
+          new EnumField(2L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "HistoryRead"),
+          new EnumField(3L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "HistoryWrite")
+        });
   }
 
   public static EventNotifierType of(EventNotifierType.Field... fields) {

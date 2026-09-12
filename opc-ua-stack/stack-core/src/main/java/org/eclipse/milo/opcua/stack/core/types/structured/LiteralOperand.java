@@ -39,10 +39,10 @@ public class LiteralOperand extends FilterOperand implements UaStructuredType {
 
   public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15208");
 
-  private final Variant value;
+  private final Variant value2;
 
-  public LiteralOperand(Variant value) {
-    this.value = value;
+  public LiteralOperand(Variant value2) {
+    this.value2 = value2;
   }
 
   @Override
@@ -66,7 +66,7 @@ public class LiteralOperand extends FilterOperand implements UaStructuredType {
   }
 
   public Variant getValue() {
-    return value;
+    return value2;
   }
 
   @Override
@@ -98,14 +98,14 @@ public class LiteralOperand extends FilterOperand implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 597),
-        new NodeId(0, 589),
+        NodeId.parse("i=597"),
+        NodeId.parse("i=589"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "Value",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 24),
+              NodeId.parse("i=24"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -121,14 +121,15 @@ public class LiteralOperand extends FilterOperand implements UaStructuredType {
 
     @Override
     public LiteralOperand decodeType(EncodingContext context, UaDecoder decoder) {
-      final Variant value;
-      value = decoder.decodeVariant("Value");
-      return new LiteralOperand(value);
+      final Variant value2;
+      value2 = decoder.decodeVariant("Value");
+      return new LiteralOperand(value2);
     }
 
     @Override
     public void encodeType(EncodingContext context, UaEncoder encoder, LiteralOperand value) {
-      encoder.encodeVariant("Value", value.getValue());
+      encoder.encodeVariant(
+          "Value", value.getValue() == null ? Variant.NULL_VALUE : value.getValue());
     }
   }
 }

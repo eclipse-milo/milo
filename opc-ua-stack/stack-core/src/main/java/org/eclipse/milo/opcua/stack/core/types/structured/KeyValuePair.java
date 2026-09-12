@@ -42,11 +42,11 @@ public class KeyValuePair extends Structure implements UaStructuredType {
 
   private final QualifiedName key;
 
-  private final Variant value;
+  private final Variant value2;
 
-  public KeyValuePair(QualifiedName key, Variant value) {
+  public KeyValuePair(QualifiedName key, Variant value2) {
     this.key = key;
-    this.value = value;
+    this.value2 = value2;
   }
 
   @Override
@@ -74,7 +74,7 @@ public class KeyValuePair extends Structure implements UaStructuredType {
   }
 
   public Variant getValue() {
-    return value;
+    return value2;
   }
 
   @Override
@@ -109,14 +109,14 @@ public class KeyValuePair extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 14846),
-        new NodeId(0, 22),
+        NodeId.parse("i=14846"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "Key",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 20),
+              NodeId.parse("i=20"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -124,7 +124,7 @@ public class KeyValuePair extends Structure implements UaStructuredType {
           new StructureField(
               "Value",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 24),
+              NodeId.parse("i=24"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -141,16 +141,17 @@ public class KeyValuePair extends Structure implements UaStructuredType {
     @Override
     public KeyValuePair decodeType(EncodingContext context, UaDecoder decoder) {
       final QualifiedName key;
-      final Variant value;
+      final Variant value2;
       key = decoder.decodeQualifiedName("Key");
-      value = decoder.decodeVariant("Value");
-      return new KeyValuePair(key, value);
+      value2 = decoder.decodeVariant("Value");
+      return new KeyValuePair(key, value2);
     }
 
     @Override
     public void encodeType(EncodingContext context, UaEncoder encoder, KeyValuePair value) {
       encoder.encodeQualifiedName("Key", value.getKey());
-      encoder.encodeVariant("Value", value.getValue());
+      encoder.encodeVariant(
+          "Value", value.getValue() == null ? Variant.NULL_VALUE : value.getValue());
     }
   }
 }

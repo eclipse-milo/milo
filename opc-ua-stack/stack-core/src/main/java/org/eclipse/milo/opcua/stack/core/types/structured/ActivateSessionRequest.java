@@ -156,14 +156,14 @@ public class ActivateSessionRequest extends Structure implements UaRequestMessag
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 467),
-        new NodeId(0, 22),
+        NodeId.parse("i=467"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "RequestHeader",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 389),
+              NodeId.parse("i=389"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -171,7 +171,7 @@ public class ActivateSessionRequest extends Structure implements UaRequestMessag
           new StructureField(
               "ClientSignature",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 456),
+              NodeId.parse("i=456"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -179,7 +179,7 @@ public class ActivateSessionRequest extends Structure implements UaRequestMessag
           new StructureField(
               "ClientSoftwareCertificates",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 344),
+              NodeId.parse("i=344"),
               1,
               null,
               UInteger.valueOf(0),
@@ -187,7 +187,7 @@ public class ActivateSessionRequest extends Structure implements UaRequestMessag
           new StructureField(
               "LocaleIds",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 295),
+              NodeId.parse("i=295"),
               1,
               null,
               UInteger.valueOf(0),
@@ -195,7 +195,7 @@ public class ActivateSessionRequest extends Structure implements UaRequestMessag
           new StructureField(
               "UserIdentityToken",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 22),
+              NodeId.parse("i=22"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -203,7 +203,7 @@ public class ActivateSessionRequest extends Structure implements UaRequestMessag
           new StructureField(
               "UserTokenSignature",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 456),
+              NodeId.parse("i=456"),
               -1,
               null,
               UInteger.valueOf(0),

@@ -122,14 +122,14 @@ public class ThreeDVector extends Vector implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 18817),
-        new NodeId(0, 18807),
+        NodeId.parse("i=18817"),
+        NodeId.parse("i=18807"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "X",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 11),
+              NodeId.parse("i=11"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -137,7 +137,7 @@ public class ThreeDVector extends Vector implements UaStructuredType {
           new StructureField(
               "Y",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 11),
+              NodeId.parse("i=11"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -145,7 +145,7 @@ public class ThreeDVector extends Vector implements UaStructuredType {
           new StructureField(
               "Z",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 11),
+              NodeId.parse("i=11"),
               -1,
               null,
               UInteger.valueOf(0),

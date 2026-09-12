@@ -17,6 +17,7 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.structured.SessionDiagnosticsDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SessionSecurityDiagnosticsDataType;
+import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
@@ -24,158 +25,253 @@ import org.eclipse.milo.opcua.stack.core.types.structured.SessionSecurityDiagnos
  */
 public interface SessionsDiagnosticsSummaryType extends BaseObjectType {
   /**
-   * Get the local value of the SessionDiagnosticsArray Node.
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Lookup may perform service I/O; the value is not read
+   * remotely. Use the node's raw DataValue to inspect quality and timestamps.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @return the local value of the SessionDiagnosticsArray Node.
-   * @throws UaException if an error occurs creating or getting the SessionDiagnosticsArray Node.
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
    */
-  SessionDiagnosticsDataType[] getSessionDiagnosticsArray() throws UaException;
+  @Nullable SessionDiagnosticsDataType @Nullable [] getSessionDiagnosticsArray() throws UaException;
 
   /**
-   * Set the local value of the SessionDiagnosticsArray Node.
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   * This does not send a Write service request.
    *
-   * <p>The value is only updated locally; it is not written to the server.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @param value the local value to set for the SessionDiagnosticsArray Node.
-   * @throws UaException if an error occurs creating or getting the SessionDiagnosticsArray Node.
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
    */
-  void setSessionDiagnosticsArray(SessionDiagnosticsDataType[] value) throws UaException;
+  void setSessionDiagnosticsArray(@Nullable SessionDiagnosticsDataType @Nullable [] value)
+      throws UaException;
 
   /**
-   * Read the value of the SessionDiagnosticsArray Node from the server and update the local value
-   * if the operation succeeds.
+   * Reads the existing member's value remotely. Only Good status is accepted, including Good
+   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
+   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
+   * node's raw readValue to retain quality, timestamps and unconverted values.
    *
-   * @return the {@link SessionDiagnosticsDataType[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails; non-Good operation status also fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
    */
-  SessionDiagnosticsDataType[] readSessionDiagnosticsArray() throws UaException;
+  @Nullable SessionDiagnosticsDataType @Nullable [] readSessionDiagnosticsArray()
+      throws UaException;
 
   /**
-   * Write a new value for the SessionDiagnosticsArray Node to the server and update the local value
-   * if the operation succeeds.
+   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
+   * local value.
    *
-   * @param value the {@link SessionDiagnosticsDataType[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails; non-Good operation status also fails
    */
-  void writeSessionDiagnosticsArray(SessionDiagnosticsDataType[] value) throws UaException;
+  void writeSessionDiagnosticsArray(@Nullable SessionDiagnosticsDataType @Nullable [] value)
+      throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readSessionDiagnosticsArray}.
+   * Reads the existing member's value remotely. Only Good status is accepted, including Good
+   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
+   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
+   * node's raw readValue to retain quality, timestamps and unconverted values.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
+   *
+   * @return a nonnull future completing with the value, which may be null on a present member
    */
-  CompletableFuture<? extends SessionDiagnosticsDataType[]> readSessionDiagnosticsArrayAsync();
+  CompletableFuture<? extends @Nullable SessionDiagnosticsDataType @Nullable []>
+      readSessionDiagnosticsArrayAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeSessionDiagnosticsArray}.
+   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
+   * local value.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
+   *
+   * @param value the value to store; null is permitted
+   * @return a nonnull future completing with the Write operation status, including non-Good
+   *     statuses
    */
   CompletableFuture<StatusCode> writeSessionDiagnosticsArrayAsync(
-      SessionDiagnosticsDataType[] value);
+      @Nullable SessionDiagnosticsDataType @Nullable [] value);
 
   /**
-   * Get the SessionDiagnosticsArray {@link SessionDiagnosticsArrayType} Node, or {@code null} if it
-   * does not exist.
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. It can perform service I/O and construct or
+   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SessionDiagnosticsArray {@link SessionDiagnosticsArrayType} Node, or {@code null}
-   *     if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
    */
   SessionDiagnosticsArrayType getSessionDiagnosticsArrayNode() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getSessionDiagnosticsArrayNode()}.
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. It can perform service I/O and construct or
+   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
    *
-   * @return a CompletableFuture that completes successfully with the SessionDiagnosticsArrayType
-   *     Node or completes exceptionally if an error occurs creating or getting the Node.
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
+   *
+   * @return a nonnull future completing with the existing member
    */
   CompletableFuture<? extends SessionDiagnosticsArrayType> getSessionDiagnosticsArrayNodeAsync();
 
   /**
-   * Get the local value of the SessionSecurityDiagnosticsArray Node.
+   * Gets the existing member's local value without checking its quality. A null value is valid; an
+   * absent node fails with Bad_NotFound. Lookup may perform service I/O; the value is not read
+   * remotely. Use the node's raw DataValue to inspect quality and timestamps.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
    *
-   * @return the local value of the SessionSecurityDiagnosticsArray Node.
-   * @throws UaException if an error occurs creating or getting the SessionSecurityDiagnosticsArray
-   *     Node.
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
    */
-  SessionSecurityDiagnosticsDataType[] getSessionSecurityDiagnosticsArray() throws UaException;
-
-  /**
-   * Set the local value of the SessionSecurityDiagnosticsArray Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SessionSecurityDiagnosticsArray Node.
-   * @throws UaException if an error occurs creating or getting the SessionSecurityDiagnosticsArray
-   *     Node.
-   */
-  void setSessionSecurityDiagnosticsArray(SessionSecurityDiagnosticsDataType[] value)
+  @Nullable SessionSecurityDiagnosticsDataType @Nullable [] getSessionSecurityDiagnosticsArray()
       throws UaException;
 
   /**
-   * Read the value of the SessionSecurityDiagnosticsArray Node from the server and update the local
-   * value if the operation succeeds.
+   * Sets the existing member's local value. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
+   * This does not send a Write service request.
    *
-   * @return the {@link SessionSecurityDiagnosticsDataType[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
    */
-  SessionSecurityDiagnosticsDataType[] readSessionSecurityDiagnosticsArray() throws UaException;
+  void setSessionSecurityDiagnosticsArray(
+      @Nullable SessionSecurityDiagnosticsDataType @Nullable [] value) throws UaException;
 
   /**
-   * Write a new value for the SessionSecurityDiagnosticsArray Node to the server and update the
-   * local value if the operation succeeds.
+   * Reads the existing member's value remotely. Only Good status is accepted, including Good
+   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
+   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
+   * node's raw readValue to retain quality, timestamps and unconverted values.
    *
-   * @param value the {@link SessionSecurityDiagnosticsDataType[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @return the value, which may be null on a present member
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails; non-Good operation status also fails
+   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
+   *     representation
    */
-  void writeSessionSecurityDiagnosticsArray(SessionSecurityDiagnosticsDataType[] value)
+  @Nullable SessionSecurityDiagnosticsDataType @Nullable [] readSessionSecurityDiagnosticsArray()
       throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readSessionSecurityDiagnosticsArray}.
+   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
+   * local value.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * @param value the value to store; null is permitted
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails; non-Good operation status also fails
    */
-  CompletableFuture<? extends SessionSecurityDiagnosticsDataType[]>
+  void writeSessionSecurityDiagnosticsArray(
+      @Nullable SessionSecurityDiagnosticsDataType @Nullable [] value) throws UaException;
+
+  /**
+   * Reads the existing member's value remotely. Only Good status is accepted, including Good
+   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
+   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
+   * node's raw readValue to retain quality, timestamps and unconverted values.
+   *
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
+   *
+   * @return a nonnull future completing with the value, which may be null on a present member
+   */
+  CompletableFuture<? extends @Nullable SessionSecurityDiagnosticsDataType @Nullable []>
       readSessionSecurityDiagnosticsArrayAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeSessionSecurityDiagnosticsArray}.
+   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
+   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
+   * local value.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
+   * and existing rank/type checks retain their failures.
+   *
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
+   *
+   * @param value the value to store; null is permitted
+   * @return a nonnull future completing with the Write operation status, including non-Good
+   *     statuses
    */
   CompletableFuture<StatusCode> writeSessionSecurityDiagnosticsArrayAsync(
-      SessionSecurityDiagnosticsDataType[] value);
+      @Nullable SessionSecurityDiagnosticsDataType @Nullable [] value);
 
   /**
-   * Get the SessionSecurityDiagnosticsArray {@link SessionSecurityDiagnosticsArrayType} Node, or
-   * {@code null} if it does not exist.
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. It can perform service I/O and construct or
+   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SessionSecurityDiagnosticsArray {@link SessionSecurityDiagnosticsArrayType} Node,
-   *     or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the existing member
+   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
+   *     fails, or a checked conversion fails
    */
   SessionSecurityDiagnosticsArrayType getSessionSecurityDiagnosticsArrayNode() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getSessionSecurityDiagnosticsArrayNode()}.
+   * Resolves the required member by its namespace-qualified path. A missing member fails with
+   * Bad_NotFound. Resolution does not create a UA node. It can perform service I/O and construct or
+   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
    *
-   * @return a CompletableFuture that completes successfully with the
-   *     SessionSecurityDiagnosticsArrayType Node or completes exceptionally if an error occurs
-   *     creating or getting the Node.
+   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
+   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
+   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
+   *
+   * @return a nonnull future completing with the existing member
    */
   CompletableFuture<? extends SessionSecurityDiagnosticsArrayType>
       getSessionSecurityDiagnosticsArrayNodeAsync();

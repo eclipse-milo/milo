@@ -14,6 +14,7 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUI16;
 import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
@@ -61,6 +62,18 @@ public class AccessRestrictionType extends OptionSetUI16<AccessRestrictionType.F
     joiner.add("sessionRequired=" + getSessionRequired());
     joiner.add("applyRestrictionsToBrowse=" + getApplyRestrictionsToBrowse());
     return joiner.toString();
+  }
+
+  public static EnumDefinition definition() {
+    return new EnumDefinition(
+        new EnumField[] {
+          new EnumField(0L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "SigningRequired"),
+          new EnumField(
+              1L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "EncryptionRequired"),
+          new EnumField(2L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "SessionRequired"),
+          new EnumField(
+              3L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "ApplyRestrictionsToBrowse")
+        });
   }
 
   public static AccessRestrictionType of(AccessRestrictionType.Field... fields) {

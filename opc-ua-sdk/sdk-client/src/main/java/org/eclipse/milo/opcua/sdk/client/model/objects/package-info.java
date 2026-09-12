@@ -17,6 +17,16 @@
  * UaException for a non-Good operation result, independently of whether the Write service completed
  * normally.
  *
+ * <p>Optional node lookup returns null only for confirmed absence. Value access requires the node;
+ * a present null value remains valid. Local reads use retained state independently of quality,
+ * while remote convenience reads require Good status. Setters do not create missing members.
+ *
+ * <p>Selected views use {@link com.digitalpetri.opcua.uanodeset.runtime.client.ClientViews} to
+ * retain node identity and backing state. Interface views expose one contract on the same node;
+ * AddIn views expose composed child Objects. Effective writes validate actual type, rank and
+ * dimensions before mutation or Write. Closing the context cancels its owned discovery work and
+ * makes further view access fail.
+ *
  * <p>The classes are generated from the standard NodeSet. Change the generator and regenerate the
  * affected model classes when modifying their shared accessors.
  */

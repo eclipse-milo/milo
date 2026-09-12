@@ -133,14 +133,14 @@ public class AliasNameVerboseDataType extends Structure implements UaStructuredT
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 24262),
-        new NodeId(0, 22),
+        NodeId.parse("i=24262"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "AliasName",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 20),
+              NodeId.parse("i=20"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -148,7 +148,7 @@ public class AliasNameVerboseDataType extends Structure implements UaStructuredT
           new StructureField(
               "ReferencedNodes",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 18),
+              NodeId.parse("i=18"),
               1,
               null,
               UInteger.valueOf(0),
@@ -156,7 +156,7 @@ public class AliasNameVerboseDataType extends Structure implements UaStructuredT
           new StructureField(
               "ServerUris",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               1,
               null,
               UInteger.valueOf(0),
@@ -164,7 +164,7 @@ public class AliasNameVerboseDataType extends Structure implements UaStructuredT
           new StructureField(
               "AliasNameCategoryId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),

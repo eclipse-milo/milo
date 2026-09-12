@@ -132,14 +132,14 @@ public class EUInformation extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 889),
-        new NodeId(0, 22),
+        NodeId.parse("i=889"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "NamespaceUri",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 12),
+              NodeId.parse("i=12"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -147,7 +147,7 @@ public class EUInformation extends Structure implements UaStructuredType {
           new StructureField(
               "UnitId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 6),
+              NodeId.parse("i=6"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -155,7 +155,7 @@ public class EUInformation extends Structure implements UaStructuredType {
           new StructureField(
               "DisplayName",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 21),
+              NodeId.parse("i=21"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -163,7 +163,7 @@ public class EUInformation extends Structure implements UaStructuredType {
           new StructureField(
               "Description",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 21),
+              NodeId.parse("i=21"),
               -1,
               null,
               UInteger.valueOf(0),

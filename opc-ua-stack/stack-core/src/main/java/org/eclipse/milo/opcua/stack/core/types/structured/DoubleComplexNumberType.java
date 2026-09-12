@@ -107,14 +107,14 @@ public class DoubleComplexNumberType extends Structure implements UaStructuredTy
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 12182),
-        new NodeId(0, 22),
+        NodeId.parse("i=12182"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "Real",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 11),
+              NodeId.parse("i=11"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -122,7 +122,7 @@ public class DoubleComplexNumberType extends Structure implements UaStructuredTy
           new StructureField(
               "Imaginary",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 11),
+              NodeId.parse("i=11"),
               -1,
               null,
               UInteger.valueOf(0),

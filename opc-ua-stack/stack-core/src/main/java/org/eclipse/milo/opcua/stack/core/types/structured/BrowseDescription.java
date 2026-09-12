@@ -12,6 +12,8 @@ package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -154,14 +156,14 @@ public class BrowseDescription extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 516),
-        new NodeId(0, 22),
+        NodeId.parse("i=516"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "NodeId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -169,7 +171,7 @@ public class BrowseDescription extends Structure implements UaStructuredType {
           new StructureField(
               "BrowseDirection",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 510),
+              NodeId.parse("i=510"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -177,7 +179,7 @@ public class BrowseDescription extends Structure implements UaStructuredType {
           new StructureField(
               "ReferenceTypeId",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -185,7 +187,7 @@ public class BrowseDescription extends Structure implements UaStructuredType {
           new StructureField(
               "IncludeSubtypes",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 1),
+              NodeId.parse("i=1"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -193,7 +195,7 @@ public class BrowseDescription extends Structure implements UaStructuredType {
           new StructureField(
               "NodeClassMask",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -201,7 +203,7 @@ public class BrowseDescription extends Structure implements UaStructuredType {
           new StructureField(
               "ResultMask",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 7),
+              NodeId.parse("i=7"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -224,7 +226,27 @@ public class BrowseDescription extends Structure implements UaStructuredType {
       final UInteger nodeClassMask;
       final UInteger resultMask;
       nodeId = decoder.decodeNodeId("NodeId");
-      browseDirection = BrowseDirection.from(decoder.decodeEnum("BrowseDirection"));
+      {
+        Integer enumValue = decoder.decodeEnum("BrowseDirection");
+        if (enumValue != null && !((Object) enumValue instanceof BrowseDirection)) {
+          if (!(enumValue instanceof Integer)) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_TypeMismatch,
+                "BrowseDirection: expected"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.BrowseDirection or"
+                    + " Int32, got "
+                    + enumValue);
+          }
+          if (BrowseDirection.from((Integer) enumValue) == null) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_OutOfRange,
+                "BrowseDirection: unknown"
+                    + " org.eclipse.milo.opcua.stack.core.types.enumerated.BrowseDirection value "
+                    + enumValue);
+          }
+        }
+        browseDirection = enumValue == null ? null : BrowseDirection.from(enumValue);
+      }
       referenceTypeId = decoder.decodeNodeId("ReferenceTypeId");
       includeSubtypes = decoder.decodeBoolean("IncludeSubtypes");
       nodeClassMask = decoder.decodeUInt32("NodeClassMask");

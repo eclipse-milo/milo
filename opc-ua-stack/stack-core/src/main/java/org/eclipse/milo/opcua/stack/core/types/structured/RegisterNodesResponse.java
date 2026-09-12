@@ -109,14 +109,14 @@ public class RegisterNodesResponse extends Structure implements UaResponseMessag
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 563),
-        new NodeId(0, 22),
+        NodeId.parse("i=563"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "ResponseHeader",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 392),
+              NodeId.parse("i=392"),
               -1,
               null,
               UInteger.valueOf(0),
@@ -124,7 +124,7 @@ public class RegisterNodesResponse extends Structure implements UaResponseMessag
           new StructureField(
               "RegisteredNodeIds",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 17),
+              NodeId.parse("i=17"),
               1,
               null,
               UInteger.valueOf(0),

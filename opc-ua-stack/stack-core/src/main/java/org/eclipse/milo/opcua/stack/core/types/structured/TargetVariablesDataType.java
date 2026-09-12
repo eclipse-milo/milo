@@ -98,14 +98,14 @@ public class TargetVariablesDataType extends SubscribedDataSetDataType implement
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 15712),
-        new NodeId(0, 15630),
+        NodeId.parse("i=15712"),
+        NodeId.parse("i=15630"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "TargetVariables",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 14744),
+              NodeId.parse("i=14744"),
               1,
               null,
               UInteger.valueOf(0),

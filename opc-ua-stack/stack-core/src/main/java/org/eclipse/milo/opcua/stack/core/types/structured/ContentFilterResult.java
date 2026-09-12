@@ -111,14 +111,14 @@ public class ContentFilterResult extends Structure implements UaStructuredType {
 
   public static StructureDefinition definition(NamespaceTable namespaceTable) {
     return new StructureDefinition(
-        new NodeId(0, 609),
-        new NodeId(0, 22),
+        NodeId.parse("i=609"),
+        NodeId.parse("i=22"),
         StructureType.Structure,
         new StructureField[] {
           new StructureField(
               "ElementResults",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 604),
+              NodeId.parse("i=604"),
               1,
               null,
               UInteger.valueOf(0),
@@ -126,7 +126,7 @@ public class ContentFilterResult extends Structure implements UaStructuredType {
           new StructureField(
               "ElementDiagnosticInfos",
               LocalizedText.NULL_VALUE,
-              new NodeId(0, 25),
+              NodeId.parse("i=25"),
               1,
               null,
               UInteger.valueOf(0),
