@@ -123,6 +123,12 @@ public class DefaultDataTypeManager implements DataTypeManager {
   }
 
   @Override
+  public synchronized @Nullable NodeId getDataTypeId(NodeId id) {
+    Registration registration = encodings.getOrDefault(id, types.get(id));
+    return registration == null ? null : registration.typeId;
+  }
+
+  @Override
   public synchronized @Nullable NodeId getBinaryEncodingId(NodeId dataTypeId) {
     Registration registration = binaryEncodings.get(dataTypeId);
     return registration == null ? null : registration.binaryId;

@@ -138,6 +138,7 @@ class DefaultDataTypeManagerTest {
     assertThrows(IllegalStateException.class, this::acquire);
     handle.close();
     assertSame(codec, manager.getCodec(BINARY));
+    assertEquals(otherType, manager.getDataTypeId(BINARY));
     assertSame(codec, manager.getCodec(otherType));
     assertEquals(BINARY, manager.getBinaryEncodingId(otherType));
     assertNull(manager.getCodec(TYPE));
@@ -270,6 +271,10 @@ class DefaultDataTypeManagerTest {
   }
 
   private void assertInstalled(DataTypeCodec value) {
+    assertEquals(TYPE, manager.getDataTypeId(TYPE));
+    assertEquals(TYPE, manager.getDataTypeId(BINARY));
+    assertEquals(TYPE, manager.getDataTypeId(XML));
+    assertEquals(TYPE, manager.getDataTypeId(JSON));
     assertSame(value, manager.getCodec(TYPE));
     assertSame(value, manager.getCodec(BINARY));
     assertSame(value, manager.getCodec(XML));
@@ -280,6 +285,10 @@ class DefaultDataTypeManagerTest {
   }
 
   private void assertRemoved() {
+    assertNull(manager.getDataTypeId(TYPE));
+    assertNull(manager.getDataTypeId(BINARY));
+    assertNull(manager.getDataTypeId(XML));
+    assertNull(manager.getDataTypeId(JSON));
     assertNull(manager.getCodec(TYPE));
     assertNull(manager.getCodec(BINARY));
     assertNull(manager.getCodec(XML));

@@ -37,10 +37,19 @@
  * members retain their type's default value; unread members are errors. Reset discards the previous
  * input and lookup state.
  *
- * <p>Buffered structures and Variant/ExtensionObject bodies preserve numeric tokens and reject
- * duplicate names before a JSON tree could discard them. Built-in value decoders retain their own
- * unknown-field policies. Input character and buffered-container depth limits come from the
- * encoding context; size or depth violations report {@code Bad_EncodingLimitsExceeded}, while
+ * <p>ExtensionObjects use the OPC UA 1.05 Compact/Verbose mapping. Native structure fields share an
+ * object with {@code UaTypeId}; Binary and XML bodies use {@code UaEncoding} and a base64 {@code
+ * UaBody}. XML bytes are UTF-8. The type manager translates between the envelope's data type id and
+ * the Binary/XML wrapper's encoding id without decoding the body. Unresolved Binary/XML identities
+ * are errors; unknown native types retain their JSON body for later decoding. Messages use this
+ * same envelope. Legacy nested native envelopes are not unwrapped, and legacy header aliases are
+ * not recognized. A native field named {@code UaBody} remains a structure field and is never
+ * unwrapped.
+ *
+ * <p>Buffered structures, ExtensionObject envelopes, and Variant bodies preserve numeric tokens and
+ * reject duplicate names before a JSON tree could discard them. Built-in value decoders retain
+ * their own unknown-field policies. Input character and buffered-container depth limits come from
+ * the encoding context; size or depth violations report {@code Bad_EncodingLimitsExceeded}, while
  * malformed values report {@code Bad_DecodingError}.
  *
  * <p>Variants carry structures as ExtensionObjects. Non-null structure bodies use their registered

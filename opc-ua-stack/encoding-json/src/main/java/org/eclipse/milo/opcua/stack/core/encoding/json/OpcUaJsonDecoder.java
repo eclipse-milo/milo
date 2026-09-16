@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.lang.reflect.Array;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -804,68 +806,69 @@ public class OpcUaJsonDecoder implements UaDecoder {
         return null;
       }
 
-      jsonReader.beginObject();
-      if (this.encoding == Encoding.VERBOSE && jsonReader.peek() == JsonToken.END_OBJECT) {
-        jsonReader.endObject();
-        return null;
-      }
-
-      NodeId encodingId = null;
-      int encoding = 0;
-      // Buffer the body as a generic JsonElement so the encoding doesn't have to be known
-      // until the whole object has been read — JSON field order isn't guaranteed.
-      JsonElement bodyElement = null;
-
-      while (jsonReader.peek() == JsonToken.NAME) {
-        String nextName = nextName();
-        if (nextName == null) continue;
-
-        switch (nextName) {
-          case "UaTypeId":
-          case "TypeId":
-            encodingId = decodeNodeId(null);
-            break;
-          case "UaEncoding":
-          case "Encoding":
-            encoding = jsonReader.nextInt();
-            break;
-          case "UaBody":
-          case "Body":
-            bodyElement =
-                JsonValueBuffer.read(
-                    jsonReader, context.getEncodingLimits().getMaxRecursionDepth());
-            break;
-          default:
-            throw new UaSerializationException(
-                StatusCodes.Bad_DecodingError,
-                String.format("readExtensionObject: unexpected field: " + nextName));
-        }
-      }
-
-      jsonReader.endObject();
-
-      if (encodingId == null) {
+      JsonElement value =
+          JsonValueBuffer.read(jsonReader, context.getEncodingLimits().getMaxRecursionDepth());
+      if (!value.isJsonObject()) {
         throw new UaSerializationException(
-            StatusCodes.Bad_DecodingError, "readExtensionObject: encodingId == null");
+            StatusCodes.Bad_DecodingError, "Expected ExtensionObject object");
+      }
+      JsonObject object = value.getAsJsonObject();
+      if (object.isEmpty()) return null;
+
+      JsonElement type = object.remove("UaTypeId");
+      if (type == null || !type.isJsonPrimitive() || !type.getAsJsonPrimitive().isString()) {
+        throw new UaSerializationException(
+            StatusCodes.Bad_DecodingError, "ExtensionObject UaTypeId must be a NodeId string");
+      }
+      NodeId typeId = new OpcUaJsonDecoder(context, type.toString()).decodeNodeId(null);
+      if (typeId.isNull()) {
+        throw new UaSerializationException(
+            StatusCodes.Bad_DecodingError, "ExtensionObject UaTypeId is null");
       }
 
-      return switch (encoding) {
-        case 0 ->
-            ExtensionObject.of(bodyElement == null ? "null" : bodyElement.toString(), encodingId);
-        case 1 -> {
-          String base64 = bodyElement == null ? "" : bodyElement.getAsString();
-          yield ExtensionObject.of(ByteString.of(Base64.getDecoder().decode(base64)), encodingId);
-        }
-        case 2 -> {
-          String xml = bodyElement == null ? "" : bodyElement.getAsString();
-          yield ExtensionObject.of(new XmlElement(xml), encodingId);
-        }
-        default ->
-            throw new UaSerializationException(
-                StatusCodes.Bad_DecodingError,
-                "readExtensionObject: unexpected encoding: " + encoding);
-      };
-    } catch (IOException | IllegalStateException | IllegalArgumentException e) {
+      JsonElement bodyEncoding = object.remove("UaEncoding");
+      if (bodyEncoding == null) {
+        // UaBody is an ordinary native field here. Never unwrap an older Milo envelope.
+        return ExtensionObject.of(object.toString(), typeId);
+      }
+      if (!bodyEncoding.isJsonPrimitive() || !bodyEncoding.getAsJsonPrimitive().isNumber()) {
+        throw new UaSerializationException(
+            StatusCodes.Bad_DecodingError, "ExtensionObject UaEncoding must be 1 or 2");
+      }
+      int bodyFormat = bodyEncoding.getAsBigDecimal().intValueExact();
+      if (bodyFormat != 1 && bodyFormat != 2) {
+        throw new UaSerializationException(
+            StatusCodes.Bad_DecodingError, "Unsupported ExtensionObject UaEncoding: " + bodyFormat);
+      }
+      JsonElement body = object.remove("UaBody");
+      if (!object.isEmpty()
+          || body == null
+          || (!body.isJsonNull()
+              && (!body.isJsonPrimitive() || !body.getAsJsonPrimitive().isString()))) {
+        throw new UaSerializationException(
+            StatusCodes.Bad_DecodingError, "Invalid Binary/XML ExtensionObject envelope");
+      }
+      NodeId encodingId =
+          bodyFormat == 1
+              ? context.getDataTypeManager().getBinaryEncodingId(typeId)
+              : context.getDataTypeManager().getXmlEncodingId(typeId);
+      if (encodingId == null || encodingId.isNull()) {
+        throw new UaSerializationException(
+            StatusCodes.Bad_DecodingError, "ExtensionObject encoding is unresolved: " + typeId);
+      }
+      byte[] bytes = body.isJsonNull() ? null : Base64.getDecoder().decode(body.getAsString());
+      if (bodyFormat == 1) {
+        return ExtensionObject.of(ByteString.of(bytes), encodingId);
+      }
+      String xml =
+          bytes == null
+              ? null
+              : StandardCharsets.UTF_8.newDecoder().decode(ByteBuffer.wrap(bytes)).toString();
+      return ExtensionObject.of(new XmlElement(xml), encodingId);
+    } catch (IOException
+        | IllegalStateException
+        | IllegalArgumentException
+        | ArithmeticException e) {
       throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
     }
   }
@@ -1192,13 +1195,19 @@ public class OpcUaJsonDecoder implements UaDecoder {
 
   @Override
   public UaMessageType decodeMessage(String field) throws UaSerializationException {
-    try {
-      ExtensionObject xo = decodeExtensionObject(field);
-
-      return (UaMessageType) xo.decode(context);
-    } catch (ClassCastException e) {
-      throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
+    ExtensionObject value = decodeExtensionObject(field);
+    UaStructuredType decoded;
+    if (value instanceof ExtensionObject.Json json) {
+      var decoder = new OpcUaJsonDecoder(context, json.getBody());
+      decoder.setEncoding(encoding);
+      decoded = decoder.decodeStruct(null, json.getEncodingOrTypeId());
+    } else if (value != null) {
+      decoded = value.decode(context);
+    } else {
+      throw new UaSerializationException(StatusCodes.Bad_DecodingError, "Message is null");
     }
+    if (decoded instanceof UaMessageType message) return message;
+    throw new UaSerializationException(StatusCodes.Bad_DecodingError, "Not a message: " + decoded);
   }
 
   @Override

@@ -211,8 +211,8 @@ class JsonArrayFieldEncodingTest {
   static Stream<Arguments> extensionObjectElements() {
     ExtensionObject first = ExtensionObject.of("{\"Low\":1.0,\"High\":2.0}", NodeIds.Range);
     ExtensionObject second = ExtensionObject.of("{\"Low\":3.0,\"High\":4.0}", NodeIds.Range);
-    String firstJson = "{\"UaTypeId\":\"i=884\",\"UaBody\":{\"Low\":1.0,\"High\":2.0}}";
-    String secondJson = "{\"UaTypeId\":\"i=884\",\"UaBody\":{\"Low\":3.0,\"High\":4.0}}";
+    String firstJson = "{\"UaTypeId\":\"i=884\",\"Low\":1.0,\"High\":2.0}";
+    String secondJson = "{\"UaTypeId\":\"i=884\",\"Low\":3.0,\"High\":4.0}";
     return Stream.of(Encoding.values())
         .flatMap(
             encoding ->

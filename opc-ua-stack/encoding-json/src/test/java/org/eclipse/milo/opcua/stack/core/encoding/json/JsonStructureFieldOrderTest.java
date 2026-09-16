@@ -237,7 +237,7 @@ class JsonStructureFieldOrderTest {
   void decodesReorderedExtensionObjectBodyAndSibling() {
     String json =
         """
-        {"X":8,"Object":{"UaBody":{"Value":2,"X":1},"UaTypeId":"i=15380"}}
+        {"X":8,"Object":{"Value":2,"X":1,"UaTypeId":"i=12080"}}
         """;
     var codec =
         codec(d -> probe(d.decodeExtensionObject("Object").decode(context), d.decodeInt32("X")));
