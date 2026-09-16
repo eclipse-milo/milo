@@ -10,9 +10,14 @@
 
 package org.eclipse.milo.opcua.stack.core.encoding.json;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonToken;
 import com.google.gson.stream.JsonWriter;
 import java.io.*;
 import java.lang.reflect.Array;
+import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.Optional;
@@ -762,23 +767,65 @@ public class OpcUaJsonEncoder implements UaEncoder, AutoCloseable {
             jsonWriter.nullValue();
           }
         } else {
-          jsonWriter.beginObject();
-
-          encodeNodeId("UaTypeId", value.getEncodingOrTypeId());
-          if (value instanceof ExtensionObject.Json xo) {
-            jsonWriter.name("UaBody").jsonValue(xo.getBody());
-          } else if (value instanceof ExtensionObject.Binary xo) {
-            jsonWriter.name("UaEncoding").value(1);
-            encodeByteString("UaBody", xo.getBody());
-          } else if (value instanceof ExtensionObject.Xml xo) {
-            jsonWriter.name("UaEncoding").value(2);
-            encodeXmlElement("UaBody", xo.getBody());
+          JsonObject body =
+              value instanceof ExtensionObject.Json xo ? readNativeBody(xo.getBody()) : null;
+          NodeId typeId = value.getEncodingOrTypeId();
+          if (!(value instanceof ExtensionObject.Json)) {
+            typeId = encodingContext.getDataTypeManager().getDataTypeId(typeId);
+          }
+          if (typeId == null || typeId.isNull()) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_EncodingError,
+                "ExtensionObject data type is unresolved: " + value.getEncodingOrTypeId());
           }
 
+          jsonWriter.beginObject();
+          // Headers are required even when this value is a field of a COMPACT structure.
+          contextPush(EncoderContext.BUILTIN);
+          try {
+            encodeNodeId("UaTypeId", typeId);
+            if (body != null) {
+              for (var member : body.entrySet()) {
+                jsonWriter.name(member.getKey()).jsonValue(member.getValue().toString());
+              }
+            } else if (value instanceof ExtensionObject.Binary xo) {
+              jsonWriter.name("UaEncoding").value(1);
+              encodeByteString("UaBody", xo.getBody());
+            } else if (value instanceof ExtensionObject.Xml xo) {
+              jsonWriter.name("UaEncoding").value(2);
+              String xml = xo.getBody().getFragment();
+              encodeByteString(
+                  "UaBody",
+                  ByteString.of(xml == null ? null : xml.getBytes(StandardCharsets.UTF_8)));
+            }
+          } finally {
+            contextPop();
+          }
           jsonWriter.endObject();
         }
       }
     } catch (IOException e) {
+      throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
+    }
+  }
+
+  private JsonObject readNativeBody(String body) throws IOException {
+    try (JsonReader reader =
+        JsonValueBuffer.newReader(new StringReader(body), encodingContext.getEncodingLimits())) {
+      JsonElement value =
+          JsonValueBuffer.read(reader, encodingContext.getEncodingLimits().getMaxRecursionDepth());
+      if (!value.isJsonObject() || reader.peek() != JsonToken.END_DOCUMENT) {
+        throw new UaSerializationException(
+            StatusCodes.Bad_EncodingError, "ExtensionObject JSON body must be one object");
+      }
+      JsonObject object = value.getAsJsonObject();
+      if (object.has("UaTypeId") || object.has("UaEncoding")) {
+        throw new UaSerializationException(
+            StatusCodes.Bad_EncodingError, "ExtensionObject body collides with an envelope header");
+      }
+      return object;
+    } catch (UaSerializationException e) {
+      if (e.getStatusCode().getValue() == StatusCodes.Bad_EncodingLimitsExceeded) throw e;
       throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
     }
   }
@@ -1163,23 +1210,21 @@ public class OpcUaJsonEncoder implements UaEncoder, AutoCloseable {
           StatusCodes.Bad_EncodingError, "encodeMessage: message is null");
     }
 
-    ExpandedNodeId xEncodingId = message.getJsonEncodingId();
-
-    NodeId encodingId =
-        xEncodingId
+    NodeId typeId =
+        message
+            .getTypeId()
             .toNodeId(encodingContext.getNamespaceTable())
             .orElseThrow(
                 () ->
                     new UaSerializationException(
-                        StatusCodes.Bad_EncodingError,
-                        "namespace not registered: " + xEncodingId.getNamespaceUri()));
-
-    try {
-      jsonWriter.beginObject();
-      encodeNodeId("UaTypeId", encodingId);
-      encodeStruct("UaBody", message, encodingId);
-      jsonWriter.endObject();
-    } catch (IOException e) {
+                        StatusCodes.Bad_EncodingError, "Message namespace is not registered"));
+    try (var bodyEncoder = new OpcUaJsonEncoder(encodingContext)) {
+      bodyEncoder.setEncoding(encoding);
+      bodyEncoder.encodeStruct(null, message, typeId);
+      encodeExtensionObject(field, ExtensionObject.of(bodyEncoder.getOutputString(), typeId));
+    } catch (UaSerializationException e) {
+      throw e;
+    } catch (Exception e) {
       throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
     }
   }

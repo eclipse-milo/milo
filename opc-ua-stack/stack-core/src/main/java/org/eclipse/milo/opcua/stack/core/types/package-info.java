@@ -14,6 +14,13 @@
  * applications can register custom codecs through {@link
  * org.eclipse.milo.opcua.stack.core.types.DataTypeManager}.
  *
+ * <p>Registrations also translate encoding ids to data type ids without inspecting value bodies.
+ * This lets JSON envelopes identify an opaque Binary or XML body by its data type, while Binary and
+ * XML wrappers retain their encoding ids. Custom managers must implement identity lookup to support
+ * these conversions; callers cannot infer an unknown association from an opaque body. Superseded
+ * encoding associations are excluded from identity lookup, even when their codecs remain available,
+ * so conversion cannot relabel an old body with a replacement encoding id.
+ *
  * <p>Ordinary registrations belong to the application and can overwrite existing lookups. For
  * temporary types, acquire a registration handle and retain it for as long as values may need
  * encoding or decoding. Matching acquisitions share the same codec instance and mappings; the last

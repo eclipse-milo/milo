@@ -656,23 +656,22 @@ class OpcUaJsonDecoderTest {
     var jsonStringXo = ExtensionObject.of("{\"foo\":\"bar\",\"baz\":42}", new NodeId(2, 42));
 
     var byteStringXo =
-        ExtensionObject.of(ByteString.of(new byte[] {0x00, 0x01, 0x02, 0x03}), new NodeId(2, 42));
+        ExtensionObject.of(ByteString.of(new byte[] {0x00, 0x01, 0x02, 0x03}), new NodeId(0, 889));
 
-    var xmlElementXo = ExtensionObject.of(new XmlElement("<foo>bar</foo>"), new NodeId(2, 42));
+    var xmlElementXo = ExtensionObject.of(new XmlElement("<foo>bar</foo>"), new NodeId(0, 888));
 
     decoder.reset(
         new StringReader(
-            "{\"TypeId\":\"nsu=urn:eclipse:milo:test2;i=42\",\"Body\":{\"foo\":\"bar\",\"baz\":42}}"));
+            "{\"UaTypeId\":\"nsu=urn:eclipse:milo:test2;i=42\",\"foo\":\"bar\",\"baz\":42}"));
     assertEquals(jsonStringXo, decoder.decodeExtensionObject(null));
 
     decoder.reset(
-        new StringReader(
-            "{\"TypeId\":\"nsu=urn:eclipse:milo:test2;i=42\",\"Encoding\":1,\"Body\":\"AAECAw==\"}"));
+        new StringReader("{\"UaTypeId\":\"i=887\",\"UaEncoding\":1,\"UaBody\":\"AAECAw==\"}"));
     assertEquals(byteStringXo, decoder.decodeExtensionObject(null));
 
     decoder.reset(
         new StringReader(
-            "{\"TypeId\":\"nsu=urn:eclipse:milo:test2;i=42\",\"Encoding\":2,\"Body\":\"<foo>bar</foo>\"}"));
+            "{\"UaTypeId\":\"i=887\",\"UaEncoding\":2,\"UaBody\":\"PGZvbz5iYXI8L2Zvbz4=\"}"));
     assertEquals(xmlElementXo, decoder.decodeExtensionObject(null));
 
     decoder.reset(new StringReader("null"));
@@ -680,7 +679,7 @@ class OpcUaJsonDecoderTest {
 
     decoder.reset(
         new StringReader(
-            "{\"foo\":{\"TypeId\":\"nsu=urn:eclipse:milo:test2;i=42\",\"Body\":{\"foo\":\"bar\",\"baz\":42}}}"));
+            "{\"foo\":{\"UaTypeId\":\"nsu=urn:eclipse:milo:test2;i=42\",\"foo\":\"bar\",\"baz\":42}}"));
     decoder.jsonReader.beginObject();
     assertEquals(jsonStringXo, decoder.decodeExtensionObject("foo"));
     decoder.jsonReader.endObject();
@@ -884,7 +883,7 @@ class OpcUaJsonDecoderTest {
 
     decoder.reset(
         new StringReader(
-            "{\"TypeId\":\"i=15257\",\"Body\":{\"RequestHeader\":{\"AuthenticationToken\":\"i=0\",\"Timestamp\":\"1601-01-01T00:00:00Z\",\"RequestHandle\":0,\"ReturnDiagnostics\":0,\"AuditEntryId\":\"foo\",\"TimeoutHint\":0,\"AdditionalHeader\":null},\"MaxAge\":0.0,\"TimestampsToReturn\":2,\"NodesToRead\":[{\"NodeId\":\"i=1\",\"AttributeId\":13,\"IndexRange\":null,\"DataEncoding\":null}]}}"));
+            "{\"UaTypeId\":\"i=629\",\"RequestHeader\":{\"AuthenticationToken\":\"i=0\",\"Timestamp\":\"1601-01-01T00:00:00Z\",\"RequestHandle\":0,\"ReturnDiagnostics\":0,\"AuditEntryId\":\"foo\",\"TimeoutHint\":0,\"AdditionalHeader\":null},\"MaxAge\":0.0,\"TimestampsToReturn\":2,\"NodesToRead\":[{\"NodeId\":\"i=1\",\"AttributeId\":13,\"IndexRange\":null,\"DataEncoding\":null}]}"));
     assertEquals(message, decoder.decodeMessage(null));
   }
 
@@ -1073,12 +1072,11 @@ class OpcUaJsonDecoderTest {
     var decoder = new OpcUaJsonDecoder(context, new StringReader(""));
 
     var byteStringXo =
-        ExtensionObject.of(ByteString.of(new byte[] {0x00, 0x01, 0x02, 0x03}), new NodeId(2, 42));
+        ExtensionObject.of(ByteString.of(new byte[] {0x00, 0x01, 0x02, 0x03}), new NodeId(0, 889));
 
     // Body field appears BEFORE Encoding field.
     decoder.reset(
-        new StringReader(
-            "{\"TypeId\":\"nsu=urn:eclipse:milo:test2;i=42\",\"Body\":\"AAECAw==\",\"Encoding\":1}"));
+        new StringReader("{\"UaTypeId\":\"i=887\",\"UaBody\":\"AAECAw==\",\"UaEncoding\":1}"));
     assertEquals(byteStringXo, decoder.decodeExtensionObject(null));
   }
 

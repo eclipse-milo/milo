@@ -123,6 +123,25 @@ public class DefaultDataTypeManager implements DataTypeManager {
   }
 
   @Override
+  public synchronized @Nullable NodeId getDataTypeId(NodeId id) {
+    Registration registration = encodings.get(id);
+    if (registration == null) {
+      registration = types.get(id);
+      return registration == null ? null : registration.typeId;
+    }
+    // Ordinary replacement retains old codec lookups, but identity conversion must agree with
+    // the current forward mapping or an opaque body could acquire a different encoding id.
+    boolean current =
+        (id.equals(registration.binaryId)
+                && binaryEncodings.get(registration.typeId) == registration)
+            || (id.equals(registration.xmlId)
+                && xmlEncodings.get(registration.typeId) == registration)
+            || (id.equals(registration.jsonId)
+                && jsonEncodings.get(registration.typeId) == registration);
+    return current ? registration.typeId : null;
+  }
+
+  @Override
   public synchronized @Nullable NodeId getBinaryEncodingId(NodeId dataTypeId) {
     Registration registration = binaryEncodings.get(dataTypeId);
     return registration == null ? null : registration.binaryId;

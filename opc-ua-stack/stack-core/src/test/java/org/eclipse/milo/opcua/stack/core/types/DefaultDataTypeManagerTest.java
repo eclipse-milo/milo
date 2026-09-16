@@ -138,6 +138,7 @@ class DefaultDataTypeManagerTest {
     assertThrows(IllegalStateException.class, this::acquire);
     handle.close();
     assertSame(codec, manager.getCodec(BINARY));
+    assertEquals(otherType, manager.getDataTypeId(BINARY));
     assertSame(codec, manager.getCodec(otherType));
     assertEquals(BINARY, manager.getBinaryEncodingId(otherType));
     assertNull(manager.getCodec(TYPE));
@@ -154,9 +155,33 @@ class DefaultDataTypeManagerTest {
     assertSame(replacement, manager.getCodec(TYPE));
     assertSame(codec, manager.getCodec(BINARY));
     assertEquals(BINARY, manager.getBinaryEncodingId(TYPE));
+    assertEquals(TYPE, manager.getDataTypeId(BINARY));
     assertThrows(
         IllegalStateException.class,
         () -> manager.acquireType(TYPE, replacement, null, null, null));
+  }
+
+  // An obsolete encoding cannot identify a type whose forward mapping selects a different id.
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void reverseLookupRejectsReplacedEncodingAssociations(boolean sameCodec) {
+    register(codec);
+    NodeId nextBinary = new NodeId(2, 12);
+    NodeId nextXml = new NodeId(2, 13);
+    NodeId nextJson = new NodeId(2, 14);
+    manager.registerType(
+        TYPE, sameCodec ? codec : new Range.Codec(), nextBinary, nextXml, nextJson);
+
+    assertNull(manager.getDataTypeId(BINARY));
+    assertNull(manager.getDataTypeId(XML));
+    assertNull(manager.getDataTypeId(JSON));
+    assertEquals(TYPE, manager.getDataTypeId(TYPE));
+    assertEquals(TYPE, manager.getDataTypeId(nextBinary));
+    assertEquals(TYPE, manager.getDataTypeId(nextXml));
+    assertEquals(TYPE, manager.getDataTypeId(nextJson));
+    assertSame(codec, manager.getCodec(BINARY));
+    assertSame(codec, manager.getCodec(XML));
+    assertSame(codec, manager.getCodec(JSON));
   }
 
   // Competing acquisitions must share one lifetime, regardless of which wins installation.
@@ -270,6 +295,10 @@ class DefaultDataTypeManagerTest {
   }
 
   private void assertInstalled(DataTypeCodec value) {
+    assertEquals(TYPE, manager.getDataTypeId(TYPE));
+    assertEquals(TYPE, manager.getDataTypeId(BINARY));
+    assertEquals(TYPE, manager.getDataTypeId(XML));
+    assertEquals(TYPE, manager.getDataTypeId(JSON));
     assertSame(value, manager.getCodec(TYPE));
     assertSame(value, manager.getCodec(BINARY));
     assertSame(value, manager.getCodec(XML));
@@ -280,6 +309,10 @@ class DefaultDataTypeManagerTest {
   }
 
   private void assertRemoved() {
+    assertNull(manager.getDataTypeId(TYPE));
+    assertNull(manager.getDataTypeId(BINARY));
+    assertNull(manager.getDataTypeId(XML));
+    assertNull(manager.getDataTypeId(JSON));
     assertNull(manager.getCodec(TYPE));
     assertNull(manager.getCodec(BINARY));
     assertNull(manager.getCodec(XML));
