@@ -16,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.XmlElement;
 import org.eclipse.milo.opcua.stack.core.types.structured.XVType;
@@ -119,6 +120,29 @@ class OpcUaXmlDecoderWhitespaceTest {
     try (var decoder = decoder("<XmlElement>" + gap + payload + "</XmlElement>")) {
       XmlElement value = decoder.decodeXmlElement("XmlElement");
       assertEquals(payload, value.getFragment());
+    }
+  }
+
+  // A Body goes through the same serializer as a bare XmlElement and must survive it intact too.
+  @ParameterizedTest
+  @ValueSource(strings = {"", "\n  ", "\n  <!-- body -->\n  "})
+  void preservesExtensionObjectBodyWhitespace(String gap) throws Exception {
+    String payload = "<Payload>  <Child/>\n  <Child/>  </Payload>";
+    String xml =
+        "<ExtensionObject>"
+            + gap
+            + "<TypeId><Identifier>i=1</Identifier></TypeId>"
+            + gap
+            + "<Body>"
+            + gap
+            + payload
+            + "</Body></ExtensionObject>";
+
+    try (var decoder = decoder(xml)) {
+      ExtensionObject.Xml value =
+          (ExtensionObject.Xml) decoder.decodeExtensionObject("ExtensionObject");
+
+      assertEquals(payload, value.getBody().getFragment());
     }
   }
 

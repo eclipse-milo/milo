@@ -1453,10 +1453,20 @@ public class OpcUaXmlDecoder implements UaDecoder, AutoCloseable {
       transformer.setOutputProperty("omit-xml-declaration", "yes");
       transformer.transform(new DOMSource(node), new StreamResult(sw));
 
-      return new XmlElement(sw.toString());
+      return new XmlElement(restoreLineSeparators(sw.toString()));
     } catch (TransformerException e) {
       throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
     }
+  }
+
+  /**
+   * @return {@code xml} with the line separator the serializer writes restored to "\n", which XML
+   *     1.0 2.11 guarantees is what the payload had.
+   */
+  private static String restoreLineSeparators(String xml) {
+    String separator = System.lineSeparator();
+
+    return "\n".equals(separator) ? xml : xml.replace(separator, "\n");
   }
 
   private static Map<String, Node> nodeMap(NodeList nodeList) {
