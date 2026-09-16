@@ -40,6 +40,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.XVType;
 import org.eclipse.milo.opcua.stack.core.util.Namespaces;
 import org.junit.jupiter.api.BeforeAll;
@@ -49,6 +50,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.w3c.dom.Document;
+import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
@@ -74,8 +76,87 @@ class OpcUaXmlNamespaceTest {
         factory.newSchema(
             new Source[] {
               source("Opc.Ua.Types.xsd"), source("Opc.Ua.Di.Types.xsd"),
-              source("Opc.Ua.AMB.Types.xsd"), source("NamespaceFixtures.xsd")
+              source("Opc.Ua.AMB.Types.xsd"), source("NamespaceFixtures.xsd"),
+              source("Opc.Ua.Machinery_Result.Types.xsd"), source("Opc.Ua.Ijt.Base.Types.xsd")
             });
+  }
+
+  private static final String RESULT = "http://opcfoundation.org/UA/Machinery/Result/";
+  private static final String IJT = "http://opcfoundation.org/UA/IJT/Base/";
+
+  // The published child schema extends ResultMetaDataType and inherits its single mask.
+  @Test
+  void publishedJoiningSchemaAcceptsInheritedMaskAndFields() throws Exception {
+    validate(
+        """
+        <j:JoiningResultMetaDataType
+            xmlns:r="http://opcfoundation.org/UA/Machinery/Result/Types.xsd"
+            xmlns:j="http://opcfoundation.org/UA/IJT/Base/Types.xsd">
+          <r:EncodingMask>2097152</r:EncodingMask>
+          <r:ResultId>result</r:ResultId>
+          <j:Name>child</j:Name>
+        </j:JoiningResultMetaDataType>
+        """);
+  }
+
+  // A flattened optional codec must retain the declaring namespaces without a second mask.
+  @Test
+  void flattenedJoiningFieldsValidateAgainstPublishedSchema() throws Exception {
+    EncodingContext context = context(false);
+    context.getNamespaceTable().add(RESULT);
+    context.getNamespaceTable().add(IJT);
+    EncodingContext mapped =
+        context.withXmlNamespaceUris(Map.of(RESULT, RESULT + "Types.xsd", IJT, IJT + "Types.xsd"));
+    Fixture value =
+        fixture(
+            IJT,
+            "JoiningResultMetaDataType",
+            (c, e) -> {
+              e.encodeUInt32("EncodingMask", UInteger.valueOf(1L << 21));
+              e.encodeString("ResultId", "result");
+              e.encodeString("Name", "child");
+            });
+
+    String original = encode(mapped, value);
+    assertThrows(SAXException.class, () -> validate(original));
+
+    DataTypeCodec adapted =
+        new XmlDataTypeCodec(CODEC, Map.of("EncodingMask", RESULT, "ResultId", RESULT));
+    String output = encode(mapped, value, adapted);
+    validate(output);
+    Document doc = document(output);
+    assertEquals(1, doc.getElementsByTagNameNS("*", "EncodingMask").getLength());
+    assertEquals(
+        "2097152",
+        doc.getElementsByTagNameNS(RESULT + "Types.xsd", "EncodingMask").item(0).getTextContent());
+    assertEquals(
+        "result",
+        doc.getElementsByTagNameNS(RESULT + "Types.xsd", "ResultId").item(0).getTextContent());
+    assertEquals(
+        "child", doc.getElementsByTagNameNS(IJT + "Types.xsd", "Name").item(0).getTextContent());
+
+    // Register the same adapter for type and encoding lookups, as an existing model library would.
+    mapped
+        .getDataTypeManager()
+        .registerType(
+            value.getTypeId().toNodeIdOrThrow(mapped.getNamespaceTable()),
+            adapted,
+            null,
+            value.getXmlEncodingId().toNodeIdOrThrow(mapped.getNamespaceTable()),
+            null);
+    ExtensionObject encoded =
+        ExtensionObject.encode(mapped, value, OpcUaDefaultXmlEncoding.getInstance());
+    var xml = assertInstanceOf(ExtensionObject.Xml.class, encoded);
+    validate(xml.getBody().getFragmentOrEmpty());
+
+    // Variant conversion creates an encoder internally and must still find the registered adapter.
+    Fixture container =
+        fixture(CUSTOM, "Container", (c, e) -> e.encodeVariant("Value", new Variant(value)));
+    Document variant = document(encode(mapped, container));
+    Node body =
+        variant.getElementsByTagNameNS(IJT + "Types.xsd", "JoiningResultMetaDataType").item(0);
+    assertNotNull(body);
+    schema.newValidator().validate(new DOMSource(body));
   }
 
   // Part 6 F.2: XmlSchemaUri identifies serialized elements; ModelUri identifies NodeIds.
@@ -337,8 +418,13 @@ class OpcUaXmlNamespaceTest {
   }
 
   private static String encode(EncodingContext context, Fixture value) throws Exception {
+    return encode(context, value, CODEC);
+  }
+
+  private static String encode(EncodingContext context, Fixture value, DataTypeCodec codec)
+      throws Exception {
     try (var encoder = new OpcUaXmlEncoder(context)) {
-      encoder.encodeStruct(value.name, value, CODEC);
+      encoder.encodeStruct(value.name, value, codec);
       return encoder.getOutputString();
     }
   }

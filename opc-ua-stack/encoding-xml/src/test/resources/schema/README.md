@@ -1,6 +1,6 @@
 # XML namespace schema fixtures
 
-The three `Opc.Ua.*.xsd` files are unmodified copies from OPC Foundation UA-Nodeset revision
+The five `Opc.Ua.*.xsd` files are unmodified copies from OPC Foundation UA-Nodeset revision
 `6338cced8e6cc2fa2c3816bc6b3bad5daee3f101`. They are test inputs, not runtime dependencies.
 
 - [DI/Opc.Ua.Di.Types.xsd](https://github.com/OPCFoundation/UA-Nodeset/blob/6338cced8e6cc2fa2c3816bc6b3bad5daee3f101/DI/Opc.Ua.Di.Types.xsd)
@@ -46,3 +46,19 @@ schema compilation and instance validation. Tests never fetch model metadata or 
 The original copyright/license headers in the DI and UA schemas are preserved. The AMB schema
 has no embedded license header; the accompanying AMB NodeSet carries the OPC Foundation MIT License 1.00.
 That notice is reproduced in `LICENSE-UA-Nodeset`.
+
+## Inherited optional fields
+
+- [Machinery/Result/Opc.Ua.Machinery_Result.Types.xsd](https://github.com/OPCFoundation/UA-Nodeset/blob/6338cced8e6cc2fa2c3816bc6b3bad5daee3f101/Machinery/Result/Opc.Ua.Machinery_Result.Types.xsd)
+  SHA-256 `1037643b57ff4bbb6536fe0a7bc23720e551785650979d9dcf4c3136dfb28e0b`
+- [IJT/Base/Opc.Ua.Ijt.Base.Types.xsd](https://github.com/OPCFoundation/UA-Nodeset/blob/6338cced8e6cc2fa2c3816bc6b3bad5daee3f101/IJT/Base/Opc.Ua.Ijt.Base.Types.xsd)
+  SHA-256 `fbeafaba11f4823551f8bccc9aae6d5617ba38b06382832183c3c6198f2e42df`
+
+The published IJT `JoiningResultMetaDataType` extends Result `ResultMetaDataType`.
+The mask and `ResultId` belong to Result; `Name` belongs to IJT. The test selects bit 21
+for `Name` after the 19 inherited optional fields and two earlier child optional fields.
+The original flat codec fails schema validation even with both model-to-schema mappings.
+Wrapping that same codec in `XmlDataTypeCodec` must make it pass without another mask.
+An independently written expected document verifies the schema setup. Default XML
+ExtensionObjects and internal Variant conversion must use the registered adapter too.
+The model files use the OPC Foundation MIT license reproduced in `LICENSE-UA-Nodeset`.

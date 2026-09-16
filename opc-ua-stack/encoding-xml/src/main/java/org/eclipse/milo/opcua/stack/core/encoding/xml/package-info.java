@@ -24,8 +24,14 @@
  * to the encoder or Default XML ExtensionObject encoding. Internally created encoders use the same
  * context. Missing mappings preserve the model URI for compatibility. Structure fields belong to
  * their declaring schema; nested structure contents and typed array items use their type's schema.
- * Codecs writing inherited fields from another model must enter the base type through {@code
- * encodeStruct} with a null field name to apply its namespace without adding a wrapper. The decoder
+ * Codecs that delegate inherited fields to a base codec can enter it through {@code encodeStruct}
+ * with a null field name to apply its namespace without adding a wrapper. Flat codecs can instead
+ * be registered through {@link org.eclipse.milo.opcua.stack.core.encoding.xml.XmlDataTypeCodec}.
+ * The adapter supplies immediate field names and their declaring model URIs, including an inherited
+ * {@code EncodingMask}. It activates metadata only while its delegate encodes; the XML encoder
+ * resolves the schema namespaces and keeps nested contents in their own scopes. The codec still
+ * owns field order, optional bits, and the number of masks written. No generated code changes or
+ * model discovery are required, but all relevant registrations must use the adapter. The decoder
  * matches structure fields by local name and does not validate schemas, so a round trip alone
  * cannot establish XML namespace conformance.
  *
