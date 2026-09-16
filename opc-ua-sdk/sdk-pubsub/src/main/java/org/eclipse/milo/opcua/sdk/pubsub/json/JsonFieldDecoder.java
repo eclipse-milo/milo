@@ -515,22 +515,21 @@ final class JsonFieldDecoder {
   }
 
   /**
-   * Decode a structure value: wrapped ExtensionObjects (current Milo and deprecated Reversible
-   * forms) are delegated; objects with an inlined {@code UaTypeId} (the §5.4.2.16 form) and plain
-   * structure objects are surfaced as JSON {@link ExtensionObject}s.
+   * Decode a structure value: the current {@code UaTypeId}/{@code UaBody} envelope is delegated,
+   * the deprecated Reversible {@code TypeId}/{@code Body} envelope is decoded here, and objects
+   * with an inlined {@code UaTypeId} (the §5.4.2.16 form) and plain structure objects are surfaced
+   * as JSON {@link ExtensionObject}s.
    */
   private Object decodeObjectValue(JsonObject object) {
-    boolean hasTypeId = object.has("UaTypeId") || object.has("TypeId");
-    boolean hasBody =
-        object.has("UaBody")
-            || object.has("UaEncoding")
-            || (object.has("TypeId") && (object.has("Body") || object.has("Encoding")));
-
-    if (hasTypeId && hasBody) {
+    if (object.has("UaTypeId") && (object.has("UaBody") || object.has("UaEncoding"))) {
       return delegate(object).decodeExtensionObject(null);
     }
 
-    if (hasTypeId) {
+    if (object.has("TypeId") && object.has("Body")) {
+      return decodeReversibleExtensionObject(object);
+    }
+
+    if (object.has("UaTypeId") || object.has("TypeId")) {
       String idMember = object.has("UaTypeId") ? "UaTypeId" : "TypeId";
       JsonElement idElement = object.get(idMember);
 
@@ -555,6 +554,32 @@ final class JsonFieldDecoder {
     }
 
     return ExtensionObject.of(object.toString(), NodeId.NULL_VALUE);
+  }
+
+  /**
+   * Decode a deprecated Reversible ExtensionObject envelope (OPC 10000-6 Annex H): {@code TypeId}
+   * carries the encoding id and {@code Encoding} selects the body form — absent or 0 for a JSON
+   * structure, 1 for a base64 ByteString, 2 for an XML string. The stock decoder accepts the
+   * current mapping's header names only, so this form is decoded here.
+   */
+  private ExtensionObject decodeReversibleExtensionObject(JsonObject object) {
+    NodeId typeId;
+    try {
+      typeId = delegate(object.get("TypeId")).decodeNodeId(null);
+    } catch (Exception e) {
+      typeId = NodeId.NULL_VALUE;
+    }
+
+    JsonElement body = object.get("Body");
+    JsonElement encoding = object.get("Encoding");
+    int bodyFormat = encoding != null && encoding.isJsonPrimitive() ? encoding.getAsInt() : 0;
+
+    return switch (bodyFormat) {
+      case 1 ->
+          ExtensionObject.of(ByteString.of(Base64.getDecoder().decode(body.getAsString())), typeId);
+      case 2 -> ExtensionObject.of(XmlElement.of(body.getAsString()), typeId);
+      default -> ExtensionObject.of(body.toString(), typeId);
+    };
   }
 
   /** Decode a StatusCode value: a JSON number (deprecated Reversible) or the object form. */
