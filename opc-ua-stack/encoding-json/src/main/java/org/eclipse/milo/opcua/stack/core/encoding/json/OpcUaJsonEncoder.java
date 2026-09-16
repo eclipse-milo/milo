@@ -488,8 +488,9 @@ public class OpcUaJsonEncoder implements UaEncoder, AutoCloseable {
     // RFC 7159.
     //
     // ByteString is a nullable built-in type (OPC 10000-6 Table 1), so per §5.4.2.1 only a NULL
-    // value is omitted in CompactEncoding. A zero-length ByteString is a present value and is
-    // encoded as the Base64 of an empty array ("").
+    // value is omitted in CompactEncoding. A NULL value that is written, in VerboseEncoding or as
+    // an array element, is the JSON literal null. A zero-length ByteString is a present value and
+    // is encoded as the Base64 of an empty array ("").
 
     try {
       EncoderContext context = contextPeek();
@@ -499,8 +500,11 @@ public class OpcUaJsonEncoder implements UaEncoder, AutoCloseable {
         if (field != null) {
           jsonWriter.name(field);
         }
-        jsonWriter.value(
-            value == null ? "" : Base64.getEncoder().encodeToString(value.bytesOrEmpty()));
+        if (value == null || value.isNull()) {
+          jsonWriter.nullValue();
+        } else {
+          jsonWriter.value(Base64.getEncoder().encodeToString(value.bytesOrEmpty()));
+        }
       }
     } catch (IOException e) {
       throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
