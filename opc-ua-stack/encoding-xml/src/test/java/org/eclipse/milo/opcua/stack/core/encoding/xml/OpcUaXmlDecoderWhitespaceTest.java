@@ -20,6 +20,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.XmlElement;
 import org.eclipse.milo.opcua.stack.core.types.structured.XVType;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -144,6 +145,20 @@ class OpcUaXmlDecoderWhitespaceTest {
 
       assertEquals(payload, value.getBody().getFragment());
     }
+  }
+
+  // The two tests above only reach the replacement where the platform separator is not \n, so
+  // drive it directly to cover it everywhere.
+  @Test
+  void restoresTheSerializerLineSeparator() {
+    assertEquals(
+        "<P>a\nb</P>", OpcUaXmlDecoder.restoreLineSeparators("<P>a\r\nb</P>", "\r\n"), "CRLF");
+    assertEquals(
+        "<P>a&#13;\nb</P>",
+        OpcUaXmlDecoder.restoreLineSeparators("<P>a&#13;\r\nb</P>", "\r\n"),
+        "an escaped carriage return belongs to the payload and stays");
+    assertEquals(
+        "<P>a\nb</P>", OpcUaXmlDecoder.restoreLineSeparators("<P>a\nb</P>", "\n"), "already LF");
   }
 
   // Advancing over formatting must leave text-only values untouched.
