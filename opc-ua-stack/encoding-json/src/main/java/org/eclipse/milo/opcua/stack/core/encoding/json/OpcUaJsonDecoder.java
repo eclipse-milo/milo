@@ -880,24 +880,27 @@ public class OpcUaJsonDecoder implements UaDecoder {
         String nextName = nextName(field);
         if (!field.equals(nextName)) {
           this.peekedNextName = nextName;
-          return null;
+          return DataValue.newValue().build();
         }
+      }
+
+      // Part 6, 5.1.2: a null DataValue has all fields set to their defaults.
+      if (jsonReader.peek() == JsonToken.NULL) {
+        jsonReader.nextNull();
+        return DataValue.newValue().build();
       }
 
       jsonReader.beginObject();
 
+      // Part 6, 5.4.2.18: the Variant fields share the DataValue object.
+      var variantFields = new VariantFields();
       DataValue.Builder b = DataValue.newValue();
-      b.setStatus(StatusCode.GOOD);
 
       while (jsonReader.peek() == JsonToken.NAME) {
         String nextName = nextName();
-        if (nextName == null) continue;
+        if (nextName == null || readVariantField(nextName, variantFields)) continue;
 
         switch (nextName) {
-          case "Value":
-            b.setValue(decodeVariant(null));
-            break;
-
           case "Status":
             b.setStatus(decodeStatusCode(null));
             break;
@@ -921,6 +924,8 @@ public class OpcUaJsonDecoder implements UaDecoder {
       }
 
       jsonReader.endObject();
+
+      b.setValue(readVariant(variantFields));
 
       return b.build();
     } catch (IOException | IllegalStateException | IllegalArgumentException e) {
@@ -946,100 +951,126 @@ public class OpcUaJsonDecoder implements UaDecoder {
 
       jsonReader.beginObject();
 
-      int typeId = 0;
-      JsonElement bodyElement = null;
-      int[] dimensions = null;
+      var fields = new VariantFields();
 
       while (jsonReader.peek() == JsonToken.NAME) {
         String nextName = nextName();
         if (nextName == null) continue;
 
-        switch (nextName) {
-          case "UaType":
-          case "Type":
-            typeId = jsonReader.nextInt();
-            break;
-          case "Value":
-          case "Body":
-            bodyElement =
-                JsonValueBuffer.read(
-                    jsonReader, context.getEncodingLimits().getMaxRecursionDepth());
-            break;
-          case "Dimensions":
-            var dims = new ArrayList<Integer>();
-            jsonReader.beginArray();
-            while (jsonReader.peek() == JsonToken.NUMBER) {
-              dims.add(jsonReader.nextInt());
-            }
-            jsonReader.endArray();
-            dimensions = new int[dims.size()];
-            for (int i = 0; i < dims.size(); i++) {
-              dimensions[i] = dims.get(i);
-            }
-            break;
-        }
+        readVariantField(nextName, fields);
       }
 
       jsonReader.endObject();
 
-      if (bodyElement == null) {
-        return Variant.NULL_VALUE;
-      } else if (dimensions == null) {
-        // scalar or one-dimensional array value
-        JsonReader reader = jsonReader;
-        try {
-          jsonReader = new JsonReader(new StringReader(bodyElement.toString()));
+      return readVariant(fields);
+    } catch (IOException | IllegalStateException | IllegalArgumentException e) {
+      throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
+    }
+  }
 
-          if (bodyElement.isJsonArray()) {
-            var elements = new ArrayList<>();
-            jsonReader.beginArray();
-            while (jsonReader.peek() != JsonToken.END_ARRAY) {
-              elements.add(readBuiltinTypeValue(null, typeId));
-            }
-            jsonReader.endArray();
-            Object value =
-                Array.newInstance(OpcUaDataType.getPrimitiveBackingClass(typeId), elements.size());
-            for (int i = 0; i < elements.size(); i++) {
-              Array.set(value, i, elements.get(i));
-            }
-            return new Variant(value);
-          } else {
-            Object value = readBuiltinTypeValue(null, typeId);
-            return new Variant(value);
-          }
-        } finally {
-          jsonReader = reader;
+  /** The Variant fields of a JSON object, collected in any order before the body is decoded. */
+  private static final class VariantFields {
+    int typeId = 0;
+    JsonElement body = null;
+    int[] dimensions = null;
+  }
+
+  /**
+   * Read the value of {@code name} into {@code fields} if it names a Variant field.
+   *
+   * @return {@code true} if the value was consumed.
+   */
+  private boolean readVariantField(String name, VariantFields fields) throws IOException {
+    switch (name) {
+      case "UaType":
+      case "Type":
+        fields.typeId = jsonReader.nextInt();
+        return true;
+      case "Value":
+      case "Body":
+        fields.body =
+            JsonValueBuffer.read(jsonReader, context.getEncodingLimits().getMaxRecursionDepth());
+        return true;
+      case "Dimensions":
+        var dims = new ArrayList<Integer>();
+        jsonReader.beginArray();
+        while (jsonReader.peek() == JsonToken.NUMBER) {
+          dims.add(jsonReader.nextInt());
         }
-      } else {
-        // multi-dimensional array value
-        JsonReader reader = jsonReader;
-        try {
-          jsonReader = new JsonReader(new StringReader(bodyElement.toString()));
+        jsonReader.endArray();
+        fields.dimensions = new int[dims.size()];
+        for (int i = 0; i < dims.size(); i++) {
+          fields.dimensions[i] = dims.get(i);
+        }
+        return true;
+      default:
+        return false;
+    }
+  }
 
+  private Variant readVariant(VariantFields fields) throws IOException {
+    JsonElement bodyElement = fields.body;
+    int typeId = fields.typeId;
+    int[] dimensions = fields.dimensions;
+
+    if (bodyElement == null) {
+      return Variant.NULL_VALUE;
+    } else if (typeId == 0) {
+      throw new UaSerializationException(
+          StatusCodes.Bad_DecodingError, "Variant Value requires a UaType");
+    } else if (dimensions == null) {
+      // scalar or one-dimensional array value
+      JsonReader reader = jsonReader;
+      try {
+        jsonReader = new JsonReader(new StringReader(bodyElement.toString()));
+
+        if (bodyElement.isJsonArray()) {
           var elements = new ArrayList<>();
           jsonReader.beginArray();
           while (jsonReader.peek() != JsonToken.END_ARRAY) {
             elements.add(readBuiltinTypeValue(null, typeId));
           }
           jsonReader.endArray();
-
-          Object flatArray =
+          Object value =
               Array.newInstance(OpcUaDataType.getPrimitiveBackingClass(typeId), elements.size());
           for (int i = 0; i < elements.size(); i++) {
-            Array.set(flatArray, i, elements.get(i));
+            Array.set(value, i, elements.get(i));
           }
-
-          validateMatrixDimensions(flatArray, dimensions);
-
-          var matrix = new Matrix(flatArray, dimensions, OpcUaDataType.fromTypeId(typeId));
-
-          return new Variant(matrix);
-        } finally {
-          jsonReader = reader;
+          return new Variant(value);
+        } else {
+          Object value = readBuiltinTypeValue(null, typeId);
+          return new Variant(value);
         }
+      } finally {
+        jsonReader = reader;
       }
-    } catch (IOException | IllegalStateException | IllegalArgumentException e) {
-      throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
+    } else {
+      // multi-dimensional array value
+      JsonReader reader = jsonReader;
+      try {
+        jsonReader = new JsonReader(new StringReader(bodyElement.toString()));
+
+        var elements = new ArrayList<>();
+        jsonReader.beginArray();
+        while (jsonReader.peek() != JsonToken.END_ARRAY) {
+          elements.add(readBuiltinTypeValue(null, typeId));
+        }
+        jsonReader.endArray();
+
+        Object flatArray =
+            Array.newInstance(OpcUaDataType.getPrimitiveBackingClass(typeId), elements.size());
+        for (int i = 0; i < elements.size(); i++) {
+          Array.set(flatArray, i, elements.get(i));
+        }
+
+        validateMatrixDimensions(flatArray, dimensions);
+
+        var matrix = new Matrix(flatArray, dimensions, OpcUaDataType.fromTypeId(typeId));
+
+        return new Variant(matrix);
+      } finally {
+        jsonReader = reader;
+      }
     }
   }
 
