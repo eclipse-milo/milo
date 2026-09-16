@@ -52,6 +52,13 @@
  * the encoding context; size or depth violations report {@code Bad_EncodingLimitsExceeded}, while
  * malformed values report {@code Bad_DecodingError}.
  *
+ * <p>A DataValue writes its Variant's {@code UaType}, {@code Value}, and {@code Dimensions} fields
+ * beside its status and timestamp fields in one object, and the decoder accepts them in any order.
+ * An all-default DataValue is null. Array elements are JSON {@code null} in both modes. Otherwise,
+ * COMPACT omits it from a structure and writes JSON {@code null} elsewhere, while VERBOSE writes
+ * {@code {}}. The decoder returns an all-default DataValue for JSON {@code null} and omitted
+ * fields.
+ *
  * <p>Variants carry structures as ExtensionObjects. Non-null structure bodies use their registered
  * encoding. Null elements of typed structure arrays and Matrices are JSON {@code null} in both
  * modes, as required for array elements by OPC UA Part 6, 5.4.5. Decoding returns ExtensionObject

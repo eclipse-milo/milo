@@ -837,7 +837,21 @@ public class OpcUaJsonEncoder implements UaEncoder, AutoCloseable {
   @Override
   public void encodeDataValue(String field, DataValue value) throws UaSerializationException {
     try {
-      if (encoding == Encoding.COMPACT && (value == null || allFieldsAreOmitted(value))) {
+      if (value == null || allFieldsAreOmitted(value)) {
+        // Part 6, 5.1.2: an all-default DataValue is null. COMPACT omits a null structure field
+        // and writes JSON null elsewhere; VERBOSE keeps its {} default outside arrays.
+        if (encoding == Encoding.COMPACT && contextPeek() == EncoderContext.STRUCT) {
+          return;
+        }
+        if (field != null) {
+          jsonWriter.name(field);
+        }
+        if (encoding == Encoding.COMPACT) {
+          jsonWriter.nullValue();
+        } else {
+          jsonWriter.beginObject();
+          jsonWriter.endObject();
+        }
         return;
       }
 
@@ -845,44 +859,55 @@ public class OpcUaJsonEncoder implements UaEncoder, AutoCloseable {
         jsonWriter.name(field);
       }
 
-      if (value == null) {
-        jsonWriter.beginObject();
-        jsonWriter.endObject();
-        return;
-      }
-
       contextPush(EncoderContext.BUILTIN);
-      jsonWriter.beginObject();
+      try {
+        jsonWriter.beginObject();
 
-      Variant v = value.value();
-      if (v.isNotNull()) {
-        encodeVariant("Value", v);
-      }
-      StatusCode s = value.statusCode();
-      if (s.value() != 0L) {
-        encodeStatusCode("Status", s);
-      }
-      DateTime sourceTime = value.sourceTime();
-      if (sourceTime != null && sourceTime.isNotNull()) {
-        encodeDateTime("SourceTimestamp", sourceTime);
-      }
-      UShort sourcePicoseconds = value.sourcePicoseconds();
-      if (sourcePicoseconds != null && sourcePicoseconds.intValue() > 0) {
-        encodeUInt16("SourcePicoseconds", sourcePicoseconds);
-      }
-      DateTime serverTime = value.serverTime();
-      if (serverTime != null && serverTime.isNotNull()) {
-        encodeDateTime("ServerTimestamp", serverTime);
-      }
-      UShort serverPicoseconds = value.serverPicoseconds();
-      if (serverPicoseconds != null && serverPicoseconds.intValue() > 0) {
-        encodeUInt16("ServerPicoseconds", serverPicoseconds);
-      }
+        // Part 6, 5.4.2.18: the Variant fields share the DataValue object.
+        Variant v = value.value();
+        if (v.isNotNull()) {
+          encodeVariantFields(v.value());
+        }
+        StatusCode s = value.statusCode();
+        if (s.value() != 0L) {
+          encodeStatusCode("Status", s);
+        }
+        DateTime sourceTime = value.sourceTime();
+        if (sourceTime != null && sourceTime.isNotNull()) {
+          encodeDateTime("SourceTimestamp", sourceTime);
+        }
+        UShort sourcePicoseconds = value.sourcePicoseconds();
+        if (sourcePicoseconds != null && sourcePicoseconds.intValue() > 0) {
+          encodeUInt16("SourcePicoseconds", sourcePicoseconds);
+        }
+        DateTime serverTime = value.serverTime();
+        if (serverTime != null && serverTime.isNotNull()) {
+          encodeDateTime("ServerTimestamp", serverTime);
+        }
+        UShort serverPicoseconds = value.serverPicoseconds();
+        if (serverPicoseconds != null && serverPicoseconds.intValue() > 0) {
+          encodeUInt16("ServerPicoseconds", serverPicoseconds);
+        }
 
-      jsonWriter.endObject();
-      contextPop();
+        jsonWriter.endObject();
+      } finally {
+        contextPop();
+      }
     } catch (IOException e) {
       throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
+    }
+  }
+
+  /**
+   * Encode a DataValue array element, writing JSON null for a null or all-default value.
+   *
+   * <p>Part 6, 5.4.5: a null array element keeps its position as JSON null in both modes.
+   */
+  private void encodeDataValueElement(DataValue value) throws IOException {
+    if (value == null || allFieldsAreOmitted(value)) {
+      jsonWriter.nullValue();
+    } else {
+      encodeDataValue(null, value);
     }
   }
 
@@ -931,6 +956,16 @@ public class OpcUaJsonEncoder implements UaEncoder, AutoCloseable {
   }
 
   private void encodeVariantValue(@NonNull Object value) throws IOException {
+    jsonWriter.beginObject();
+    encodeVariantFields(value);
+    jsonWriter.endObject();
+  }
+
+  /**
+   * Write the UaType, Value, and Dimensions fields of a non-null Variant value into the current
+   * object. Variants and DataValues both use these fields.
+   */
+  private void encodeVariantFields(@NonNull Object value) throws IOException {
     Class<?> valueClass;
     if (value instanceof Matrix m) {
       if (m.getElements() == null) return;
@@ -967,37 +1002,13 @@ public class OpcUaJsonEncoder implements UaEncoder, AutoCloseable {
           StatusCodes.Bad_EncodingError, "not a built-in type: " + valueClass.getName());
     }
 
+    jsonWriter.name("UaType").value(typeId);
+    jsonWriter.name("Value");
+
     if (value.getClass().isArray()) {
-      jsonWriter.beginObject();
-
-      jsonWriter.name("UaType").value(typeId);
-      jsonWriter.name("Value");
-      int length = Array.getLength(value);
-
-      jsonWriter.beginArray();
-      for (int i = 0; i < length; i++) {
-        Object o = Array.get(value, i);
-
-        encodeVariantBodyValue(o, typeHint, typeId);
-      }
-      jsonWriter.endArray();
-
-      jsonWriter.endObject();
+      encodeVariantBodyArray(value, typeHint, typeId);
     } else if (value instanceof Matrix m) {
-      jsonWriter.beginObject();
-
-      jsonWriter.name("UaType").value(typeId);
-      jsonWriter.name("Value");
-
-      Object flatArray = m.getElements();
-      int length = Array.getLength(flatArray);
-      jsonWriter.beginArray();
-      for (int i = 0; i < length; i++) {
-        Object o = Array.get(flatArray, i);
-
-        encodeVariantBodyValue(o, typeHint, typeId);
-      }
-      jsonWriter.endArray();
+      encodeVariantBodyArray(m.getElements(), typeHint, typeId);
 
       jsonWriter.name("Dimensions");
       jsonWriter.beginArray();
@@ -1005,17 +1016,25 @@ public class OpcUaJsonEncoder implements UaEncoder, AutoCloseable {
         jsonWriter.value(dimension);
       }
       jsonWriter.endArray();
-
-      jsonWriter.endObject();
     } else {
-      jsonWriter.beginObject();
-      jsonWriter.name("UaType").value(typeId);
-      jsonWriter.name("Value");
-
       encodeVariantBodyValue(value, typeHint, typeId);
-
-      jsonWriter.endObject();
     }
+  }
+
+  private void encodeVariantBodyArray(Object array, TypeHint typeHint, int typeId)
+      throws IOException {
+    int length = Array.getLength(array);
+    jsonWriter.beginArray();
+    for (int i = 0; i < length; i++) {
+      Object o = Array.get(array, i);
+
+      if (typeId == OpcUaDataType.DataValue.getTypeId()) {
+        encodeDataValueElement((DataValue) o);
+      } else {
+        encodeVariantBodyValue(o, typeHint, typeId);
+      }
+    }
+    jsonWriter.endArray();
   }
 
   private void encodeVariantBodyValue(Object value, TypeHint typeHint, int typeId)
@@ -1450,7 +1469,16 @@ public class OpcUaJsonEncoder implements UaEncoder, AutoCloseable {
   @Override
   public void encodeDataValueArray(String field, DataValue[] value)
       throws UaSerializationException {
-    encodeArray(field, value, this::encodeDataValue);
+    encodeArray(
+        field,
+        value,
+        (f, v) -> {
+          try {
+            encodeDataValueElement(v);
+          } catch (IOException e) {
+            throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
+          }
+        });
   }
 
   @Override
