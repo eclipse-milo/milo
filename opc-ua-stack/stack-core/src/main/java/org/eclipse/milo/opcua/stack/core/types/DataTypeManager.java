@@ -83,7 +83,9 @@ public interface DataTypeManager {
   @Nullable DataTypeCodec getCodec(NodeId id);
 
   /**
-   * Resolves a registered data type or encoding id to its data type id without decoding a value.
+   * Resolves a registered data type or current encoding id to its data type id without decoding a
+   * value. An encoding association superseded by a newer forward mapping is unresolved, even if its
+   * codec remains registered for decoding older values.
    *
    * <p>Implementations that do not support identity lookup return {@code null}. Callers that need
    * to translate an opaque value between encodings must reject an unresolved identity rather than

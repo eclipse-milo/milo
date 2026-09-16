@@ -27,6 +27,8 @@ import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.channel.EncodingLimits;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.json.OpcUaJsonEncoder.Encoding;
+import org.eclipse.milo.opcua.stack.core.types.DataTypeManager;
+import org.eclipse.milo.opcua.stack.core.types.DefaultDataTypeManager;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
@@ -258,6 +260,59 @@ class JsonExtensionObjectMappingTest {
     UaSerializationException writeError =
         assertThrows(UaSerializationException.class, () -> encode(value, Encoding.COMPACT));
     assertEquals(StatusCodes.Bad_EncodingError, writeError.getStatusCode().getValue());
+  }
+
+  // Replacing an encoding must not relabel an old opaque body's bytes with the new encoding ID.
+  @ParameterizedTest
+  @ValueSource(ints = {1, 2})
+  void rejectsStaleOpaqueIdentityAfterReplacement(int bodyFormat) throws Exception {
+    var manager = new DefaultDataTypeManager();
+    var localContext =
+        new DefaultEncodingContext() {
+          @Override
+          public DataTypeManager getDataTypeManager() {
+            return manager;
+          }
+        };
+    NodeId typeId = new NodeId(0, 70000);
+    NodeId oldId = new NodeId(0, 70001);
+    NodeId newId = new NodeId(0, 70002);
+    manager.registerType(
+        typeId,
+        new EUInformation.Codec(),
+        bodyFormat == 1 ? oldId : null,
+        bodyFormat == 2 ? oldId : null,
+        null);
+    manager.registerType(
+        typeId,
+        new EUInformation.Codec(),
+        bodyFormat == 1 ? newId : null,
+        bodyFormat == 2 ? newId : null,
+        null);
+    ExtensionObject oldValue =
+        bodyFormat == 1
+            ? ExtensionObject.of(ByteString.of(new byte[] {1, 2, 3}), oldId)
+            : ExtensionObject.of(new XmlElement("<x/>"), oldId);
+    UaSerializationException error =
+        assertThrows(
+            UaSerializationException.class,
+            () -> {
+              try (var encoder = new OpcUaJsonEncoder(localContext)) {
+                encoder.encodeExtensionObject(null, oldValue);
+              }
+            });
+    assertEquals(StatusCodes.Bad_EncodingError, error.getStatusCode().getValue());
+    ExtensionObject newValue =
+        bodyFormat == 1
+            ? ExtensionObject.of(ByteString.of(new byte[] {1, 2, 3}), newId)
+            : ExtensionObject.of(new XmlElement("<x/>"), newId);
+    try (var encoder = new OpcUaJsonEncoder(localContext)) {
+      encoder.encodeExtensionObject(null, newValue);
+      assertEquals(
+          newValue,
+          new OpcUaJsonDecoder(localContext, encoder.getOutputString())
+              .decodeExtensionObject(null));
+    }
   }
 
   // Nested arrays and Variants use the same envelope, and must leave the following field intact.

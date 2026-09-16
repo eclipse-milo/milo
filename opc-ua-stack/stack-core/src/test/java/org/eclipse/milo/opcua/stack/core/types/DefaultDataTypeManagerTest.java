@@ -155,9 +155,33 @@ class DefaultDataTypeManagerTest {
     assertSame(replacement, manager.getCodec(TYPE));
     assertSame(codec, manager.getCodec(BINARY));
     assertEquals(BINARY, manager.getBinaryEncodingId(TYPE));
+    assertEquals(TYPE, manager.getDataTypeId(BINARY));
     assertThrows(
         IllegalStateException.class,
         () -> manager.acquireType(TYPE, replacement, null, null, null));
+  }
+
+  // An obsolete encoding cannot identify a type whose forward mapping selects a different id.
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void reverseLookupRejectsReplacedEncodingAssociations(boolean sameCodec) {
+    register(codec);
+    NodeId nextBinary = new NodeId(2, 12);
+    NodeId nextXml = new NodeId(2, 13);
+    NodeId nextJson = new NodeId(2, 14);
+    manager.registerType(
+        TYPE, sameCodec ? codec : new Range.Codec(), nextBinary, nextXml, nextJson);
+
+    assertNull(manager.getDataTypeId(BINARY));
+    assertNull(manager.getDataTypeId(XML));
+    assertNull(manager.getDataTypeId(JSON));
+    assertEquals(TYPE, manager.getDataTypeId(TYPE));
+    assertEquals(TYPE, manager.getDataTypeId(nextBinary));
+    assertEquals(TYPE, manager.getDataTypeId(nextXml));
+    assertEquals(TYPE, manager.getDataTypeId(nextJson));
+    assertSame(codec, manager.getCodec(BINARY));
+    assertSame(codec, manager.getCodec(XML));
+    assertSame(codec, manager.getCodec(JSON));
   }
 
   // Competing acquisitions must share one lifetime, regardless of which wins installation.
