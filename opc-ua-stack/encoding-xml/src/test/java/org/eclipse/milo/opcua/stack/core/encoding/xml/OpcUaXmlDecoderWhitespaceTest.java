@@ -16,9 +16,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.XmlElement;
 import org.eclipse.milo.opcua.stack.core.types.structured.XVType;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -120,6 +122,43 @@ class OpcUaXmlDecoderWhitespaceTest {
       XmlElement value = decoder.decodeXmlElement("XmlElement");
       assertEquals(payload, value.getFragment());
     }
+  }
+
+  // A Body goes through the same serializer as a bare XmlElement and must survive it intact too.
+  @ParameterizedTest
+  @ValueSource(strings = {"", "\n  ", "\n  <!-- body -->\n  "})
+  void preservesExtensionObjectBodyWhitespace(String gap) throws Exception {
+    String payload = "<Payload>  <Child/>\n  <Child/>  </Payload>";
+    String xml =
+        "<ExtensionObject>"
+            + gap
+            + "<TypeId><Identifier>i=1</Identifier></TypeId>"
+            + gap
+            + "<Body>"
+            + gap
+            + payload
+            + "</Body></ExtensionObject>";
+
+    try (var decoder = decoder(xml)) {
+      ExtensionObject.Xml value =
+          (ExtensionObject.Xml) decoder.decodeExtensionObject("ExtensionObject");
+
+      assertEquals(payload, value.getBody().getFragment());
+    }
+  }
+
+  // The two tests above only reach the replacement where the platform separator is not \n, so
+  // drive it directly to cover it everywhere.
+  @Test
+  void restoresTheSerializerLineSeparator() {
+    assertEquals(
+        "<P>a\nb</P>", OpcUaXmlDecoder.restoreLineSeparators("<P>a\r\nb</P>", "\r\n"), "CRLF");
+    assertEquals(
+        "<P>a&#13;\nb</P>",
+        OpcUaXmlDecoder.restoreLineSeparators("<P>a&#13;\r\nb</P>", "\r\n"),
+        "an escaped carriage return belongs to the payload and stays");
+    assertEquals(
+        "<P>a\nb</P>", OpcUaXmlDecoder.restoreLineSeparators("<P>a\nb</P>", "\n"), "already LF");
   }
 
   // Advancing over formatting must leave text-only values untouched.
