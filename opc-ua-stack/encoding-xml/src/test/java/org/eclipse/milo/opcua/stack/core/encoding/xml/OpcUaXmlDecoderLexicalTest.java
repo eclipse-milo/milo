@@ -240,6 +240,14 @@ class OpcUaXmlDecoderLexicalTest {
     void rejectsMalformedBase64(String text) {
       assertDecodingError(text, d -> d.decodeByteString("V"));
     }
+
+    // XML Schema base64Binary requires the unused bits before padding to be zero. "AQ==" and
+    // "AQI=" are the valid forms of these values.
+    @ParameterizedTest
+    @ValueSource(strings = {"AB==", "AP==", "AQJ=", "AQL=", "AQ\nL="})
+    void rejectsNonZeroBitsBeforePadding(String text) {
+      assertDecodingError(text, d -> d.decodeByteString("V"));
+    }
   }
 
   @Nested

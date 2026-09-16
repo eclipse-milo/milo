@@ -34,6 +34,9 @@ final class XmlSchemaValues {
   private static final Pattern DECIMAL_OR_SCIENTIFIC =
       Pattern.compile("[+-]?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)([eE][+-]?[0-9]+)?");
 
+  private static final String BASE64_ALPHABET =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
   private static final BigInteger UINT64_MAX =
       BigInteger.ONE.shiftLeft(64).subtract(BigInteger.ONE);
 
@@ -148,7 +151,7 @@ final class XmlSchemaValues {
    * Parse an {@code xs:base64Binary}.
    *
    * <p>XML whitespace may appear anywhere in the text. The remaining characters must be padded
-   * base64 using the standard alphabet.
+   * base64 using the standard alphabet, with zero unused bits before the padding.
    *
    * @param text the lexical value.
    * @return the decoded bytes.
@@ -158,7 +161,18 @@ final class XmlSchemaValues {
     if (compact.length() % 4 != 0) {
       throw new IllegalArgumentException("invalid xs:base64Binary length: " + compact.length());
     }
-    return Base64.getDecoder().decode(compact);
+    byte[] bytes = Base64.getDecoder().decode(compact);
+
+    // The final character before padding must not carry unused bits.
+    int padding = compact.endsWith("==") ? 2 : compact.endsWith("=") ? 1 : 0;
+    if (padding > 0) {
+      int unusedBits = padding == 2 ? 0x0F : 0x03;
+      char last = compact.charAt(compact.length() - padding - 1);
+      if ((BASE64_ALPHABET.indexOf(last) & unusedBits) != 0) {
+        throw new IllegalArgumentException("invalid xs:base64Binary padding: " + compact);
+      }
+    }
+    return bytes;
   }
 
   static String printBase64Binary(byte[] bytes) {
