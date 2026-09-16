@@ -571,6 +571,10 @@ public class OpcUaJsonDecoder implements UaDecoder {
         byte[] bs = Base64.getDecoder().decode(s);
 
         return ByteString.of(bs);
+      } else if (jsonReader.peek() == JsonToken.NULL) {
+        // ByteString is nullable (OPC 10000-6 Table 1); JSON null is a NULL ByteString.
+        jsonReader.nextNull();
+        return ByteString.NULL_VALUE;
       } else {
         throw new UaSerializationException(
             StatusCodes.Bad_DecodingError,
