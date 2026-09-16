@@ -34,16 +34,6 @@
       <artifactId>milo-stack-core</artifactId>
       <version>${project.version}</version>
     </dependency>
-    <dependency>
-      <groupId>org.glassfish.jaxb</groupId>
-      <artifactId>jaxb-runtime</artifactId>
-      <version>${jaxb.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>jakarta.xml.bind</groupId>
-      <artifactId>jakarta.xml.bind-api</artifactId>
-      <version>${jakarta-xml-bind-api.version}</version>
-    </dependency>
 
     <dependency>
       <groupId>org.junit.jupiter</groupId>
@@ -68,6 +58,13 @@
       <artifactId>xmlunit-core</artifactId>
       <version>${xmlunit.version}</version>
       <scope>test</scope>
+      <exclusions>
+        <!-- Only needed for XMLUnit's JAXB input; keep JAXB off the test classpath. -->
+        <exclusion>
+          <groupId>jakarta.xml.bind</groupId>
+          <artifactId>jakarta.xml.bind-api</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>

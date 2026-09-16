@@ -10,7 +10,6 @@
 
 package org.eclipse.milo.opcua.stack.core.encoding.xml;
 
-import jakarta.xml.bind.DatatypeConverter;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.util.ArrayDeque;
@@ -261,7 +260,7 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
   public void encodeBoolean(String field, Boolean value) throws UaSerializationException {
     if (beginField(field)) {
       try {
-        xmlStreamWriter.writeCharacters(DatatypeConverter.printBoolean(value));
+        xmlStreamWriter.writeCharacters(Boolean.toString(value));
       } catch (XMLStreamException e) {
         throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
       } finally {
@@ -274,7 +273,7 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
   public void encodeSByte(String field, Byte value) throws UaSerializationException {
     if (beginField(field)) {
       try {
-        xmlStreamWriter.writeCharacters(DatatypeConverter.printByte(value));
+        xmlStreamWriter.writeCharacters(Byte.toString(value));
       } catch (XMLStreamException e) {
         throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
       } finally {
@@ -287,7 +286,7 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
   public void encodeInt16(String field, Short value) throws UaSerializationException {
     if (beginField(field)) {
       try {
-        xmlStreamWriter.writeCharacters(DatatypeConverter.printShort(value));
+        xmlStreamWriter.writeCharacters(Short.toString(value));
       } catch (XMLStreamException e) {
         throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
       } finally {
@@ -300,7 +299,7 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
   public void encodeInt32(String field, Integer value) throws UaSerializationException {
     if (beginField(field)) {
       try {
-        xmlStreamWriter.writeCharacters(DatatypeConverter.printInt(value));
+        xmlStreamWriter.writeCharacters(Integer.toString(value));
       } catch (XMLStreamException e) {
         throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
       } finally {
@@ -313,7 +312,7 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
   public void encodeInt64(String field, Long value) throws UaSerializationException {
     if (beginField(field)) {
       try {
-        xmlStreamWriter.writeCharacters(DatatypeConverter.printLong(value));
+        xmlStreamWriter.writeCharacters(Long.toString(value));
       } catch (XMLStreamException e) {
         throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
       } finally {
@@ -326,7 +325,7 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
   public void encodeByte(String field, UByte value) throws UaSerializationException {
     if (beginField(field)) {
       try {
-        xmlStreamWriter.writeCharacters(DatatypeConverter.printShort(value.shortValue()));
+        xmlStreamWriter.writeCharacters(Short.toString(value.shortValue()));
       } catch (XMLStreamException e) {
         throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
       } finally {
@@ -339,7 +338,7 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
   public void encodeUInt16(String field, UShort value) throws UaSerializationException {
     if (beginField(field)) {
       try {
-        xmlStreamWriter.writeCharacters(DatatypeConverter.printInt(value.intValue()));
+        xmlStreamWriter.writeCharacters(Integer.toString(value.intValue()));
       } catch (XMLStreamException e) {
         throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
       } finally {
@@ -352,7 +351,7 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
   public void encodeUInt32(String field, UInteger value) throws UaSerializationException {
     if (beginField(field)) {
       try {
-        xmlStreamWriter.writeCharacters(DatatypeConverter.printLong(value.longValue()));
+        xmlStreamWriter.writeCharacters(Long.toString(value.longValue()));
       } catch (XMLStreamException e) {
         throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
       } finally {
@@ -365,7 +364,7 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
   public void encodeUInt64(String field, ULong value) throws UaSerializationException {
     if (beginField(field)) {
       try {
-        xmlStreamWriter.writeCharacters(DatatypeConverter.printInteger(value.toBigInteger()));
+        xmlStreamWriter.writeCharacters(value.toBigInteger().toString());
       } catch (XMLStreamException e) {
         throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
       } finally {
@@ -378,7 +377,7 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
   public void encodeFloat(String field, Float value) throws UaSerializationException {
     if (beginField(field)) {
       try {
-        xmlStreamWriter.writeCharacters(DatatypeConverter.printFloat(value));
+        xmlStreamWriter.writeCharacters(XmlSchemaValues.printFloat(value));
       } catch (XMLStreamException e) {
         throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
       } finally {
@@ -391,7 +390,7 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
   public void encodeDouble(String field, Double value) throws UaSerializationException {
     if (beginField(field)) {
       try {
-        xmlStreamWriter.writeCharacters(DatatypeConverter.printDouble(value));
+        xmlStreamWriter.writeCharacters(XmlSchemaValues.printDouble(value));
       } catch (XMLStreamException e) {
         throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
       } finally {
@@ -454,8 +453,7 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
     if (beginField(field, value == null, true)) {
       try {
         if (value != null && value.isNotNull()) {
-          xmlStreamWriter.writeCharacters(
-              DatatypeConverter.printBase64Binary(value.bytesOrEmpty()));
+          xmlStreamWriter.writeCharacters(XmlSchemaValues.printBase64Binary(value.bytesOrEmpty()));
         } else {
           xmlStreamWriter.writeAttribute("xsi", Namespaces.XML_SCHEMA_INSTANCE, "nil", "true");
         }
@@ -614,7 +612,7 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
           xmlStreamWriter.writeStartElement(Namespaces.OPC_UA_XSD, "Body");
           xmlStreamWriter.writeStartElement(Namespaces.OPC_UA_XSD, "ByteString");
           xmlStreamWriter.writeCharacters(
-              DatatypeConverter.printBase64Binary(binary.getBody().bytesOrEmpty()));
+              XmlSchemaValues.printBase64Binary(binary.getBody().bytesOrEmpty()));
           xmlStreamWriter.writeEndElement();
           xmlStreamWriter.writeEndElement();
         } else {
@@ -1070,8 +1068,7 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
       if (value != null) {
         try {
           xmlStreamWriter.writeCharacters(
-              DatatypeConverter.printString(
-                  String.format("%s_%s", value.getName(), value.getValue())));
+              String.format("%s_%s", value.getName(), value.getValue()));
         } catch (XMLStreamException e) {
           throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
         } finally {

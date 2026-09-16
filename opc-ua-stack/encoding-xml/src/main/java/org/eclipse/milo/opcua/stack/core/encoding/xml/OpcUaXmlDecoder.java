@@ -13,7 +13,6 @@ package org.eclipse.milo.opcua.stack.core.encoding.xml;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.*;
 
 import com.google.common.io.CharStreams;
-import jakarta.xml.bind.DatatypeConverter;
 import java.io.*;
 import java.lang.reflect.Array;
 import java.nio.charset.StandardCharsets;
@@ -138,7 +137,7 @@ public class OpcUaXmlDecoder implements UaDecoder, AutoCloseable {
   public Boolean decodeBoolean(String field) throws UaSerializationException {
     if (currentNode(field)) {
       try {
-        return DatatypeConverter.parseBoolean(currentNode.getTextContent());
+        return XmlSchemaValues.parseBoolean(currentNode.getTextContent());
       } catch (IllegalArgumentException e) {
         throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
       } finally {
@@ -153,7 +152,8 @@ public class OpcUaXmlDecoder implements UaDecoder, AutoCloseable {
   public Byte decodeSByte(String field) throws UaSerializationException {
     if (currentNode(field)) {
       try {
-        return DatatypeConverter.parseByte(currentNode.getTextContent());
+        return (byte)
+            XmlSchemaValues.parseLong(currentNode.getTextContent(), Byte.MIN_VALUE, Byte.MAX_VALUE);
       } catch (IllegalArgumentException e) {
         throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
       } finally {
@@ -168,8 +168,10 @@ public class OpcUaXmlDecoder implements UaDecoder, AutoCloseable {
   public Short decodeInt16(String field) throws UaSerializationException {
     if (currentNode(field)) {
       try {
-        return DatatypeConverter.parseShort(currentNode.getTextContent());
-      } catch (NumberFormatException e) {
+        return (short)
+            XmlSchemaValues.parseLong(
+                currentNode.getTextContent(), Short.MIN_VALUE, Short.MAX_VALUE);
+      } catch (IllegalArgumentException e) {
         throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
       } finally {
         currentNode = nextElementSibling(currentNode);
@@ -183,8 +185,10 @@ public class OpcUaXmlDecoder implements UaDecoder, AutoCloseable {
   public Integer decodeInt32(String field) throws UaSerializationException {
     if (currentNode(field)) {
       try {
-        return DatatypeConverter.parseInt(currentNode.getTextContent());
-      } catch (NumberFormatException e) {
+        return (int)
+            XmlSchemaValues.parseLong(
+                currentNode.getTextContent(), Integer.MIN_VALUE, Integer.MAX_VALUE);
+      } catch (IllegalArgumentException e) {
         throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
       } finally {
         currentNode = nextElementSibling(currentNode);
@@ -198,8 +202,9 @@ public class OpcUaXmlDecoder implements UaDecoder, AutoCloseable {
   public Long decodeInt64(String field) throws UaSerializationException {
     if (currentNode(field)) {
       try {
-        return DatatypeConverter.parseLong(currentNode.getTextContent());
-      } catch (NumberFormatException e) {
+        return XmlSchemaValues.parseLong(
+            currentNode.getTextContent(), Long.MIN_VALUE, Long.MAX_VALUE);
+      } catch (IllegalArgumentException e) {
         throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
       } finally {
         currentNode = nextElementSibling(currentNode);
@@ -213,8 +218,8 @@ public class OpcUaXmlDecoder implements UaDecoder, AutoCloseable {
   public UByte decodeByte(String field) throws UaSerializationException {
     if (currentNode(field)) {
       try {
-        return ubyte(DatatypeConverter.parseShort(currentNode.getTextContent()));
-      } catch (NumberFormatException e) {
+        return ubyte(XmlSchemaValues.parseLong(currentNode.getTextContent(), 0, UByte.MAX_VALUE));
+      } catch (IllegalArgumentException e) {
         throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
       } finally {
         currentNode = nextElementSibling(currentNode);
@@ -228,8 +233,9 @@ public class OpcUaXmlDecoder implements UaDecoder, AutoCloseable {
   public UShort decodeUInt16(String field) throws UaSerializationException {
     if (currentNode(field)) {
       try {
-        return ushort(DatatypeConverter.parseInt(currentNode.getTextContent()));
-      } catch (NumberFormatException e) {
+        return ushort(
+            (int) XmlSchemaValues.parseLong(currentNode.getTextContent(), 0, UShort.MAX_VALUE));
+      } catch (IllegalArgumentException e) {
         throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
       } finally {
         currentNode = nextElementSibling(currentNode);
@@ -243,8 +249,8 @@ public class OpcUaXmlDecoder implements UaDecoder, AutoCloseable {
   public UInteger decodeUInt32(String field) throws UaSerializationException {
     if (currentNode(field)) {
       try {
-        return uint(DatatypeConverter.parseLong(currentNode.getTextContent()));
-      } catch (NumberFormatException e) {
+        return uint(XmlSchemaValues.parseLong(currentNode.getTextContent(), 0, UInteger.MAX_VALUE));
+      } catch (IllegalArgumentException e) {
         throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
       } finally {
         currentNode = nextElementSibling(currentNode);
@@ -258,8 +264,8 @@ public class OpcUaXmlDecoder implements UaDecoder, AutoCloseable {
   public ULong decodeUInt64(String field) throws UaSerializationException {
     if (currentNode(field)) {
       try {
-        return ulong(DatatypeConverter.parseInteger(currentNode.getTextContent()));
-      } catch (NumberFormatException e) {
+        return ulong(XmlSchemaValues.parseUnsignedLong(currentNode.getTextContent()));
+      } catch (IllegalArgumentException e) {
         throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
       } finally {
         currentNode = nextElementSibling(currentNode);
@@ -273,8 +279,8 @@ public class OpcUaXmlDecoder implements UaDecoder, AutoCloseable {
   public Float decodeFloat(String field) throws UaSerializationException {
     if (currentNode(field)) {
       try {
-        return DatatypeConverter.parseFloat(currentNode.getTextContent());
-      } catch (NumberFormatException e) {
+        return XmlSchemaValues.parseFloat(currentNode.getTextContent());
+      } catch (IllegalArgumentException e) {
         throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
       } finally {
         currentNode = nextElementSibling(currentNode);
@@ -288,8 +294,8 @@ public class OpcUaXmlDecoder implements UaDecoder, AutoCloseable {
   public Double decodeDouble(String field) throws UaSerializationException {
     if (currentNode(field)) {
       try {
-        return DatatypeConverter.parseDouble(currentNode.getTextContent());
-      } catch (NumberFormatException e) {
+        return XmlSchemaValues.parseDouble(currentNode.getTextContent());
+      } catch (IllegalArgumentException e) {
         throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
       } finally {
         currentNode = nextElementSibling(currentNode);
@@ -316,9 +322,7 @@ public class OpcUaXmlDecoder implements UaDecoder, AutoCloseable {
   public DateTime decodeDateTime(String field) throws UaSerializationException {
     if (currentNode(field)) {
       try {
-        Calendar calendar = DatatypeConverter.parseDateTime(currentNode.getTextContent());
-
-        return new DateTime(calendar.getTime());
+        return new DateTime(XmlSchemaValues.parseDateTime(currentNode.getTextContent()));
       } catch (IllegalArgumentException e) {
         throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
       } finally {
@@ -351,8 +355,7 @@ public class OpcUaXmlDecoder implements UaDecoder, AutoCloseable {
         if (isNil(currentNode)) {
           return ByteString.NULL_VALUE;
         }
-        return ByteString.of(
-            DatatypeConverter.parseBase64Binary(currentNode.getTextContent().trim()));
+        return ByteString.of(XmlSchemaValues.parseBase64Binary(currentNode.getTextContent()));
       } catch (IllegalArgumentException e) {
         throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
       } finally {
@@ -438,11 +441,11 @@ public class OpcUaXmlDecoder implements UaDecoder, AutoCloseable {
         Node codeNode = firstElementChild(currentNode);
 
         if (codeNode != null) {
-          code = DatatypeConverter.parseUnsignedInt(codeNode.getTextContent());
+          code = XmlSchemaValues.parseLong(codeNode.getTextContent(), 0, UInteger.MAX_VALUE);
         }
 
         return new StatusCode(code);
-      } catch (NumberFormatException e) {
+      } catch (IllegalArgumentException e) {
         throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
       } finally {
         currentNode = nextElementSibling(currentNode);
@@ -463,7 +466,10 @@ public class OpcUaXmlDecoder implements UaDecoder, AutoCloseable {
 
         Node namespaceIndexNode = children.get("NamespaceIndex");
         if (namespaceIndexNode != null) {
-          namespaceIndex = DatatypeConverter.parseInt(namespaceIndexNode.getTextContent());
+          namespaceIndex =
+              (int)
+                  XmlSchemaValues.parseLong(
+                      namespaceIndexNode.getTextContent(), 0, UShort.MAX_VALUE);
         }
 
         Node nameNode = children.get("Name");
