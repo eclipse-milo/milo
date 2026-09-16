@@ -53,6 +53,30 @@ public interface UaEncoder {
 
   void encodeUInt32(String field, UInteger value) throws UaSerializationException;
 
+  /**
+   * Encodes the optional-field presence mask before the structure's fields.
+   *
+   * <p>Use this operation instead of {@code encodeUInt32("EncodingMask", mask)} so encodings that
+   * represent presence through member names can omit the numeric header. Codecs must still encode
+   * each present optional field, including fields with null or default values.
+   *
+   * @param mask the presence bits in optional-field definition order, least significant bit first.
+   */
+  default void encodeEncodingMask(UInteger mask) throws UaSerializationException {
+    encodeUInt32("EncodingMask", mask);
+  }
+
+  /**
+   * Encodes the union selector before its selected member.
+   *
+   * <p>Encodings that identify the selected member by name may omit the numeric header.
+   *
+   * @param selector the one-based member position in definition order, or zero for no member.
+   */
+  default void encodeSwitchField(UInteger selector) throws UaSerializationException {
+    encodeUInt32("SwitchField", selector);
+  }
+
   void encodeUInt64(String field, ULong value) throws UaSerializationException;
 
   void encodeFloat(String field, Float value) throws UaSerializationException;

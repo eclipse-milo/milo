@@ -107,7 +107,7 @@ public final class DynamicUnionType extends DynamicType implements UaStructuredT
 
   @Override
   public int hashCode() {
-    return Objects.hash(dataType, value);
+    return Objects.hash(dataType.getNodeId(), value);
   }
 
   @Override
@@ -125,13 +125,15 @@ public final class DynamicUnionType extends DynamicType implements UaStructuredT
   /**
    * Pair of a union's field name and its value.
    *
+   * <p>A null field value still selects this member. A union with no selected member is represented
+   * by a null {@link UnionValue} instead.
+   *
    * @param fieldName the field name.
-   * @param fieldValue the field's value.
+   * @param fieldValue the field's value, which may be null for a nullable field.
    */
-  public record UnionValue(String fieldName, Object fieldValue) {
+  public record UnionValue(String fieldName, @Nullable Object fieldValue) {
     public UnionValue {
       requireNonNull(fieldName);
-      requireNonNull(fieldValue);
     }
   }
 

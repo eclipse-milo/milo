@@ -12,7 +12,6 @@ package org.eclipse.milo.opcua.sdk.client;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
@@ -200,18 +199,25 @@ public class OperationLimits {
     List<DataValue> values =
         client.readValues(0.0, TimestampsToReturn.Neither, OPERATION_LIMITS_NODES);
 
-    UInteger maxNodesPerRead = toUInteger(values.get(0).value().value());
-    UInteger maxNodesPerWrite = toUInteger(values.get(1).value().value());
-    UInteger maxNodesPerMethodCall = toUInteger(values.get(2).value().value());
-    UInteger maxNodesPerBrowse = toUInteger(values.get(3).value().value());
-    UInteger maxNodesPerRegisterNodes = toUInteger(values.get(4).value().value());
-    UInteger maxNodesPerTranslateBrowsePathsToNodeIds = toUInteger(values.get(5).value().value());
-    UInteger maxNodesPerNodeManagement = toUInteger(values.get(6).value().value());
-    UInteger maxMonitoredItemsPerCall = toUInteger(values.get(7).value().value());
-    UInteger maxNodesPerHistoryReadData = toUInteger(values.get(8).value().value());
-    UInteger maxNodesPerHistoryReadEvents = toUInteger(values.get(9).value().value());
-    UInteger maxNodesPerHistoryUpdateData = toUInteger(values.get(10).value().value());
-    UInteger maxNodesPerHistoryUpdateEvents = toUInteger(values.get(11).value().value());
+    if (values == null || values.size() != OPERATION_LIMITS_NODES.size()) {
+      throw new UaException(
+          StatusCodes.Bad_UnexpectedError,
+          "Read returned %s OperationLimits results, expected %s"
+              .formatted(values == null ? "null" : values.size(), OPERATION_LIMITS_NODES.size()));
+    }
+
+    UInteger maxNodesPerRead = toUInteger(values.get(0));
+    UInteger maxNodesPerWrite = toUInteger(values.get(1));
+    UInteger maxNodesPerMethodCall = toUInteger(values.get(2));
+    UInteger maxNodesPerBrowse = toUInteger(values.get(3));
+    UInteger maxNodesPerRegisterNodes = toUInteger(values.get(4));
+    UInteger maxNodesPerTranslateBrowsePathsToNodeIds = toUInteger(values.get(5));
+    UInteger maxNodesPerNodeManagement = toUInteger(values.get(6));
+    UInteger maxMonitoredItemsPerCall = toUInteger(values.get(7));
+    UInteger maxNodesPerHistoryReadData = toUInteger(values.get(8));
+    UInteger maxNodesPerHistoryReadEvents = toUInteger(values.get(9));
+    UInteger maxNodesPerHistoryUpdateData = toUInteger(values.get(10));
+    UInteger maxNodesPerHistoryUpdateEvents = toUInteger(values.get(11));
 
     return new OperationLimits(
         maxNodesPerRead,
@@ -229,43 +235,41 @@ public class OperationLimits {
   }
 
   private static OperationLimits readIndividualNodes(OpcUaClient client) throws UaException {
-    Function<NodeId, UInteger> read =
-        nodeId -> {
-          try {
-            return toUInteger(
-                client.readValue(0.0, TimestampsToReturn.Neither, nodeId).value().value());
-          } catch (UaException e) {
-            return null;
-          }
-        };
-
     // checkstyle:off
     UInteger maxNodesPerRead =
-        read.apply(NodeIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerRead);
+        readNode(client, NodeIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerRead);
     UInteger maxNodesPerWrite =
-        read.apply(NodeIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerWrite);
+        readNode(client, NodeIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerWrite);
     UInteger maxNodesPerMethodCall =
-        read.apply(NodeIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerMethodCall);
+        readNode(client, NodeIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerMethodCall);
     UInteger maxNodesPerBrowse =
-        read.apply(NodeIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerBrowse);
+        readNode(client, NodeIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerBrowse);
     UInteger maxNodesPerRegisterNodes =
-        read.apply(NodeIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerRegisterNodes);
+        readNode(
+            client, NodeIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerRegisterNodes);
     UInteger maxNodesPerTranslateBrowsePathsToNodeIds =
-        read.apply(
+        readNode(
+            client,
             NodeIds
                 .Server_ServerCapabilities_OperationLimits_MaxNodesPerTranslateBrowsePathsToNodeIds);
     UInteger maxNodesPerNodeManagement =
-        read.apply(NodeIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerNodeManagement);
+        readNode(
+            client, NodeIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerNodeManagement);
     UInteger maxMonitoredItemsPerCall =
-        read.apply(NodeIds.Server_ServerCapabilities_OperationLimits_MaxMonitoredItemsPerCall);
+        readNode(
+            client, NodeIds.Server_ServerCapabilities_OperationLimits_MaxMonitoredItemsPerCall);
     UInteger maxNodesPerHistoryReadData =
-        read.apply(NodeIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerHistoryReadData);
+        readNode(
+            client, NodeIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerHistoryReadData);
     UInteger maxNodesPerHistoryReadEvents =
-        read.apply(NodeIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerHistoryReadEvents);
+        readNode(
+            client, NodeIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerHistoryReadEvents);
     UInteger maxNodesPerHistoryUpdateData =
-        read.apply(NodeIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerHistoryUpdateData);
+        readNode(
+            client, NodeIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerHistoryUpdateData);
     UInteger maxNodesPerHistoryUpdateEvents =
-        read.apply(
+        readNode(
+            client,
             NodeIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerHistoryUpdateEvents);
     // checkstyle:on
 
@@ -282,6 +286,20 @@ public class OperationLimits {
         maxNodesPerHistoryReadEvents,
         maxNodesPerHistoryUpdateData,
         maxNodesPerHistoryUpdateEvents);
+  }
+
+  private static @Nullable UInteger readNode(OpcUaClient client, NodeId nodeId) throws UaException {
+    DataValue value = client.readValue(0.0, TimestampsToReturn.Neither, nodeId);
+
+    return toUInteger(value);
+  }
+
+  private static @Nullable UInteger toUInteger(@Nullable DataValue value) {
+    if (value == null || value.statusCode().isBad()) {
+      return null;
+    }
+
+    return toUInteger(value.value().value());
   }
 
   /**

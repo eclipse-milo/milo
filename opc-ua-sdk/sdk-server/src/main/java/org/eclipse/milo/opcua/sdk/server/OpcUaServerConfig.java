@@ -15,11 +15,13 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
+import org.eclipse.milo.opcua.sdk.server.diagnostics.SessionSecurityDiagnosticsAccessMode;
 import org.eclipse.milo.opcua.sdk.server.identity.AnonymousIdentityValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.CompositeValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.IdentityValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.UsernameIdentityValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.X509IdentityValidator;
+import org.eclipse.milo.opcua.sdk.server.reverse.ReverseConnectTarget;
 import org.eclipse.milo.opcua.stack.core.channel.EncodingLimits;
 import org.eclipse.milo.opcua.stack.core.channel.SecurityKeysListener;
 import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
@@ -54,6 +56,19 @@ public interface OpcUaServerConfig {
    * @return the {@link EndpointConfig}s for this server.
    */
   Set<EndpointConfig> getEndpoints();
+
+  /**
+   * Get the server-side Reverse Connect targets registered when the server starts.
+   *
+   * <p>These targets are loaded into the server's runtime target manager during construction.
+   * Additional targets may be registered later with {@link
+   * OpcUaServer#addReverseConnectTarget(ReverseConnectTarget)}.
+   *
+   * @return the initial server-side Reverse Connect targets for this server.
+   */
+  default Set<ReverseConnectTarget> getReverseConnectTargets() {
+    return Set.of();
+  }
 
   /**
    * Get the application name for the server.
@@ -118,6 +133,15 @@ public interface OpcUaServerConfig {
   Optional<RoleMapper> getRoleMapper();
 
   /**
+   * Get the authorization mode for Session security diagnostics and the diagnostics enabled flag.
+   *
+   * @return the configured access mode.
+   */
+  default SessionSecurityDiagnosticsAccessMode getSessionSecurityDiagnosticsAccessMode() {
+    return SessionSecurityDiagnosticsAccessMode.RESTRICTED;
+  }
+
+  /**
    * Get the {@link SecurityKeysListener} to be notified when symmetric security keys are derived
    * during OpenSecureChannel handshakes.
    *
@@ -156,6 +180,7 @@ public interface OpcUaServerConfig {
     var builder = new OpcUaServerConfigBuilder();
 
     builder.setEndpoints(config.getEndpoints());
+    builder.setReverseConnectTargets(config.getReverseConnectTargets());
     builder.setApplicationName(config.getApplicationName());
     builder.setApplicationUri(config.getApplicationUri());
     builder.setProductUri(config.getProductUri());
@@ -164,6 +189,9 @@ public interface OpcUaServerConfig {
     builder.setLimits(config.getLimits());
     builder.setIdentityValidator(config.getIdentityValidator());
     builder.setCertificateManager(config.getCertificateManager());
+    config.getRoleMapper().ifPresent(builder::setRoleMapper);
+    builder.setSessionSecurityDiagnosticsAccessMode(
+        config.getSessionSecurityDiagnosticsAccessMode());
     builder.setExecutor(config.getExecutor());
     builder.setScheduledExecutor(config.getScheduledExecutorService());
     config.getSecurityKeysListener().ifPresent(builder::setSecurityKeysListener);

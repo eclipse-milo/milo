@@ -1,0 +1,471 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://opcfoundation.org/UA/IJT/Base/Types.xsd" elementFormDefault="qualified" xmlns:tns="http://opcfoundation.org/UA/IJT/Base/Types.xsd" xmlns:ns5="http://opcfoundation.org/UA/Machinery/Result/Types.xsd" xmlns:ua="http://opcfoundation.org/UA/2008/02/Types.xsd">
+    <xs:import namespace="http://opcfoundation.org/UA/2008/02/Types.xsd"/>
+    <xs:import namespace="http://opcfoundation.org/UA/Machinery/Result/Types.xsd"/>
+    <xs:complexType name="CalibrationDataType">
+        <xs:annotation>
+            <xs:documentation>This structure contains the Calibration information. It is used as an input argument in SetCalibration method.
+Note: The input data sent in SetCalibration shall be updated in the respective parameters of the asset under Maintenance/Calibration.</xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element type="xs:unsignedInt" name="EncodingMask" minOccurs="0"/>
+            <xs:element type="xs:dateTime" name="LastCalibration" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:string" name="CalibrationPlace" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:dateTime" name="NextCalibration" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:double" name="CalibrationValue" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:double" name="SensorScale" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:string" name="CertificateUri" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="ua:EUInformation" name="EngineeringUnits" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element type="tns:CalibrationDataType" name="CalibrationDataType"/>
+    <xs:complexType name="ListOfCalibrationDataType">
+        <xs:sequence>
+            <xs:element type="tns:CalibrationDataType" name="CalibrationDataType" minOccurs="0" nillable="true" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element type="tns:ListOfCalibrationDataType" name="ListOfCalibrationDataType" nillable="true"/>
+    <xs:complexType name="DesignValueDataType">
+        <xs:annotation>
+            <xs:documentation>This structure provides the design value for a given physical quantity. It is used in JointDesignDataType.</xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element type="xs:unsignedInt" name="EncodingMask" minOccurs="0"/>
+            <xs:element type="xs:unsignedByte" name="PhysicalQuantity" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:string" name="Name" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="ua:Variant" name="DesignValue" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="ua:EUInformation" name="EngineeringUnits" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element type="tns:DesignValueDataType" name="DesignValueDataType"/>
+    <xs:complexType name="ListOfDesignValueDataType">
+        <xs:sequence>
+            <xs:element type="tns:DesignValueDataType" name="DesignValueDataType" minOccurs="0" nillable="true" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element type="tns:ListOfDesignValueDataType" name="ListOfDesignValueDataType" nillable="true"/>
+    <xs:complexType name="EntityDataType">
+        <xs:annotation>
+            <xs:documentation>This structure provides the identification data for a given entity in the system.</xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element type="xs:unsignedInt" name="EncodingMask" minOccurs="0"/>
+            <xs:element type="xs:string" name="Name" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:string" name="Description" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:string" name="EntityId" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:string" name="EntityOriginId" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:boolean" name="IsExternal" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:short" name="EntityType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element type="tns:EntityDataType" name="EntityDataType"/>
+    <xs:complexType name="ListOfEntityDataType">
+        <xs:sequence>
+            <xs:element type="tns:EntityDataType" name="EntityDataType" minOccurs="0" nillable="true" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element type="tns:ListOfEntityDataType" name="ListOfEntityDataType" nillable="true"/>
+    <xs:complexType name="ErrorInformationDataType">
+        <xs:annotation>
+            <xs:documentation>This structure represents the errors occurred in the system which are outside the boundaries of the given program.</xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element type="xs:unsignedInt" name="EncodingMask" minOccurs="0"/>
+            <xs:element type="xs:unsignedByte" name="ErrorType" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:string" name="ErrorId" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:string" name="LegacyError" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="ua:LocalizedText" name="ErrorMessage" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element type="tns:ErrorInformationDataType" name="ErrorInformationDataType"/>
+    <xs:complexType name="ListOfErrorInformationDataType">
+        <xs:sequence>
+            <xs:element type="tns:ErrorInformationDataType" name="ErrorInformationDataType" minOccurs="0" nillable="true" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element type="tns:ListOfErrorInformationDataType" name="ListOfErrorInformationDataType" nillable="true"/>
+    <xs:complexType name="JoiningProcessDataType">
+        <xs:annotation>
+            <xs:documentation>This structure provides the base container for any joining process in a joining system. 
+Note: This specification defines the meta data of a JoiningProcess, and the actual content of the Joining Process is application specific.</xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element type="ua:ExtensionObject" name="JoiningProcessMetaData" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="ua:ListOfVariant" name="JoiningProcessContent" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element type="tns:JoiningProcessDataType" name="JoiningProcessDataType"/>
+    <xs:complexType name="ListOfJoiningProcessDataType">
+        <xs:sequence>
+            <xs:element type="tns:JoiningProcessDataType" name="JoiningProcessDataType" minOccurs="0" nillable="true" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element type="tns:ListOfJoiningProcessDataType" name="ListOfJoiningProcessDataType" nillable="true"/>
+    <xs:complexType name="JoiningProcessIdentificationDataType">
+        <xs:annotation>
+            <xs:documentation>This structure contains the identification information of a Joining Process. It is used in set of methods defined in JoiningProcessManagementType.</xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element type="xs:unsignedInt" name="EncodingMask" minOccurs="0"/>
+            <xs:element type="xs:string" name="JoiningProcessId" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:string" name="JoiningProcessOriginId" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:string" name="SelectionName" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element type="tns:JoiningProcessIdentificationDataType" name="JoiningProcessIdentificationDataType"/>
+    <xs:complexType name="ListOfJoiningProcessIdentificationDataType">
+        <xs:sequence>
+            <xs:element type="tns:JoiningProcessIdentificationDataType" name="JoiningProcessIdentificationDataType" minOccurs="0" nillable="true" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element type="tns:ListOfJoiningProcessIdentificationDataType" name="ListOfJoiningProcessIdentificationDataType" nillable="true"/>
+    <xs:complexType name="JoiningProcessMetaDataType">
+        <xs:annotation>
+            <xs:documentation>This structure provides the meta data which describes the joining process.</xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element type="xs:unsignedInt" name="EncodingMask" minOccurs="0"/>
+            <xs:element type="xs:string" name="JoiningProcessId" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:string" name="JoiningProcessOriginId" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:dateTime" name="CreationTime" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:dateTime" name="LastUpdatedTime" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:string" name="Name" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="ua:LocalizedText" name="Description" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="ua:LocalizedText" name="JoiningTechnology" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:short" name="Classification" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="tns:ListOfEntityDataType" name="AssociatedEntities" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element type="tns:JoiningProcessMetaDataType" name="JoiningProcessMetaDataType"/>
+    <xs:complexType name="ListOfJoiningProcessMetaDataType">
+        <xs:sequence>
+            <xs:element type="tns:JoiningProcessMetaDataType" name="JoiningProcessMetaDataType" minOccurs="0" nillable="true" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element type="tns:ListOfJoiningProcessMetaDataType" name="ListOfJoiningProcessMetaDataType" nillable="true"/>
+    <xs:complexType name="JoiningResultDataType">
+        <xs:annotation>
+            <xs:documentation>This structure represents the data associated with Joining Result and the corresponding measurement values.</xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element type="xs:unsignedInt" name="EncodingMask" minOccurs="0"/>
+            <xs:element type="xs:unsignedByte" name="FailureReason" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="tns:ListOfResultValueDataType" name="OverallResultValues" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="tns:ListOfStepResultDataType" name="StepResults" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="tns:ListOfErrorInformationDataType" name="Errors" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:string" name="FailingStepResultId" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="tns:JoiningTraceDataType" name="Trace" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element type="tns:JoiningResultDataType" name="JoiningResultDataType"/>
+    <xs:complexType name="ListOfJoiningResultDataType">
+        <xs:sequence>
+            <xs:element type="tns:JoiningResultDataType" name="JoiningResultDataType" minOccurs="0" nillable="true" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element type="tns:ListOfJoiningResultDataType" name="ListOfJoiningResultDataType" nillable="true"/>
+    <xs:complexType name="JointComponentDataType">
+        <xs:annotation>
+            <xs:documentation>This structure is the base container for any joint component such as Bolt, Rivet, Gasket, Glue string, etc. 
+Note: The concrete definition of joint component is not defined in this version of the specification.</xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element type="xs:unsignedInt" name="EncodingMask" minOccurs="0"/>
+            <xs:element type="xs:string" name="JointComponentId" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:string" name="Name" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="ua:LocalizedText" name="Description" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="ua:LocalizedText" name="Manufacturer" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:string" name="ManufacturerUri" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="ua:Variant" name="JointComponentContent" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element type="tns:JointComponentDataType" name="JointComponentDataType"/>
+    <xs:complexType name="ListOfJointComponentDataType">
+        <xs:sequence>
+            <xs:element type="tns:JointComponentDataType" name="JointComponentDataType" minOccurs="0" nillable="true" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element type="tns:ListOfJointComponentDataType" name="ListOfJointComponentDataType" nillable="true"/>
+    <xs:complexType name="JointDataType">
+        <xs:annotation>
+            <xs:documentation>This structure provides the joint information. Joint is the physical outcome of the joining operation which determines the properties of the point where multiple parts are assembled.</xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element type="xs:unsignedInt" name="EncodingMask" minOccurs="0"/>
+            <xs:element type="xs:string" name="JointId" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:string" name="JointOriginId" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:string" name="JointDesignId" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:dateTime" name="CreationTime" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:dateTime" name="LastUpdatedTime" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:string" name="Name" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="ua:LocalizedText" name="Description" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:short" name="Classification" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="ua:LocalizedText" name="ClassificationDetails" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:string" name="JointStatus" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="tns:ListOfEntityDataType" name="AssociatedEntities" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="ua:LocalizedText" name="JoiningTechnology" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element type="tns:JointDataType" name="JointDataType"/>
+    <xs:complexType name="ListOfJointDataType">
+        <xs:sequence>
+            <xs:element type="tns:JointDataType" name="JointDataType" minOccurs="0" nillable="true" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element type="tns:ListOfJointDataType" name="ListOfJointDataType" nillable="true"/>
+    <xs:complexType name="JointDesignDataType">
+        <xs:annotation>
+            <xs:documentation>This structure provides the design information of a given joint.</xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element type="xs:unsignedInt" name="EncodingMask" minOccurs="0"/>
+            <xs:element type="xs:string" name="JointDesignId" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:string" name="Name" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="ua:LocalizedText" name="Description" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="tns:ListOfDesignValueDataType" name="JointDesignContent" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="ua:ListOfString" name="JointComponentIdList" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element type="tns:JointDesignDataType" name="JointDesignDataType"/>
+    <xs:complexType name="ListOfJointDesignDataType">
+        <xs:sequence>
+            <xs:element type="tns:JointDesignDataType" name="JointDesignDataType" minOccurs="0" nillable="true" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element type="tns:ListOfJointDesignDataType" name="ListOfJointDesignDataType" nillable="true"/>
+    <xs:complexType name="KeyValueDataType">
+        <xs:annotation>
+            <xs:documentation>This structure is similar to 0:KeyValuePair which uses 0:TrimmedString instead of 0:QualifiedName.</xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element type="xs:string" name="Key" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="ua:Variant" name="Value" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element type="tns:KeyValueDataType" name="KeyValueDataType"/>
+    <xs:complexType name="ListOfKeyValueDataType">
+        <xs:sequence>
+            <xs:element type="tns:KeyValueDataType" name="KeyValueDataType" minOccurs="0" nillable="true" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element type="tns:ListOfKeyValueDataType" name="ListOfKeyValueDataType" nillable="true"/>
+    <xs:complexType name="ReportedValueDataType">
+        <xs:annotation>
+            <xs:documentation>This structure provides the given value and corresponding limits for a given physical quantity (if applicable).</xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element type="xs:unsignedInt" name="EncodingMask" minOccurs="0"/>
+            <xs:element type="xs:unsignedByte" name="PhysicalQuantity" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:string" name="Name" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="ua:Variant" name="CurrentValue" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="ua:Variant" name="PreviousValue" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:double" name="LowLimit" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:double" name="HighLimit" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="ua:EUInformation" name="EngineeringUnits" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element type="tns:ReportedValueDataType" name="ReportedValueDataType"/>
+    <xs:complexType name="ListOfReportedValueDataType">
+        <xs:sequence>
+            <xs:element type="tns:ReportedValueDataType" name="ReportedValueDataType" minOccurs="0" nillable="true" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element type="tns:ListOfReportedValueDataType" name="ListOfReportedValueDataType" nillable="true"/>
+    <xs:complexType name="ResultCounterDataType">
+        <xs:annotation>
+            <xs:documentation>This structure is used to provide various types of counters associated to a Result. These counters are related to a joining process with sub-processes.</xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element type="xs:unsignedInt" name="EncodingMask" minOccurs="0"/>
+            <xs:element type="xs:string" name="Name" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:unsignedInt" name="CounterValue" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:short" name="CounterType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element type="tns:ResultCounterDataType" name="ResultCounterDataType"/>
+    <xs:complexType name="ListOfResultCounterDataType">
+        <xs:sequence>
+            <xs:element type="tns:ResultCounterDataType" name="ResultCounterDataType" minOccurs="0" nillable="true" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element type="tns:ListOfResultCounterDataType" name="ListOfResultCounterDataType" nillable="true"/>
+    <xs:complexType name="JoiningResultMetaDataType">
+        <xs:annotation>
+            <xs:documentation>This structure is a subtype of ResultMetaDataType. It is used to define additional meta data of a Result in a joining system.</xs:documentation>
+        </xs:annotation>
+        <xs:complexContent mixed="false">
+            <xs:extension base="ns5:ResultMetaDataType">
+                <xs:sequence>
+                    <xs:element type="ua:LocalizedText" name="JoiningTechnology" minOccurs="0" maxOccurs="1"/>
+                    <xs:element type="xs:unsignedLong" name="SequenceNumber" minOccurs="0" maxOccurs="1"/>
+                    <xs:element type="xs:string" name="Name" minOccurs="0" maxOccurs="1"/>
+                    <xs:element type="ua:LocalizedText" name="Description" minOccurs="0" maxOccurs="1"/>
+                    <xs:element type="xs:unsignedByte" name="Classification" minOccurs="0" maxOccurs="1"/>
+                    <xs:element type="xs:unsignedByte" name="OperationMode" minOccurs="0" maxOccurs="1"/>
+                    <xs:element type="xs:unsignedByte" name="AssemblyType" minOccurs="0" maxOccurs="1"/>
+                    <xs:element type="tns:ListOfEntityDataType" name="AssociatedEntities" minOccurs="0" maxOccurs="1"/>
+                    <xs:element type="tns:ListOfResultCounterDataType" name="ResultCounters" minOccurs="0" maxOccurs="1"/>
+                    <xs:element type="xs:unsignedByte" name="InterventionType" minOccurs="0" maxOccurs="1"/>
+                    <xs:element type="xs:boolean" name="IsGeneratedOffline" minOccurs="0" maxOccurs="1"/>
+                    <xs:element type="tns:ListOfKeyValueDataType" name="ExtendedMetaData" minOccurs="0" maxOccurs="1"/>
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+    <xs:element type="tns:JoiningResultMetaDataType" name="JoiningResultMetaDataType"/>
+    <xs:complexType name="ListOfJoiningResultMetaDataType">
+        <xs:sequence>
+            <xs:element type="tns:JoiningResultMetaDataType" name="JoiningResultMetaDataType" minOccurs="0" nillable="true" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element type="tns:ListOfJoiningResultMetaDataType" name="ListOfJoiningResultMetaDataType" nillable="true"/>
+    <xs:complexType name="ResultValueDataType">
+        <xs:annotation>
+            <xs:documentation>It is used to report measurement values of the joining operation. Those are meant to characterize the quality of the process. It is used in JoiningResultDataType and StepResultDataType.</xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element type="xs:unsignedInt" name="EncodingMask" minOccurs="0"/>
+            <xs:element type="xs:double" name="MeasuredValue" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:string" name="Name" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="ns5:ResultEvaluationEnum" name="ResultEvaluation" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:string" name="ValueId" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:short" name="ValueTag" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:int" name="TracePointIndex" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:double" name="TracePointTimeOffset" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="ua:ListOfString" name="ParameterIdList" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:unsignedByte" name="ViolationType" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:unsignedByte" name="ViolationConsequence" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:string" name="SensorId" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:double" name="LowLimit" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:double" name="HighLimit" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:double" name="TargetValue" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:string" name="ResultStep" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:unsignedByte" name="PhysicalQuantity" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="ua:EUInformation" name="EngineeringUnits" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element type="tns:ResultValueDataType" name="ResultValueDataType"/>
+    <xs:complexType name="ListOfResultValueDataType">
+        <xs:sequence>
+            <xs:element type="tns:ResultValueDataType" name="ResultValueDataType" minOccurs="0" nillable="true" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element type="tns:ListOfResultValueDataType" name="ListOfResultValueDataType" nillable="true"/>
+    <xs:complexType name="SignalDataType">
+        <xs:annotation>
+            <xs:documentation>This structure contains the signal information which is used in SetIOSignals and GetIOSignals methods.</xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element type="xs:string" name="SignalId" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="ua:Variant" name="SignalValue" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:string" name="SignalDescription" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:short" name="SignalType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element type="tns:SignalDataType" name="SignalDataType"/>
+    <xs:complexType name="ListOfSignalDataType">
+        <xs:sequence>
+            <xs:element type="tns:SignalDataType" name="SignalDataType" minOccurs="0" nillable="true" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element type="tns:ListOfSignalDataType" name="ListOfSignalDataType" nillable="true"/>
+    <xs:complexType name="StepResultDataType">
+        <xs:annotation>
+            <xs:documentation>This structure represents the measurement values corresponding to a given step in the program. It is used in JoiningResultDataType.</xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element type="xs:unsignedInt" name="EncodingMask" minOccurs="0"/>
+            <xs:element type="xs:string" name="StepResultId" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:string" name="ProgramStepId" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:string" name="ProgramStep" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:string" name="Name" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="ns5:ResultEvaluationEnum" name="ResultEvaluation" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:double" name="StartTimeOffset" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:string" name="StepTraceId" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="tns:ListOfResultValueDataType" name="StepResultValues" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element type="tns:StepResultDataType" name="StepResultDataType"/>
+    <xs:complexType name="ListOfStepResultDataType">
+        <xs:sequence>
+            <xs:element type="tns:StepResultDataType" name="StepResultDataType" minOccurs="0" nillable="true" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element type="tns:ListOfStepResultDataType" name="ListOfStepResultDataType" nillable="true"/>
+    <xs:complexType name="StepTraceDataType">
+        <xs:annotation>
+            <xs:documentation>It is to describe of the trace for a given program step. It is used in JoiningTraceDataType.</xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element type="xs:unsignedInt" name="EncodingMask" minOccurs="0"/>
+            <xs:element type="xs:string" name="StepTraceId" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:string" name="StepResultId" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:unsignedInt" name="NumberOfTracePoints" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:double" name="SamplingInterval" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:double" name="StartTimeOffset" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="tns:ListOfTraceContentDataType" name="StepTraceContent" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element type="tns:StepTraceDataType" name="StepTraceDataType"/>
+    <xs:complexType name="ListOfStepTraceDataType">
+        <xs:sequence>
+            <xs:element type="tns:StepTraceDataType" name="StepTraceDataType" minOccurs="0" nillable="true" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element type="tns:ListOfStepTraceDataType" name="ListOfStepTraceDataType" nillable="true"/>
+    <xs:complexType name="TraceContentDataType">
+        <xs:annotation>
+            <xs:documentation>It is to describe the trace samples for a given program step. It is used in StepTraceDataType.</xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element type="xs:unsignedInt" name="EncodingMask" minOccurs="0"/>
+            <xs:element type="ua:ListOfDouble" name="Values" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:string" name="SensorId" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:string" name="Name" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:string" name="Description" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:unsignedByte" name="PhysicalQuantity" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="ua:EUInformation" name="EngineeringUnits" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element type="tns:TraceContentDataType" name="TraceContentDataType"/>
+    <xs:complexType name="ListOfTraceContentDataType">
+        <xs:sequence>
+            <xs:element type="tns:TraceContentDataType" name="TraceContentDataType" minOccurs="0" nillable="true" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element type="tns:ListOfTraceContentDataType" name="ListOfTraceContentDataType" nillable="true"/>
+    <xs:complexType name="TraceDataType">
+        <xs:annotation>
+            <xs:documentation>It is a base type to encapsulate common data for a Trace.</xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element type="xs:string" name="TraceId" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="xs:string" name="ResultId" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element type="tns:TraceDataType" name="TraceDataType"/>
+    <xs:complexType name="ListOfTraceDataType">
+        <xs:sequence>
+            <xs:element type="tns:TraceDataType" name="TraceDataType" minOccurs="0" nillable="true" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element type="tns:ListOfTraceDataType" name="ListOfTraceDataType" nillable="true"/>
+    <xs:complexType name="JoiningTraceDataType">
+        <xs:annotation>
+            <xs:documentation>This structure is to describe the content of traces for all the steps in the given program. It is used in JoiningResultDataType.</xs:documentation>
+        </xs:annotation>
+        <xs:complexContent mixed="false">
+            <xs:extension base="tns:TraceDataType">
+                <xs:sequence>
+                    <xs:element type="tns:ListOfStepTraceDataType" name="StepTraces" minOccurs="0" maxOccurs="1"/>
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+    <xs:element type="tns:JoiningTraceDataType" name="JoiningTraceDataType"/>
+    <xs:complexType name="ListOfJoiningTraceDataType">
+        <xs:sequence>
+            <xs:element type="tns:JoiningTraceDataType" name="JoiningTraceDataType" minOccurs="0" nillable="true" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element type="tns:ListOfJoiningTraceDataType" name="ListOfJoiningTraceDataType" nillable="true"/>
+</xs:schema>

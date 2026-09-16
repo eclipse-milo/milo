@@ -89,7 +89,10 @@ public class AlarmMetricsTypeNode extends BaseObjectTypeNode implements AlarmMet
   @Override
   public void writeAlarmCount(UInteger value) throws UaException {
     try {
-      writeAlarmCountAsync(value).get();
+      StatusCode statusCode = writeAlarmCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -159,7 +162,10 @@ public class AlarmMetricsTypeNode extends BaseObjectTypeNode implements AlarmMet
   @Override
   public void writeStartTime(DateTime value) throws UaException {
     try {
-      writeStartTimeAsync(value).get();
+      StatusCode statusCode = writeStartTimeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -229,7 +235,10 @@ public class AlarmMetricsTypeNode extends BaseObjectTypeNode implements AlarmMet
   @Override
   public void writeMaximumActiveState(Double value) throws UaException {
     try {
-      writeMaximumActiveStateAsync(value).get();
+      StatusCode statusCode = writeMaximumActiveStateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -302,7 +311,10 @@ public class AlarmMetricsTypeNode extends BaseObjectTypeNode implements AlarmMet
   @Override
   public void writeMaximumUnAck(Double value) throws UaException {
     try {
-      writeMaximumUnAckAsync(value).get();
+      StatusCode statusCode = writeMaximumUnAckAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -372,7 +384,10 @@ public class AlarmMetricsTypeNode extends BaseObjectTypeNode implements AlarmMet
   @Override
   public void writeCurrentAlarmRate(Double value) throws UaException {
     try {
-      writeCurrentAlarmRateAsync(value).get();
+      StatusCode statusCode = writeCurrentAlarmRateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -445,7 +460,10 @@ public class AlarmMetricsTypeNode extends BaseObjectTypeNode implements AlarmMet
   @Override
   public void writeMaximumAlarmRate(Double value) throws UaException {
     try {
-      writeMaximumAlarmRateAsync(value).get();
+      StatusCode statusCode = writeMaximumAlarmRateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -518,7 +536,10 @@ public class AlarmMetricsTypeNode extends BaseObjectTypeNode implements AlarmMet
   @Override
   public void writeMaximumReAlarmCount(UInteger value) throws UaException {
     try {
-      writeMaximumReAlarmCountAsync(value).get();
+      StatusCode statusCode = writeMaximumReAlarmCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -591,7 +612,10 @@ public class AlarmMetricsTypeNode extends BaseObjectTypeNode implements AlarmMet
   @Override
   public void writeAverageAlarmRate(Double value) throws UaException {
     try {
-      writeAverageAlarmRateAsync(value).get();
+      StatusCode statusCode = writeAverageAlarmRateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

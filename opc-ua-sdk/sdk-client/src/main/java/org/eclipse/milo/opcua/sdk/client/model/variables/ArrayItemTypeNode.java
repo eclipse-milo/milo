@@ -108,7 +108,10 @@ public class ArrayItemTypeNode extends DataItemTypeNode implements ArrayItemType
   @Override
   public void writeInstrumentRange(Range value) throws UaException {
     try {
-      writeInstrumentRangeAsync(value).get();
+      StatusCode statusCode = writeInstrumentRangeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -181,7 +184,10 @@ public class ArrayItemTypeNode extends DataItemTypeNode implements ArrayItemType
   @Override
   public void writeEuRange(Range value) throws UaException {
     try {
-      writeEuRangeAsync(value).get();
+      StatusCode statusCode = writeEuRangeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -253,7 +259,10 @@ public class ArrayItemTypeNode extends DataItemTypeNode implements ArrayItemType
   @Override
   public void writeEngineeringUnits(EUInformation value) throws UaException {
     try {
-      writeEngineeringUnitsAsync(value).get();
+      StatusCode statusCode = writeEngineeringUnitsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -328,7 +337,10 @@ public class ArrayItemTypeNode extends DataItemTypeNode implements ArrayItemType
   @Override
   public void writeTitle(LocalizedText value) throws UaException {
     try {
-      writeTitleAsync(value).get();
+      StatusCode statusCode = writeTitleAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -406,7 +418,10 @@ public class ArrayItemTypeNode extends DataItemTypeNode implements ArrayItemType
   @Override
   public void writeAxisScaleType(AxisScaleEnumeration value) throws UaException {
     try {
-      writeAxisScaleTypeAsync(value).get();
+      StatusCode statusCode = writeAxisScaleTypeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

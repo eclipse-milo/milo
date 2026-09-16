@@ -15,6 +15,7 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.xml.stream.*;
@@ -46,6 +47,41 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
   private final Deque<String> namespaceStack = new ArrayDeque<>();
 
   private final EncodingContext context;
+
+  private @Nullable FieldNamespaces fieldNamespaces;
+
+  // Namespace pushes also delimit builtin contents and array items. A mapping belongs only to
+  // immediate fields at the depth where its codec entered, even when nested URIs are identical.
+  private record FieldNamespaces(int depth, Map<String, String> namespaces) {}
+
+  void withFieldNamespaces(Map<String, String> namespaces, Runnable encode) {
+    FieldNamespaces previous = fieldNamespaces;
+    fieldNamespaces = new FieldNamespaces(namespaceStack.size(), namespaces);
+    try {
+      encode.run();
+    } finally {
+      fieldNamespaces = previous;
+    }
+  }
+
+  private @Nullable String getDeclaredFieldNamespace(@Nullable String field) {
+    if (field != null
+        && fieldNamespaces != null
+        && fieldNamespaces.depth() == namespaceStack.size()) {
+      String modelUri = fieldNamespaces.namespaces().get(field);
+      if (modelUri != null) {
+        return Namespaces.OPC_UA.equals(modelUri)
+            ? Namespaces.OPC_UA_XSD
+            : context.getXmlNamespaceUris().getOrDefault(modelUri, modelUri);
+      }
+    }
+    return null;
+  }
+
+  private @Nullable String getFieldNamespace(@Nullable String field) {
+    String declared = getDeclaredFieldNamespace(field);
+    return declared != null ? declared : namespaceStack.peek();
+  }
 
   public OpcUaXmlEncoder(EncodingContext context) {
     this(context, new StringWriter());
@@ -91,7 +127,8 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
       String[] namespaces = context.getNamespaceTable().toArray();
       for (int i = 0; i < namespaces.length; i++) {
         if (i > 0) {
-          xmlStreamWriter.setPrefix("ns" + i, namespaces[i]);
+          xmlStreamWriter.setPrefix(
+              "ns" + i, context.getXmlNamespaceUris().getOrDefault(namespaces[i], namespaces[i]));
         }
       }
 
@@ -99,6 +136,7 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
 
       depth.set(0);
       namespaceStack.clear();
+      fieldNamespaces = null;
     } catch (XMLStreamException e) {
       throw new RuntimeException(e);
     }
@@ -140,15 +178,23 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
 
   private boolean beginField(
       String field, boolean isDefault, boolean isNillable, boolean isArrayElement) {
+    return beginField(field, isDefault, isNillable, isArrayElement, getFieldNamespace(field));
+  }
 
+  private boolean beginField(
+      String field,
+      boolean isDefault,
+      boolean isNillable,
+      boolean isArrayElement,
+      @Nullable String namespaceUri) {
     try {
       if (field != null && !field.isEmpty()) {
         if (isNillable && isDefault && !isArrayElement) {
           return false;
         }
 
-        if (namespaceStack.peek() != null) {
-          xmlStreamWriter.writeStartElement(namespaceStack.peek(), field);
+        if (namespaceUri != null) {
+          xmlStreamWriter.writeStartElement(namespaceUri, field);
         } else {
           xmlStreamWriter.writeStartElement(field);
         }
@@ -186,7 +232,7 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
     }
 
     if (namespaceIndex.intValue() == 0) {
-      // HA! Use the special OPC UA XML XSD namespace instead.
+      // Namespace zero has a fixed XML schema namespace.
       return Namespaces.OPC_UA_XSD;
     }
 
@@ -196,11 +242,12 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
           StatusCodes.Bad_EncodingError, "no namespace registered: " + typeId.toParseableString());
     }
 
-    return namespaceUri;
+    return context.getXmlNamespaceUris().getOrDefault(namespaceUri, namespaceUri);
   }
 
-  static String getXmlName(String namespaceUri, UaDataType dataType) {
-    if (Namespaces.OPC_UA_XSD.equals(namespaceUri)) {
+  static String getXmlName(EncodingContext context, UaDataType dataType) {
+    UShort namespaceIndex = dataType.getTypeId().getNamespaceIndex(context.getNamespaceTable());
+    if (UShort.MIN.equals(namespaceIndex)) {
       // Only use `UaDataType::getTypeName` and apply the XML name encoding rules to types
       // from namespaces. Types defined by OPC UA have their SymbolicName hardcoded in the
       // XML schema file, and the SymbolicName was used to generate the Class name.
@@ -409,6 +456,8 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
         if (value != null && value.isNotNull()) {
           xmlStreamWriter.writeCharacters(
               DatatypeConverter.printBase64Binary(value.bytesOrEmpty()));
+        } else {
+          xmlStreamWriter.writeAttribute("xsi", Namespaces.XML_SCHEMA_INSTANCE, "nil", "true");
         }
       } catch (XMLStreamException e) {
         throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
@@ -423,7 +472,12 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
     if (beginField(field, value == null, true)) {
       try {
         if (value != null && value.isNotNull()) {
-          XmlSerializationUtil.writeXmlFragment(xmlStreamWriter, value.getFragmentOrEmpty());
+          String fragment = value.getFragmentOrEmpty();
+          if (!fragment.isEmpty()) {
+            XmlSerializationUtil.writeXmlFragment(xmlStreamWriter, fragment);
+          }
+        } else {
+          xmlStreamWriter.writeAttribute("xsi", Namespaces.XML_SCHEMA_INSTANCE, "nil", "true");
         }
       } catch (XMLStreamException e) {
         throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
@@ -530,8 +584,13 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
   @Override
   public void encodeExtensionObject(String field, ExtensionObject value)
       throws UaSerializationException {
+    encodeExtensionObjectValue(field, value, false);
+  }
 
-    if (beginField(field, value == null, true)) {
+  private void encodeExtensionObjectValue(
+      String field, ExtensionObject value, boolean isArrayElement) throws UaSerializationException {
+
+    if (beginField(field, value == null, true, isArrayElement)) {
       namespaceStack.push(Namespaces.OPC_UA_XSD);
       try {
         if (value == null || value.isNull()) {
@@ -710,8 +769,10 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
               for (int i = 0; i < array.length; i++) {
                 UaStructuredType structValue = array[i];
                 xos[i] =
-                    ExtensionObject.encode(
-                        context, structValue, OpcUaDefaultXmlEncoding.getInstance());
+                    structValue != null
+                        ? ExtensionObject.encode(
+                            context, structValue, OpcUaDefaultXmlEncoding.getInstance())
+                        : null;
               }
               encodeBuiltinTypeArrayValue(xos, OpcUaDataType.ExtensionObject);
             }
@@ -751,12 +812,19 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
         switch (typeHint) {
           case BUILTIN -> encodeMatrix("Matrix", matrix);
           case ENUM -> {
-            Matrix transformed = matrix.transform(e -> ((UaEnumeratedType) e).getValue());
+            Matrix transformed =
+                matrix.transform(
+                    e -> ((UaEnumeratedType) e).getValue(), Integer.class, OpcUaDataType.Int32);
             encodeMatrix("Matrix", transformed);
           }
           case STRUCT -> encodeStructMatrix("Matrix", matrix, matrix.getDataTypeId().orElseThrow());
           case OPTION_SET -> {
-            Matrix transformed = matrix.transform(os -> ((OptionSetUInteger<?>) os).getValue());
+            OpcUaDataType optionSetDataType = matrix.getDataType().orElseThrow();
+            Matrix transformed =
+                matrix.transform(
+                    os -> ((OptionSetUInteger<?>) os).getValue(),
+                    optionSetDataType.getBackingClass(),
+                    optionSetDataType);
             encodeMatrix("Matrix", transformed);
           }
         }
@@ -1034,13 +1102,13 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
       throws UaSerializationException {
 
     if (beginField(field)) {
-      if (depth.getAndIncrement() > context.getEncodingLimits().getMaxRecursionDepth()) {
-        throw new UaSerializationException(
-            StatusCodes.Bad_EncodingError,
-            "max recursion depth exceeded: " + context.getEncodingLimits().getMaxRecursionDepth());
-      }
-
       try {
+        if (depth.getAndIncrement() > context.getEncodingLimits().getMaxRecursionDepth()) {
+          throw new UaSerializationException(
+              StatusCodes.Bad_EncodingError,
+              "max recursion depth exceeded: "
+                  + context.getEncodingLimits().getMaxRecursionDepth());
+        }
         String namespaceUri = getNamespaceUri(context, dataTypeId.expanded());
 
         DataTypeCodec codec = context.getDataTypeManager().getCodec(dataTypeId);
@@ -1051,8 +1119,11 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
         }
 
         namespaceStack.push(namespaceUri);
-        codec.encode(context, this, value);
-        namespaceStack.pop();
+        try {
+          codec.encode(context, this, value);
+        } finally {
+          namespaceStack.pop();
+        }
       } finally {
         depth.decrementAndGet();
         endField(field);
@@ -1066,24 +1137,31 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
 
     String namespaceUri = getNamespaceUri(context, value.getTypeId());
 
+    String declaredNamespaceUri = getDeclaredFieldNamespace(field);
     namespaceStack.push(namespaceUri);
-
-    if (beginField(field)) {
-      if (depth.getAndIncrement() > context.getEncodingLimits().getMaxRecursionDepth()) {
-        throw new UaSerializationException(
-            StatusCodes.Bad_EncodingError,
-            "max recursion depth exceeded: " + context.getEncodingLimits().getMaxRecursionDepth());
+    try {
+      if (beginField(
+          field,
+          false,
+          false,
+          false,
+          declaredNamespaceUri != null ? declaredNamespaceUri : namespaceUri)) {
+        try {
+          if (depth.getAndIncrement() > context.getEncodingLimits().getMaxRecursionDepth()) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_EncodingError,
+                "max recursion depth exceeded: "
+                    + context.getEncodingLimits().getMaxRecursionDepth());
+          }
+          codec.encode(context, this, value);
+        } finally {
+          depth.decrementAndGet();
+          endField(field);
+        }
       }
-
-      try {
-        codec.encode(context, this, value);
-      } finally {
-        depth.decrementAndGet();
-        endField(field);
-      }
+    } finally {
+      namespaceStack.pop();
     }
-
-    namespaceStack.pop();
   }
 
   @Override
@@ -1486,7 +1564,7 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
 
         assert value != null;
         for (ExtensionObject v : value) {
-          encodeExtensionObject("ExtensionObject", v);
+          encodeExtensionObjectValue("ExtensionObject", v, true);
         }
       } finally {
         namespaceStack.pop();
@@ -1567,11 +1645,13 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
 
           namespaceStack.push(namespaceUri);
 
-          for (UaEnumeratedType element : value) {
-            encodeEnum(getXmlName(namespaceUri, element), element);
+          try {
+            for (UaEnumeratedType element : value) {
+              encodeEnum(getXmlName(context, element), element);
+            }
+          } finally {
+            namespaceStack.pop();
           }
-
-          namespaceStack.pop();
         }
       } finally {
         endField(field);
@@ -1591,12 +1671,14 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
 
         namespaceStack.push(namespaceUri);
 
-        assert values != null;
-        for (UaStructuredType v : values) {
-          encodeStruct(getXmlName(namespaceUri, v), v, dataTypeId);
+        try {
+          assert values != null;
+          for (UaStructuredType v : values) {
+            encodeStruct(getXmlName(context, v), v, dataTypeId);
+          }
+        } finally {
+          namespaceStack.pop();
         }
-
-        namespaceStack.pop();
       } finally {
         namespaceStack.pop();
 
@@ -1623,7 +1705,8 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
 
   @Override
   public void encodeMatrix(String field, Matrix value) throws UaSerializationException {
-    if (beginField(field, value == null, true, true)) {
+    boolean isNull = value == null || value.isNull();
+    if (beginField(field, isNull, true, true)) {
       try {
         namespaceStack.push(Namespaces.OPC_UA_XSD);
 
@@ -1634,7 +1717,7 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
                   + context.getEncodingLimits().getMaxRecursionDepth());
         }
 
-        if (value != null) {
+        if (!isNull) {
           Integer[] dimensions = new Integer[value.getDimensions().length];
           for (int i = 0; i < dimensions.length; i++) {
             dimensions[i] = value.getDimensions()[i];
@@ -1825,7 +1908,7 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
             case ExtensionObject -> {
               if (elements instanceof ExtensionObject[] array) {
                 for (ExtensionObject element : array) {
-                  encodeExtensionObject("ExtensionObject", element);
+                  encodeExtensionObjectValue("ExtensionObject", element, true);
                 }
               }
             }
@@ -1891,7 +1974,7 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
 
             namespaceStack.push(namespaceUri);
 
-            encodeEnum(getXmlName(namespaceUri, element), element);
+            encodeEnum(getXmlName(context, element), element);
 
             namespaceStack.pop();
           }
@@ -1932,8 +2015,12 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
         value.transform(
             e -> {
               UaStructuredType struct = (UaStructuredType) e;
-              return ExtensionObject.encode(context, struct, OpcUaDefaultXmlEncoding.getInstance());
-            });
+              return struct != null
+                  ? ExtensionObject.encode(context, struct, OpcUaDefaultXmlEncoding.getInstance())
+                  : null;
+            },
+            ExtensionObject.class,
+            OpcUaDataType.ExtensionObject);
 
     encodeMatrix(field, transformed);
   }

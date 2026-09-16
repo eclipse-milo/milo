@@ -91,7 +91,10 @@ public class AuditHistoryEventDeleteEventTypeNode extends AuditHistoryDeleteEven
   @Override
   public void writeEventIds(ByteString[] value) throws UaException {
     try {
-      writeEventIdsAsync(value).get();
+      StatusCode statusCode = writeEventIdsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -162,7 +165,10 @@ public class AuditHistoryEventDeleteEventTypeNode extends AuditHistoryDeleteEven
   @Override
   public void writeOldValues(HistoryEventFieldList value) throws UaException {
     try {
-      writeOldValuesAsync(value).get();
+      StatusCode statusCode = writeOldValuesAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

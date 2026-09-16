@@ -10,7 +10,7 @@ If the directory doesn't exist or content is missing, run this command from the 
 download and unpack all dependency sources:
 
 ```bash
-mvn -q generate-resources -Pdownload-external-src
+mise exec -- mvn -q generate-resources -Pdownload-external-src
 ```
 
 This creates the `external/src` directory with sources from all dependencies in a single top-level

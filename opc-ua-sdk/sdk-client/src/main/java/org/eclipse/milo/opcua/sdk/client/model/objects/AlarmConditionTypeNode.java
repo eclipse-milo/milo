@@ -92,7 +92,10 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   @Override
   public void writeInputNode(NodeId value) throws UaException {
     try {
-      writeInputNodeAsync(value).get();
+      StatusCode statusCode = writeInputNodeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -162,7 +165,10 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   @Override
   public void writeSuppressedOrShelved(Boolean value) throws UaException {
     try {
-      writeSuppressedOrShelvedAsync(value).get();
+      StatusCode statusCode = writeSuppressedOrShelvedAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -235,7 +241,10 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   @Override
   public void writeMaxTimeShelved(Double value) throws UaException {
     try {
-      writeMaxTimeShelvedAsync(value).get();
+      StatusCode statusCode = writeMaxTimeShelvedAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -305,7 +314,10 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   @Override
   public void writeAudibleEnabled(Boolean value) throws UaException {
     try {
-      writeAudibleEnabledAsync(value).get();
+      StatusCode statusCode = writeAudibleEnabledAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -375,7 +387,10 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   @Override
   public void writeOnDelay(Double value) throws UaException {
     try {
-      writeOnDelayAsync(value).get();
+      StatusCode statusCode = writeOnDelayAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -445,7 +460,10 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   @Override
   public void writeOffDelay(Double value) throws UaException {
     try {
-      writeOffDelayAsync(value).get();
+      StatusCode statusCode = writeOffDelayAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -515,7 +533,10 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   @Override
   public void writeReAlarmTime(Double value) throws UaException {
     try {
-      writeReAlarmTimeAsync(value).get();
+      StatusCode statusCode = writeReAlarmTimeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -585,7 +606,10 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   @Override
   public void writeEnabledState(LocalizedText value) throws UaException {
     try {
-      writeEnabledStateAsync(value).get();
+      StatusCode statusCode = writeEnabledStateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -655,7 +679,10 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   @Override
   public void writeActiveState(LocalizedText value) throws UaException {
     try {
-      writeActiveStateAsync(value).get();
+      StatusCode statusCode = writeActiveStateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -725,7 +752,10 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   @Override
   public void writeSuppressedState(LocalizedText value) throws UaException {
     try {
-      writeSuppressedStateAsync(value).get();
+      StatusCode statusCode = writeSuppressedStateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -795,7 +825,10 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   @Override
   public void writeOutOfServiceState(LocalizedText value) throws UaException {
     try {
-      writeOutOfServiceStateAsync(value).get();
+      StatusCode statusCode = writeOutOfServiceStateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -889,7 +922,10 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   @Override
   public void writeAudibleSound(ByteString value) throws UaException {
     try {
-      writeAudibleSoundAsync(value).get();
+      StatusCode statusCode = writeAudibleSoundAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -959,7 +995,10 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   @Override
   public void writeSilenceState(LocalizedText value) throws UaException {
     try {
-      writeSilenceStateAsync(value).get();
+      StatusCode statusCode = writeSilenceStateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -1029,7 +1068,10 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   @Override
   public void writeFirstInGroupFlag(Boolean value) throws UaException {
     try {
-      writeFirstInGroupFlagAsync(value).get();
+      StatusCode statusCode = writeFirstInGroupFlagAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -1122,7 +1164,10 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   @Override
   public void writeLatchedState(LocalizedText value) throws UaException {
     try {
-      writeLatchedStateAsync(value).get();
+      StatusCode statusCode = writeLatchedStateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -1192,7 +1237,10 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   @Override
   public void writeReAlarmRepeatCount(Short value) throws UaException {
     try {
-      writeReAlarmRepeatCountAsync(value).get();
+      StatusCode statusCode = writeReAlarmRepeatCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

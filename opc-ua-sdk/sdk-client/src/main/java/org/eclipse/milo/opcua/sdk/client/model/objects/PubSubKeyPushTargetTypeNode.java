@@ -92,7 +92,10 @@ public class PubSubKeyPushTargetTypeNode extends BaseObjectTypeNode
   @Override
   public void writeApplicationUri(String value) throws UaException {
     try {
-      writeApplicationUriAsync(value).get();
+      StatusCode statusCode = writeApplicationUriAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -162,7 +165,10 @@ public class PubSubKeyPushTargetTypeNode extends BaseObjectTypeNode
   @Override
   public void writeEndpointUrl(String value) throws UaException {
     try {
-      writeEndpointUrlAsync(value).get();
+      StatusCode statusCode = writeEndpointUrlAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -232,7 +238,10 @@ public class PubSubKeyPushTargetTypeNode extends BaseObjectTypeNode
   @Override
   public void writeSecurityPolicyUri(String value) throws UaException {
     try {
-      writeSecurityPolicyUriAsync(value).get();
+      StatusCode statusCode = writeSecurityPolicyUriAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -306,7 +315,10 @@ public class PubSubKeyPushTargetTypeNode extends BaseObjectTypeNode
   @Override
   public void writeUserTokenType(UserTokenPolicy value) throws UaException {
     try {
-      writeUserTokenTypeAsync(value).get();
+      StatusCode statusCode = writeUserTokenTypeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -378,7 +390,10 @@ public class PubSubKeyPushTargetTypeNode extends BaseObjectTypeNode
   @Override
   public void writeRequestedKeyCount(UShort value) throws UaException {
     try {
-      writeRequestedKeyCountAsync(value).get();
+      StatusCode statusCode = writeRequestedKeyCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -451,7 +466,10 @@ public class PubSubKeyPushTargetTypeNode extends BaseObjectTypeNode
   @Override
   public void writeRetryInterval(Double value) throws UaException {
     try {
-      writeRetryIntervalAsync(value).get();
+      StatusCode statusCode = writeRetryIntervalAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -521,7 +539,10 @@ public class PubSubKeyPushTargetTypeNode extends BaseObjectTypeNode
   @Override
   public void writeLastPushExecutionTime(DateTime value) throws UaException {
     try {
-      writeLastPushExecutionTimeAsync(value).get();
+      StatusCode statusCode = writeLastPushExecutionTimeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -595,7 +616,10 @@ public class PubSubKeyPushTargetTypeNode extends BaseObjectTypeNode
   @Override
   public void writeLastPushErrorTime(DateTime value) throws UaException {
     try {
-      writeLastPushErrorTimeAsync(value).get();
+      StatusCode statusCode = writeLastPushErrorTimeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

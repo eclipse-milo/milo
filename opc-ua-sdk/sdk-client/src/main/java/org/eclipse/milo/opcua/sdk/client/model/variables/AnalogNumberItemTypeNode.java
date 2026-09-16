@@ -106,7 +106,10 @@ public class AnalogNumberItemTypeNode extends AnalogItemTypeNode implements Anal
   @Override
   public void writeEuNumberRange(NumberRange value) throws UaException {
     try {
-      writeEuNumberRangeAsync(value).get();
+      StatusCode statusCode = writeEuNumberRangeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

@@ -29,8 +29,15 @@ public class Operators {
   public static final LessThan LESS_THAN = new LessThan();
   public static final GreaterThanOrEqual GREATER_THAN_OR_EQUAL = new GreaterThanOrEqual();
   public static final LessThanOrEqual LESS_THAN_OR_EQUAL = new LessThanOrEqual();
+  public static final Like LIKE = new Like();
   public static final Not NOT = new Not();
+  public static final Between BETWEEN = new Between();
+  public static final InList IN_LIST = new InList();
+  public static final And AND = new And();
+  public static final Or OR = new Or();
   public static final Cast CAST = new Cast();
+  public static final BitwiseAnd BITWISE_AND = new BitwiseAnd();
+  public static final BitwiseOr BITWISE_OR = new BitwiseOr();
   public static final OfType OF_TYPE = new OfType();
 
   public static final Operator<Object> UNSUPPORTED =
@@ -59,7 +66,14 @@ public class Operators {
           FilterOperator.LessThan,
           FilterOperator.GreaterThanOrEqual,
           FilterOperator.LessThanOrEqual,
+          FilterOperator.Like,
           FilterOperator.Not,
+          FilterOperator.Between,
+          FilterOperator.InList,
+          FilterOperator.And,
+          FilterOperator.Or,
           FilterOperator.Cast,
+          FilterOperator.BitwiseAnd,
+          FilterOperator.BitwiseOr,
           FilterOperator.OfType);
 }

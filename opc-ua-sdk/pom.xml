@@ -17,7 +17,7 @@
   <parent>
     <groupId>org.eclipse.milo</groupId>
     <artifactId>milo</artifactId>
-    <version>1.1.5-SNAPSHOT</version>
+    <version>1.2.0-SNAPSHOT</version>
   </parent>
 
   <name>Milo :: OPC UA SDK</name>
@@ -31,12 +31,14 @@
     <module>dtd-manager</module>
     <module>dtd-reader</module>
     <module>sdk-client</module>
+    <module>sdk-client-gds</module>
     <module>sdk-core</module>
     <module>sdk-pubsub</module>
     <module>sdk-pubsub-server</module>
     <module>sdk-pubsub-mqtt</module>
     <module>sdk-pubsub-sks</module>
     <module>sdk-server</module>
+    <module>sdk-client-gds-testing</module>
     <module>integration-tests</module>
   </modules>
 

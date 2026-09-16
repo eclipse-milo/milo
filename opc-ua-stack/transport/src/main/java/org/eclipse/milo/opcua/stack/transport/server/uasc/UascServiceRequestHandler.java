@@ -25,12 +25,9 @@ import org.eclipse.milo.opcua.stack.transport.server.ServerApplicationContext;
 
 public class UascServiceRequestHandler extends SimpleChannelInboundHandler<UascServiceRequest> {
 
-  private final UascServerConfig config;
   private final ServerApplicationContext applicationContext;
 
-  public UascServiceRequestHandler(
-      UascServerConfig config, ServerApplicationContext applicationContext) {
-    this.config = config;
+  public UascServiceRequestHandler(ServerApplicationContext applicationContext) {
     this.applicationContext = applicationContext;
   }
 

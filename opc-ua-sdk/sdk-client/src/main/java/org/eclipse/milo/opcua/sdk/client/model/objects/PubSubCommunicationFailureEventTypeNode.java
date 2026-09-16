@@ -88,7 +88,10 @@ public class PubSubCommunicationFailureEventTypeNode extends PubSubStatusEventTy
   @Override
   public void writeError(StatusCode value) throws UaException {
     try {
-      writeErrorAsync(value).get();
+      StatusCode statusCode = writeErrorAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

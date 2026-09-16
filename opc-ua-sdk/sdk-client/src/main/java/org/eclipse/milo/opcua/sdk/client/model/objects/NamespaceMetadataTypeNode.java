@@ -90,7 +90,10 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   @Override
   public void writeNamespaceUri(String value) throws UaException {
     try {
-      writeNamespaceUriAsync(value).get();
+      StatusCode statusCode = writeNamespaceUriAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -160,7 +163,10 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   @Override
   public void writeNamespaceVersion(String value) throws UaException {
     try {
-      writeNamespaceVersionAsync(value).get();
+      StatusCode statusCode = writeNamespaceVersionAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -233,7 +239,10 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   @Override
   public void writeNamespacePublicationDate(DateTime value) throws UaException {
     try {
-      writeNamespacePublicationDateAsync(value).get();
+      StatusCode statusCode = writeNamespacePublicationDateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -307,7 +316,10 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   @Override
   public void writeIsNamespaceSubset(Boolean value) throws UaException {
     try {
-      writeIsNamespaceSubsetAsync(value).get();
+      StatusCode statusCode = writeIsNamespaceSubsetAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -393,7 +405,10 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   @Override
   public void writeStaticNodeIdTypes(IdType[] value) throws UaException {
     try {
-      writeStaticNodeIdTypesAsync(value).get();
+      StatusCode statusCode = writeStaticNodeIdTypesAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -481,7 +496,10 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   @Override
   public void writeStaticNumericNodeIdRange(String[] value) throws UaException {
     try {
-      writeStaticNumericNodeIdRangeAsync(value).get();
+      StatusCode statusCode = writeStaticNumericNodeIdRangeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -555,7 +573,10 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   @Override
   public void writeStaticStringNodeIdPattern(String value) throws UaException {
     try {
-      writeStaticStringNodeIdPatternAsync(value).get();
+      StatusCode statusCode = writeStaticStringNodeIdPatternAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -631,7 +652,10 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   @Override
   public void writeDefaultRolePermissions(RolePermissionType[] value) throws UaException {
     try {
-      writeDefaultRolePermissionsAsync(value).get();
+      StatusCode statusCode = writeDefaultRolePermissionsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -709,7 +733,10 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   @Override
   public void writeDefaultUserRolePermissions(RolePermissionType[] value) throws UaException {
     try {
-      writeDefaultUserRolePermissionsAsync(value).get();
+      StatusCode statusCode = writeDefaultUserRolePermissionsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -785,7 +812,10 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   @Override
   public void writeDefaultAccessRestrictions(AccessRestrictionType value) throws UaException {
     try {
-      writeDefaultAccessRestrictionsAsync(value).get();
+      StatusCode statusCode = writeDefaultAccessRestrictionsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -859,7 +889,10 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   @Override
   public void writeConfigurationVersion(UInteger value) throws UaException {
     try {
-      writeConfigurationVersionAsync(value).get();
+      StatusCode statusCode = writeConfigurationVersionAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -933,7 +966,10 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   @Override
   public void writeModelVersion(String value) throws UaException {
     try {
-      writeModelVersionAsync(value).get();
+      StatusCode statusCode = writeModelVersionAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

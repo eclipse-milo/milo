@@ -88,7 +88,10 @@ public class NetworkAddressUrlTypeNode extends NetworkAddressTypeNode
   @Override
   public void writeUrl(String value) throws UaException {
     try {
-      writeUrlAsync(value).get();
+      StatusCode statusCode = writeUrlAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

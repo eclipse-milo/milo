@@ -89,7 +89,10 @@ public class AuditConditionConfirmEventTypeNode extends AuditConditionEventTypeN
   @Override
   public void writeConditionEventId(ByteString value) throws UaException {
     try {
-      writeConditionEventIdAsync(value).get();
+      StatusCode statusCode = writeConditionEventIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -162,7 +165,10 @@ public class AuditConditionConfirmEventTypeNode extends AuditConditionEventTypeN
   @Override
   public void writeComment(LocalizedText value) throws UaException {
     try {
-      writeCommentAsync(value).get();
+      StatusCode statusCode = writeCommentAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

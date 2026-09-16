@@ -11,12 +11,16 @@
 package org.eclipse.milo.opcua.sdk.server.diagnostics.variables;
 
 import static org.eclipse.milo.opcua.sdk.server.diagnostics.variables.Util.diagnosticValueFilter;
+import static org.eclipse.milo.opcua.sdk.server.diagnostics.variables.Util.roleBasedUserAccessLevelFilter;
+import static org.eclipse.milo.opcua.sdk.server.diagnostics.variables.Util.roleBasedUserRolePermissionsFilter;
 
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.milo.opcua.sdk.server.AbstractLifecycle;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
+import org.eclipse.milo.opcua.sdk.server.diagnostics.SessionSecurityDiagnosticsAccessMode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ServerDiagnosticsTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.SessionSecurityDiagnosticsTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.AttributeObserver;
@@ -29,6 +33,14 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 
+/**
+ * Publishes the security diagnostics for one Session through a dynamically created diagnostics
+ * Variable.
+ *
+ * <p>The Variable and each of its fields follow the server-wide diagnostics enabled flag. In
+ * restricted access mode, Session-specific access attributes are derived from the role metadata
+ * copied onto the nodes when they are instantiated.
+ */
 public class SessionSecurityDiagnosticsVariable extends AbstractLifecycle {
 
   private final AtomicBoolean diagnosticsEnabled = new AtomicBoolean(false);
@@ -68,6 +80,30 @@ public class SessionSecurityDiagnosticsVariable extends AbstractLifecycle {
                         new NoSuchElementException("NodeId: " + NodeIds.Server_ServerDiagnostics));
 
     diagnosticsEnabled.set(diagnosticsNode.getEnabledFlag());
+
+    if (server.getConfig().getSessionSecurityDiagnosticsAccessMode()
+        == SessionSecurityDiagnosticsAccessMode.RESTRICTED) {
+
+      // Value access is reflected in UserAccessLevel; UserRolePermissions supplies the same
+      // session-specific policy to authorization checks for other node operations such as Browse.
+      List.of(
+              node,
+              node.getSessionIdNode(),
+              node.getClientUserIdOfSessionNode(),
+              node.getClientUserIdHistoryNode(),
+              node.getAuthenticationMechanismNode(),
+              node.getEncodingNode(),
+              node.getTransportProtocolNode(),
+              node.getSecurityModeNode(),
+              node.getSecurityPolicyUriNode(),
+              node.getClientCertificateNode())
+          .forEach(
+              securityNode ->
+                  securityNode
+                      .getFilterChain()
+                      .addLast(
+                          roleBasedUserAccessLevelFilter(), roleBasedUserRolePermissionsFilter()));
+    }
 
     attributeObserver =
         (node, attributeId, value) -> {

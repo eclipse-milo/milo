@@ -11,6 +11,7 @@
 package org.eclipse.milo.opcua.sdk.server.util;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -24,6 +25,8 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.DeadbandType;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataChangeFilter;
 import org.eclipse.milo.opcua.stack.core.types.structured.Range;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 public class DataChangeMonitoringFilterTest {
 
@@ -491,6 +494,76 @@ public class DataChangeMonitoringFilterTest {
   }
 
   // Test Matrix values
+
+  // Part 4 §7.22.2 requires array dimension changes to be reported regardless of deadband.
+  @ParameterizedTest
+  @CsvSource({"Absolute, true", "Absolute, false", "Percent, true", "Percent, false"})
+  void matrixDimensionChangesTriggerNotificationWithNumericDeadband(
+      DeadbandType deadbandType, boolean sharedElements) {
+    var filter =
+        new DataChangeFilter(DataChangeTrigger.StatusValue, uint(deadbandType.getValue()), 5.0);
+    var euRange = new Range(0.0, 100.0);
+
+    int[] lastElements = {1, 2, 3, 4};
+    int[] currentElements = sharedElements ? lastElements : lastElements.clone();
+    var lastValue =
+        new DataValue(
+            new Variant(new Matrix(lastElements, new int[] {2, 2})), StatusCode.GOOD, null, null);
+    var unchangedValue =
+        new DataValue(
+            new Variant(new Matrix(currentElements, new int[] {2, 2})),
+            StatusCode.GOOD,
+            null,
+            null);
+    var reshapedValue =
+        new DataValue(
+            new Variant(new Matrix(currentElements, new int[] {4, 1})),
+            StatusCode.GOOD,
+            null,
+            null);
+
+    assertFalse(
+        DataChangeMonitoringFilter.filter(lastValue, unchangedValue, filter, euRange),
+        "Equal dimensions and elements should not trigger a notification");
+    assertTrue(
+        DataChangeMonitoringFilter.filter(lastValue, reshapedValue, filter, euRange),
+        "Changed dimensions must trigger a notification even when elements are unchanged");
+  }
+
+  // A dimension check must preserve numeric deadband filtering when the shape is unchanged.
+  @ParameterizedTest
+  @CsvSource({
+    "Absolute, 0, false",
+    "Absolute, 4, false",
+    "Absolute, 5, false",
+    "Absolute, 6, true",
+    "Percent, 0, false",
+    "Percent, 4, false",
+    "Percent, 5, false",
+    "Percent, 6, true"
+  })
+  void matrixWithUnchangedDimensionsNotifiesOnlyWhenDeadbandIsExceeded(
+      DeadbandType deadbandType, int change, boolean expectedNotification) {
+    var filter =
+        new DataChangeFilter(DataChangeTrigger.StatusValue, uint(deadbandType.getValue()), 5.0);
+    var euRange = new Range(0.0, 100.0);
+    var lastValue =
+        new DataValue(
+            new Variant(new Matrix(new int[] {1, 2, 3, 4}, new int[] {2, 2})),
+            StatusCode.GOOD,
+            null,
+            null);
+    var currentValue =
+        new DataValue(
+            new Variant(new Matrix(new int[] {1, 2, 3, 4 + change}, new int[] {2, 2})),
+            StatusCode.GOOD,
+            null,
+            null);
+
+    assertEquals(
+        expectedNotification,
+        DataChangeMonitoringFilter.filter(lastValue, currentValue, filter, euRange));
+  }
 
   @Test
   public void testAbsoluteDeadband_PrimitiveDoubleMatrixValue() {

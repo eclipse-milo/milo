@@ -15,6 +15,8 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
@@ -120,6 +122,29 @@ public class NodeIdTest {
         assertEquals(ByteString.of(bs), nodeId.getIdentifier());
       }
     }
+  }
+
+  // An opaque NodeId built on a null ByteString and one built on an empty ByteString are equal,
+  // and toParseableString() renders both as "b=", so a parse round trip has to preserve the hash
+  // as well as equality for the NodeId to survive a hash-based node lookup.
+  @Test
+  public void opaqueIdentifierNullAndEmptyHashTheSame() {
+    NodeId nullId = new NodeId(0, ByteString.NULL_VALUE);
+    NodeId emptyId = new NodeId(0, ByteString.of(new byte[0]));
+
+    assertEquals(nullId, emptyId);
+    assertEquals(nullId.hashCode(), emptyId.hashCode());
+
+    NodeId parsed = NodeId.parse(nullId.toParseableString());
+
+    assertEquals(nullId, parsed);
+    assertEquals(nullId.hashCode(), parsed.hashCode());
+
+    Map<NodeId, String> map = new HashMap<>();
+    map.put(nullId, "value");
+
+    assertEquals("value", map.get(emptyId));
+    assertEquals("value", map.get(parsed));
   }
 
   @Test

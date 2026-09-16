@@ -247,6 +247,11 @@ public interface AddressSpace {
   /**
    * {@link EventItem}s have been created for nodes belonging to this {@link AddressSpace}.
    *
+   * <p>This callback is a lifecycle notification only. Registration of {@link EventItem}s with the
+   * Server's EventNotifier is owned by the SDK: items from all namespaces are registered
+   * automatically and idempotently according to their sampling state, so an {@link AddressSpace}
+   * cannot selectively withhold items from event delivery.
+   *
    * @param eventItems the {@link EventItem}s that were created.
    */
   default void onEventItemsCreated(List<EventItem> eventItems) {}
@@ -254,12 +259,18 @@ public interface AddressSpace {
   /**
    * {@link EventItem}s have been modified for nodes belonging to this {@link AddressSpace}.
    *
+   * <p>This callback is a lifecycle notification only. The SDK toggles each item's EventNotifier
+   * registration according to its sampling state.
+   *
    * @param eventItems the {@link EventItem}s that were modified.
    */
   default void onEventItemsModified(List<EventItem> eventItems) {}
 
   /**
    * {@link EventItem}s have been deleted for nodes belonging to this {@link AddressSpace}.
+   *
+   * <p>This callback is a lifecycle notification only. The SDK has already unregistered the items
+   * from the Server's EventNotifier.
    *
    * @param eventItems the {@link EventItem}s that were deleted.
    */

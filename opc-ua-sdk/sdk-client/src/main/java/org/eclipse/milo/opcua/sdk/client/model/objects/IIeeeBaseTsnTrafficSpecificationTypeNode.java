@@ -91,7 +91,10 @@ public class IIeeeBaseTsnTrafficSpecificationTypeNode extends BaseInterfaceTypeN
   @Override
   public void writeMaxIntervalFrames(UShort value) throws UaException {
     try {
-      writeMaxIntervalFramesAsync(value).get();
+      StatusCode statusCode = writeMaxIntervalFramesAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -164,7 +167,10 @@ public class IIeeeBaseTsnTrafficSpecificationTypeNode extends BaseInterfaceTypeN
   @Override
   public void writeMaxFrameSize(UInteger value) throws UaException {
     try {
-      writeMaxFrameSizeAsync(value).get();
+      StatusCode statusCode = writeMaxFrameSizeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -235,7 +241,10 @@ public class IIeeeBaseTsnTrafficSpecificationTypeNode extends BaseInterfaceTypeN
   @Override
   public void writeInterval(UnsignedRationalNumber value) throws UaException {
     try {
-      writeIntervalAsync(value).get();
+      StatusCode statusCode = writeIntervalAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

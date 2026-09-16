@@ -193,6 +193,10 @@ public class Reference {
       (reference) ->
           reference.isForward() && NodeIds.Organizes.equals(reference.getReferenceTypeId());
 
+  public static final Predicate<Reference> ORGANIZED_BY_PREDICATE =
+      (reference) ->
+          reference.isInverse() && NodeIds.Organizes.equals(reference.getReferenceTypeId());
+
   public static final Predicate<Reference> HAS_ENCODING_PREDICATE =
       (reference) ->
           reference.isForward() && NodeIds.HasEncoding.equals(reference.getReferenceTypeId());

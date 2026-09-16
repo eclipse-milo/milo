@@ -14,9 +14,9 @@ import static java.util.Objects.requireNonNullElse;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.SessionInitializer;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 
-import java.security.KeyPair;
-import java.security.cert.X509Certificate;
+import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -27,6 +27,8 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -34,6 +36,11 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.client.model.ObjectTypeInitializer;
 import org.eclipse.milo.opcua.sdk.client.model.VariableTypeInitializer;
+import org.eclipse.milo.opcua.sdk.client.reverse.DiscoveryFirstReverseConnectClient;
+import org.eclipse.milo.opcua.sdk.client.reverse.ReverseConnectConnection;
+import org.eclipse.milo.opcua.sdk.client.reverse.ReverseConnectManager;
+import org.eclipse.milo.opcua.sdk.client.reverse.ReverseConnectSelector;
+import org.eclipse.milo.opcua.sdk.client.reverse.ReverseTcpClientTransport;
 import org.eclipse.milo.opcua.sdk.client.session.SessionFsm;
 import org.eclipse.milo.opcua.sdk.client.session.SessionFsmFactory;
 import org.eclipse.milo.opcua.sdk.client.subscriptions.OpcUaSubscription;
@@ -53,8 +60,11 @@ import org.eclipse.milo.opcua.stack.core.channel.SecurityKeysListener;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingManager;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingManager;
+import org.eclipse.milo.opcua.stack.core.security.CertificateGroup;
+import org.eclipse.milo.opcua.stack.core.security.CertificateIdentity;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
+import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
 import org.eclipse.milo.opcua.stack.core.types.DataTypeManager;
 import org.eclipse.milo.opcua.stack.core.types.DefaultDataTypeManager;
 import org.eclipse.milo.opcua.stack.core.types.UaRequestMessageType;
@@ -152,13 +162,15 @@ import org.eclipse.milo.opcua.stack.core.types.structured.ViewDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.WriteRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.WriteResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.WriteValue;
+import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
 import org.eclipse.milo.opcua.stack.core.util.ExecutionQueue;
-import org.eclipse.milo.opcua.stack.core.util.Lazy;
 import org.eclipse.milo.opcua.stack.core.util.Lists;
 import org.eclipse.milo.opcua.stack.core.util.LongSequence;
 import org.eclipse.milo.opcua.stack.core.util.ManifestUtil;
 import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.eclipse.milo.opcua.stack.core.util.NonBlockingLazy;
 import org.eclipse.milo.opcua.stack.core.util.Unit;
+import org.eclipse.milo.opcua.stack.transport.client.ChannelStateObservable;
 import org.eclipse.milo.opcua.stack.transport.client.ClientApplicationContext;
 import org.eclipse.milo.opcua.stack.transport.client.OpcClientTransport;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransport;
@@ -171,6 +183,16 @@ import org.slf4j.LoggerFactory;
 public class OpcUaClient {
 
   public static final String SDK_VERSION = ManifestUtil.read("X-SDK-Version").orElse("dev");
+
+  /**
+   * Placeholder application URI advertised when no URI was configured and none could be derived
+   * from a certificate; see {@link #resolveApplicationUri(CertificateIdentity)}.
+   */
+  public static final String APPLICATION_URI_NOT_CONFIGURED =
+      "urn:eclipse:milo:client:applicationUriNotConfigured";
+
+  // Package-private and non-final so tests can shorten the bound. See disconnectAsync().
+  static long disconnectCloseSessionTimeoutMillis = 5_000L;
 
   static {
     Logger logger = LoggerFactory.getLogger(OpcUaClient.class);
@@ -212,6 +234,145 @@ public class OpcUaClient {
     OpcTcpClientTransportConfig transportConfig = transportConfigBuilder.build();
 
     return new OpcUaClient(config, new OpcTcpClientTransport(transportConfig));
+  }
+
+  /**
+   * Create an {@link OpcUaClient} configured to connect through a shared reverse-connect manager.
+   *
+   * <p>The returned client does not claim a reverse channel until {@link #connectAsync()} is
+   * invoked. The manager should already be running and listening for server-opened reverse
+   * connections. Once connected, Session creation and service requests use the normal client SDK
+   * path.
+   *
+   * <pre>{@code
+   * ReverseConnectManager manager =
+   *     ReverseConnectManager.builder()
+   *         .addBindAddress(new InetSocketAddress("0.0.0.0", 48060))
+   *         .build();
+   *
+   * manager.startup();
+   * OpcUaClient client =
+   *     OpcUaClient.createReverseConnect(
+   *         config,
+   *         manager,
+   *         ReverseConnectSelector.byServerUriAndEndpointUrl(serverUri, endpointUrl));
+   *
+   * try {
+   *   client.connectAsync().get();
+   * } finally {
+   *   client.disconnectAsync().get();
+   *   manager.shutdown();
+   * }
+   * }</pre>
+   *
+   * @param config the {@link OpcUaClientConfig}.
+   * @param manager the running {@link ReverseConnectManager} that owns client listener sockets.
+   * @param selector the one-shot selector used to claim a matching reverse connection.
+   * @return a new {@link OpcUaClient} configured with reverse TCP transport.
+   */
+  public static OpcUaClient createReverseConnect(
+      OpcUaClientConfig config, ReverseConnectManager manager, ReverseConnectSelector selector) {
+
+    return createReverseConnect(config, manager, selector, b -> {});
+  }
+
+  /**
+   * Create an {@link OpcUaClient} configured to connect through a shared reverse-connect manager.
+   *
+   * <p>The returned client does not claim a reverse channel until {@link #connectAsync()} is
+   * invoked. The manager should already be running and listening for server-opened reverse
+   * connections. The transport configuration controls the UASC handshake, timers, executors, and
+   * pipeline customization used after the manager claims a channel.
+   *
+   * @param config the {@link OpcUaClientConfig}.
+   * @param manager the running {@link ReverseConnectManager} that owns client listener sockets.
+   * @param selector the one-shot selector used to claim a matching reverse connection.
+   * @param configureTransport a Consumer that receives an {@link
+   *     OpcTcpClientTransportConfigBuilder} that can be used to configure the reverse transport.
+   * @return a new {@link OpcUaClient} configured with reverse TCP transport.
+   */
+  public static OpcUaClient createReverseConnect(
+      OpcUaClientConfig config,
+      ReverseConnectManager manager,
+      ReverseConnectSelector selector,
+      Consumer<OpcTcpClientTransportConfigBuilder> configureTransport) {
+
+    var transportConfigBuilder = OpcTcpClientTransportConfig.newBuilder();
+    configureTransport.accept(transportConfigBuilder);
+
+    OpcTcpClientTransportConfig transportConfig = transportConfigBuilder.build();
+
+    return new OpcUaClient(
+        config, new ReverseTcpClientTransport(transportConfig, manager, selector));
+  }
+
+  /**
+   * Create an {@link OpcUaClient} from one pre-claimed reverse-connect connection.
+   *
+   * <p>The returned client consumes {@code connection} when {@link #connectAsync()} is invoked.
+   * This mode is intended for dynamic inbound factories that observe a pending candidate, claim it
+   * with {@link ReverseConnectManager#claim(java.util.UUID)}, resolve a client config, and then
+   * attach the normal client SDK pipeline to the claimed channel. The connection is one-shot;
+   * reconnect requires a new reverse-connect candidate and client instance.
+   *
+   * <p>The supplied {@code config} must already contain the selected {@link EndpointDescription}.
+   * This factory consumes a reverse TCP channel; it does not perform endpoint discovery or endpoint
+   * selection. If a dynamic application needs to discover endpoints from an initial inbound reverse
+   * socket, use {@link DiscoveryFirstReverseConnectClient} for the discovery-first flow or call
+   * {@link DiscoveryClient#getEndpoints(ReverseConnectConnection)} directly before creating the
+   * production reverse client from a later matching connection.
+   *
+   * <pre>{@code
+   * ReverseConnectCandidateSnapshot candidate = manager.snapshot().pendingCandidates().get(0);
+   * ReverseConnectConnection connection =
+   *     manager.claim(candidate.id()).orElseThrow();
+   *
+   * OpcUaClient client = OpcUaClient.createReverseConnect(config, connection);
+   * try {
+   *   client.connectAsync().get();
+   * } finally {
+   *   client.disconnectAsync().get();
+   * }
+   * }</pre>
+   *
+   * @param config the {@link OpcUaClientConfig}.
+   * @param connection the pre-claimed reverse-connect connection.
+   * @return a new {@link OpcUaClient} configured with reverse TCP transport.
+   */
+  public static OpcUaClient createReverseConnect(
+      OpcUaClientConfig config, ReverseConnectConnection connection) {
+
+    return createReverseConnect(config, connection, b -> {});
+  }
+
+  /**
+   * Create an {@link OpcUaClient} from one pre-claimed reverse-connect connection.
+   *
+   * <p>The returned client consumes {@code connection} when {@link #connectAsync()} is invoked.
+   * This mode does not register selectors with a {@link ReverseConnectManager} and does not rearm
+   * after a failed handshake.
+   *
+   * <p>The caller remains responsible for endpoint discovery and client configuration before
+   * invoking this factory. The direct reverse transport only supplies the already-claimed channel
+   * used for the UASC handshake.
+   *
+   * @param config the {@link OpcUaClientConfig}.
+   * @param connection the pre-claimed reverse-connect connection.
+   * @param configureTransport a Consumer that receives an {@link
+   *     OpcTcpClientTransportConfigBuilder} that can be used to configure the reverse transport.
+   * @return a new {@link OpcUaClient} configured with reverse TCP transport.
+   */
+  public static OpcUaClient createReverseConnect(
+      OpcUaClientConfig config,
+      ReverseConnectConnection connection,
+      Consumer<OpcTcpClientTransportConfigBuilder> configureTransport) {
+
+    var transportConfigBuilder = OpcTcpClientTransportConfig.newBuilder();
+    configureTransport.accept(transportConfigBuilder);
+
+    OpcTcpClientTransportConfig transportConfig = transportConfigBuilder.build();
+
+    return new OpcUaClient(config, new ReverseTcpClientTransport(transportConfig, connection));
   }
 
   /**
@@ -265,23 +426,29 @@ public class OpcUaClient {
       throws UaException {
 
     try {
-      List<EndpointDescription> endpoints =
-          DiscoveryClient.getEndpoints(endpointUrl, configureTransport).get();
-
-      EndpointDescription endpoint =
-          selectEndpoint
-              .apply(endpoints)
-              .orElseThrow(
-                  () ->
-                      new UaException(StatusCodes.Bad_ConfigurationError, "no endpoint selected"));
-
       OpcTcpClientTransportConfigBuilder transportConfigBuilder =
           OpcTcpClientTransportConfig.newBuilder();
       configureTransport.accept(transportConfigBuilder);
+      OpcTcpClientTransportConfig transportConfig = transportConfigBuilder.build();
+
+      // Discovery was previously bounded only by the transport's connect and acknowledge timeouts
+      // plus the 60 s GetEndpoints request timeout; keep that budget rather than a fixed deadline.
+      Duration discoveryTimeout =
+          Duration.ofMillis(
+              transportConfig.getConnectTimeout().longValue()
+                  + transportConfig.getAcknowledgeTimeout().longValue()
+                  + 60_000L);
+      EndpointResolver resolver =
+          EndpointResolver.create(
+              endpointUrl, selectEndpoint, configureTransport, discoveryTimeout);
+      EndpointConfiguration resolved = resolver.resolve().get();
+      List<EndpointDescription> endpoints = resolved.discoveryEndpoints();
+      EndpointDescription endpoint = resolved.endpoint();
 
       OpcUaClientConfigBuilder clientConfigBuilder = OpcUaClientConfig.builder();
       clientConfigBuilder.setEndpoint(endpoint);
       clientConfigBuilder.setDiscoveryEndpoints(endpoints);
+      clientConfigBuilder.setEndpointResolver(resolver);
       // Set up the discovery endpoints in case the user enables this, but default to false for
       // backwards compatibility.
       clientConfigBuilder.setSessionEndpointValidationEnabled(false);
@@ -290,7 +457,7 @@ public class OpcUaClient {
 
       OpcUaClientConfig clientConfig = clientConfigBuilder.build();
 
-      var transport = new OpcTcpClientTransport(transportConfigBuilder.build());
+      var transport = new OpcTcpClientTransport(transportConfig);
 
       return new OpcUaClient(clientConfig, transport);
     } catch (ExecutionException e) {
@@ -323,7 +490,7 @@ public class OpcUaClient {
   private final NamespaceTable namespaceTable = new NamespaceTable();
   private final ServerTable serverTable = new ServerTable();
 
-  private final Lazy<OperationLimits> operationLimits = new Lazy<>();
+  private final NonBlockingLazy<OperationLimits> operationLimits = new NonBlockingLazy<>();
 
   private final ObjectTypeManager objectTypeManager = new ObjectTypeManager();
 
@@ -339,12 +506,15 @@ public class OpcUaClient {
       DefaultDataTypeManager.createAndInitialize(namespaceTable);
   private final EncodingContext staticEncodingContext;
 
-  private final Lazy<DataTypeManager> dynamicDataTypeManager = new Lazy<>();
-  private final Lazy<EncodingContext> dynamicEncodingContext = new Lazy<>();
+  // These caches are computed via unbounded network I/O and reset by a SessionInitializer during
+  // session establishment. NonBlockingLazy computes without holding a lock, so resetting never
+  // blocks session establishment behind an in-progress computation.
+  private final NonBlockingLazy<DataTypeManager> dynamicDataTypeManager = new NonBlockingLazy<>();
+  private final NonBlockingLazy<EncodingContext> dynamicEncodingContext = new NonBlockingLazy<>();
 
-  private final Lazy<DataTypeTree> dataTypeTree = new Lazy<>();
-  private final Lazy<ObjectTypeTree> objectTypeTree = new Lazy<>();
-  private final Lazy<VariableTypeTree> variableTypeTree = new Lazy<>();
+  private final NonBlockingLazy<DataTypeTree> dataTypeTree = new NonBlockingLazy<>();
+  private final NonBlockingLazy<ObjectTypeTree> objectTypeTree = new NonBlockingLazy<>();
+  private final NonBlockingLazy<VariableTypeTree> variableTypeTree = new NonBlockingLazy<>();
 
   private final PublishingManager publishingManager;
   private final Map<UInteger, OpcUaSubscription> subscriptions = new ConcurrentHashMap<>();
@@ -356,10 +526,18 @@ public class OpcUaClient {
   private final OpcUaClientConfig config;
 
   private final OpcClientTransport transport;
+  private final EndpointRefresh endpointRefresh;
+  private final Object certificateIdentityLock = new Object();
+  private final Map<SecurityPolicyProfile, Optional<CertificateIdentity>>
+      selectedCertificateIdentities = new HashMap<>();
 
   public OpcUaClient(OpcUaClientConfig config, OpcClientTransport transport) {
     this.config = config;
     this.transport = transport;
+    endpointRefresh =
+        new EndpointRefresh(
+            new EndpointConfiguration(config.getEndpoint(), config.getDiscoveryEndpoints()),
+            config.getEndpointResolver().orElse(null));
 
     staticEncodingContext =
         new EncodingContext() {
@@ -393,22 +571,14 @@ public class OpcUaClient {
         new ClientApplicationContext() {
           @Override
           public EndpointDescription getEndpoint() {
-            return config.getEndpoint();
+            return endpointRefresh.current().endpoint();
           }
 
           @Override
-          public Optional<KeyPair> getKeyPair() {
-            return config.getKeyPair();
-          }
+          public Optional<CertificateIdentity> getCertificateIdentity(
+              SecurityPolicyProfile securityPolicyProfile) throws UaException {
 
-          @Override
-          public Optional<X509Certificate> getCertificate() {
-            return config.getCertificate();
-          }
-
-          @Override
-          public Optional<X509Certificate[]> getCertificateChain() {
-            return config.getCertificateChain();
+            return OpcUaClient.this.getCertificateIdentity(securityPolicyProfile);
           }
 
           @Override
@@ -432,62 +602,36 @@ public class OpcUaClient {
           }
         };
 
-    sessionFsm = SessionFsmFactory.newSessionFsm(this);
+    sessionFsm = SessionFsmFactory.newSessionFsm(this, endpointRefresh::current);
 
-    sessionFsm.addInitializer(
-        (client, session) -> {
-          logger.debug("SessionInitializer: NamespaceTable and ServerTable");
-          RequestHeader requestHeader = newRequestHeader(session.getAuthenticationToken());
+    // Transports that report failed connection attempts let the client refresh its endpoint after
+    // a server certificate rotation; the transport's next attempt then reads the refreshed one.
+    if (config.getEndpointResolver().isPresent()
+        && transport instanceof ChannelStateObservable observable) {
+      observable.addTransitionListener(
+          new ChannelStateObservable.TransitionListener() {
+            @Override
+            public void onStateTransition(boolean connected) {
+              if (connected) endpointRefresh.onConnected();
+            }
 
-          ReadRequest readRequest =
-              new ReadRequest(
-                  requestHeader,
-                  0.0,
-                  TimestampsToReturn.Neither,
-                  new ReadValueId[] {
-                    new ReadValueId(
-                        NodeIds.Server_NamespaceArray,
-                        AttributeId.Value.uid(),
-                        null,
-                        QualifiedName.NULL_VALUE),
-                    new ReadValueId(
-                        NodeIds.Server_ServerArray,
-                        AttributeId.Value.uid(),
-                        null,
-                        QualifiedName.NULL_VALUE)
-                  });
+            @Override
+            public void onConnectFailure(Throwable failure) {
+              endpointRefresh.onConnectFailure(failure);
+            }
+          });
+    }
 
-          return client
-              .sendRequestAsync(readRequest)
-              .thenApply(ReadResponse.class::cast)
-              .thenApply(response -> Objects.requireNonNull(response.getResults()))
-              .thenApply(
-                  results -> {
-                    String[] namespaceArray = (String[]) results[0].value().value();
-                    String[] serverArray = (String[]) results[1].value().value();
-                    if (namespaceArray != null) {
-                      updateNamespaceTable(namespaceArray);
-                    }
-                    if (serverArray != null) {
-                      updateServerTable(serverArray);
-                    }
-                    return Unit.VALUE;
-                  })
-              .exceptionally(
-                  ex -> {
-                    logger.warn("SessionInitializer: NamespaceTable", ex);
-                    return Unit.VALUE;
-                  });
-        });
+    sessionFsm.addInitializer(this::initializeNamespaceAndServerTables);
 
     addSessionInitializer(
         (client, session) -> {
           // Reset before the Session is available so that the DataTypeTree and associated codecs
-          // are refreshed (eagerly or lazily, depending on configuration).
+          // are refreshed (eagerly or lazily, depending on configuration). Resetting the tree
+          // also resets the dynamic DataTypeManager and EncodingContext derived from it.
 
+          resetOperationLimits();
           resetDataTypeTree();
-          resetDynamicDataTypeManager();
-          resetDynamicEncodingContext();
 
           return CompletableFuture.completedFuture(Unit.VALUE);
         });
@@ -499,6 +643,129 @@ public class OpcUaClient {
 
     ObjectTypeInitializer.initialize(namespaceTable, objectTypeManager);
     VariableTypeInitializer.initialize(namespaceTable, variableTypeManager);
+  }
+
+  private CompletableFuture<Unit> initializeNamespaceAndServerTables(
+      OpcUaClient client, OpcUaSession session) {
+
+    logger.debug("SessionInitializer: NamespaceTable and ServerTable");
+
+    return readNamespaceAndServerArrays(client, session.getAuthenticationToken())
+        .handle(
+            (unit, ex) -> {
+              if (ex == null) {
+                return CompletableFuture.completedFuture(unit);
+              }
+
+              boolean tooManyOperations =
+                  UaException.extractStatusCode(ex)
+                      .map(statusCode -> statusCode.value() == StatusCodes.Bad_TooManyOperations)
+                      .orElse(false);
+
+              if (tooManyOperations) {
+                return readNamespaceAndServerArraysIndividually(
+                    client, session.getAuthenticationToken());
+              }
+
+              logger.warn("SessionInitializer: NamespaceTable and ServerTable", ex);
+              return CompletableFuture.completedFuture(Unit.VALUE);
+            })
+        .thenCompose(Function.identity());
+  }
+
+  private CompletableFuture<Unit> readNamespaceAndServerArrays(
+      OpcUaClient client, NodeId authenticationToken) {
+
+    return readValuesDuringSessionInitialization(
+            client, authenticationToken, NodeIds.Server_NamespaceArray, NodeIds.Server_ServerArray)
+        .thenApply(
+            results -> {
+              if (results[0] != null) {
+                updateNamespaceTable(results[0]);
+              }
+              if (results[1] != null) {
+                updateServerTable(results[1]);
+              }
+
+              return Unit.VALUE;
+            });
+  }
+
+  private CompletableFuture<Unit> readNamespaceAndServerArraysIndividually(
+      OpcUaClient client, NodeId authenticationToken) {
+
+    CompletableFuture<Unit> namespaceArray =
+        readValuesDuringSessionInitialization(
+                client, authenticationToken, NodeIds.Server_NamespaceArray)
+            .thenApply(
+                results -> {
+                  if (results[0] != null) {
+                    updateNamespaceTable(results[0]);
+                  }
+                  return Unit.VALUE;
+                })
+            .exceptionally(
+                ex -> {
+                  logger.warn("SessionInitializer: NamespaceTable singleton Read", ex);
+                  return Unit.VALUE;
+                });
+
+    CompletableFuture<Unit> serverArray =
+        readValuesDuringSessionInitialization(
+                client, authenticationToken, NodeIds.Server_ServerArray)
+            .thenApply(
+                results -> {
+                  if (results[0] != null) {
+                    updateServerTable(results[0]);
+                  }
+                  return Unit.VALUE;
+                })
+            .exceptionally(
+                ex -> {
+                  logger.warn("SessionInitializer: ServerTable singleton Read", ex);
+                  return Unit.VALUE;
+                });
+
+    return CompletableFuture.allOf(namespaceArray, serverArray).thenApply(v -> Unit.VALUE);
+  }
+
+  private CompletableFuture<String[][]> readValuesDuringSessionInitialization(
+      OpcUaClient client, NodeId authenticationToken, NodeId... nodeIds) {
+
+    ReadValueId[] nodesToRead =
+        Stream.of(nodeIds)
+            .map(
+                nodeId ->
+                    new ReadValueId(
+                        nodeId, AttributeId.Value.uid(), null, QualifiedName.NULL_VALUE))
+            .toArray(ReadValueId[]::new);
+
+    ReadRequest readRequest =
+        new ReadRequest(
+            newRequestHeader(authenticationToken), 0.0, TimestampsToReturn.Neither, nodesToRead);
+
+    return client
+        .sendRequestAsync(readRequest)
+        .thenApply(ReadResponse.class::cast)
+        .thenCompose(
+            response -> {
+              DataValue[] results = response.getResults();
+
+              if (results == null || results.length != nodeIds.length) {
+                return CompletableFuture.failedFuture(
+                    new UaException(
+                        StatusCodes.Bad_UnexpectedError,
+                        "Read returned %s results, expected %s"
+                            .formatted(results == null ? "null" : results.length, nodeIds.length)));
+              }
+
+              String[][] values = new String[results.length][];
+              for (int i = 0; i < results.length; i++) {
+                values[i] = (String[]) results[i].value().value();
+              }
+
+              return CompletableFuture.completedFuture(values);
+            });
   }
 
   /**
@@ -533,6 +800,11 @@ public class OpcUaClient {
    *     or completes exceptionally if an error occurs.
    */
   public CompletableFuture<OpcUaClient> connectAsync() {
+    endpointRefresh.start();
+    // Discard any identities cached during a prior connection so a rotated CertificateManager
+    // entry is presented on this attempt.
+    clearCertificateIdentities();
+
     return transport
         .connect(applicationContext)
         .handle((u, ex) -> sessionFsm.openSession())
@@ -561,16 +833,48 @@ public class OpcUaClient {
   /**
    * Close the session, if it's open, and disconnect the underlying transport.
    *
+   * <p>The wait for session closure is bounded; if the SessionFsm cannot fire {@code CloseSession}
+   * (for example, while shelved during {@code Creating}/{@code Activating} with a hung transport),
+   * the transport is disconnected after the bound to unblock the FSM.
+   *
    * @return a {@link CompletableFuture} that completes successfully with this {@link OpcUaClient},
    *     or completes exceptionally if an unexpected error occurs. Errors closing the session or the
    *     disconnecting the transport are swallowed.
    */
   public CompletableFuture<OpcUaClient> disconnectAsync() {
-    return sessionFsm
-        .closeSession()
-        .exceptionally(ex -> Unit.VALUE)
+    endpointRefresh.stop();
+    CompletableFuture<Unit> closeSession =
+        sessionFsm.closeSession().exceptionally(ex -> Unit.VALUE);
+
+    // If the SessionFsm is in a non-terminal state with a pending CreateSession or
+    // ActivateSession request (e.g. reverse-connect transport whose server has vanished
+    // without notifying the client), the CloseSession event is shelved and closeSession()
+    // never resolves on its own. Bound the wait so transport.disconnect() can run and
+    // fail the pending channelFuture, which unblocks the FSM.
+    var disconnectTrigger = new CompletableFuture<Unit>();
+    ScheduledFuture<?> timeoutTask =
+        transport
+            .getConfig()
+            .getScheduledExecutor()
+            .schedule(
+                () -> disconnectTrigger.complete(Unit.VALUE),
+                disconnectCloseSessionTimeoutMillis,
+                TimeUnit.MILLISECONDS);
+    closeSession.whenComplete(
+        (u, ex) -> {
+          timeoutTask.cancel(false);
+          disconnectTrigger.complete(Unit.VALUE);
+        });
+
+    return disconnectTrigger
         .thenCompose(u -> transport.disconnect().thenApply(c -> OpcUaClient.this))
-        .exceptionally(ex -> OpcUaClient.this);
+        .exceptionally(ex -> OpcUaClient.this)
+        .whenComplete(
+            (c, ex) -> {
+              // Drop cached identities so a CertificateManager rotation applies on the next
+              // connect.
+              clearCertificateIdentities();
+            });
   }
 
   /**
@@ -611,6 +915,103 @@ public class OpcUaClient {
 
   public OpcUaClientConfig getConfig() {
     return config;
+  }
+
+  /**
+   * Get the client certificate identity for the selected endpoint security policy.
+   *
+   * <p>The selected identity is cached by this client instance per requested security-policy
+   * profile. This keeps SecureChannel and Session setup on the client consistent even when a
+   * selector is stateful: SecureChannel open, CreateSession, and the ActivateSession signature all
+   * resolve the same identity for a given profile, and interleaved lookups for a different (e.g.
+   * user-token) profile no longer evict it. The cache is cleared on connect and disconnect so a
+   * rotated {@link CertificateIdentity} is picked up on the next connection attempt.
+   *
+   * @param securityPolicyProfile the selected endpoint security-policy profile.
+   * @return the selected identity, or empty when no {@link CertificateGroup} is configured or no
+   *     identity in it is compatible with the profile.
+   * @throws UaException if identity selection fails while evaluating candidates.
+   */
+  public Optional<CertificateIdentity> getCertificateIdentity(
+      SecurityPolicyProfile securityPolicyProfile) throws UaException {
+
+    synchronized (certificateIdentityLock) {
+      Optional<CertificateIdentity> cached =
+          selectedCertificateIdentities.get(securityPolicyProfile);
+      if (cached != null) {
+        return cached;
+      }
+
+      Optional<CertificateIdentity> selected = config.getCertificateIdentity(securityPolicyProfile);
+      selectedCertificateIdentities.put(securityPolicyProfile, selected);
+
+      return selected;
+    }
+  }
+
+  /**
+   * Resolve the client application URI from the effective certificate identity.
+   *
+   * <p>An explicitly configured URI takes precedence. Otherwise the URI is read from {@code
+   * certificateIdentity}. When no identity is presented, as on a {@link SecurityPolicy#None}
+   * connection, the URI shared by every identity of the configured {@link CertificateGroup} is used
+   * so the client advertises the same URI as on its secure connections. The {@link
+   * #APPLICATION_URI_NOT_CONFIGURED} placeholder is returned only when none of these yields a SAN
+   * URI.
+   *
+   * @param certificateIdentity the identity selected for the connection, or {@code null} when no
+   *     identity is presented.
+   * @return the effective client application URI.
+   */
+  public String resolveApplicationUri(@Nullable CertificateIdentity certificateIdentity) {
+    Optional<String> configuredUri = config.getApplicationUri();
+    if (configuredUri.isPresent()) {
+      return configuredUri.get();
+    }
+
+    if (certificateIdentity != null) {
+      return CertificateUtil.getSanUri(certificateIdentity.certificate())
+          .orElse(APPLICATION_URI_NOT_CONFIGURED);
+    }
+
+    return getGroupApplicationUri().orElse(APPLICATION_URI_NOT_CONFIGURED);
+  }
+
+  /**
+   * Get the SAN URI shared by every identity of the configured {@link CertificateGroup}, or empty
+   * when there is no group, no identity carries a URI, or the identities disagree.
+   */
+  private Optional<String> getGroupApplicationUri() {
+    Optional<CertificateGroup> certificateGroup = config.getCertificateGroup();
+    if (certificateGroup.isEmpty()) {
+      return Optional.empty();
+    }
+
+    try {
+      List<String> applicationUris =
+          certificateGroup.get().getCertificateIdentities().stream()
+              .map(CertificateIdentity::certificate)
+              .map(CertificateUtil::getSanUri)
+              .flatMap(Optional::stream)
+              .distinct()
+              .toList();
+
+      return applicationUris.size() == 1 ? Optional.of(applicationUris.get(0)) : Optional.empty();
+    } catch (RuntimeException e) {
+      logger.warn("Could not inspect CertificateGroup identity ApplicationUris", e);
+      return Optional.empty();
+    }
+  }
+
+  /**
+   * Clear the cached certificate identities so that the next {@link
+   * #getCertificateIdentity(SecurityPolicyProfile)} re-evaluates the configured selector, picking
+   * up any rotation in the underlying {@link CertificateGroup}.
+   */
+  private void clearCertificateIdentities() {
+    synchronized (certificateIdentityLock) {
+      selectedCertificateIdentities.clear();
+    }
   }
 
   public OpcClientTransport getTransport() {
@@ -798,8 +1199,11 @@ public class OpcUaClient {
               CompletableFuture<String[]> namespaceArray =
                   sendRequestAsync(readRequest)
                       .thenApply(ReadResponse.class::cast)
-                      .thenApply(response -> Objects.requireNonNull(response.getResults()))
-                      .thenApply(results -> (String[]) results[0].value().value());
+                      .thenApply(
+                          response -> {
+                            DataValue[] results = Objects.requireNonNull(response.getResults());
+                            return (String[]) Objects.requireNonNull(results[0]).value().value();
+                          });
 
               return namespaceArray
                   .thenAccept(this::updateNamespaceTable)
@@ -863,8 +1267,11 @@ public class OpcUaClient {
               CompletableFuture<String[]> serverArray =
                   sendRequestAsync(readRequest)
                       .thenApply(ReadResponse.class::cast)
-                      .thenApply(response -> Objects.requireNonNull(response.getResults()))
-                      .thenApply(results -> (String[]) results[0].value().value());
+                      .thenApply(
+                          response -> {
+                            DataValue[] results = Objects.requireNonNull(response.getResults());
+                            return (String[]) Objects.requireNonNull(results[0]).value().value();
+                          });
 
               return serverArray
                   .thenAccept(this::updateServerTable)
@@ -921,16 +1328,29 @@ public class OpcUaClient {
     }
   }
 
-  /** Reset the cached {@link DataTypeTree}. */
+  /**
+   * Reset the cached {@link DataTypeTree}.
+   *
+   * <p>The dynamic {@link DataTypeManager} and dynamic {@link EncodingContext} are derived from the
+   * tree (dynamic codecs hold a reference to the tree they were created against), so they are reset
+   * along with it and will be rebuilt against the new tree the next time they are accessed.
+   */
   public void resetDataTypeTree() {
     dataTypeTree.reset();
+
+    resetDynamicDataTypeManager();
+    resetDynamicEncodingContext();
   }
 
   /**
    * Read the {@link DataTypeTree} from the server and update the local copy.
    *
+   * <p>The dynamic {@link DataTypeManager} and dynamic {@link EncodingContext} are reset along with
+   * the tree and will be rebuilt against the new tree the next time they are accessed.
+   *
    * @return the updated {@link DataTypeTree}.
    * @throws UaException if an error occurs while reading the DataTypes.
+   * @see #resetDataTypeTree()
    */
   public DataTypeTree readDataTypeTree() throws UaException {
     resetDataTypeTree();
@@ -1137,8 +1557,9 @@ public class OpcUaClient {
    * resolves types on demand. This can be more efficient when only a subset of types is needed or
    * when the server doesn't support recursive forward browsing of the DataType hierarchy.
    *
-   * <p>This resets the client's cached {@link DataTypeTree}. It will be built or rebuilt the next
-   * time it is accessed.
+   * <p>This resets the client's cached {@link DataTypeTree}, along with the dynamic {@link
+   * DataTypeManager} and dynamic {@link EncodingContext} derived from it. They will be built or
+   * rebuilt the next time they are accessed.
    *
    * @param dataTypeTreeFactory the {@link DataTypeTreeFactory} to set.
    * @see #getDataTypeTree()

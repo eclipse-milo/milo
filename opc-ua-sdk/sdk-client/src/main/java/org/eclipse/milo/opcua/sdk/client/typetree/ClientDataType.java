@@ -16,6 +16,7 @@ import org.eclipse.milo.opcua.sdk.core.typetree.DataType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataTypeDefinition;
+import org.eclipse.milo.opcua.stack.core.types.structured.StructureDefinition;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -34,24 +35,32 @@ class ClientDataType implements DataType {
 
   private final QualifiedName browseName;
   private final NodeId nodeId;
-  private final NodeId binaryEncodingId;
-  private final NodeId xmlEncodingId;
-  private final NodeId jsonEncodingId;
-  private final DataTypeDefinition dataTypeDefinition;
+  private final @Nullable NodeId binaryEncodingId;
+  private final @Nullable NodeId xmlEncodingId;
+  private final @Nullable NodeId jsonEncodingId;
+  private final @Nullable DataTypeDefinition dataTypeDefinition;
   private final Boolean isAbstract;
 
   public ClientDataType(
       QualifiedName browseName,
       NodeId nodeId,
-      NodeId binaryEncodingId,
-      NodeId xmlEncodingId,
-      NodeId jsonEncodingId,
-      DataTypeDefinition dataTypeDefinition,
+      @Nullable NodeId binaryEncodingId,
+      @Nullable NodeId xmlEncodingId,
+      @Nullable NodeId jsonEncodingId,
+      @Nullable DataTypeDefinition dataTypeDefinition,
       Boolean isAbstract) {
 
     this.browseName = browseName;
     this.nodeId = nodeId;
-    this.binaryEncodingId = binaryEncodingId;
+    // Keep codec registration and decoded values on the same effective encoding ID, even when
+    // a server omits its HasEncoding references.
+    NodeId effectiveEncodingId = binaryEncodingId;
+    if ((effectiveEncodingId == null || effectiveEncodingId.isNull())
+        && dataTypeDefinition instanceof StructureDefinition definition) {
+      effectiveEncodingId = definition.getDefaultEncodingId();
+    }
+    this.binaryEncodingId =
+        effectiveEncodingId == null || effectiveEncodingId.isNull() ? null : effectiveEncodingId;
     this.xmlEncodingId = xmlEncodingId;
     this.jsonEncodingId = jsonEncodingId;
     this.dataTypeDefinition = dataTypeDefinition;

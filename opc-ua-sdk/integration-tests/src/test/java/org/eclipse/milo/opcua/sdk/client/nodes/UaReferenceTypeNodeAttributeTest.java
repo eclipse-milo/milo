@@ -35,8 +35,8 @@ public class UaReferenceTypeNodeAttributeTest extends AbstractClientServerTest {
     assertEquals(LocalizedText.english("TestReferenceType"), referenceTypeNode.getDisplayName());
     assertEquals(
         LocalizedText.english("TestReferenceType Description"), referenceTypeNode.getDescription());
-    assertEquals(uint(0), referenceTypeNode.getWriteMask());
-    assertEquals(uint(0), referenceTypeNode.getUserWriteMask());
+    assertEquals(uint(3), referenceTypeNode.getWriteMask());
+    assertEquals(uint(1), referenceTypeNode.getUserWriteMask());
     assertArrayEquals(AttributeTestHelper.ROLE_PERMISSIONS, referenceTypeNode.getRolePermissions());
     assertArrayEquals(
         AttributeTestHelper.USER_ROLE_PERMISSIONS, referenceTypeNode.getUserRolePermissions());
@@ -60,8 +60,15 @@ public class UaReferenceTypeNodeAttributeTest extends AbstractClientServerTest {
     assertEquals(
         LocalizedText.english("TestReferenceType Description"),
         referenceTypeNode.readDescription());
-    assertEquals(uint(0), referenceTypeNode.readWriteMask());
-    assertEquals(uint(0), referenceTypeNode.readUserWriteMask());
+    // Distinct stale values expose missed cache updates and updates to the wrong attribute.
+    referenceTypeNode.setWriteMask(uint(7));
+    referenceTypeNode.setUserWriteMask(uint(2));
+    assertEquals(uint(3), referenceTypeNode.readWriteMask());
+    assertEquals(uint(3), referenceTypeNode.getWriteMask());
+    assertEquals(uint(2), referenceTypeNode.getUserWriteMask());
+    assertEquals(uint(1), referenceTypeNode.readUserWriteMask());
+    assertEquals(uint(3), referenceTypeNode.getWriteMask());
+    assertEquals(uint(1), referenceTypeNode.getUserWriteMask());
     assertArrayEquals(
         AttributeTestHelper.ROLE_PERMISSIONS, referenceTypeNode.readRolePermissions());
     assertArrayEquals(

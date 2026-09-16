@@ -10,10 +10,22 @@
 
 package org.eclipse.milo.opcua.stack.transport.server.tcp;
 
+import io.netty.bootstrap.Bootstrap;
+import java.util.function.Consumer;
 import org.eclipse.milo.opcua.stack.transport.server.OpcServerTransportConfig;
 import org.eclipse.milo.opcua.stack.transport.server.uasc.UascServerConfig;
 
 public interface OpcTcpServerTransportConfig extends OpcServerTransportConfig, UascServerConfig {
+
+  /**
+   * Get a {@link Consumer} that can customize the outbound {@link Bootstrap} used by internal
+   * reverse-connect attempts.
+   *
+   * @return a {@link Consumer} that can customize the outbound {@link Bootstrap}.
+   */
+  default Consumer<Bootstrap> getReverseConnectBootstrapCustomizer() {
+    return b -> {};
+  }
 
   /**
    * Create a new {@link OpcTcpServerTransportConfigBuilder}.

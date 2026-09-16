@@ -12,7 +12,9 @@ package org.eclipse.milo.opcua.sdk.client.identity;
 
 import static java.util.Objects.requireNonNullElse;
 
+import java.util.Optional;
 import java.util.stream.Stream;
+import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AnonymousIdentityToken;
@@ -28,6 +30,29 @@ import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 public class AnonymousProvider implements IdentityProvider {
 
   public static final IdentityProvider INSTANCE = new AnonymousProvider();
+
+  @Override
+  public Optional<SecurityPolicy> getUserTokenSecurityPolicy(EndpointDescription endpoint)
+      throws Exception {
+
+    UserTokenPolicy[] userIdentityTokens =
+        requireNonNullElse(endpoint.getUserIdentityTokens(), new UserTokenPolicy[0]);
+
+    if (Stream.of(userIdentityTokens).anyMatch(t -> t.getTokenType() == UserTokenType.Anonymous)) {
+      return Optional.empty();
+    } else {
+      throw new Exception("no anonymous token policy found");
+    }
+  }
+
+  @Override
+  public Optional<SecurityPolicy> getEnhancedUserTokenSecurityPolicy(EndpointDescription endpoint)
+      throws Exception {
+
+    getUserTokenSecurityPolicy(endpoint);
+
+    return Optional.empty();
+  }
 
   @Override
   public SignedIdentityToken getIdentityToken(EndpointDescription endpoint, ByteString serverNonce)

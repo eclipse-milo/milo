@@ -106,7 +106,10 @@ public class AnalogUnitTypeNode extends BaseAnalogTypeNode implements AnalogUnit
   @Override
   public void writeEngineeringUnits(EUInformation value) throws UaException {
     try {
-      writeEngineeringUnitsAsync(value).get();
+      StatusCode statusCode = writeEngineeringUnitsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

@@ -107,7 +107,10 @@ public class PubSubDiagnosticsCounterTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeActive(Boolean value) throws UaException {
     try {
-      writeActiveAsync(value).get();
+      StatusCode statusCode = writeActiveAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -185,7 +188,10 @@ public class PubSubDiagnosticsCounterTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeClassification(PubSubDiagnosticsCounterClassification value) throws UaException {
     try {
-      writeClassificationAsync(value).get();
+      StatusCode statusCode = writeClassificationAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -273,7 +279,10 @@ public class PubSubDiagnosticsCounterTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeDiagnosticsLevel(DiagnosticsLevel value) throws UaException {
     try {
-      writeDiagnosticsLevelAsync(value).get();
+      StatusCode statusCode = writeDiagnosticsLevelAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -355,7 +364,10 @@ public class PubSubDiagnosticsCounterTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeTimeFirstChange(DateTime value) throws UaException {
     try {
-      writeTimeFirstChangeAsync(value).get();
+      StatusCode statusCode = writeTimeFirstChangeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

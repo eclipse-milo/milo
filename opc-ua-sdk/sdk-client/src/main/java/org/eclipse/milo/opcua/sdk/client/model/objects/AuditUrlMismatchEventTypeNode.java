@@ -88,7 +88,10 @@ public class AuditUrlMismatchEventTypeNode extends AuditCreateSessionEventTypeNo
   @Override
   public void writeEndpointUrl(String value) throws UaException {
     try {
-      writeEndpointUrlAsync(value).get();
+      StatusCode statusCode = writeEndpointUrlAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

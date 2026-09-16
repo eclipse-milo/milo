@@ -88,7 +88,10 @@ public class ConfigurationUpdatedAuditEventTypeNode extends AuditEventTypeNode
   @Override
   public void writeOldVersion(UInteger value) throws UaException {
     try {
-      writeOldVersionAsync(value).get();
+      StatusCode statusCode = writeOldVersionAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -158,7 +161,10 @@ public class ConfigurationUpdatedAuditEventTypeNode extends AuditEventTypeNode
   @Override
   public void writeNewVersion(UInteger value) throws UaException {
     try {
-      writeNewVersionAsync(value).get();
+      StatusCode statusCode = writeNewVersionAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

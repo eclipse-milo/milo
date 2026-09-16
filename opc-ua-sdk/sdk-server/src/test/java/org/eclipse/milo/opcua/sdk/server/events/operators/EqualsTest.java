@@ -97,6 +97,91 @@ public class EqualsTest {
   }
 
   @Test
+  public void testSingleElementArrayWithScalar() throws Exception {
+    OperatorContext context = mock(OperatorContext.class);
+    BaseEventTypeNode eventNode = mock(BaseEventTypeNode.class);
+
+    FilterOperand op0 = new LiteralOperand(new Variant(new int[] {42}));
+    FilterOperand op1 = new LiteralOperand(new Variant(42));
+
+    when(context.resolve(op0, eventNode)).thenReturn(new int[] {42});
+    when(context.resolve(op1, eventNode)).thenReturn(42);
+
+    Boolean result = Operators.EQUALS.apply(context, eventNode, new FilterOperand[] {op0, op1});
+
+    assertNotNull(result);
+    assertTrue(result);
+  }
+
+  @Test
+  public void testSingleElementArrayWithImplicitConversion() throws Exception {
+    OperatorContext context = mock(OperatorContext.class);
+    BaseEventTypeNode eventNode = mock(BaseEventTypeNode.class);
+
+    FilterOperand op0 = new LiteralOperand(new Variant(new String[] {"42"}));
+    FilterOperand op1 = new LiteralOperand(new Variant(42));
+
+    when(context.resolve(op0, eventNode)).thenReturn(new String[] {"42"});
+    when(context.resolve(op1, eventNode)).thenReturn(42);
+
+    Boolean result = Operators.EQUALS.apply(context, eventNode, new FilterOperand[] {op0, op1});
+
+    assertNotNull(result);
+    assertTrue(result);
+  }
+
+  @Test
+  public void testPrimitiveAndBoxedArraysOfSameDataTypeAreEqual() throws Exception {
+    OperatorContext context = mock(OperatorContext.class);
+    BaseEventTypeNode eventNode = mock(BaseEventTypeNode.class);
+
+    FilterOperand op0 = new LiteralOperand(new Variant(new int[] {1, 2, 3}));
+    FilterOperand op1 = new LiteralOperand(new Variant(new Integer[] {1, 2, 3}));
+
+    when(context.resolve(op0, eventNode)).thenReturn(new int[] {1, 2, 3});
+    when(context.resolve(op1, eventNode)).thenReturn(new Integer[] {1, 2, 3});
+
+    Boolean result = Operators.EQUALS.apply(context, eventNode, new FilterOperand[] {op0, op1});
+
+    assertNotNull(result);
+    assertTrue(result);
+  }
+
+  @Test
+  public void testHigherPrecedencePrimitiveArrayNormalizesBeforeComparison() throws Exception {
+    OperatorContext context = mock(OperatorContext.class);
+    BaseEventTypeNode eventNode = mock(BaseEventTypeNode.class);
+
+    FilterOperand op0 = new LiteralOperand(new Variant(new long[] {1L, 2L, 3L}));
+    FilterOperand op1 = new LiteralOperand(new Variant(new int[] {1, 2, 3}));
+
+    when(context.resolve(op0, eventNode)).thenReturn(new long[] {1L, 2L, 3L});
+    when(context.resolve(op1, eventNode)).thenReturn(new int[] {1, 2, 3});
+
+    Boolean result = Operators.EQUALS.apply(context, eventNode, new FilterOperand[] {op0, op1});
+
+    assertNotNull(result);
+    assertTrue(result);
+  }
+
+  @Test
+  public void testArrayImplicitConversionFailureReturnsFalse() throws Exception {
+    OperatorContext context = mock(OperatorContext.class);
+    BaseEventTypeNode eventNode = mock(BaseEventTypeNode.class);
+
+    FilterOperand op0 = new LiteralOperand(new Variant(new String[] {"not an int"}));
+    FilterOperand op1 = new LiteralOperand(new Variant(42));
+
+    when(context.resolve(op0, eventNode)).thenReturn(new String[] {"not an int"});
+    when(context.resolve(op1, eventNode)).thenReturn(42);
+
+    Boolean result = Operators.EQUALS.apply(context, eventNode, new FilterOperand[] {op0, op1});
+
+    assertNotNull(result);
+    assertFalse(result);
+  }
+
+  @Test
   public void testArrayNotEqual() throws Exception {
     OperatorContext context = mock(OperatorContext.class);
     BaseEventTypeNode eventNode = mock(BaseEventTypeNode.class);
@@ -130,5 +215,43 @@ public class EqualsTest {
 
     assertNotNull(result);
     assertFalse(result);
+  }
+
+  @Test
+  public void testFloatArrayNaNElementsAreNotEqual() throws Exception {
+    // IEEE semantics: NaN != NaN, matching the scalar path rather than Objects.deepEquals' bitwise
+    // Float comparison. Two elements so the array is not scalarized.
+    OperatorContext context = mock(OperatorContext.class);
+    BaseEventTypeNode eventNode = mock(BaseEventTypeNode.class);
+
+    FilterOperand op0 = new LiteralOperand(new Variant(new float[] {1.0f, Float.NaN}));
+    FilterOperand op1 = new LiteralOperand(new Variant(new float[] {1.0f, Float.NaN}));
+
+    when(context.resolve(op0, eventNode)).thenReturn(new float[] {1.0f, Float.NaN});
+    when(context.resolve(op1, eventNode)).thenReturn(new float[] {1.0f, Float.NaN});
+
+    Boolean result = Operators.EQUALS.apply(context, eventNode, new FilterOperand[] {op0, op1});
+
+    assertNotNull(result);
+    assertFalse(result);
+  }
+
+  @Test
+  public void testDoubleArraySignedZeroElementsAreEqual() throws Exception {
+    // IEEE semantics: +0.0 == -0.0, matching the scalar path rather than Objects.deepEquals'
+    // bitwise Double comparison.
+    OperatorContext context = mock(OperatorContext.class);
+    BaseEventTypeNode eventNode = mock(BaseEventTypeNode.class);
+
+    FilterOperand op0 = new LiteralOperand(new Variant(new double[] {1.0, -0.0}));
+    FilterOperand op1 = new LiteralOperand(new Variant(new double[] {1.0, 0.0}));
+
+    when(context.resolve(op0, eventNode)).thenReturn(new double[] {1.0, -0.0});
+    when(context.resolve(op1, eventNode)).thenReturn(new double[] {1.0, 0.0});
+
+    Boolean result = Operators.EQUALS.apply(context, eventNode, new FilterOperand[] {op0, op1});
+
+    assertNotNull(result);
+    assertTrue(result);
   }
 }

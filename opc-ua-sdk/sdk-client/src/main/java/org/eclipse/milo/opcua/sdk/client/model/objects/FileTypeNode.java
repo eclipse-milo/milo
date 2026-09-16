@@ -90,7 +90,10 @@ public class FileTypeNode extends BaseObjectTypeNode implements FileType {
   @Override
   public void writeSize(ULong value) throws UaException {
     try {
-      writeSizeAsync(value).get();
+      StatusCode statusCode = writeSizeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -160,7 +163,10 @@ public class FileTypeNode extends BaseObjectTypeNode implements FileType {
   @Override
   public void writeWritable(Boolean value) throws UaException {
     try {
-      writeWritableAsync(value).get();
+      StatusCode statusCode = writeWritableAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -230,7 +236,10 @@ public class FileTypeNode extends BaseObjectTypeNode implements FileType {
   @Override
   public void writeUserWritable(Boolean value) throws UaException {
     try {
-      writeUserWritableAsync(value).get();
+      StatusCode statusCode = writeUserWritableAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -300,7 +309,10 @@ public class FileTypeNode extends BaseObjectTypeNode implements FileType {
   @Override
   public void writeOpenCount(UShort value) throws UaException {
     try {
-      writeOpenCountAsync(value).get();
+      StatusCode statusCode = writeOpenCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -370,7 +382,10 @@ public class FileTypeNode extends BaseObjectTypeNode implements FileType {
   @Override
   public void writeMimeType(String value) throws UaException {
     try {
-      writeMimeTypeAsync(value).get();
+      StatusCode statusCode = writeMimeTypeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -440,7 +455,10 @@ public class FileTypeNode extends BaseObjectTypeNode implements FileType {
   @Override
   public void writeMaxByteStringLength(UInteger value) throws UaException {
     try {
-      writeMaxByteStringLengthAsync(value).get();
+      StatusCode statusCode = writeMaxByteStringLengthAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -513,7 +531,10 @@ public class FileTypeNode extends BaseObjectTypeNode implements FileType {
   @Override
   public void writeLastModifiedTime(DateTime value) throws UaException {
     try {
-      writeLastModifiedTimeAsync(value).get();
+      StatusCode statusCode = writeLastModifiedTimeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

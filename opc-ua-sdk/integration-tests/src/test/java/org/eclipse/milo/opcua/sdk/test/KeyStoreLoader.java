@@ -11,8 +11,10 @@
 package org.eclipse.milo.opcua.sdk.test;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.Key;
 import java.security.KeyPair;
 import java.security.KeyStore;
@@ -46,11 +48,11 @@ class KeyStoreLoader {
   KeyStoreLoader load(File baseDir) throws Exception {
     KeyStore keyStore = KeyStore.getInstance("PKCS12");
 
-    File serverKeyStore = baseDir.toPath().resolve("example-server.pfx").toFile();
+    Path serverKeyStore = baseDir.toPath().resolve("example-server.pfx");
 
     LOGGER.debug("Loading KeyStore at {}", serverKeyStore);
 
-    if (!serverKeyStore.exists()) {
+    if (!Files.exists(serverKeyStore)) {
       keyStore.load(null, PASSWORD);
 
       KeyPair keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
@@ -84,9 +86,13 @@ class KeyStoreLoader {
 
       keyStore.setKeyEntry(
           SERVER_ALIAS, keyPair.getPrivate(), PASSWORD, new X509Certificate[] {certificate});
-      keyStore.store(new FileOutputStream(serverKeyStore), PASSWORD);
+      try (OutputStream out = Files.newOutputStream(serverKeyStore)) {
+        keyStore.store(out, PASSWORD);
+      }
     } else {
-      keyStore.load(new FileInputStream(serverKeyStore), PASSWORD);
+      try (InputStream in = Files.newInputStream(serverKeyStore)) {
+        keyStore.load(in, PASSWORD);
+      }
     }
 
     Key serverPrivateKey = keyStore.getKey(SERVER_ALIAS, PASSWORD);

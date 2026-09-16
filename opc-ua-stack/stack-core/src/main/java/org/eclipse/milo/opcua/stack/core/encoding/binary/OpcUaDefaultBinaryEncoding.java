@@ -97,7 +97,12 @@ public class OpcUaDefaultBinaryEncoding implements DataTypeEncoding {
       OpcUaBinaryDecoder decoder = new OpcUaBinaryDecoder(context);
       decoder.setBuffer(buffer);
 
-      return decoder.decodeStruct(null, codec);
+      try {
+        return decoder.decodeStruct(null, codec);
+      } catch (IndexOutOfBoundsException e) {
+        // A truncated body may fail in a codec's primitive read.
+        throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
+      }
     } else {
       throw new UaSerializationException(
           StatusCodes.Bad_DecodingError, "not binary encoded: " + encoded);

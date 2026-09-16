@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -13,6 +13,7 @@ package org.eclipse.milo.opcua.sdk.client.typetree;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -38,13 +39,16 @@ public class SeededLazyClientDataTypeTreeTest extends AbstractDataTypeTreeTest {
 
   @Override
   protected DataTypeTree getDataTypeTree() {
+    return newSeededTree();
+  }
+
+  private LazyClientDataTypeTree newSeededTree() {
     return new LazyClientDataTypeTree(client, LazyClientDataTypeTreeSeed.createSeedTree());
   }
 
   @Test
   void seededTypesAreImmediatelyResolved() {
-    var seededTree =
-        new LazyClientDataTypeTree(client, LazyClientDataTypeTreeSeed.createSeedTree());
+    var seededTree = newSeededTree();
 
     // All types from the seed should be resolved immediately
     assertTrue(seededTree.isResolved(NodeIds.BaseDataType));
@@ -62,8 +66,7 @@ public class SeededLazyClientDataTypeTreeTest extends AbstractDataTypeTreeTest {
 
   @Test
   void primitiveTypesAvailableWithoutResolution() {
-    var seededTree =
-        new LazyClientDataTypeTree(client, LazyClientDataTypeTreeSeed.createSeedTree());
+    var seededTree = newSeededTree();
 
     // Query primitive types - should return immediately without server browsing
     DataType int32Type = seededTree.getDataType(NodeIds.Int32);
@@ -81,8 +84,7 @@ public class SeededLazyClientDataTypeTreeTest extends AbstractDataTypeTreeTest {
 
   @Test
   void subTypesAreAvailable() {
-    var seededTree =
-        new LazyClientDataTypeTree(client, LazyClientDataTypeTreeSeed.createSeedTree());
+    var seededTree = newSeededTree();
 
     // String subtypes from the seed
     assertTrue(seededTree.isResolved(NodeIds.NumericRange));
@@ -100,8 +102,7 @@ public class SeededLazyClientDataTypeTreeTest extends AbstractDataTypeTreeTest {
 
   @Test
   void isSubtypeOfWorksForSeededTypes() {
-    var seededTree =
-        new LazyClientDataTypeTree(client, LazyClientDataTypeTreeSeed.createSeedTree());
+    var seededTree = newSeededTree();
 
     // Int32 -> Integer -> Number -> BaseDataType
     assertTrue(seededTree.isSubtypeOf(NodeIds.Int32, NodeIds.Integer));
@@ -121,8 +122,7 @@ public class SeededLazyClientDataTypeTreeTest extends AbstractDataTypeTreeTest {
 
   @Test
   void enumerationSubtypesAreSeeded() {
-    var seededTree =
-        new LazyClientDataTypeTree(client, LazyClientDataTypeTreeSeed.createSeedTree());
+    var seededTree = newSeededTree();
 
     // Enumeration and its subtypes are in the seed
     assertTrue(seededTree.isResolved(NodeIds.Enumeration));
@@ -133,8 +133,7 @@ public class SeededLazyClientDataTypeTreeTest extends AbstractDataTypeTreeTest {
 
   @Test
   void seededEnumerationSubtypesHaveDefinitions() {
-    var seededTree =
-        new LazyClientDataTypeTree(client, LazyClientDataTypeTreeSeed.createSeedTree());
+    var seededTree = newSeededTree();
 
     // NodeClass is a seeded enum subtype with an EnumDefinition
     DataType nodeClassType = seededTree.getDataType(NodeIds.NodeClass);
@@ -152,8 +151,7 @@ public class SeededLazyClientDataTypeTreeTest extends AbstractDataTypeTreeTest {
 
   @Test
   void structureSubtypesAreSeeded() {
-    var seededTree =
-        new LazyClientDataTypeTree(client, LazyClientDataTypeTreeSeed.createSeedTree());
+    var seededTree = newSeededTree();
 
     // Structure and its subtypes are in the seed
     assertTrue(seededTree.isResolved(NodeIds.Structure));
@@ -164,8 +162,7 @@ public class SeededLazyClientDataTypeTreeTest extends AbstractDataTypeTreeTest {
 
   @Test
   void seededStructureSubtypesHaveEncodingIdsAndDefinitions() {
-    var seededTree =
-        new LazyClientDataTypeTree(client, LazyClientDataTypeTreeSeed.createSeedTree());
+    var seededTree = newSeededTree();
 
     // XVType is a seeded structure subtype with encoding IDs and definition
     DataType xvType = seededTree.getDataType(NodeIds.XVType);
@@ -186,8 +183,7 @@ public class SeededLazyClientDataTypeTreeTest extends AbstractDataTypeTreeTest {
   @Test
   void seededTreeMatchesEagerTreeForCommonTypes() throws UaException {
     DataTypeTree eagerTree = DataTypeTreeBuilder.build(client);
-    var seededTree =
-        new LazyClientDataTypeTree(client, LazyClientDataTypeTreeSeed.createSeedTree());
+    var seededTree = newSeededTree();
 
     // Test types that are in the seed
     NodeId[] seededTypes = {
@@ -222,8 +218,7 @@ public class SeededLazyClientDataTypeTreeTest extends AbstractDataTypeTreeTest {
 
   @Test
   void getRootContainsAllSeededTypes() {
-    var seededTree =
-        new LazyClientDataTypeTree(client, LazyClientDataTypeTreeSeed.createSeedTree());
+    var seededTree = newSeededTree();
 
     Tree<DataType> root = seededTree.getRoot();
     var count = new AtomicInteger(0);
@@ -235,28 +230,26 @@ public class SeededLazyClientDataTypeTreeTest extends AbstractDataTypeTreeTest {
 
   @Test
   void clearFailedResolutionsAllowsRetry() {
-    var seededTree =
-        new LazyClientDataTypeTree(client, LazyClientDataTypeTreeSeed.createSeedTree());
+    var seededTree = newSeededTree();
 
-    // Try to resolve a non-existent type
+    // Resolving a non-existent type fails and leaves the type unresolved
     NodeId fakeTypeId = new NodeId(999, "FakeDataType");
-    DataType result = seededTree.getDataType(fakeTypeId);
+    assertNull(seededTree.getDataType(fakeTypeId));
+    assertFalse(seededTree.isResolved(fakeTypeId));
 
-    // Should return null
-    assertTrue(result == null || !seededTree.isResolved(fakeTypeId));
-
-    // Clear failed resolutions
     seededTree.clearFailedResolutions();
 
-    // Now it can be attempted again
-    result = seededTree.getDataType(fakeTypeId);
-    assertTrue(result == null || !seededTree.isResolved(fakeTypeId));
+    // Clearing failed resolutions retains resolved (seeded) types
+    assertTrue(seededTree.isResolved(NodeIds.Int32));
+
+    // The failed type can be attempted again (it fails again against this server)
+    assertNull(seededTree.getDataType(fakeTypeId));
+    assertFalse(seededTree.isResolved(fakeTypeId));
   }
 
   @Test
   void containsTypeReturnsTrueForSeededTypes() {
-    var seededTree =
-        new LazyClientDataTypeTree(client, LazyClientDataTypeTreeSeed.createSeedTree());
+    var seededTree = newSeededTree();
 
     // These should return true immediately without triggering resolution
     assertTrue(seededTree.containsType(NodeIds.Int32));
@@ -268,8 +261,7 @@ public class SeededLazyClientDataTypeTreeTest extends AbstractDataTypeTreeTest {
 
   @Test
   void getBuiltinTypeWorksForSeededTypes() {
-    var seededTree =
-        new LazyClientDataTypeTree(client, LazyClientDataTypeTreeSeed.createSeedTree());
+    var seededTree = newSeededTree();
 
     // Builtin type resolution should work for seeded types
     assertEquals(OpcUaDataType.Int32, seededTree.getBuiltinType(NodeIds.Int32));
@@ -280,8 +272,7 @@ public class SeededLazyClientDataTypeTreeTest extends AbstractDataTypeTreeTest {
 
   @Test
   void isEnumTypeWorksForSeededTypes() {
-    var seededTree =
-        new LazyClientDataTypeTree(client, LazyClientDataTypeTreeSeed.createSeedTree());
+    var seededTree = newSeededTree();
 
     // Enumeration subtypes are seeded and isEnumType works immediately
     assertTrue(seededTree.isEnumType(NodeIds.NodeClass));
@@ -295,8 +286,7 @@ public class SeededLazyClientDataTypeTreeTest extends AbstractDataTypeTreeTest {
 
   @Test
   void isStructTypeWorksForSeededTypes() {
-    var seededTree =
-        new LazyClientDataTypeTree(client, LazyClientDataTypeTreeSeed.createSeedTree());
+    var seededTree = newSeededTree();
 
     // Structure is in the seed
     assertTrue(seededTree.isResolved(NodeIds.Structure));

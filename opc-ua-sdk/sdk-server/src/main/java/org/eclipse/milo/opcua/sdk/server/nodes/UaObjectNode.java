@@ -13,7 +13,6 @@ package org.eclipse.milo.opcua.sdk.server.nodes;
 import static org.eclipse.milo.opcua.sdk.core.Reference.HAS_COMPONENT_PREDICATE;
 import static org.eclipse.milo.opcua.sdk.core.Reference.HAS_EVENT_SOURCE_PREDICATE;
 import static org.eclipse.milo.opcua.sdk.core.Reference.HAS_NOTIFIER_PREDICATE;
-import static org.eclipse.milo.opcua.sdk.core.Reference.HAS_ORDERED_COMPONENT_PREDICATE;
 import static org.eclipse.milo.opcua.sdk.core.Reference.HAS_PROPERTY_PREDICATE;
 import static org.eclipse.milo.opcua.sdk.core.Reference.HAS_TYPE_DEFINITION_PREDICATE;
 import static org.eclipse.milo.opcua.sdk.core.Reference.ORGANIZES_PREDICATE;
@@ -207,11 +206,17 @@ public class UaObjectNode extends UaNode implements ObjectNode {
       if (methodId.equals(methodNode.getNodeId())) {
         return methodNode;
       }
+    }
 
-      NodeId typeDefinitionId = getTypeDefinitionNode().getNodeId();
+    // methodId may name the declaration on the type definition rather than this instance's Method.
+    ObjectTypeNode typeDefinitionNode = getTypeDefinitionNode();
+    if (typeDefinitionNode == null) {
+      return null;
+    }
 
+    for (UaMethodNode methodNode : methodNodes) {
       NodeId methodDeclarationId =
-          findMethodDeclarationId(typeDefinitionId, methodNode.getBrowseName());
+          findMethodDeclarationId(typeDefinitionNode.getNodeId(), methodNode.getBrowseName());
 
       if (methodId.equals(methodDeclarationId)) {
         return methodNode;
@@ -236,7 +241,7 @@ public class UaObjectNode extends UaNode implements ObjectNode {
 
     NodeId nodeId =
         asm.getManagedReferences(typeDefinitionId).stream()
-            .filter(HAS_COMPONENT_PREDICATE.or(HAS_ORDERED_COMPONENT_PREDICATE))
+            .filter(reference -> MethodReferences.isForwardComponent(getNodeContext(), reference))
             .flatMap(r -> getManagedNode(r.getTargetNodeId()).stream())
             .filter(
                 n -> (n instanceof UaMethodNode) && Objects.equals(n.getBrowseName(), methodName))
@@ -278,7 +283,7 @@ public class UaObjectNode extends UaNode implements ObjectNode {
 
   public List<UaMethodNode> getMethodNodes() {
     return getReferences().stream()
-        .filter(HAS_COMPONENT_PREDICATE.or(HAS_ORDERED_COMPONENT_PREDICATE))
+        .filter(reference -> MethodReferences.isForwardComponent(getNodeContext(), reference))
         .flatMap(r -> getManagedNode(r.getTargetNodeId()).stream())
         .filter(n -> (n instanceof UaMethodNode))
         .map(UaMethodNode.class::cast)

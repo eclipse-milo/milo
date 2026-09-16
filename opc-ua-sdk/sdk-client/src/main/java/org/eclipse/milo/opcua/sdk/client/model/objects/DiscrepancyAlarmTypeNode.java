@@ -88,7 +88,10 @@ public class DiscrepancyAlarmTypeNode extends AlarmConditionTypeNode
   @Override
   public void writeTargetValueNode(NodeId value) throws UaException {
     try {
-      writeTargetValueNodeAsync(value).get();
+      StatusCode statusCode = writeTargetValueNodeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -158,7 +161,10 @@ public class DiscrepancyAlarmTypeNode extends AlarmConditionTypeNode
   @Override
   public void writeExpectedTime(Double value) throws UaException {
     try {
-      writeExpectedTimeAsync(value).get();
+      StatusCode statusCode = writeExpectedTimeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -228,7 +234,10 @@ public class DiscrepancyAlarmTypeNode extends AlarmConditionTypeNode
   @Override
   public void writeTolerance(Double value) throws UaException {
     try {
-      writeToleranceAsync(value).get();
+      StatusCode statusCode = writeToleranceAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

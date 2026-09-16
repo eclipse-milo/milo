@@ -35,12 +35,22 @@ import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.UaRequestMessageType;
+import org.eclipse.milo.opcua.stack.core.types.UaResponseMessageType;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.structured.CloseSecureChannelRequest;
@@ -48,15 +58,25 @@ import org.eclipse.milo.opcua.stack.core.types.structured.RequestHeader;
 import org.eclipse.milo.opcua.stack.core.util.EndpointUtil;
 import org.eclipse.milo.opcua.stack.core.util.Unit;
 import org.eclipse.milo.opcua.stack.transport.client.AbstractUascClientTransport;
+import org.eclipse.milo.opcua.stack.transport.client.ChannelStateObservable;
 import org.eclipse.milo.opcua.stack.transport.client.ClientApplicationContext;
+import org.eclipse.milo.opcua.stack.transport.client.CurrentChannelProvider;
 import org.eclipse.milo.opcua.stack.transport.client.uasc.ClientSecureChannel;
-import org.eclipse.milo.opcua.stack.transport.client.uasc.InboundUascResponseHandler.DelegatingUascResponseHandler;
-import org.eclipse.milo.opcua.stack.transport.client.uasc.UascClientAcknowledgeHandler;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-public class OpcTcpClientTransport extends AbstractUascClientTransport {
+/**
+ * UA-TCP client transport for the normal outbound client connection path.
+ *
+ * <p>The transport owns the outbound socket lifecycle through a {@link ChannelFsm}, installs the
+ * client UASC pipeline, and exposes optional channel-state capabilities for higher-level client
+ * lifecycle code. Session management remains in the SDK layer; this transport only reports when its
+ * SecureChannel-backed Netty channel becomes available or leaves service.
+ */
+public class OpcTcpClientTransport extends AbstractUascClientTransport
+    implements ChannelStateObservable, CurrentChannelProvider {
 
   private static final FsmContext.Key<ClientApplicationContext> KEY_CLIENT_APPLICATION =
       new FsmContext.Key<>("clientApplication", ClientApplicationContext.class);
@@ -70,7 +90,26 @@ public class OpcTcpClientTransport extends AbstractUascClientTransport {
   private final ChannelFsm channelFsm;
 
   private final OpcTcpClientTransportConfig config;
+  private volatile ClientSecureChannel secureChannel;
 
+  // The ChannelFsm shelves Disconnect while an attempt is in progress, so disconnect() aborts the
+  // in-flight socket and handshake itself rather than waiting for a peer or a handshake timeout.
+  private volatile boolean connectionRequested;
+  private final AtomicReference<Channel> connectingChannel = new AtomicReference<>();
+  private final AtomicReference<CompletableFuture<ClientSecureChannel>> pendingHandshake =
+      new AtomicReference<>();
+
+  private final List<ChannelStateObservable.TransitionListener> transitionListeners =
+      new CopyOnWriteArrayList<>();
+
+  /**
+   * Create an outbound UA-TCP client transport.
+   *
+   * <p>The supplied configuration provides the Netty resources, SecureChannel settings, timers, and
+   * pipeline customization used for the lifetime of this transport.
+   *
+   * @param config the TCP client transport configuration.
+   */
   public OpcTcpClientTransport(OpcTcpClientTransportConfig config) {
     super(config);
 
@@ -94,6 +133,18 @@ public class OpcTcpClientTransport extends AbstractUascClientTransport {
     var factory = new ChannelFsmFactory(fsmConfig);
 
     channelFsm = factory.newChannelFsm();
+
+    channelFsm.addTransitionListener(
+        (from, to, via) -> {
+          if (via instanceof Event.ConnectFailure connectFailure) {
+            notifyConnectFailure(connectFailure.failure);
+          }
+          if (from != State.Connected && to == State.Connected) {
+            notifyTransitionListeners(true);
+          } else if (from == State.Connected && to != State.Connected) {
+            notifyTransitionListeners(false);
+          }
+        });
   }
 
   @Override
@@ -103,6 +154,7 @@ public class OpcTcpClientTransport extends AbstractUascClientTransport {
 
   @Override
   public CompletableFuture<Unit> connect(ClientApplicationContext applicationContext) {
+    connectionRequested = true;
     channelFsm.getFsm().withContext(ctx -> ctx.set(KEY_CLIENT_APPLICATION, applicationContext));
 
     return channelFsm.connect().thenApply(c -> Unit.VALUE);
@@ -110,7 +162,26 @@ public class OpcTcpClientTransport extends AbstractUascClientTransport {
 
   @Override
   public CompletableFuture<Unit> disconnect() {
-    return channelFsm.disconnect().thenApply(v -> Unit.VALUE);
+    connectionRequested = false;
+    Channel connecting = connectingChannel.getAndSet(null);
+    if (connecting != null) connecting.close();
+    CompletableFuture<ClientSecureChannel> handshake = pendingHandshake.getAndSet(null);
+    if (handshake != null) {
+      handshake.completeExceptionally(new UaException(StatusCodes.Bad_ConnectionClosed));
+    }
+    return channelFsm
+        .disconnect()
+        .thenApply(
+            v -> {
+              secureChannel = null;
+              return Unit.VALUE;
+            });
+  }
+
+  @Override
+  public ByteString getChannelThumbprint() {
+    ClientSecureChannel channel = secureChannel;
+    return channel != null ? channel.getChannelThumbprint() : ByteString.NULL_VALUE;
   }
 
   @Override
@@ -122,6 +193,85 @@ public class OpcTcpClientTransport extends AbstractUascClientTransport {
     return channelFsm;
   }
 
+  /**
+   * Get the most recently established SecureChannel, including its immutable certificate bindings.
+   *
+   * @return the established channel, or empty before the first handshake or after disconnect.
+   */
+  public Optional<ClientSecureChannel> getSecureChannel() {
+    return Optional.ofNullable(secureChannel);
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * <p>The request is built only after the ChannelFsm's channel future completes, which happens
+   * after the handshake publishes the new channel's certificate and thumbprint, so a channel-bound
+   * signature never covers a dead channel during a reconnect.
+   */
+  @Override
+  public CompletableFuture<UaResponseMessageType> sendRequestMessage(
+      Callable<UaRequestMessageType> requestSupplier, long channelTimeoutMillis) {
+    CompletableFuture<Channel> channelReady = getChannelFsm().getChannel().copy();
+    if (channelTimeoutMillis > 0) {
+      channelReady.orTimeout(channelTimeoutMillis, TimeUnit.MILLISECONDS);
+    }
+    return channelReady
+        .exceptionallyCompose(
+            error ->
+                CompletableFuture.failedFuture(
+                    error instanceof TimeoutException
+                        ? new UaException(StatusCodes.Bad_Timeout, "timed out waiting for channel")
+                        : error))
+        .thenCompose(
+            channel -> {
+              try {
+                return sendRequestMessage(requestSupplier.call(), channel);
+              } catch (Exception e) {
+                return CompletableFuture.failedFuture(e);
+              }
+            });
+  }
+
+  @Override
+  public void addTransitionListener(ChannelStateObservable.TransitionListener listener) {
+    transitionListeners.add(listener);
+  }
+
+  @Override
+  public void removeTransitionListener(ChannelStateObservable.TransitionListener listener) {
+    transitionListeners.remove(listener);
+  }
+
+  @Override
+  public @Nullable Channel getCurrentChannel() {
+    try {
+      return channelFsm.getChannel().getNow(null);
+    } catch (RuntimeException e) {
+      return null;
+    }
+  }
+
+  private void notifyConnectFailure(Throwable failure) {
+    for (ChannelStateObservable.TransitionListener listener : transitionListeners) {
+      try {
+        listener.onConnectFailure(failure);
+      } catch (Throwable t) {
+        logger.warn("Channel connect failure listener failed.", t);
+      }
+    }
+  }
+
+  private void notifyTransitionListeners(boolean connected) {
+    for (ChannelStateObservable.TransitionListener listener : transitionListeners) {
+      try {
+        listener.onStateTransition(connected);
+      } catch (Throwable t) {
+        logger.warn("Channel state transition listener failed.", t);
+      }
+    }
+  }
+
   private class ClientChannelActions implements ChannelActions {
 
     private final Logger logger = LoggerFactory.getLogger(CHANNEL_FSM_LOGGER_NAME);
@@ -131,7 +281,11 @@ public class OpcTcpClientTransport extends AbstractUascClientTransport {
       ClientApplicationContext application =
           (ClientApplicationContext) ctx.get(KEY_CLIENT_APPLICATION);
 
+      // The ChannelFsm runs one connect attempt at a time, so a plain set cannot overwrite another
+      // attempt's future. The compareAndSet on completion guards against disconnect(), which may
+      // have already cleared this reference concurrently.
       var handshakeFuture = new CompletableFuture<ClientSecureChannel>();
+      pendingHandshake.set(handshakeFuture);
 
       var bootstrap = new Bootstrap();
 
@@ -147,15 +301,13 @@ public class OpcTcpClientTransport extends AbstractUascClientTransport {
               new ChannelInitializer<SocketChannel>() {
                 @Override
                 protected void initChannel(SocketChannel ch) {
-                  var acknowledgeHandler =
-                      new UascClientAcknowledgeHandler(
-                          config, application, requestId::getAndIncrement, handshakeFuture);
-
-                  ch.pipeline()
-                      .addLast(new DelegatingUascResponseHandler(OpcTcpClientTransport.this));
-                  ch.pipeline().addLast(acknowledgeHandler);
-
-                  config.getChannelPipelineCustomizer().accept(ch.pipeline());
+                  OpcTcpClientChannelInitializer.initializeOutboundChannel(
+                      ch,
+                      config,
+                      application,
+                      OpcTcpClientTransport.this,
+                      requestId::getAndIncrement,
+                      handshakeFuture);
                 }
               });
 
@@ -168,26 +320,45 @@ public class OpcTcpClientTransport extends AbstractUascClientTransport {
 
       int port = EndpointUtil.getPort(endpointUrl);
 
-      bootstrap
-          .connect(new InetSocketAddress(host, port))
-          .addListener(
-              (ChannelFuture f) -> {
-                if (!f.isSuccess()) {
-                  Throwable cause = f.cause();
+      ChannelFuture connection = bootstrap.connect(new InetSocketAddress(host, port));
+      connectingChannel.set(connection.channel());
+      // disconnect() may have run between the ChannelFsm dispatching this attempt and the socket
+      // being published above.
+      if (!connectionRequested) {
+        connection.channel().close();
+        handshakeFuture.completeExceptionally(new UaException(StatusCodes.Bad_ConnectionClosed));
+      }
+      connection.addListener(
+          (ChannelFuture f) -> {
+            if (!f.isSuccess()) {
+              Throwable cause = f.cause();
 
-                  if (cause instanceof ConnectTimeoutException) {
-                    handshakeFuture.completeExceptionally(
-                        new UaException(StatusCodes.Bad_Timeout, f.cause()));
-                  } else if (cause instanceof ConnectException) {
-                    handshakeFuture.completeExceptionally(
-                        new UaException(StatusCodes.Bad_ConnectionRejected, f.cause()));
-                  } else {
-                    handshakeFuture.completeExceptionally(cause);
-                  }
-                }
-              });
+              if (cause instanceof ConnectTimeoutException) {
+                handshakeFuture.completeExceptionally(
+                    new UaException(StatusCodes.Bad_Timeout, f.cause()));
+              } else if (cause instanceof ConnectException) {
+                handshakeFuture.completeExceptionally(
+                    new UaException(StatusCodes.Bad_ConnectionRejected, f.cause()));
+              } else {
+                handshakeFuture.completeExceptionally(cause);
+              }
+            }
+          });
 
-      return handshakeFuture.thenApply(ClientSecureChannel::getChannel);
+      // One completion step clears the in-flight references before the channel is published, so
+      // disconnect() cannot close a channel the ChannelFsm is about to own.
+      return handshakeFuture.handle(
+          (secureChannel, error) -> {
+            connectingChannel.compareAndSet(connection.channel(), null);
+            pendingHandshake.compareAndSet(handshakeFuture, null);
+            if (error != null) throw new CompletionException(error);
+            if (!connectionRequested) {
+              secureChannel.getChannel().close();
+              throw new CompletionException(new UaException(StatusCodes.Bad_ConnectionClosed));
+            }
+            OpcTcpClientTransport.this.secureChannel = secureChannel;
+            return secureChannel.getChannel();
+          });
     }
 
     @Override

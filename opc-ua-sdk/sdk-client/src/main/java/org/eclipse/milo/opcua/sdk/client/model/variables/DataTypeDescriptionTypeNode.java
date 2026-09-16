@@ -105,7 +105,10 @@ public class DataTypeDescriptionTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeDataTypeVersion(String value) throws UaException {
     try {
-      writeDataTypeVersionAsync(value).get();
+      StatusCode statusCode = writeDataTypeVersionAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -175,7 +178,10 @@ public class DataTypeDescriptionTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeDictionaryFragment(ByteString value) throws UaException {
     try {
-      writeDictionaryFragmentAsync(value).get();
+      StatusCode statusCode = writeDictionaryFragmentAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

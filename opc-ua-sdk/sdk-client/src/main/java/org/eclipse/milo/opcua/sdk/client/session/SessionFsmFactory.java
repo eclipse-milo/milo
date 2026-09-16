@@ -12,10 +12,12 @@ package org.eclipse.milo.opcua.sdk.client.session;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
-import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_CHANNEL_FSM_TRANSITION_LISTENER;
+import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_CHANNEL_STATE_TRANSITION_LISTENER;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_CLOSE_FUTURE;
+import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_CREATE_SESSION_CLIENT_NONCE;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_KEEP_ALIVE_FAILURE_COUNT;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_KEEP_ALIVE_SCHEDULED_FUTURE;
+import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_PENDING_SESSION;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_SESSION;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_SESSION_ACTIVITY_LISTENERS;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_SESSION_FUTURE;
@@ -30,11 +32,8 @@ import com.digitalpetri.fsm.Fsm;
 import com.digitalpetri.fsm.FsmContext;
 import com.digitalpetri.fsm.dsl.ActionContext;
 import com.digitalpetri.fsm.dsl.FsmBuilder;
-import com.digitalpetri.netty.fsm.ChannelFsm;
 import com.google.common.collect.Streams;
-import com.google.common.primitives.Bytes;
 import io.netty.channel.Channel;
-import java.nio.ByteBuffer;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.cert.CertificateEncodingException;
@@ -44,23 +43,38 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.client.*;
+import org.eclipse.milo.opcua.sdk.client.identity.ChannelSignatureInputs;
+import org.eclipse.milo.opcua.sdk.client.identity.IdentityProvider;
+import org.eclipse.milo.opcua.sdk.client.identity.IdentityProviderContext;
 import org.eclipse.milo.opcua.sdk.client.identity.SignedIdentityToken;
 import org.eclipse.milo.opcua.sdk.client.session.SessionFsm.SessionFuture;
 import org.eclipse.milo.opcua.sdk.client.subscriptions.OpcUaSubscription;
 import org.eclipse.milo.opcua.stack.core.*;
-import org.eclipse.milo.opcua.stack.core.security.SecurityAlgorithm;
+import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
+import org.eclipse.milo.opcua.stack.core.security.CertificateIdentity;
+import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
+import org.eclipse.milo.opcua.stack.core.security.ChannelBoundSignatureData;
+import org.eclipse.milo.opcua.stack.core.security.EccEncryptedSecret;
+import org.eclipse.milo.opcua.stack.core.security.EnhancedUserTokenAdditionalHeader;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
+import org.eclipse.milo.opcua.stack.core.types.UaRequestMessageType;
+import org.eclipse.milo.opcua.stack.core.types.UaResponseMessageType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
@@ -74,6 +88,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.CloseSessionRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.CreateSessionRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.CreateSessionResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.EphemeralKeyType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
@@ -88,8 +103,9 @@ import org.eclipse.milo.opcua.stack.core.types.structured.UserIdentityToken;
 import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
 import org.eclipse.milo.opcua.stack.core.util.EndpointUtil;
 import org.eclipse.milo.opcua.stack.core.util.NonceUtil;
-import org.eclipse.milo.opcua.stack.core.util.SignatureUtil;
 import org.eclipse.milo.opcua.stack.core.util.Unit;
+import org.eclipse.milo.opcua.stack.transport.client.ChannelStateObservable;
+import org.eclipse.milo.opcua.stack.transport.client.CurrentChannelProvider;
 import org.eclipse.milo.opcua.stack.transport.client.OpcClientTransport;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransport;
 import org.slf4j.Logger;
@@ -104,10 +120,51 @@ public class SessionFsmFactory {
   private static final AtomicLong INSTANCE_ID = new AtomicLong();
 
   private static final int MAX_WAIT_SECONDS = 16;
+  private static final FsmContext.Key<EndpointDescription> KEY_CREATE_SESSION_ENDPOINT =
+      new FsmContext.Key<>("createSessionEndpoint", EndpointDescription.class);
+  private static final FsmContext.Key<ByteString> KEY_CREATE_SESSION_CLIENT_CERTIFICATE =
+      new FsmContext.Key<>("createSessionClientCertificate", ByteString.class);
+
+  /**
+   * Lower bound, in milliseconds, on the keep-alive interval derived from a revised session
+   * timeout, so that a Server revising the timeout down to a very small value can't turn the
+   * keep-alive into a flood of requests.
+   */
+  private static final long MIN_KEEP_ALIVE_INTERVAL = 1000L;
+
+  /**
+   * StatusCodes that mean the Server no longer has a usable Session for us, i.e. the Session it
+   * would have to be reactivated against is gone or was never activated.
+   */
+  private static final Predicate<StatusCode> SESSION_ERROR =
+      statusCode -> {
+        long status = statusCode.value();
+
+        return status == StatusCodes.Bad_SessionClosed
+            || status == StatusCodes.Bad_SessionIdInvalid
+            || status == StatusCodes.Bad_SessionNotActivated;
+      };
 
   private SessionFsmFactory() {}
 
   public static SessionFsm newSessionFsm(OpcUaClient client) {
+    return newSessionFsm(
+        client,
+        () ->
+            new EndpointConfiguration(
+                client.getConfig().getEndpoint(), client.getConfig().getDiscoveryEndpoints()));
+  }
+
+  /**
+   * Create a {@link SessionFsm} whose CreateSession reads its endpoint from {@code endpoints}.
+   *
+   * @param client the client the FSM manages a Session for.
+   * @param endpoints supplies the endpoint and discovery list to create Sessions with. It is read
+   *     once the channel is ready, so a description refreshed while reconnecting is used.
+   * @return the new {@link SessionFsm}.
+   */
+  public static SessionFsm newSessionFsm(
+      OpcUaClient client, Supplier<EndpointConfiguration> endpoints) {
     Long instanceId = INSTANCE_ID.incrementAndGet();
 
     FsmBuilder<State, Event> builder =
@@ -117,19 +174,20 @@ public class SessionFsmFactory {
             client.getTransport().getConfig().getExecutor(),
             instanceId);
 
-    configureSessionFsm(builder, client);
+    configureSessionFsm(builder, client, endpoints);
 
     Fsm<State, Event> fsm = builder.build(State.Inactive);
 
     client.addFaultListener(new SessionFaultListener(fsm));
 
-    return new SessionFsm(fsm);
+    return new SessionFsm(fsm, client.getTransport().getConfig().getExecutor());
   }
 
-  private static void configureSessionFsm(FsmBuilder<State, Event> fb, OpcUaClient client) {
+  private static void configureSessionFsm(
+      FsmBuilder<State, Event> fb, OpcUaClient client, Supplier<EndpointConfiguration> endpoints) {
     configureInactiveState(fb, client);
     configureCreatingWaitState(fb, client);
-    configureCreatingState(fb, client);
+    configureCreatingState(fb, client, endpoints);
     configureActivatingState(fb, client);
     configureTransferringState(fb, client);
     configureInitializingState(fb, client);
@@ -264,7 +322,8 @@ public class SessionFsmFactory {
         .execute(SessionFsmFactory::handleOpenSessionEvent);
   }
 
-  private static void configureCreatingState(FsmBuilder<State, Event> fb, OpcUaClient client) {
+  private static void configureCreatingState(
+      FsmBuilder<State, Event> fb, OpcUaClient client, Supplier<EndpointConfiguration> endpoints) {
     /* Transitions */
 
     fb.when(State.Creating).on(Event.CreateSessionSuccess.class).transitionTo(State.Activating);
@@ -292,20 +351,19 @@ public class SessionFsmFactory {
               handleOpenSessionEvent(ctx);
 
               //noinspection Duplicates
-              createSession(ctx, client)
+              createSession(ctx, client, endpoints)
                   .whenComplete(
                       (csr, ex) -> {
                         if (csr != null) {
-                          try (MDCCloseable ignored =
-                              MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+                          try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
+                              MDCCloseable ignoredSessionId = putSessionId(csr.getSessionId())) {
 
                             LOGGER.debug("CreateSession succeeded: {}", csr.getSessionId());
                           }
 
                           ctx.fireEvent(new Event.CreateSessionSuccess(csr));
                         } else {
-                          try (MDCCloseable ignored =
-                              MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+                          try (MDCCloseable ignored = putInstanceId(ctx)) {
 
                             LOGGER.debug("CreateSession failed: {}", ex.getMessage(), ex);
                           }
@@ -321,20 +379,19 @@ public class SessionFsmFactory {
         .execute(
             ctx -> {
               //noinspection Duplicates
-              createSession(ctx, client)
+              createSession(ctx, client, endpoints)
                   .whenComplete(
                       (csr, ex) -> {
                         if (csr != null) {
-                          try (MDCCloseable ignored =
-                              MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+                          try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
+                              MDCCloseable ignoredSessionId = putSessionId(csr.getSessionId())) {
 
                             LOGGER.debug("CreateSession succeeded: {}", csr.getSessionId());
                           }
 
                           ctx.fireEvent(new Event.CreateSessionSuccess(csr));
                         } else {
-                          try (MDCCloseable ignored =
-                              MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+                          try (MDCCloseable ignored = putInstanceId(ctx)) {
 
                             LOGGER.debug("CreateSession failed: {}", ex.getMessage(), ex);
                           }
@@ -385,20 +442,25 @@ public class SessionFsmFactory {
             ctx -> {
               Event.CreateSessionSuccess event = (Event.CreateSessionSuccess) ctx.event();
 
+              // The Session now exists on the Server; remember it so it can be closed if the
+              // remainder of the establishment sequence fails.
+              KEY_PENDING_SESSION.set(ctx, event.response);
+
               activateSession(ctx, client, event.response)
                   .whenComplete(
                       (session, ex) -> {
                         if (session != null) {
-                          try (MDCCloseable ignored =
-                              MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+                          try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
+                              MDCCloseable ignoredSessionId = putSessionId(session)) {
 
                             LOGGER.debug("Session activated: {}", session);
                           }
 
                           ctx.fireEvent(new Event.ActivateSessionSuccess(session));
                         } else {
-                          try (MDCCloseable ignored =
-                              MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+                          try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
+                              MDCCloseable ignoredSessionId =
+                                  putSessionId(event.response.getSessionId())) {
 
                             LOGGER.debug("ActivateSession failed: {}", ex.getMessage(), ex);
                           }
@@ -454,16 +516,16 @@ public class SessionFsmFactory {
                   .whenComplete(
                       (u, ex) -> {
                         if (u != null) {
-                          try (MDCCloseable ignored =
-                              MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+                          try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
+                              MDCCloseable ignoredSessionId = putSessionId(event.session)) {
 
                             LOGGER.debug("TransferSubscriptions succeeded");
                           }
 
                           ctx.fireEvent(new Event.TransferSubscriptionsSuccess(event.session));
                         } else {
-                          try (MDCCloseable ignored =
-                              MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+                          try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
+                              MDCCloseable ignoredSessionId = putSessionId(event.session)) {
 
                             LOGGER.debug("TransferSubscriptions failed: {}", ex.getMessage(), ex);
                           }
@@ -519,16 +581,16 @@ public class SessionFsmFactory {
                   .whenComplete(
                       (u, ex) -> {
                         if (u != null) {
-                          try (MDCCloseable ignored =
-                              MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+                          try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
+                              MDCCloseable ignoredSessionId = putSessionId(session)) {
 
                             LOGGER.debug("Initialization succeeded: {}", session);
                           }
 
                           ctx.fireEvent(new Event.InitializeSuccess(session));
                         } else {
-                          try (MDCCloseable ignored =
-                              MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+                          try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
+                              MDCCloseable ignoredSessionId = putSessionId(session)) {
 
                             LOGGER.warn("Initialization failed: {}", session, ex);
                           }
@@ -551,16 +613,16 @@ public class SessionFsmFactory {
                   .whenComplete(
                       (u, ex) -> {
                         if (u != null) {
-                          try (MDCCloseable ignored =
-                              MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+                          try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
+                              MDCCloseable ignoredSessionId = putSessionId(session)) {
 
                             LOGGER.debug("Initialization succeeded: {}", session);
                           }
 
                           ctx.fireEvent(new Event.InitializeSuccess(session));
                         } else {
-                          try (MDCCloseable ignored =
-                              MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+                          try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
+                              MDCCloseable ignoredSessionId = putSessionId(session)) {
 
                             LOGGER.warn("Initialization failed: {}", session, ex);
                           }
@@ -610,8 +672,36 @@ public class SessionFsmFactory {
               // reset the wait time
               KEY_WAIT_TIME.remove(ctx);
 
-              long keepAliveInterval = client.getConfig().getKeepAliveInterval().longValue();
-              KEY_KEEP_ALIVE_FAILURE_COUNT.set(ctx, 0L);
+              // The Server is free to revise the requested session timeout downwards, and it
+              // terminates the Session if the Client issues no request within the revised
+              // interval (Part 4 §5.7.2.2). Keep-alives scheduled from the configured interval
+              // alone would let the Session expire between them, so bound the interval at half
+              // the revised timeout, leaving room for one keep-alive to be missed. The clamp only
+              // ever lowers the interval; a configured value that is already safe is untouched.
+              long configuredInterval = client.getConfig().getKeepAliveInterval().longValue();
+              long revisedTimeout = event.session.getSessionTimeout().longValue();
+
+              long keepAliveInterval =
+                  Math.min(
+                      configuredInterval, Math.max(MIN_KEEP_ALIVE_INTERVAL, revisedTimeout / 2));
+
+              if (keepAliveInterval != configuredInterval) {
+                try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
+                    MDCCloseable ignoredSessionId = putSessionId(event.session)) {
+
+                  LOGGER.warn(
+                      "Server revised the session timeout to {}ms; the configured keep-alive"
+                          + " interval of {}ms leaves too little margin before the Session"
+                          + " expires, using {}ms instead.",
+                      revisedTimeout,
+                      configuredInterval,
+                      keepAliveInterval);
+                }
+              }
+
+              // A new counter instance per epoch, so a keep-alive sent on a previous epoch can
+              // recognize that the one it captured is no longer the current one.
+              KEY_KEEP_ALIVE_FAILURE_COUNT.set(ctx, new AtomicLong(0L));
 
               ScheduledFuture<?> scheduledFuture =
                   client
@@ -627,38 +717,40 @@ public class SessionFsmFactory {
 
               KEY_SESSION.set(ctx, event.session);
 
+              // The Session is established; it's reachable via KEY_SESSION from here on.
+              KEY_PENDING_SESSION.remove(ctx);
+
               SessionFuture sessionFuture = KEY_SESSION_FUTURE.get(ctx);
 
               OpcClientTransport transport = client.getTransport();
 
-              if (transport instanceof OpcTcpClientTransport) {
-                ChannelFsm channelFsm = ((OpcTcpClientTransport) transport).getChannelFsm();
-
-                ChannelFsm.TransitionListener listener =
-                    new ChannelFsm.TransitionListener() {
-                      @Override
-                      public void onStateTransition(
-                          com.digitalpetri.netty.fsm.State from,
-                          com.digitalpetri.netty.fsm.State to,
-                          com.digitalpetri.netty.fsm.Event via) {
-
-                        if (from == com.digitalpetri.netty.fsm.State.Connected
-                            && to != com.digitalpetri.netty.fsm.State.Connected) {
-
-                          try (MDCCloseable ignored =
-                              MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
-
-                            LOGGER.debug(
-                                "ChannelFsm transition from={} to={} via={}", from, to, via);
-                          }
-
-                          ctx.fireEvent(new Event.ConnectionLost());
+              if (transport instanceof ChannelStateObservable observable) {
+                ChannelStateObservable.TransitionListener listener =
+                    connected -> {
+                      if (!connected) {
+                        try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
+                            MDCCloseable ignoredSessionId = putSessionId(event.session)) {
+                          LOGGER.debug("Client transport reported connection lost");
                         }
+
+                        ctx.fireEvent(new Event.ConnectionLost());
                       }
                     };
 
-                channelFsm.addTransitionListener(listener);
-                KEY_CHANNEL_FSM_TRANSITION_LISTENER.set(ctx, listener);
+                observable.addTransitionListener(listener);
+                KEY_CHANNEL_STATE_TRANSITION_LISTENER.set(ctx, listener);
+
+                // The listener is registered only on the transition into Active. If the channel
+                // went inactive between the SecureChannel handshake and reaching Active, the
+                // transport already emitted connected=false before the listener was attached and
+                // recovery would otherwise wait for the next request to fail. Fire the lost-event
+                // synthetically so the FSM begins recovery immediately.
+                if (transport instanceof CurrentChannelProvider channelProvider) {
+                  Channel currentChannel = channelProvider.getCurrentChannel();
+                  if (currentChannel == null || !currentChannel.isActive()) {
+                    ctx.fireEvent(new Event.ConnectionLost());
+                  }
+                }
               }
 
               client
@@ -684,14 +776,12 @@ public class SessionFsmFactory {
                 scheduledFuture.cancel(false);
               }
 
-              ChannelFsm.TransitionListener listener =
-                  KEY_CHANNEL_FSM_TRANSITION_LISTENER.remove(ctx);
+              ChannelStateObservable.TransitionListener transitionListener =
+                  KEY_CHANNEL_STATE_TRANSITION_LISTENER.remove(ctx);
 
-              if (listener != null) {
-                OpcClientTransport clientTransport = client.getTransport();
-                if (clientTransport instanceof OpcTcpClientTransport tcpClientTransport) {
-                  tcpClientTransport.getChannelFsm().removeTransitionListener(listener);
-                }
+              if (transitionListener != null
+                  && client.getTransport() instanceof ChannelStateObservable observable) {
+                observable.removeTransitionListener(transitionListener);
               }
             });
 
@@ -706,14 +796,10 @@ public class SessionFsmFactory {
               SessionFsm.SessionActivityListeners sessionActivityListeners =
                   KEY_SESSION_ACTIVITY_LISTENERS.get(ctx);
 
-              client
-                  .getTransport()
-                  .getConfig()
-                  .getExecutor()
-                  .execute(
-                      () ->
-                          sessionActivityListeners.sessionActivityListeners.forEach(
-                              listener -> listener.onSessionActive(session)));
+              sessionActivityListeners.executor.execute(
+                  () ->
+                      sessionActivityListeners.sessionActivityListeners.forEach(
+                          listener -> listener.onSessionActive(session)));
             });
 
     // onSessionInactive() callbacks
@@ -727,14 +813,10 @@ public class SessionFsmFactory {
               SessionFsm.SessionActivityListeners sessionActivityListeners =
                   KEY_SESSION_ACTIVITY_LISTENERS.get(ctx);
 
-              client
-                  .getTransport()
-                  .getConfig()
-                  .getExecutor()
-                  .execute(
-                      () ->
-                          sessionActivityListeners.sessionActivityListeners.forEach(
-                              listener -> listener.onSessionInactive(session)));
+              sessionActivityListeners.executor.execute(
+                  () ->
+                      sessionActivityListeners.sessionActivityListeners.forEach(
+                          listener -> listener.onSessionInactive(session)));
             });
 
     /* Internal Transition Actions */
@@ -745,9 +827,25 @@ public class SessionFsmFactory {
             ctx -> {
               Event.KeepAlive event = (Event.KeepAlive) ctx.event();
 
+              // Capture the counter belonging to the epoch this keep-alive is sent on. Leaving
+              // Active cancels the scheduling of new keep-alives but does not cancel one that has
+              // already been sent, and the Event.ServiceFault route leaves Active without taking
+              // the channel down, so the request below can still be pending when the Session is
+              // re-activated (Part 4 §5.6.3) and complete against a later epoch.
+              AtomicLong failureCount = KEY_KEEP_ALIVE_FAILURE_COUNT.get(ctx);
+
               sendKeepAlive(client, event.session)
                   .whenComplete(
                       (response, ex) -> {
+                        if (ctx.currentState() != State.Active
+                            || KEY_SESSION.get(ctx) != event.session
+                            || KEY_KEEP_ALIVE_FAILURE_COUNT.get(ctx) != failureCount) {
+
+                          // The epoch this keep-alive was sent on is over; whatever it observed is
+                          // no longer relevant to the Session the FSM has now.
+                          return;
+                        }
+
                         if (response != null) {
                           DataValue[] results = response.getResults();
 
@@ -756,33 +854,24 @@ public class SessionFsmFactory {
                             if (value instanceof Integer) {
                               ServerState state = ServerState.from((Integer) value);
 
-                              try (MDCCloseable ignored =
-                                  MDC.putCloseable(
-                                      "instance-id", ctx.getUserContext().toString())) {
+                              try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
+                                  MDCCloseable ignoredSessionId = putSessionId(event.session)) {
 
                                 LOGGER.debug("ServerState: {}", state);
                               }
                             }
                           }
 
-                          KEY_KEEP_ALIVE_FAILURE_COUNT.set(ctx, 0L);
+                          failureCount.set(0L);
                         } else {
-                          Long keepAliveFailureCount = KEY_KEEP_ALIVE_FAILURE_COUNT.get(ctx);
-
-                          if (keepAliveFailureCount == null) {
-                            keepAliveFailureCount = 1L;
-                          } else {
-                            keepAliveFailureCount += 1L;
-                          }
-
-                          KEY_KEEP_ALIVE_FAILURE_COUNT.set(ctx, keepAliveFailureCount);
+                          long keepAliveFailureCount = failureCount.incrementAndGet();
 
                           long keepAliveFailuresAllowed =
                               client.getConfig().getKeepAliveFailuresAllowed().longValue();
 
                           if (keepAliveFailureCount > keepAliveFailuresAllowed) {
-                            try (MDCCloseable ignored =
-                                MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+                            try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
+                                MDCCloseable ignoredSessionId = putSessionId(event.session)) {
 
                               LOGGER.warn(
                                   "Keep Alive failureCount={} exceeds failuresAllowed={}",
@@ -797,17 +886,15 @@ public class SessionFsmFactory {
                             // manner to avoid having to wait for the underlying TCP stack's keep
                             // alive to kick in.
                             OpcClientTransport transport = client.getTransport();
-                            if (transport instanceof OpcTcpClientTransport) {
-                              ChannelFsm channelFsm =
-                                  ((OpcTcpClientTransport) transport).getChannelFsm();
-                              Channel channel = channelFsm.getChannel().getNow(null);
+                            if (transport instanceof CurrentChannelProvider channelProvider) {
+                              Channel channel = channelProvider.getCurrentChannel();
                               if (channel != null) {
                                 channel.close();
                               }
                             }
                           } else {
-                            try (MDCCloseable ignored =
-                                MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+                            try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
+                                MDCCloseable ignoredSessionId = putSessionId(event.session)) {
 
                               LOGGER.debug("Keep Alive failureCount={}", keepAliveFailureCount, ex);
                             }
@@ -848,8 +935,8 @@ public class SessionFsmFactory {
               closeSession(ctx, client, session)
                   .whenComplete(
                       (u, ex) -> {
-                        try (MDCCloseable ignored =
-                            MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+                        try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
+                            MDCCloseable ignoredSessionId = putSessionId(session)) {
 
                           if (u != null) {
                             LOGGER.debug("Session closed: {}", session);
@@ -970,18 +1057,56 @@ public class SessionFsmFactory {
   private static void configureReactivatingState(FsmBuilder<State, Event> fb, OpcUaClient client) {
     Predicate<Event> isReactivateSessionFailure = e -> e instanceof Event.ReactivateSessionFailure;
 
-    Predicate<Event> isReactivateSessionFailureServiceFault =
+    // Part 4 §6.7: a Client shall create a new Session if ActivateSession fails. Escalate on the
+    // StatusCode rather than the exception type so that a Server reporting a definitive
+    // session-level error with a channel-level Error message instead of an application-level
+    // ServiceFault - the same defective behavior guarded against on the transfer path below -
+    // escalates as well. Failures that carry no such StatusCode, e.g. Bad_Timeout or
+    // Bad_ConnectionClosed, are connectivity problems; Part 4 §5.7.2.1 says to keep trying to
+    // reactivate over a new connection, so those stay on the ReactivatingWait retry loop.
+    Predicate<Event> isReactivateSessionFailureFatal =
         isReactivateSessionFailure.and(
             e -> {
               Event.ReactivateSessionFailure event = (Event.ReactivateSessionFailure) e;
               return UaException.extract(event.failure)
-                  .map(ex -> ex instanceof UaServiceFaultException)
+                  .map(
+                      ex ->
+                          ex instanceof UaServiceFaultException
+                              || SESSION_ERROR.test(ex.getStatusCode()))
                   .orElse(false);
             });
 
-    // If reactivating fails due to a ServiceFault, move to CreatingWait
+    // Neither retrying the reactivation nor creating a new Session can succeed while the transport
+    // is disconnected for good, and both routes retry indefinitely, so this has to be evaluated
+    // before the escalation to CreatingWait below.
+    Predicate<Event> isReactivateSessionFailureTerminal =
+        isReactivateSessionFailure.and(e -> isTransportDisconnectedForGood(client));
+
     fb.when(State.Reactivating)
-        .on(isReactivateSessionFailureServiceFault)
+        .on(isReactivateSessionFailureTerminal)
+        .transitionTo(State.Inactive)
+        .executeFirst(
+            ctx -> {
+              KEY_WAIT_TIME.remove(ctx);
+
+              Event.ReactivateSessionFailure e = (Event.ReactivateSessionFailure) ctx.event();
+
+              OpcUaSession session = KEY_SESSION.remove(ctx);
+
+              try (MDCCloseable ignoredInstanceId = putInstanceId(ctx)) {
+                LOGGER.warn(
+                    "Transport is disconnected and will not reconnect on its own; abandoning"
+                        + " Session {}.",
+                    session != null ? session.getSessionId() : null);
+              }
+
+              // The Session can't be closed on the Server without a channel to send the request
+              // over; it is left to expire when the Session timeout elapses (Part 4 §5.6.2).
+              handleFailureToOpenSession(client, ctx, e.failure);
+            });
+
+    fb.when(State.Reactivating)
+        .on(isReactivateSessionFailureFatal)
         .transitionTo(State.CreatingWait)
         .executeFirst(
             ctx -> {
@@ -990,6 +1115,17 @@ public class SessionFsmFactory {
               Event.ReactivateSessionFailure e = (Event.ReactivateSessionFailure) ctx.event();
 
               handleFailureToOpenSession(client, ctx, e.failure);
+
+              // Reactivation is being abandoned in favor of creating a new Session. The old one may
+              // still exist on the Server (the fault might have been e.g.
+              // Bad_IdentityTokenRejected rather than Bad_SessionIdInvalid), so close it
+              // best-effort without deleting its Subscriptions: the replacement Session will try
+              // to transfer them. A fault in response to this is expected and ignored.
+              OpcUaSession session = KEY_SESSION.remove(ctx);
+
+              if (session != null) {
+                abandonSession(ctx, client, session);
+              }
             });
 
     // If reactivating fails for any other reason, move back to ReactivatingWait and keep trying to
@@ -1013,20 +1149,22 @@ public class SessionFsmFactory {
         .via(Event.ReactivatingWaitExpired.class)
         .execute(
             ctx -> {
+              OpcUaSession currentSession = KEY_SESSION.get(ctx);
+
               reactivateSession(ctx, client)
                   .whenComplete(
                       (session, ex) -> {
                         if (session != null) {
-                          try (MDCCloseable ignored =
-                              MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+                          try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
+                              MDCCloseable ignoredSessionId = putSessionId(session)) {
 
                             LOGGER.debug("Session reactivated: {}", session);
                           }
 
                           ctx.fireEvent(new Event.ReactivateSessionSuccess(session));
                         } else {
-                          try (MDCCloseable ignored =
-                              MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+                          try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
+                              MDCCloseable ignoredSessionId = putSessionId(currentSession)) {
 
                             LOGGER.debug("Reactivation failed: {}", ex.getMessage(), ex);
                           }
@@ -1051,11 +1189,46 @@ public class SessionFsmFactory {
         .execute(ctx -> ctx.shelveEvent(ctx.event()));
   }
 
+  /**
+   * Check whether the transport is disconnected in a way that nothing will undo on its own.
+   *
+   * <p>The ChannelFsm is configured persistent, so a channel that drops unexpectedly is reconnected
+   * without any help from the Session. {@code NotConnected} is the exception: it is reached only
+   * when the application deliberately disconnects the transport, its only outbound edge is an
+   * explicit Connect, and every request attempted from it fails immediately. A Session has nothing
+   * left to reactivate over until the application connects again.
+   *
+   * @param client the {@link OpcUaClient} the Session belongs to.
+   * @return {@code true} if the transport is disconnected and will not reconnect on its own.
+   */
+  private static boolean isTransportDisconnectedForGood(OpcUaClient client) {
+    OpcClientTransport transport = client.getTransport();
+
+    if (transport instanceof OpcTcpClientTransport tcpClientTransport) {
+      return tcpClientTransport.getChannelFsm().getState()
+          == com.digitalpetri.netty.fsm.State.NotConnected;
+    } else {
+      return false;
+    }
+  }
+
   private static void handleGetSessionEvent(ActionContext<State, Event> ctx) {
     CompletableFuture<OpcUaSession> sessionFuture = KEY_SESSION_FUTURE.get(ctx).future;
 
     Event.GetSession event = (Event.GetSession) ctx.event();
     complete(event.future).with(sessionFuture);
+  }
+
+  private static MDCCloseable putInstanceId(FsmContext<State, Event> ctx) {
+    return MDC.putCloseable("instance-id", ctx.getUserContext().toString());
+  }
+
+  private static MDCCloseable putSessionId(OpcUaSession session) {
+    return putSessionId(session.getSessionId());
+  }
+
+  private static MDCCloseable putSessionId(NodeId sessionId) {
+    return MDC.putCloseable("session-id", sessionId.toParseableString());
   }
 
   private static void handleOpenSessionEvent(ActionContext<State, Event> ctx) {
@@ -1077,38 +1250,115 @@ public class SessionFsmFactory {
           .getExecutor()
           .execute(() -> sessionFuture.future.completeExceptionally(failure));
     }
+
+    // If CreateSession already succeeded the Session exists on the Server, and a new one is about
+    // to be created in its place. Close it best-effort so the Server isn't left holding an orphan
+    // until the Session timeout expires, but preserve any Subscriptions already transferred to it
+    // so the replacement Session can recover them. Failure to close changes nothing about the
+    // outcome here.
+    CreateSessionResponse pendingSession = KEY_PENDING_SESSION.remove(ctx);
+
+    if (pendingSession != null) {
+      abandonSession(ctx, client, pendingSession);
+    }
   }
 
   private static CompletableFuture<Unit> closeSession(
       FsmContext<State, Event> ctx, OpcUaClient client, OpcUaSession session) {
 
-    CompletableFuture<Unit> closeFuture = new CompletableFuture<>();
-
-    RequestHeader requestHeader =
-        client.newRequestHeader(session.getAuthenticationToken(), uint(5000));
-
-    CloseSessionRequest request = new CloseSessionRequest(requestHeader, true);
-
-    try (MDCCloseable ignored = MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
-
-      LOGGER.debug("Sending CloseSessionRequest...");
-    }
-
-    client
-        .getTransport()
-        .sendRequestMessage(request)
-        .whenCompleteAsync(
-            (csr, ex2) -> closeFuture.complete(Unit.VALUE),
-            client.getTransport().getConfig().getExecutor());
-
-    return closeFuture;
+    return closeSession(
+        ctx, client, session.getSessionId(), session.getAuthenticationToken(), true);
   }
+
+  private static CompletableFuture<Unit> abandonSession(
+      FsmContext<State, Event> ctx, OpcUaClient client, OpcUaSession session) {
+
+    return closeSession(
+        ctx, client, session.getSessionId(), session.getAuthenticationToken(), false);
+  }
+
+  private static CompletableFuture<Unit> abandonSession(
+      FsmContext<State, Event> ctx, OpcUaClient client, CreateSessionResponse session) {
+
+    return closeSession(
+        ctx, client, session.getSessionId(), session.getAuthenticationToken(), false);
+  }
+
+  private static CompletableFuture<Unit> closeSession(
+      FsmContext<State, Event> ctx,
+      OpcUaClient client,
+      NodeId sessionId,
+      NodeId authToken,
+      boolean deleteSubscriptions) {
+
+    try {
+      CompletableFuture<Unit> closeFuture = new CompletableFuture<>();
+
+      RequestHeader requestHeader = client.newRequestHeader(authToken, uint(5000));
+
+      CloseSessionRequest request = new CloseSessionRequest(requestHeader, deleteSubscriptions);
+
+      try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
+          MDCCloseable ignoredSessionId = putSessionId(sessionId)) {
+
+        LOGGER.debug("Sending CloseSessionRequest...");
+      }
+
+      client
+          .getTransport()
+          .sendRequestMessage(request)
+          .whenCompleteAsync(
+              (csr, ex2) -> closeFuture.complete(Unit.VALUE),
+              client.getTransport().getConfig().getExecutor());
+
+      return closeFuture;
+    } catch (Exception ex) {
+      return failedFuture(ex);
+    }
+  }
+
+  /** The inputs of one CreateSession attempt, captured when the request is built. */
+  private record CreateSessionAttempt(
+      EndpointConfiguration endpoints,
+      SecurityPolicy securityPolicy,
+      ByteString clientNonce,
+      ByteString clientCertificate,
+      CreateSessionRequest request) {}
 
   @SuppressWarnings("Duplicates")
   private static CompletableFuture<CreateSessionResponse> createSession(
-      FsmContext<State, Event> ctx, OpcUaClient client) {
+      FsmContext<State, Event> ctx, OpcUaClient client, Supplier<EndpointConfiguration> endpoints) {
 
-    EndpointDescription endpoint = client.getConfig().getEndpoint();
+    // The request is built once the channel is ready, so the endpoint it captures is the one the
+    // channel was established with, even if a refresh replaced it while reconnecting.
+    var attempt = new AtomicReference<CreateSessionAttempt>();
+
+    try {
+      return client
+          .getTransport()
+          .sendRequestMessage(
+              () -> {
+                CreateSessionAttempt built = buildCreateSession(ctx, client, endpoints.get());
+                attempt.set(built);
+                return built.request();
+              },
+              client.getConfig().getRequestTimeout().longValue())
+          .thenApply(CreateSessionResponse.class::cast)
+          .thenCompose(response -> verifyCreateSessionResponse(client, attempt.get(), response));
+    } catch (Exception e) {
+      return failedFuture(e);
+    }
+  }
+
+  private static CreateSessionAttempt buildCreateSession(
+      FsmContext<State, Event> ctx, OpcUaClient client, EndpointConfiguration endpointConfiguration)
+      throws Exception {
+
+    EndpointDescription endpoint = endpointConfiguration.endpoint();
+    KEY_CREATE_SESSION_ENDPOINT.set(ctx, endpoint);
+    SecurityPolicy securityPolicy = SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri());
+    Optional<CertificateIdentity> certificateIdentity =
+        getRequiredCertificateIdentity(client, securityPolicy);
 
     String gatewayServerUri = endpoint.getServer().getGatewayServerUri();
 
@@ -1120,11 +1370,13 @@ public class SessionFsmFactory {
     }
 
     ByteString clientNonce = NonceUtil.generateNonce(32);
+    // ActivateSession signatures keep using the CreateSession client nonce, including later
+    // reactivation on a different SecureChannel.
+    KEY_CREATE_SESSION_CLIENT_NONCE.set(ctx, clientNonce);
 
     ByteString clientCertificate =
-        client
-            .getConfig()
-            .getCertificate()
+        certificateIdentity
+            .map(CertificateIdentity::certificate)
             .map(
                 c -> {
                   try {
@@ -1135,9 +1387,11 @@ public class SessionFsmFactory {
                 })
             .orElse(ByteString.NULL_VALUE);
 
+    KEY_CREATE_SESSION_CLIENT_CERTIFICATE.set(ctx, clientCertificate);
+
     ApplicationDescription clientDescription =
         new ApplicationDescription(
-            client.getConfig().getApplicationUri(),
+            client.resolveApplicationUri(certificateIdentity.orElse(null)),
             client.getConfig().getProductUri(),
             client.getConfig().getApplicationName(),
             ApplicationType.Client,
@@ -1145,93 +1399,147 @@ public class SessionFsmFactory {
             null,
             null);
 
+    RequestHeader requestHeader =
+        withAdditionalHeader(
+            client.newRequestHeader(),
+            buildCreateSessionAdditionalHeader(
+                client.getConfig().getIdentityProvider(),
+                client.getStaticEncodingContext(),
+                endpoint));
+
     CreateSessionRequest request =
         new CreateSessionRequest(
-            client.newRequestHeader(),
+            requestHeader,
             clientDescription,
             serverUri,
-            client.getConfig().getEndpoint().getEndpointUrl(),
+            endpoint.getEndpointUrl(),
             client.getConfig().getSessionName().get(),
             clientNonce,
             clientCertificate,
             client.getConfig().getSessionTimeout().doubleValue(),
             client.getConfig().getMaxResponseMessageSize());
 
-    try (MDCCloseable ignored = MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
-
+    try (MDCCloseable ignored = putInstanceId(ctx)) {
       LOGGER.debug("Sending CreateSessionRequest...");
     }
 
-    return client
-        .getTransport()
-        .sendRequestMessage(request)
-        .thenApply(CreateSessionResponse.class::cast)
-        .thenCompose(
-            response -> {
-              try {
-                SecurityPolicy securityPolicy =
-                    SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri());
+    return new CreateSessionAttempt(
+        endpointConfiguration, securityPolicy, clientNonce, clientCertificate, request);
+  }
 
-                if (securityPolicy != SecurityPolicy.None) {
-                  if (response.getServerCertificate().isNullOrEmpty()) {
-                    throw new UaException(
-                        StatusCodes.Bad_SecurityChecksFailed,
-                        "Certificate missing from CreateSessionResponse");
-                  }
+  private static CompletableFuture<CreateSessionResponse> verifyCreateSessionResponse(
+      OpcUaClient client, CreateSessionAttempt attempt, CreateSessionResponse response) {
 
-                  List<X509Certificate> serverCertificateChain =
-                      CertificateUtil.decodeCertificates(
-                          response.getServerCertificate().bytesOrEmpty());
+    EndpointConfiguration endpointConfiguration = attempt.endpoints();
+    EndpointDescription endpoint = endpointConfiguration.endpoint();
+    SecurityPolicy securityPolicy = attempt.securityPolicy();
+    ByteString clientNonce = attempt.clientNonce();
+    ByteString clientCertificate = attempt.clientCertificate();
 
-                  X509Certificate serverCertificate = serverCertificateChain.get(0);
+    try {
+      if (securityPolicy != SecurityPolicy.None) {
+        if (response.getServerCertificate().isNullOrEmpty()) {
+          throw new UaException(
+              StatusCodes.Bad_SecurityChecksFailed,
+              "Certificate missing from CreateSessionResponse");
+        }
 
-                  X509Certificate certificateFromEndpoint =
-                      CertificateUtil.decodeCertificate(
-                          endpoint.getServerCertificate().bytesOrEmpty());
+        List<X509Certificate> serverCertificateChain =
+            CertificateUtil.decodeCertificates(response.getServerCertificate().bytesOrEmpty());
 
-                  if (!serverCertificate.equals(certificateFromEndpoint)) {
-                    throw new UaException(
-                        StatusCodes.Bad_SecurityChecksFailed,
-                        "Certificate from CreateSessionResponse did not "
-                            + "match certificate from EndpointDescription!");
-                  }
+        X509Certificate serverCertificate = serverCertificateChain.get(0);
 
-                  client
-                      .getConfig()
-                      .getCertificateValidator()
-                      .validateCertificateChain(
-                          serverCertificateChain,
-                          endpoint.getServer().getApplicationUri(),
-                          new String[] {EndpointUtil.getHost(endpoint.getEndpointUrl())});
+        X509Certificate certificateFromEndpoint =
+            CertificateUtil.decodeCertificate(endpoint.getServerCertificate().bytesOrEmpty());
 
-                  SignatureData serverSignature = response.getServerSignature();
+        if (!serverCertificate.equals(certificateFromEndpoint)) {
+          throw new UaException(
+              StatusCodes.Bad_SecurityChecksFailed,
+              "Certificate from CreateSessionResponse did not "
+                  + "match certificate from EndpointDescription!");
+        }
 
-                  byte[] dataBytes =
-                      Bytes.concat(clientCertificate.bytesOrEmpty(), clientNonce.bytesOrEmpty());
+        client
+            .getConfig()
+            .getCertificateValidator()
+            .validateCertificateChain(
+                serverCertificateChain,
+                endpoint.getServer().getApplicationUri(),
+                new String[] {EndpointUtil.getHost(endpoint.getEndpointUrl())},
+                securityPolicy.getProfile());
 
-                  byte[] signatureBytes = serverSignature.getSignature().bytesOrEmpty();
+        SignatureData serverSignature = response.getServerSignature();
 
-                  SignatureUtil.verify(
-                      SecurityAlgorithm.fromUri(serverSignature.getAlgorithm()),
-                      serverCertificate,
-                      dataBytes,
-                      signatureBytes);
-                }
+        byte[] dataBytes =
+            ChannelBoundSignatureData.serverSignatureData(
+                securityPolicy.getProfile(),
+                client.getTransport().getChannelThumbprint(),
+                clientNonce,
+                certificateBytes(certificateFromEndpoint),
+                clientCertificate,
+                response.getServerNonce(),
+                clientCertificate);
 
-                if (client.getConfig().isSessionEndpointValidationEnabled()) {
-                  validateSessionEndpoints(
-                      endpoint.getTransportProfileUri(),
-                      client.getConfig().getDiscoveryEndpoints(),
-                      List.of(
-                          Objects.requireNonNullElse(
-                              response.getServerEndpoints(), new EndpointDescription[0])));
-                }
+        ChannelBoundSignatureData.verify(
+            securityPolicy, serverCertificate, dataBytes, serverSignature);
+      }
 
-                return completedFuture(response);
-              } catch (UaException e) {
-                return failedFuture(e);
-              }
-            });
+      if (client.getConfig().isSessionEndpointValidationEnabled()) {
+        validateSessionEndpoints(
+            endpoint.getTransportProfileUri(),
+            endpointConfiguration.discoveryEndpoints(),
+            List.of(
+                Objects.requireNonNullElse(
+                    response.getServerEndpoints(), new EndpointDescription[0])));
+      }
+
+      return completedFuture(response);
+    } catch (UaException e) {
+      return failedFuture(e);
+    }
+  }
+
+  static ExtensionObject buildCreateSessionAdditionalHeader(
+      IdentityProvider identityProvider, EncodingContext context, EndpointDescription endpoint)
+      throws Exception {
+
+    return identityProvider.getCreateSessionAdditionalHeader(context, endpoint);
+  }
+
+  /**
+   * Build the ActivateSession request AdditionalHeader requesting a fresh enhanced user-token key.
+   *
+   * <p>Part 6, 6.8.2 requires the receiver EphemeralKey to be single-use. The client repeats the
+   * negotiated {@code ECDHPolicyUri} on every ActivateSession so the server rotates the key and
+   * returns a fresh one in the response. Returns {@code null} for legacy/non-enhanced policies so
+   * those requests carry no AdditionalHeader.
+   */
+  private static ExtensionObject buildActivateSessionAdditionalHeader(
+      EncodingContext context, Optional<SecurityPolicy> userTokenSecurityPolicy) throws Exception {
+
+    if (userTokenSecurityPolicy.isEmpty()
+        || !userTokenSecurityPolicy.get().getProfile().usesEnhancedUserTokenSecret()) {
+      return null;
+    }
+
+    return EnhancedUserTokenAdditionalHeader.createRequest(context, userTokenSecurityPolicy.get());
+  }
+
+  private static RequestHeader withAdditionalHeader(
+      RequestHeader requestHeader, ExtensionObject additionalHeader) {
+
+    if (additionalHeader == null) {
+      return requestHeader;
+    }
+
+    return new RequestHeader(
+        requestHeader.getAuthenticationToken(),
+        requestHeader.getTimestamp(),
+        requestHeader.getRequestHandle(),
+        requestHeader.getReturnDiagnostics(),
+        requestHeader.getAuditEntryId(),
+        requestHeader.getTimeoutHint(),
+        additionalHeader);
   }
 
   /**
@@ -1312,32 +1620,247 @@ public class SessionFsmFactory {
         && Objects.equals(endpoint1.getSecurityLevel(), endpoint2.getSecurityLevel());
   }
 
+  static Optional<ByteString> verifyCreateSessionEnhancedUserTokenKey(
+      OpcUaClient client,
+      EndpointDescription endpoint,
+      CreateSessionResponse response,
+      SecurityPolicy userTokenSecurityPolicy)
+      throws Exception {
+
+    return verifyCreateSessionEnhancedUserTokenKey(
+        client.getStaticEncodingContext(),
+        client.getConfig().getCertificateValidator(),
+        endpoint,
+        response,
+        userTokenSecurityPolicy);
+  }
+
+  static Optional<ByteString> verifyCreateSessionEnhancedUserTokenKey(
+      EncodingContext encodingContext,
+      CertificateValidator certificateValidator,
+      EndpointDescription endpoint,
+      CreateSessionResponse response,
+      SecurityPolicy userTokenSecurityPolicy)
+      throws Exception {
+
+    if (userTokenSecurityPolicy == null
+        || !userTokenSecurityPolicy.getProfile().usesEnhancedUserTokenSecret()) {
+      return Optional.empty();
+    }
+
+    ByteString responseServerCertificate = response.getServerCertificate();
+    ByteString endpointServerCertificate = endpoint.getServerCertificate();
+
+    if (responseServerCertificate == null
+        || responseServerCertificate.isNullOrEmpty()
+        || endpointServerCertificate == null
+        || endpointServerCertificate.isNullOrEmpty()) {
+
+      throw new UaException(
+          StatusCodes.Bad_ConfigurationError,
+          "enhanced user-token negotiation requires an advertised server certificate");
+    }
+
+    EphemeralKeyType ephemeralKey =
+        EnhancedUserTokenAdditionalHeader.decodeResponse(
+                encodingContext,
+                response.getResponseHeader().getAdditionalHeader(),
+                userTokenSecurityPolicy)
+            .orElseThrow(
+                () ->
+                    new UaException(
+                        StatusCodes.Bad_SecurityChecksFailed,
+                        "server did not return enhanced user-token key material"));
+
+    /*
+     * The signed ephemeral key is only meaningful if it is anchored to the endpoint certificate the
+     * client selected. SecureChannel validation already covers this for secured endpoints; None and
+     * HTTPS-style token-encryption paths need the same explicit certificate match and trust check
+     * before the username secret is encrypted.
+     */
+    List<X509Certificate> serverCertificateChain =
+        CertificateUtil.decodeCertificates(responseServerCertificate.bytesOrEmpty());
+    X509Certificate serverCertificate = serverCertificateChain.get(0);
+
+    X509Certificate certificateFromEndpoint =
+        CertificateUtil.decodeCertificate(endpointServerCertificate.bytesOrEmpty());
+
+    if (!serverCertificate.equals(certificateFromEndpoint)) {
+      throw new UaException(
+          StatusCodes.Bad_SecurityChecksFailed,
+          "Certificate from CreateSessionResponse did not match certificate from"
+              + " EndpointDescription!");
+    }
+
+    SecurityPolicy endpointSecurityPolicy = SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri());
+    if (endpointSecurityPolicy == SecurityPolicy.None
+        || !Stack.TCP_UASC_UABINARY_TRANSPORT_URI.equals(endpoint.getTransportProfileUri())) {
+
+      certificateValidator.validateCertificateChain(
+          serverCertificateChain,
+          endpoint.getServer().getApplicationUri(),
+          new String[] {EndpointUtil.getHost(endpoint.getEndpointUrl())},
+          userTokenSecurityPolicy.getProfile());
+    }
+
+    EccEncryptedSecret.verifyEphemeralKey(
+        userTokenSecurityPolicy.getProfile(), serverCertificate, ephemeralKey);
+
+    return Optional.of(ephemeralKey.getPublicKey());
+  }
+
+  /**
+   * Decode and verify a refreshed enhanced user-token ephemeral key from an ActivateSession
+   * response.
+   *
+   * <p>Part 6, 6.8.2 makes the receiver EphemeralKey single-use: each successful ActivateSession
+   * returns a fresh signed key that the client must use for the next activation. Unlike
+   * CreateSession, an ActivateSession response carries no server certificate, so the key signature
+   * is verified against the certificate advertised by the selected endpoint, which was already
+   * matched and trusted during CreateSession.
+   *
+   * @param encodingContext the client encoding context.
+   * @param endpoint the selected endpoint whose advertised certificate signed the key.
+   * @param response the ActivateSession response that may carry a refreshed key.
+   * @param userTokenSecurityPolicy the negotiated enhanced user-token policy, or {@code null}.
+   * @return the refreshed receiver public key, or empty when the server returned no fresh key.
+   * @throws Exception if the header is malformed or the key signature fails verification.
+   */
+  static Optional<ByteString> verifyActivateSessionEnhancedUserTokenKey(
+      EncodingContext encodingContext,
+      EndpointDescription endpoint,
+      ActivateSessionResponse response,
+      SecurityPolicy userTokenSecurityPolicy)
+      throws Exception {
+
+    if (userTokenSecurityPolicy == null
+        || !userTokenSecurityPolicy.getProfile().usesEnhancedUserTokenSecret()) {
+      return Optional.empty();
+    }
+
+    Optional<EphemeralKeyType> ephemeralKey =
+        EnhancedUserTokenAdditionalHeader.decodeResponse(
+            encodingContext,
+            response.getResponseHeader().getAdditionalHeader(),
+            userTokenSecurityPolicy);
+
+    if (ephemeralKey.isEmpty()) {
+      // The server did not rotate the key on this activation; the caller keeps the most recent key.
+      return Optional.empty();
+    }
+
+    ByteString endpointServerCertificate = endpoint.getServerCertificate();
+    if (endpointServerCertificate == null || endpointServerCertificate.isNullOrEmpty()) {
+      throw new UaException(
+          StatusCodes.Bad_ConfigurationError,
+          "enhanced user-token negotiation requires an advertised server certificate");
+    }
+
+    X509Certificate signingCertificate =
+        CertificateUtil.decodeCertificate(endpointServerCertificate.bytesOrEmpty());
+
+    EccEncryptedSecret.verifyEphemeralKey(
+        userTokenSecurityPolicy.getProfile(), signingCertificate, ephemeralKey.get());
+
+    return Optional.of(ephemeralKey.get().getPublicKey());
+  }
+
+  private static IdentityProviderContext buildIdentityProviderContext(
+      OpcUaClient client,
+      EndpointDescription endpoint,
+      ByteString serverNonce,
+      SecurityPolicy userTokenSecurityPolicy,
+      ByteString receiverEphemeralPublicKey,
+      ByteString serverCertificate,
+      ByteString clientNonce)
+      throws UaException {
+
+    SecurityPolicy endpointSecurityPolicy = SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri());
+    SecurityPolicy certificateSecurityPolicy =
+        userTokenSecurityPolicy != null && userTokenSecurityPolicy != SecurityPolicy.None
+            ? userTokenSecurityPolicy
+            : endpointSecurityPolicy;
+
+    Optional<CertificateIdentity> certificateIdentity =
+        certificateSecurityPolicy != SecurityPolicy.None
+            ? client.getCertificateIdentity(certificateSecurityPolicy.getProfile())
+            : Optional.empty();
+
+    KeyPair keyPair = certificateIdentity.map(CertificateIdentity::keyPair).orElse(null);
+
+    X509Certificate[] certificateChain =
+        certificateIdentity.map(CertificateIdentity::certificateChain).orElse(null);
+
+    // Resolve the SecureChannel-bound signature inputs the same way buildClientSignature does, so a
+    // channel-bound user-token signature (enhanced policies) reconstructs identically on the
+    // server.
+    ByteString serverChannelCertificate = resolveServerChannelCertificateBytes(client, endpoint);
+
+    ChannelSignatureInputs channelSignatureInputs =
+        new ChannelSignatureInputs(
+            client.getTransport().getChannelThumbprint(),
+            clientNonce,
+            serverCertificate,
+            serverChannelCertificate,
+            getClientCertificate(client, endpointSecurityPolicy));
+
+    return new IdentityProviderContext(
+        endpoint,
+        serverNonce,
+        userTokenSecurityPolicy,
+        receiverEphemeralPublicKey,
+        keyPair,
+        certificateChain,
+        channelSignatureInputs);
+  }
+
   @SuppressWarnings("Duplicates")
   private static CompletableFuture<OpcUaSession> activateSession(
       FsmContext<State, Event> ctx, OpcUaClient client, CreateSessionResponse csr) {
 
     try {
-      EndpointDescription endpoint = client.getConfig().getEndpoint();
+      EndpointDescription endpoint = KEY_CREATE_SESSION_ENDPOINT.get(ctx);
+      ByteString clientNonce = KEY_CREATE_SESSION_CLIENT_NONCE.get(ctx);
 
       ByteString csrNonce = csr.getServerNonce();
+      Optional<SecurityPolicy> userTokenSecurityPolicy =
+          client.getConfig().getIdentityProvider().getEnhancedUserTokenSecurityPolicy(endpoint);
+      Optional<ByteString> receiverEphemeralPublicKey =
+          verifyCreateSessionEnhancedUserTokenKey(
+              client, endpoint, csr, userTokenSecurityPolicy.orElse(null));
 
       SignedIdentityToken signedIdentityToken =
-          client.getConfig().getIdentityProvider().getIdentityToken(endpoint, csrNonce);
+          client
+              .getConfig()
+              .getIdentityProvider()
+              .getIdentityToken(
+                  buildIdentityProviderContext(
+                      client,
+                      endpoint,
+                      csrNonce,
+                      userTokenSecurityPolicy.orElse(null),
+                      receiverEphemeralPublicKey.orElse(null),
+                      csr.getServerCertificate(),
+                      clientNonce));
 
       UserIdentityToken userIdentityToken = signedIdentityToken.getToken();
       SignatureData userTokenSignature = signedIdentityToken.getSignature();
 
       ActivateSessionRequest request =
           new ActivateSessionRequest(
-              client.newRequestHeader(csr.getAuthenticationToken()),
-              buildClientSignature(client.getConfig(), csrNonce),
+              withAdditionalHeader(
+                  client.newRequestHeader(csr.getAuthenticationToken()),
+                  buildActivateSessionAdditionalHeader(
+                      client.getStaticEncodingContext(), userTokenSecurityPolicy)),
+              buildClientSignature(
+                  client, endpoint, csr.getServerCertificate(), csrNonce, clientNonce),
               new SignedSoftwareCertificate[0],
               client.getConfig().getSessionLocaleIds(),
               ExtensionObject.encode(client.getStaticEncodingContext(), userIdentityToken),
               userTokenSignature);
 
-      try (MDCCloseable ignored =
-          MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+      try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
+          MDCCloseable ignoredSessionId = putSessionId(csr.getSessionId())) {
 
         LOGGER.debug("Sending ActivateSessionRequest...");
       }
@@ -1348,29 +1871,52 @@ public class SessionFsmFactory {
           .thenApply(ActivateSessionResponse.class::cast)
           .thenCompose(
               asr -> {
-                ByteString asrNonce = asr.getServerNonce();
+                try {
+                  ByteString asrNonce = asr.getServerNonce();
 
-                // TODO check for repeated nonce?
+                  // TODO check for repeated nonce?
 
-                OpcUaSession session =
-                    new OpcUaSession(
-                        csr.getAuthenticationToken(),
-                        csr.getSessionId(),
-                        client.getConfig().getSessionName().get(),
-                        csr.getRevisedSessionTimeout(),
-                        csr.getMaxRequestMessageSize(),
-                        csr.getServerCertificate(),
-                        csr.getServerSoftwareCertificates());
+                  OpcUaSession session =
+                      new OpcUaSession(
+                          csr.getAuthenticationToken(),
+                          csr.getSessionId(),
+                          client.getConfig().getSessionName().get(),
+                          csr.getRevisedSessionTimeout(),
+                          csr.getMaxRequestMessageSize(),
+                          csr.getServerCertificate(),
+                          csr.getServerSoftwareCertificates(),
+                          endpoint,
+                          KEY_CREATE_SESSION_CLIENT_CERTIFICATE.get(ctx));
 
-                session.setLastActivateSessionServiceResult(
-                    asr.getResponseHeader().getServiceResult());
-                session.setServerNonce(asrNonce);
+                  session.setLastActivateSessionServiceResult(
+                      asr.getResponseHeader().getServiceResult());
+                  session.setClientNonce(clientNonce);
+                  session.setServerNonce(asrNonce);
 
-                return completedFuture(session);
+                  // Prefer the single-use key the server rotated in this response; fall back to the
+                  // CreateSession key when the server did not return a fresh one.
+                  Optional<ByteString> refreshedKey =
+                      verifyActivateSessionEnhancedUserTokenKey(
+                          client.getStaticEncodingContext(),
+                          endpoint,
+                          asr,
+                          userTokenSecurityPolicy.orElse(null));
+                  refreshedKey
+                      .or(() -> receiverEphemeralPublicKey)
+                      .ifPresent(session::setUserTokenReceiverEphemeralPublicKey);
+
+                  return completedFuture(session);
+                } catch (Exception ex) {
+                  return SessionFsmFactory.<OpcUaSession>failedActivation(ex);
+                }
               });
     } catch (Exception ex) {
       return failedFuture(ex);
     }
+  }
+
+  private static <T> CompletableFuture<T> failedActivation(Throwable ex) {
+    return failedFuture(ex);
   }
 
   private static CompletableFuture<OpcUaSession> reactivateSession(
@@ -1380,46 +1926,122 @@ public class SessionFsmFactory {
       OpcUaSession session = KEY_SESSION.get(ctx);
       assert session != null;
 
-      EndpointDescription endpoint = client.getConfig().getEndpoint();
+      EndpointDescription endpoint = session.getEndpoint().orElse(client.getConfig().getEndpoint());
 
       ByteString serverNonce = session.getServerNonce();
+      Optional<SecurityPolicy> userTokenSecurityPolicy =
+          client.getConfig().getIdentityProvider().getEnhancedUserTokenSecurityPolicy(endpoint);
 
-      SignedIdentityToken signedIdentityToken =
-          client.getConfig().getIdentityProvider().getIdentityToken(endpoint, serverNonce);
+      // Reactivation may have to await an in-progress reconnection, so build the request (and
+      // therefore the channel-bound client and user-token signatures) only once the new channel is
+      // ready. Reading getChannelThumbprint() before the handshake completes would sign over the
+      // dead channel's thumbprint and be rejected. The user-token signature is built here too
+      // because enhanced (ECC or RSA-DH) policies bind it to the same channel thumbprint.
+      Callable<UaRequestMessageType> requestSupplier =
+          () -> {
+            ByteString originalClientCertificate = session.getClientCertificate().orElse(null);
+            if (originalClientCertificate != null
+                && !originalClientCertificate.equals(
+                    getClientCertificate(
+                        client, SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri())))) {
+              // Part 4 6.7: a different application certificate requires a new Session.
+              throw new UaException(
+                  StatusCodes.Bad_SessionIdInvalid, "client application certificate changed");
+            }
+            SignedIdentityToken signedIdentityToken =
+                client
+                    .getConfig()
+                    .getIdentityProvider()
+                    .getIdentityToken(
+                        buildIdentityProviderContext(
+                            client,
+                            endpoint,
+                            serverNonce,
+                            userTokenSecurityPolicy.orElse(null),
+                            session.getUserTokenReceiverEphemeralPublicKey().orElse(null),
+                            session.getServerCertificate(),
+                            session.getClientNonce()));
 
-      UserIdentityToken userIdentityToken = signedIdentityToken.getToken();
-      SignatureData userTokenSignature = signedIdentityToken.getSignature();
+            return new ActivateSessionRequest(
+                withAdditionalHeader(
+                    client.newRequestHeader(session.getAuthenticationToken()),
+                    buildActivateSessionAdditionalHeader(
+                        client.getStaticEncodingContext(), userTokenSecurityPolicy)),
+                buildClientSignature(
+                    client,
+                    endpoint,
+                    session.getServerCertificate(),
+                    serverNonce,
+                    session.getClientNonce()),
+                new SignedSoftwareCertificate[0],
+                client.getConfig().getSessionLocaleIds(),
+                ExtensionObject.encode(
+                    client.getStaticEncodingContext(), signedIdentityToken.getToken()),
+                signedIdentityToken.getSignature());
+          };
 
-      var request =
-          new ActivateSessionRequest(
-              client.newRequestHeader(session.getAuthenticationToken()),
-              buildClientSignature(client.getConfig(), serverNonce),
-              new SignedSoftwareCertificate[0],
-              client.getConfig().getSessionLocaleIds(),
-              ExtensionObject.encode(client.getStaticEncodingContext(), userIdentityToken),
-              userTokenSignature);
-
-      try (MDCCloseable ignored =
-          MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+      try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
+          MDCCloseable ignoredSessionId = putSessionId(session)) {
 
         LOGGER.debug("Sending ActivateSessionRequest...");
       }
 
-      return client
-          .getTransport()
-          .sendRequestMessage(request)
+      return sendWhenChannelReady(
+              client.getTransport(),
+              requestSupplier,
+              client.getConfig().getRequestTimeout().longValue())
           .thenApply(ActivateSessionResponse.class::cast)
           .thenCompose(
               asr -> {
-                session.setLastActivateSessionServiceResult(
-                    asr.getResponseHeader().getServiceResult());
-                session.setServerNonce(asr.getServerNonce());
+                try {
+                  session.setLastActivateSessionServiceResult(
+                      asr.getResponseHeader().getServiceResult());
+                  session.setServerNonce(asr.getServerNonce());
 
-                return completedFuture(session);
+                  // Adopt the single-use key the server rotated for the next reactivation; keep the
+                  // existing key when the server returned no fresh one.
+                  verifyActivateSessionEnhancedUserTokenKey(
+                          client.getStaticEncodingContext(),
+                          endpoint,
+                          asr,
+                          userTokenSecurityPolicy.orElse(null))
+                      .ifPresent(session::setUserTokenReceiverEphemeralPublicKey);
+
+                  return completedFuture(session);
+                } catch (Exception ex) {
+                  return SessionFsmFactory.<OpcUaSession>failedActivation(ex);
+                }
               });
     } catch (Exception ex) {
       return failedFuture(ex);
     }
+  }
+
+  /**
+   * Send a request whose contents may bind to the carrying SecureChannel, building it only once the
+   * transport's channel is ready.
+   *
+   * <p>Delegates to {@link OpcClientTransport#sendRequestMessage(Callable, long)}. A channel-bound
+   * request built eagerly (e.g. an enhanced-policy ActivateSession signature over {@link
+   * OpcClientTransport#getChannelThumbprint()}) could sign over a dead channel's thumbprint during
+   * a reconnect; {@link OpcTcpClientTransport} invokes {@code requestSupplier} only after its
+   * ChannelFsm publishes the new channel. Transports without a channel binding build immediately.
+   * The initial ActivateSession does not use this: it follows a CreateSession response received on
+   * the same channel, so that channel is known to be ready when the request is built.
+   *
+   * @param transport the {@link OpcClientTransport} to send on.
+   * @param requestSupplier supplies the request to send, invoked once the channel is ready; any
+   *     exception it throws completes the returned future exceptionally.
+   * @param channelTimeoutMillis the maximum wait for a channel, or zero for no deadline.
+   * @return a {@link CompletableFuture} that completes successfully with the {@link
+   *     UaResponseMessageType} or completes exceptionally if an error occurred.
+   */
+  static CompletableFuture<UaResponseMessageType> sendWhenChannelReady(
+      OpcClientTransport transport,
+      Callable<UaRequestMessageType> requestSupplier,
+      long channelTimeoutMillis) {
+
+    return transport.sendRequestMessage(requestSupplier, channelTimeoutMillis);
   }
 
   @SuppressWarnings("Duplicates")
@@ -1432,18 +2054,33 @@ public class SessionFsmFactory {
       return completedFuture(Unit.VALUE);
     }
 
+    // Pair each Subscription with its SubscriptionId once, up front. A concurrent reset() removes a
+    // Subscription from the client before clearing its id, so the id is an unsynchronized read that
+    // can disappear between the snapshot above and the request below; deriving the ids separately
+    // would leave the results indexed against a list the request was not built from, shifting every
+    // position at or after a dropped Subscription.
+    record Transferable(OpcUaSubscription subscription, UInteger subscriptionId) {}
+
+    List<Transferable> transferable =
+        subscriptions.stream()
+            .flatMap(s -> s.getSubscriptionId().map(id -> new Transferable(s, id)).stream())
+            .toList();
+
+    if (transferable.isEmpty()) {
+      return completedFuture(Unit.VALUE);
+    }
+
     CompletableFuture<Unit> transferFuture = new CompletableFuture<>();
 
     UInteger[] subscriptionIdsArray =
-        subscriptions.stream()
-            .flatMap(s -> s.getSubscriptionId().stream())
-            .toArray(UInteger[]::new);
+        transferable.stream().map(Transferable::subscriptionId).toArray(UInteger[]::new);
 
     TransferSubscriptionsRequest request =
         new TransferSubscriptionsRequest(
             client.newRequestHeader(session.getAuthenticationToken()), subscriptionIdsArray, true);
 
-    try (MDCCloseable ignored = MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+    try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
+        MDCCloseable ignoredSessionId = putSessionId(session)) {
 
       LOGGER.debug("Sending TransferSubscriptionsRequest...");
     }
@@ -1457,8 +2094,8 @@ public class SessionFsmFactory {
               if (tsr != null) {
                 TransferResult[] results = requireNonNull(tsr.getResults());
 
-                try (MDCCloseable ignored =
-                    MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+                try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
+                    MDCCloseable ignoredSessionId = putSessionId(session)) {
 
                   LOGGER.debug(
                       "TransferSubscriptions supported: {}",
@@ -1466,8 +2103,7 @@ public class SessionFsmFactory {
 
                   if (LOGGER.isDebugEnabled()) {
                     try {
-                      Stream<UInteger> subscriptionIds =
-                          subscriptions.stream().flatMap(s -> s.getSubscriptionId().stream());
+                      Stream<UInteger> subscriptionIds = Stream.of(subscriptionIdsArray);
                       Stream<StatusCode> statusCodes =
                           Stream.of(results).map(TransferResult::getStatusCode);
 
@@ -1494,40 +2130,55 @@ public class SessionFsmFactory {
                   }
                 }
 
-                client
-                    .getTransport()
-                    .getConfig()
-                    .getExecutor()
-                    .execute(
-                        () -> {
-                          for (int i = 0; i < results.length; i++) {
-                            TransferResult result = results[i];
+                // Part 4 §5.14.7.1: a successful TransferResult carries "the sequence numbers
+                // of the NotificationMessages that are available for retransmission", which is
+                // what tells the client which NotificationMessages the Republish loop Part 4
+                // §6.7 requires before Publish resumes can still collect. Recorded here, inline,
+                // rather than dispatched: the loop runs when this Session becomes Active, and
+                // the list has to be in place before it does. Indexed against the
+                // SubscriptionIds the request was built from, which is what the results are a
+                // "list of results for the subscriptions to transfer" of.
+                for (int i = 0; i < results.length && i < subscriptionIdsArray.length; i++) {
+                  TransferResult result = results[i];
 
-                            if (!result.getStatusCode().isGood()) {
-                              OpcUaSubscription subscription = subscriptions.get(i);
+                  if (result.getStatusCode().isGood()) {
+                    client
+                        .getPublishingManager()
+                        .notifySubscriptionTransferred(
+                            session, subscriptionIdsArray[i], result.getAvailableSequenceNumbers());
+                  }
+                }
 
-                              subscription.notifyTransferFailed(result.getStatusCode());
-                            }
-                          }
-                        });
+                // Bounded by the requested Subscriptions as well: Part 4 §5.14.7.2 defines results
+                // as one per requested SubscriptionId, but a Server returning a longer list must
+                // not reach past the end of them.
+                for (int i = 0; i < results.length && i < transferable.size(); i++) {
+                  TransferResult result = results[i];
 
+                  if (!result.getStatusCode().isGood()) {
+                    handleTransferFailure(
+                        ctx, session, transferable.get(i).subscription(), result.getStatusCode());
+                  }
+                }
+
+                // Failed Subscriptions must be reset and unregistered before this completion can
+                // move the FSM through Initializing and into Active. Otherwise reconnect recovery
+                // can still see them and issue Republish requests for SubscriptionIds that were
+                // not transferred to this Session.
                 transferFuture.complete(Unit.VALUE);
               } else {
                 StatusCode statusCode =
                     UaException.extract(ex).map(UaException::getStatusCode).orElse(StatusCode.BAD);
 
-                LOGGER.debug("TransferSubscriptions not supported: {}", statusCode);
+                try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
+                    MDCCloseable ignoredSessionId = putSessionId(session)) {
 
-                client
-                    .getTransport()
-                    .getConfig()
-                    .getExecutor()
-                    .execute(
-                        () -> {
-                          for (OpcUaSubscription subscription : subscriptions) {
-                            subscription.notifyTransferFailed(statusCode);
-                          }
-                        });
+                  LOGGER.debug("TransferSubscriptions not supported: {}", statusCode);
+                }
+
+                for (OpcUaSubscription subscription : subscriptions) {
+                  handleTransferFailure(ctx, session, subscription, statusCode);
+                }
 
                 // Bad_ServiceUnsupported is the correct response when transfers aren't
                 // supported but server implementations interpret the spec differently.
@@ -1551,9 +2202,46 @@ public class SessionFsmFactory {
                   transferFuture.completeExceptionally(ex);
                 }
               }
+            })
+        // The whenComplete above has its own result future discarded, so a response its handling
+        // can't make sense of - e.g. a Good response carrying no results at all - would otherwise
+        // leave transferFuture uncompleted and the FSM parked in Transferring with no event
+        // pending and no timeout. A no-op when the callback completed transferFuture itself.
+        .exceptionally(
+            ex -> {
+              transferFuture.completeExceptionally(ex);
+              return null;
             });
 
     return transferFuture;
+  }
+
+  /**
+   * Reset and unregister a Subscription that was not transferred to {@code session}.
+   *
+   * <p>{@link OpcUaSubscription#handleTransferFailure(StatusCode)} performs non-overridable local
+   * teardown synchronously and dispatches the overridable notification separately. Contain internal
+   * failures here so one Subscription cannot leave the Session FSM in {@link State#Transferring} or
+   * prevent the remaining failed Subscriptions from being reset.
+   */
+  private static void handleTransferFailure(
+      FsmContext<State, Event> ctx,
+      OpcUaSession session,
+      OpcUaSubscription subscription,
+      StatusCode statusCode) {
+
+    try {
+      subscription.handleTransferFailure(statusCode);
+    } catch (Exception e) {
+      try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
+          MDCCloseable ignoredSessionId = putSessionId(session)) {
+
+        LOGGER.warn(
+            "Subscription transfer-failure cleanup failed: id={}",
+            subscription.getSubscriptionId().orElse(null),
+            e);
+      }
+    }
   }
 
   private static CompletableFuture<Unit> initialize(
@@ -1584,8 +2272,8 @@ public class SessionFsmFactory {
           .initialize(client, session)
           .exceptionally(
               ex -> {
-                try (MDCCloseable ignored =
-                    MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+                try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
+                    MDCCloseable ignoredSessionId = putSessionId(session)) {
 
                   LOGGER.error(
                       "Uncaught initialization error: {}",
@@ -1628,43 +2316,143 @@ public class SessionFsmFactory {
   }
 
   @SuppressWarnings("Duplicates")
-  private static SignatureData buildClientSignature(
-      OpcUaClientConfig config, ByteString serverNonce) throws Exception {
+  private static ByteString getClientCertificate(OpcUaClient client, SecurityPolicy securityPolicy)
+      throws UaException {
 
-    EndpointDescription endpoint = config.getEndpoint();
+    Optional<X509Certificate> certificate =
+        getRequiredCertificateIdentity(client, securityPolicy)
+            .map(CertificateIdentity::certificate);
+
+    // A genuinely absent certificate yields NULL_VALUE; an encoding failure on a present
+    // certificate is surfaced (like certificateBytes) rather than being swallowed into a silently
+    // wrong signature.
+    return certificate.isPresent() ? certificateBytes(certificate.get()) : ByteString.NULL_VALUE;
+  }
+
+  /**
+   * Get the client identity for {@code securityPolicy}: empty on {@link SecurityPolicy#None},
+   * otherwise the selected identity.
+   *
+   * @throws UaException with {@code Bad_ConfigurationError} if the policy is secured and the client
+   *     has no compatible identity.
+   */
+  private static Optional<CertificateIdentity> getRequiredCertificateIdentity(
+      OpcUaClient client, SecurityPolicy securityPolicy) throws UaException {
+
+    if (securityPolicy == SecurityPolicy.None) {
+      return Optional.empty();
+    }
+
+    Optional<CertificateIdentity> certificateIdentity =
+        client.getCertificateIdentity(securityPolicy.getProfile());
+
+    if (certificateIdentity.isEmpty()) {
+      String reason =
+          client.getConfig().getCertificateGroup().isEmpty()
+              ? "no certificate group configured"
+              : "no configured certificate identity is compatible";
+
+      throw new UaException(
+          StatusCodes.Bad_ConfigurationError,
+          reason + " for security policy: " + securityPolicy.getUri());
+    }
+
+    return certificateIdentity;
+  }
+
+  private static ByteString certificateBytes(X509Certificate certificate) throws UaException {
+    try {
+      return ByteString.of(certificate.getEncoded());
+    } catch (CertificateEncodingException e) {
+      throw new UaException(StatusCodes.Bad_CertificateInvalid, e);
+    }
+  }
+
+  /**
+   * Build the ActivateSession {@code clientSignature} over the channel-bound signature data.
+   *
+   * <p>For legacy (non-enhancement) policies the {@code serverCertificate} {@code ByteString} is
+   * passed straight through to {@link ChannelBoundSignatureData#clientSignatureData} and signed
+   * verbatim: the raw bytes exactly as received in {@code CreateSessionResponse.serverCertificate}
+   * (here {@code csr.getServerCertificate()}) or replayed from the session on reactivation. The
+   * blob is intentionally <b>not</b> re-decoded to sign only the first (leaf) certificate encoding.
+   * Signing the transmitted bytes as-is aligns with the OPC UA reference (.NET) stack and the wire
+   * semantics. A chain-returning peer that verifies against only a re-extracted leaf would reject
+   * this signature; Milo's server avoids that by verifying with a leaf-then-chain dual attempt (see
+   * {@code SessionManager.verifyClientSignature}). The byte layout is pinned by {@code
+   * ChannelBoundSignatureDataTest}.
+   */
+  @SuppressWarnings("Duplicates")
+  private static SignatureData buildClientSignature(
+      OpcUaClient client,
+      EndpointDescription endpoint,
+      ByteString serverCertificate,
+      ByteString serverNonce,
+      ByteString clientNonce)
+      throws Exception {
 
     SecurityPolicy securityPolicy = SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri());
 
     if (securityPolicy == SecurityPolicy.None) {
       return new SignatureData(null, null);
     } else {
-      SecurityAlgorithm signatureAlgorithm = securityPolicy.getAsymmetricSignatureAlgorithm();
-      PrivateKey privateKey = config.getKeyPair().map(KeyPair::getPrivate).orElse(null);
-      List<X509Certificate> serverCertificates =
-          CertificateUtil.decodeCertificates(endpoint.getServerCertificate().bytesOrEmpty());
+      PrivateKey privateKey =
+          getRequiredCertificateIdentity(client, securityPolicy)
+              .map(CertificateIdentity::keyPair)
+              .map(KeyPair::getPrivate)
+              .orElseThrow(
+                  () ->
+                      new UaException(
+                          StatusCodes.Bad_ConfigurationError,
+                          "client certificate identity is required for session signature"));
+      ByteString clientCertificate = getClientCertificate(client, securityPolicy);
+      ByteString serverChannelCertificate = resolveServerChannelCertificateBytes(client, endpoint);
 
-      // Signature data is serverCert + serverNonce signed with our private key.
-      byte[] serverNonceBytes = serverNonce.bytesOrEmpty();
-      byte[] serverCertificateBytes = serverCertificates.get(0).getEncoded();
-      byte[] dataToSign = Bytes.concat(serverCertificateBytes, serverNonceBytes);
+      byte[] dataToSign =
+          ChannelBoundSignatureData.clientSignatureData(
+              securityPolicy.getProfile(),
+              client.getTransport().getChannelThumbprint(),
+              serverNonce,
+              serverCertificate,
+              serverChannelCertificate,
+              clientCertificate,
+              clientNonce);
 
-      byte[] signature =
-          SignatureUtil.sign(signatureAlgorithm, privateKey, ByteBuffer.wrap(dataToSign));
-
-      return new SignatureData(signatureAlgorithm.getUri(), ByteString.of(signature));
+      // ECC policies sign with ECDSA/EdDSA, RSA-DH and legacy policies with the policy's algorithm;
+      // the wire algorithm URI is populated only for legacy policies (Part 4 §7.36).
+      return ChannelBoundSignatureData.sign(securityPolicy, privateKey, dataToSign);
     }
   }
 
+  /**
+   * Resolve the {@code ServerChannelCertificate} bytes for the channel-bound session signatures:
+   * the established channel's leaf certificate, or {@link ByteString#NULL_VALUE} for an unsecured
+   * channel. Shared by {@link #buildIdentityProviderContext} and {@link #buildClientSignature} so
+   * both fill the slot identically.
+   */
+  private static ByteString resolveServerChannelCertificateBytes(
+      OpcUaClient client, EndpointDescription endpoint) throws UaException {
+    if (client.getTransport() instanceof OpcTcpClientTransport tcp) {
+      return tcp.getSecureChannel()
+          .orElseThrow(() -> new UaException(StatusCodes.Bad_SecureChannelClosed))
+          .getRemoteCertificateBytes();
+    }
+    return resolveServerChannelCertificateBytes(endpoint);
+  }
+
+  private static ByteString resolveServerChannelCertificateBytes(EndpointDescription endpoint)
+      throws UaException {
+
+    ByteString serverCertificate = endpoint.getServerCertificate();
+
+    if (serverCertificate == null || serverCertificate.isNullOrEmpty()) {
+      return ByteString.NULL_VALUE;
+    }
+
+    return certificateBytes(CertificateUtil.decodeCertificate(serverCertificate.bytesOrEmpty()));
+  }
+
   private static class SessionFaultListener implements ServiceFaultListener {
-
-    private static final Predicate<StatusCode> SESSION_ERROR =
-        statusCode -> {
-          long status = statusCode.value();
-
-          return status == StatusCodes.Bad_SessionClosed
-              || status == StatusCodes.Bad_SessionIdInvalid
-              || status == StatusCodes.Bad_SessionNotActivated;
-        };
 
     private static final Predicate<StatusCode> SECURE_CHANNEL_ERROR =
         statusCode -> {

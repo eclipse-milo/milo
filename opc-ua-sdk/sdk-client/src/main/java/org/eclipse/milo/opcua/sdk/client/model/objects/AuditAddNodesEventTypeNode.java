@@ -92,7 +92,10 @@ public class AuditAddNodesEventTypeNode extends AuditNodeManagementEventTypeNode
   @Override
   public void writeNodesToAdd(AddNodesItem[] value) throws UaException {
     try {
-      writeNodesToAddAsync(value).get();
+      StatusCode statusCode = writeNodesToAddAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

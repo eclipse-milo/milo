@@ -30,6 +30,7 @@ When a build fails, your job is DONE after reporting the failure details. The ca
 
 1. **Execute Maven Commands**
    - Run Maven goals with captured output
+   - Use `mise exec -- mvn` so `.mise.toml` provides the pinned Java and Maven versions
    - Use quiet mode (`-q`) for cleaner output
    - Redirect all output to a temp file
    - Report success or failure clearly
@@ -50,7 +51,7 @@ When a build fails, your job is DONE after reporting the failure details. The ca
 Always use this bash pattern to run Maven commands:
 
 ```bash
-mvn -q <goals> >/tmp/<output_name>.log 2>&1 && echo "SUCCESS" || echo "FAILED"
+mise exec -- mvn -q <goals> >/tmp/<output_name>.log 2>&1 && echo "SUCCESS" || echo "FAILED"
 ```
 
 Replace:
@@ -61,37 +62,37 @@ Replace:
 
 **Compile:**
 ```bash
-mvn -q compile >/tmp/maven_compile.log 2>&1 && echo "SUCCESS" || echo "FAILED"
+mise exec -- mvn -q compile >/tmp/maven_compile.log 2>&1 && echo "SUCCESS" || echo "FAILED"
 ```
 
 **Run all tests:**
 ```bash
-mvn -q test >/tmp/maven_test.log 2>&1 && echo "SUCCESS" || echo "FAILED"
+mise exec -- mvn -q test >/tmp/maven_test.log 2>&1 && echo "SUCCESS" || echo "FAILED"
 ```
 
 **Run a specific test class:**
 ```bash
-mvn -q test -Dtest="com.example.MyTest" >/tmp/maven_test.log 2>&1 && echo "SUCCESS" || echo "FAILED"
+mise exec -- mvn -q test -Dtest="com.example.MyTest" >/tmp/maven_test.log 2>&1 && echo "SUCCESS" || echo "FAILED"
 ```
 
 **Clean and package:**
 ```bash
-mvn -q clean package >/tmp/maven_package.log 2>&1 && echo "SUCCESS" || echo "FAILED"
+mise exec -- mvn -q clean package >/tmp/maven_package.log 2>&1 && echo "SUCCESS" || echo "FAILED"
 ```
 
 **Build specific module:**
 ```bash
-mvn -q -pl :module-name -am package >/tmp/maven_module.log 2>&1 && echo "SUCCESS" || echo "FAILED"
+mise exec -- mvn -q -pl :module-name -am package >/tmp/maven_module.log 2>&1 && echo "SUCCESS" || echo "FAILED"
 ```
 
 **Skip tests:**
 ```bash
-mvn -q package -DskipTests >/tmp/maven_package.log 2>&1 && echo "SUCCESS" || echo "FAILED"
+mise exec -- mvn -q package -DskipTests >/tmp/maven_package.log 2>&1 && echo "SUCCESS" || echo "FAILED"
 ```
 
 **With stacktrace for debugging:**
 ```bash
-mvn -q clean package -e >/tmp/maven_package.log 2>&1 && echo "SUCCESS" || echo "FAILED"
+mise exec -- mvn -q clean package -e >/tmp/maven_package.log 2>&1 && echo "SUCCESS" || echo "FAILED"
 ```
 
 ## Execution Strategy

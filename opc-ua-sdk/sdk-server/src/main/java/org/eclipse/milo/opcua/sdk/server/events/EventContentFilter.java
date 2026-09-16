@@ -12,7 +12,10 @@ package org.eclipse.milo.opcua.sdk.server.events;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -201,16 +204,21 @@ public class EventContentFilter {
       return new ContentFilterResult(new ContentFilterElementResult[0], new DiagnosticInfo[0]);
     }
 
-    ContentFilterElementResult[] elementResults =
-        Arrays.stream(filterElements)
-            .map(e -> validateFilterElement(context, e))
-            .toArray(ContentFilterElementResult[]::new);
+    var elementResults = new ContentFilterElementResult[filterElements.length];
+
+    for (int i = 0; i < filterElements.length; i++) {
+      elementResults[i] =
+          validateFilterElement(context, filterElements[i], i, filterElements.length);
+    }
 
     return new ContentFilterResult(elementResults, new DiagnosticInfo[0]);
   }
 
   private static ContentFilterElementResult validateFilterElement(
-      @NonNull FilterContext context, @NonNull ContentFilterElement filterElement) {
+      @NonNull FilterContext context,
+      @NonNull ContentFilterElement filterElement,
+      int elementIndex,
+      int elementCount) {
 
     FilterOperator filterOperator = filterElement.getFilterOperator();
 
@@ -252,8 +260,9 @@ public class EventContentFilter {
           } catch (ValidationException e) {
             operandStatusCodes[i] = e.getStatusCode();
           }
-        } else if (operand instanceof ElementOperand) {
-          operandStatusCodes[i] = StatusCode.GOOD;
+        } else if (operand instanceof ElementOperand elementOperand) {
+          operandStatusCodes[i] =
+              validateElementOperand(elementOperand, elementIndex, elementCount);
         } else if (operand instanceof LiteralOperand) {
           operandStatusCodes[i] = StatusCode.GOOD;
         } else {
@@ -276,6 +285,22 @@ public class EventContentFilter {
 
     return new ContentFilterElementResult(
         operatorStatus, operandStatusCodes, new DiagnosticInfo[0]);
+  }
+
+  /**
+   * Part 4 §7.7.4.2: an ElementOperand index is valid only if it is greater than the index of the
+   * element it is part of and it does not reference a non-existent element.
+   */
+  private static StatusCode validateElementOperand(
+      ElementOperand operand, int elementIndex, int elementCount) {
+
+    UInteger index = operand.getIndex();
+
+    if (index == null || index.longValue() <= elementIndex || index.longValue() >= elementCount) {
+      return new StatusCode(StatusCodes.Bad_FilterOperandInvalid);
+    }
+
+    return StatusCode.GOOD;
   }
 
   public static Variant[] select(
@@ -342,15 +367,32 @@ public class EventContentFilter {
 
   @NonNull
   private static FilterOperand[] decodeOperands(
-      EncodingContext context, ExtensionObject @Nullable [] operandXos) {
+      EncodingContext context, ExtensionObject @Nullable [] operandXos) throws UaException {
 
     if (operandXos == null) {
       return new FilterOperand[0];
-    } else {
-      return Arrays.stream(operandXos)
-          .map(xo -> (FilterOperand) xo.decode(context))
-          .toArray(FilterOperand[]::new);
     }
+
+    var operands = new FilterOperand[operandXos.length];
+
+    for (int i = 0; i < operandXos.length; i++) {
+      Object decoded;
+      try {
+        decoded = operandXos[i].decode(context);
+      } catch (Exception e) {
+        throw new UaException(
+            StatusCodes.Bad_FilterOperandInvalid, "operand " + i + " could not be decoded", e);
+      }
+
+      if (decoded instanceof FilterOperand operand) {
+        operands[i] = operand;
+      } else {
+        throw new UaException(
+            StatusCodes.Bad_FilterOperandInvalid, "operand " + i + " is not a FilterOperand");
+      }
+    }
+
+    return operands;
   }
 
   @NonNull
@@ -363,15 +405,15 @@ public class EventContentFilter {
       case LessThan -> Operators.LESS_THAN;
       case GreaterThanOrEqual -> Operators.GREATER_THAN_OR_EQUAL;
       case LessThanOrEqual -> Operators.LESS_THAN_OR_EQUAL;
-      case Like -> Operators.UNSUPPORTED;
+      case Like -> Operators.LIKE;
       case Not -> Operators.NOT;
-      case Between -> Operators.UNSUPPORTED;
-      case InList -> Operators.UNSUPPORTED;
-      case And -> Operators.UNSUPPORTED;
-      case Or -> Operators.UNSUPPORTED;
+      case Between -> Operators.BETWEEN;
+      case InList -> Operators.IN_LIST;
+      case And -> Operators.AND;
+      case Or -> Operators.OR;
       case Cast -> Operators.CAST;
-      case BitwiseAnd -> Operators.UNSUPPORTED;
-      case BitwiseOr -> Operators.UNSUPPORTED;
+      case BitwiseAnd -> Operators.BITWISE_AND;
+      case BitwiseOr -> Operators.BITWISE_OR;
 
       // Complex FilterOperators
       case InView -> Operators.UNSUPPORTED;
@@ -491,6 +533,14 @@ public class EventContentFilter {
     private final FilterContext filterContext;
     private final ContentFilterElement[] elements;
 
+    // Indices of the elements currently being evaluated, used to detect ElementOperand cycles.
+    private final Set<Integer> evaluatingElements = new HashSet<>();
+
+    // Results of elements already evaluated for this event. Element evaluation has no side
+    // effects within a single event, so an element referenced from more than one place is
+    // evaluated once and its result (or failure) is reused.
+    private final Map<Integer, ElementResult> elementResults = new HashMap<>();
+
     DefaultOperatorContext(FilterContext filterContext, ContentFilterElement[] elements) {
       this.filterContext = filterContext;
       this.elements = elements;
@@ -516,12 +566,41 @@ public class EventContentFilter {
     public Object resolve(FilterOperand operand, BaseEventTypeNode eventNode) throws UaException {
       if (operand instanceof LiteralOperand) {
         return ((LiteralOperand) operand).getValue().value();
-      } else if (operand instanceof ElementOperand) {
-        UInteger index = ((ElementOperand) operand).getIndex();
+      } else if (operand instanceof ElementOperand elementOperand) {
+        UInteger index = elementOperand.getIndex();
 
-        ContentFilterElement element = elements[index.intValue()];
+        if (index == null || index.longValue() >= elements.length) {
+          throw new UaException(
+              StatusCodes.Bad_FilterOperandInvalid, "ElementOperand index out of range: " + index);
+        }
 
-        return evaluate(this, eventNode, element);
+        int elementIndex = index.intValue();
+
+        ElementResult cached = elementResults.get(elementIndex);
+        if (cached != null) {
+          return cached.get();
+        }
+
+        // Guard against self- or mutually referential ElementOperands, which would otherwise
+        // recurse until a StackOverflowError escaped the per-event handler.
+        if (!evaluatingElements.add(elementIndex)) {
+          throw new UaException(
+              StatusCodes.Bad_FilterOperandInvalid,
+              "ElementOperand cycle detected at index: " + elementIndex);
+        }
+
+        ElementResult result;
+        try {
+          result = ElementResult.value(evaluate(this, eventNode, elements[elementIndex]));
+        } catch (UaException e) {
+          result = ElementResult.failure(e);
+        } finally {
+          evaluatingElements.remove(elementIndex);
+        }
+
+        elementResults.put(elementIndex, result);
+
+        return result.get();
       } else if (operand instanceof AttributeOperand ao) {
         return getAttribute(filterContext, ao, eventNode);
       } else if (operand instanceof SimpleAttributeOperand sao) {
@@ -529,6 +608,25 @@ public class EventContentFilter {
       } else {
         throw new UaException(StatusCodes.Bad_FilterOperandInvalid);
       }
+    }
+  }
+
+  /** The outcome of evaluating one ContentFilterElement: a value (possibly null) or a failure. */
+  private record ElementResult(@Nullable Object value, @Nullable UaException failure) {
+
+    static ElementResult value(@Nullable Object value) {
+      return new ElementResult(value, null);
+    }
+
+    static ElementResult failure(UaException failure) {
+      return new ElementResult(null, failure);
+    }
+
+    @Nullable Object get() throws UaException {
+      if (failure != null) {
+        throw failure;
+      }
+      return value;
     }
   }
 

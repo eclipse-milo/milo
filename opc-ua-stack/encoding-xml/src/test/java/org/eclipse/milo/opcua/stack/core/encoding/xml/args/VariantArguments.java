@@ -204,7 +204,7 @@ public class VariantArguments {
             """
             <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
               <uax:Value>
-                <uax:ByteString></uax:ByteString>
+                <uax:ByteString xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:nil="true"></uax:ByteString>
               </uax:Value>
             </Test>
             """),
@@ -215,7 +215,7 @@ public class VariantArguments {
             """
             <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
               <uax:Value>
-                <uax:XmlElement></uax:XmlElement>
+                <uax:XmlElement xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:nil="true"></uax:XmlElement>
               </uax:Value>
             </Test>
             """),
@@ -698,8 +698,8 @@ public class VariantArguments {
             <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
               <uax:Value>
                 <uax:ListOfByteString>
-                  <uax:ByteString></uax:ByteString>
-                  <uax:ByteString></uax:ByteString>
+                  <uax:ByteString xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:nil="true"></uax:ByteString>
+                  <uax:ByteString xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:nil="true"></uax:ByteString>
                 </uax:ListOfByteString>
               </uax:Value>
             </Test>
@@ -713,8 +713,8 @@ public class VariantArguments {
             <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
               <uax:Value>
                 <uax:ListOfXmlElement>
-                  <uax:XmlElement></uax:XmlElement>
-                  <uax:XmlElement></uax:XmlElement>
+                  <uax:XmlElement xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:nil="true"></uax:XmlElement>
+                  <uax:XmlElement xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:nil="true"></uax:XmlElement>
                 </uax:ListOfXmlElement>
               </uax:Value>
             </Test>
@@ -1371,10 +1371,10 @@ public class VariantArguments {
                     <uax:Int32>2</uax:Int32>
                   </uax:Dimensions>
                   <uax:Elements>
-                    <uax:ByteString></uax:ByteString>
-                    <uax:ByteString></uax:ByteString>
-                    <uax:ByteString></uax:ByteString>
-                    <uax:ByteString></uax:ByteString>
+                    <uax:ByteString xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:nil="true"></uax:ByteString>
+                    <uax:ByteString xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:nil="true"></uax:ByteString>
+                    <uax:ByteString xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:nil="true"></uax:ByteString>
+                    <uax:ByteString xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:nil="true"></uax:ByteString>
                   </uax:Elements>
                 </uax:Matrix>
               </uax:Value>
@@ -1398,10 +1398,10 @@ public class VariantArguments {
                     <uax:Int32>2</uax:Int32>
                   </uax:Dimensions>
                   <uax:Elements>
-                    <uax:XmlElement></uax:XmlElement>
-                    <uax:XmlElement></uax:XmlElement>
-                    <uax:XmlElement></uax:XmlElement>
-                    <uax:XmlElement></uax:XmlElement>
+                    <uax:XmlElement xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:nil="true"></uax:XmlElement>
+                    <uax:XmlElement xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:nil="true"></uax:XmlElement>
+                    <uax:XmlElement xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:nil="true"></uax:XmlElement>
+                    <uax:XmlElement xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:nil="true"></uax:XmlElement>
                   </uax:Elements>
                 </uax:Matrix>
               </uax:Value>
@@ -1577,7 +1577,7 @@ public class VariantArguments {
             </Test>
             """),
 
-        // ExtensionObject matrix (2D)
+        // A 2x2 null ExtensionObject Matrix still has four encoded elements.
         Arguments.of(
             Variant.ofMatrix(
                 Matrix.ofExtensionObject(new ExtensionObject[][] {{null, null}, {null, null}})),
@@ -1590,6 +1590,10 @@ public class VariantArguments {
                     <uax:Int32>2</uax:Int32>
                   </uax:Dimensions>
                   <uax:Elements>
+                    <uax:ExtensionObject xsi:nil="true" />
+                    <uax:ExtensionObject xsi:nil="true" />
+                    <uax:ExtensionObject xsi:nil="true" />
+                    <uax:ExtensionObject xsi:nil="true" />
                   </uax:Elements>
                 </uax:Matrix>
               </uax:Value>

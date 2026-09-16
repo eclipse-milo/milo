@@ -667,9 +667,7 @@ class SksSecuredLoopbackIntegrationTest {
             .setEndpoint(endpoint)
             .setApplicationName(LocalizedText.english("SKS rung-2 test client"))
             .setApplicationUri(CLIENT_APP_URI)
-            .setKeyPair(clientKeyPair)
-            .setCertificate(clientCertificate)
-            .setCertificateChain(new X509Certificate[] {clientCertificate})
+            .setCertificateIdentity(clientKeyPair, clientCertificate)
             .setCertificateValidator(
                 new DefaultClientCertificateValidator(
                     clientTrustList, new MemoryCertificateQuarantine()))

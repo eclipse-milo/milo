@@ -20,6 +20,7 @@ import org.eclipse.milo.opcua.sdk.server.servicesets.DiscoveryServiceSet;
 import org.eclipse.milo.opcua.sdk.server.servicesets.MethodServiceSet;
 import org.eclipse.milo.opcua.sdk.server.servicesets.MonitoredItemServiceSet;
 import org.eclipse.milo.opcua.sdk.server.servicesets.NodeManagementServiceSet;
+import org.eclipse.milo.opcua.sdk.server.servicesets.QueryServiceSet;
 import org.eclipse.milo.opcua.sdk.server.servicesets.Service;
 import org.eclipse.milo.opcua.sdk.server.servicesets.SessionServiceSet;
 import org.eclipse.milo.opcua.sdk.server.servicesets.SubscriptionServiceSet;
@@ -52,6 +53,8 @@ import org.eclipse.milo.opcua.stack.core.types.structured.ModifyMonitoredItemsRe
 import org.eclipse.milo.opcua.stack.core.types.structured.ModifySubscriptionRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishResponse;
+import org.eclipse.milo.opcua.stack.core.types.structured.QueryFirstRequest;
+import org.eclipse.milo.opcua.stack.core.types.structured.QueryNextRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.RegisterNodesRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.RegisterServer2Request;
@@ -168,6 +171,17 @@ public abstract class AbstractServiceHandler {
         Service.NODE_MANAGEMENT_DELETE_REFERENCES,
         (context, request) ->
             serviceSet.onDeleteReferences(context, (DeleteReferencesRequest) request));
+  }
+
+  public void addServiceSet(String path, QueryServiceSet serviceSet) {
+    addServiceHandler(
+        path,
+        Service.QUERY_QUERY_FIRST,
+        (context, request) -> serviceSet.onQueryFirst(context, (QueryFirstRequest) request));
+    addServiceHandler(
+        path,
+        Service.QUERY_QUERY_NEXT,
+        (context, request) -> serviceSet.onQueryNext(context, (QueryNextRequest) request));
   }
 
   public void addServiceSet(String path, SessionServiceSet serviceSet) {

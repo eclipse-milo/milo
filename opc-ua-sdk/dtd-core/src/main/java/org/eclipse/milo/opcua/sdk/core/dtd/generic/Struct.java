@@ -13,6 +13,7 @@ package org.eclipse.milo.opcua.sdk.core.dtd.generic;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -112,7 +113,11 @@ public class Struct {
 
     @Override
     public int hashCode() {
-      return Objects.hash(name, value);
+      if (value != null && value.getClass().isArray()) {
+        return Objects.hash(name, Arrays.deepHashCode(new Object[] {value}));
+      } else {
+        return Objects.hash(name, value);
+      }
     }
 
     @Override

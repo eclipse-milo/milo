@@ -16,7 +16,7 @@
 
   <groupId>org.eclipse.milo</groupId>
   <artifactId>milo</artifactId>
-  <version>1.1.5-SNAPSHOT</version>
+  <version>1.2.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>Eclipse Milo - OPC UA (IEC 62541)</name>
@@ -58,50 +58,50 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
     <!-- Dependency Versions -->
-    <bouncycastle.version>1.84</bouncycastle.version>
+    <bouncycastle.version>1.85</bouncycastle.version>
     <data-type-test.version>0.3</data-type-test.version>
     <gson.version>2.14.0</gson.version>
     <guava.version>33.6.0-jre</guava.version>
     <hivemq-mqtt-client.version>1.3.15</hivemq-mqtt-client.version>
     <jakarta-activation.version>2.0.1</jakarta-activation.version>
     <jakarta-xml-bind-api.version>4.0.5</jakarta-xml-bind-api.version>
-    <jaxb.version>4.0.8</jaxb.version>
-    <netty.version>4.1.133.Final</netty.version>
+    <jaxb.version>4.0.9</jaxb.version>
+    <netty.version>4.1.136.Final</netty.version>
     <netty-channel-fsm.version>1.0.2</netty-channel-fsm.version>
     <slf4j.version>2.0.18</slf4j.version>
     <jspecify.version>1.0.0</jspecify.version>
-    <xmlunit.version>2.11.0</xmlunit.version>
+    <xmlunit.version>2.12.0</xmlunit.version>
 
     <!-- Plugin Dependency Versions -->
-    <central-publishing-maven-plugin.version>0.10.0</central-publishing-maven-plugin.version>
-    <checkstyle.version>11.0.1</checkstyle.version>
+    <central-publishing-maven-plugin.version>0.11.0</central-publishing-maven-plugin.version>
+    <checkstyle.version>12.3.1</checkstyle.version>
     <jaxb2-maven-plugin.version>4.1.0</jaxb2-maven-plugin.version>
     <license-tool-plugin.version>1.1.0</license-tool-plugin.version>
     <maven-bundle-plugin.version>6.0.2</maven-bundle-plugin.version>
     <maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
     <maven-clean-plugin.version>3.5.0</maven-clean-plugin.version>
-    <maven-compiler-plugin.version>3.14.0</maven-compiler-plugin.version>
-    <maven-dependency-plugin.version>3.9.0</maven-dependency-plugin.version>
+    <maven-compiler-plugin.version>3.15.0</maven-compiler-plugin.version>
+    <maven-dependency-plugin.version>3.11.0</maven-dependency-plugin.version>
     <maven-deploy-plugin.version>3.1.4</maven-deploy-plugin.version>
-    <maven-enforcer-plugin.version>3.6.1</maven-enforcer-plugin.version>
-    <maven-failsafe-plugin.version>3.5.3</maven-failsafe-plugin.version>
+    <maven-enforcer-plugin.version>3.6.3</maven-enforcer-plugin.version>
+    <maven-failsafe-plugin.version>3.5.6</maven-failsafe-plugin.version>
     <maven-gpg-plugin.version>3.2.8</maven-gpg-plugin.version>
     <maven-install-plugin.version>3.1.4</maven-install-plugin.version>
-    <maven-jar-plugin.version>3.4.2</maven-jar-plugin.version>
-    <maven-javadoc-plugin.version>3.11.3</maven-javadoc-plugin.version>
-    <maven-release-plugin.version>3.1.1</maven-release-plugin.version>
-    <maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
-    <maven-shade-plugin.version>3.6.0</maven-shade-plugin.version>
+    <maven-jar-plugin.version>3.5.1</maven-jar-plugin.version>
+    <maven-javadoc-plugin.version>3.12.0</maven-javadoc-plugin.version>
+    <maven-release-plugin.version>3.3.1</maven-release-plugin.version>
+    <maven-resources-plugin.version>3.5.0</maven-resources-plugin.version>
+    <maven-shade-plugin.version>3.6.2</maven-shade-plugin.version>
     <maven-site-plugin.version>4.0.0-M9</maven-site-plugin.version>
-    <maven-source-plugin.version>3.3.1</maven-source-plugin.version>
-    <maven-surefire-plugin.version>3.5.3</maven-surefire-plugin.version>
-    <spotless-maven-plugin.version>3.5.1</spotless-maven-plugin.version>
+    <maven-source-plugin.version>3.4.0</maven-source-plugin.version>
+    <maven-surefire-plugin.version>3.5.6</maven-surefire-plugin.version>
+    <spotless-maven-plugin.version>3.8.0</spotless-maven-plugin.version>
     <versions-maven-plugin.version>2.21.0</versions-maven-plugin.version>
-    <flatten-maven-plugin.version>1.7.3</flatten-maven-plugin.version>
+    <flatten-maven-plugin.version>1.8.0</flatten-maven-plugin.version>
 
     <!-- Test Dependency Versions -->
     <hivemq-community-edition.version>2026.5</hivemq-community-edition.version>
-    <junit.version>6.0.3</junit.version>
+    <junit.version>6.1.2</junit.version>
     <mockito.version>5.23.0</mockito.version>
   </properties>
 
@@ -379,6 +379,27 @@
                 <version>(?i).*[-_\.](alpha|b|beta|rc|m|ea)[-_\.]?[0-9]*</version>
               </ignoreVersion>
             </ignoreVersions>
+            <rules>
+              <rule>
+                <groupId>io.netty</groupId>
+                <ignoreVersions>
+                  <ignoreVersion>
+                    <type>range</type>
+                    <version>[4.2.0,)</version>
+                  </ignoreVersion>
+                </ignoreVersions>
+              </rule>
+              <rule>
+                <groupId>com.puppycrawl.tools</groupId>
+                <artifactId>checkstyle</artifactId>
+                <ignoreVersions>
+                  <ignoreVersion>
+                    <type>range</type>
+                    <version>[13.0.0,)</version>
+                  </ignoreVersion>
+                </ignoreVersions>
+              </rule>
+            </rules>
           </ruleSet>
         </configuration>
       </plugin>
@@ -436,7 +457,6 @@
                 <instructions>
                   <Import-Package>
                     com.sun.management.*;resolution:=optional,
-                    sun.security.*;resolution:=optional,
                     !javax.annotation.*,
                     *
                   </Import-Package>
@@ -502,6 +522,15 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
           <version>${maven-surefire-plugin.version}</version>
+          <configuration>
+            <!--
+              Allow `-Dtest=...` runs to span a multi-module reactor (e.g. with `-am`) without
+              failing on the dependency modules that have no matching test. Without this, a
+              targeted run like `-pl opc-ua-sdk/sdk-server -am -Dtest=EndpointConfigTest` fails on
+              test-less modules pulled in by `-am`.
+            -->
+            <failIfNoSpecifiedTests>false</failIfNoSpecifiedTests>
+          </configuration>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>

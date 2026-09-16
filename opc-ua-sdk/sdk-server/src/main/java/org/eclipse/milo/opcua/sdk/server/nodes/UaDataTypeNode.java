@@ -149,8 +149,7 @@ public class UaDataTypeNode extends UaNode implements DataTypeNode {
    * @return the value of the EnumStrings Property, if it exists.
    * @see DataTypeNodeProperties#EnumStrings
    */
-  @Nullable
-  public LocalizedText[] getEnumStrings() {
+  public LocalizedText @Nullable [] getEnumStrings() {
     return getProperty(DataTypeNodeProperties.EnumStrings).orElse(null);
   }
 
@@ -160,8 +159,7 @@ public class UaDataTypeNode extends UaNode implements DataTypeNode {
    * @return the value of the EnumValues Property, if it exists.
    * @see DataTypeNodeProperties#EnumValues
    */
-  @Nullable
-  public EnumValueType[] getEnumValues() {
+  public EnumValueType @Nullable [] getEnumValues() {
     return getProperty(DataTypeNodeProperties.EnumValues).orElse(null);
   }
 
@@ -171,8 +169,7 @@ public class UaDataTypeNode extends UaNode implements DataTypeNode {
    * @return the value of the OptionSetValues Property, if it exists.
    * @see DataTypeNodeProperties#OptionSetValues
    */
-  @Nullable
-  public LocalizedText[] getOptionSetValues() {
+  public LocalizedText @Nullable [] getOptionSetValues() {
     return getProperty(DataTypeNodeProperties.OptionSetValues).orElse(null);
   }
 

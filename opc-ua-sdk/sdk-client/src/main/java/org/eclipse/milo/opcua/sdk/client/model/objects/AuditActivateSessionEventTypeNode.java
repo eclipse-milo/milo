@@ -172,7 +172,10 @@ public class AuditActivateSessionEventTypeNode extends AuditSessionEventTypeNode
   @Override
   public void writeUserIdentityToken(UserIdentityToken value) throws UaException {
     try {
-      writeUserIdentityTokenAsync(value).get();
+      StatusCode statusCode = writeUserIdentityTokenAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -248,7 +251,10 @@ public class AuditActivateSessionEventTypeNode extends AuditSessionEventTypeNode
   @Override
   public void writeSecureChannelId(String value) throws UaException {
     try {
-      writeSecureChannelIdAsync(value).get();
+      StatusCode statusCode = writeSecureChannelIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -318,7 +324,10 @@ public class AuditActivateSessionEventTypeNode extends AuditSessionEventTypeNode
   @Override
   public void writeCurrentRoleIds(NodeId[] value) throws UaException {
     try {
-      writeCurrentRoleIdsAsync(value).get();
+      StatusCode statusCode = writeCurrentRoleIdsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

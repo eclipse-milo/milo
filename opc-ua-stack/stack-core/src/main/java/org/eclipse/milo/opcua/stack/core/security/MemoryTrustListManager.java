@@ -12,142 +12,110 @@ package org.eclipse.milo.opcua.stack.core.security;
 
 import java.security.cert.X509CRL;
 import java.security.cert.X509Certificate;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
-import org.eclipse.milo.opcua.stack.core.UaException;
+import java.util.function.UnaryOperator;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
-import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
 
+/** An in-memory {@link TrustListManager} that publishes each update as one immutable snapshot. */
 public class MemoryTrustListManager implements TrustListManager {
 
-  private final AtomicReference<DateTime> lastUpdateTime =
-      new AtomicReference<>(DateTime.MIN_VALUE);
+  private final AtomicReference<TrustListSnapshot> snapshot =
+      new AtomicReference<>(TrustListSnapshot.empty());
 
-  private final List<X509Certificate> issuerCertificates =
-      Collections.synchronizedList(new ArrayList<>());
-  private final List<X509Certificate> trustedCertificates =
-      Collections.synchronizedList(new ArrayList<>());
+  @Override
+  public TrustListSnapshot getSnapshot() {
+    return snapshot.get();
+  }
 
-  private final List<X509CRL> issuerCrls = Collections.synchronizedList(new ArrayList<>());
-  private final List<X509CRL> trustedCrls = Collections.synchronizedList(new ArrayList<>());
+  @Override
+  public TrustListSnapshot update(UnaryOperator<TrustListSnapshot> update) {
+    return snapshot.updateAndGet(
+        current -> {
+          TrustListSnapshot updated = Objects.requireNonNull(update.apply(current));
+
+          return updated == current ? current : updated.withLastUpdateTime(DateTime.now());
+        });
+  }
 
   @Override
   public List<X509CRL> getIssuerCrls() {
-    synchronized (issuerCrls) {
-      return List.copyOf(issuerCrls);
-    }
+    return snapshot.get().issuerCrls();
   }
 
   @Override
   public List<X509CRL> getTrustedCrls() {
-    synchronized (trustedCrls) {
-      return List.copyOf(trustedCrls);
-    }
+    return snapshot.get().trustedCrls();
   }
 
   @Override
   public List<X509Certificate> getIssuerCertificates() {
-    synchronized (issuerCertificates) {
-      return List.copyOf(issuerCertificates);
-    }
+    return snapshot.get().issuerCertificates();
   }
 
   @Override
   public List<X509Certificate> getTrustedCertificates() {
-    synchronized (trustedCertificates) {
-      return List.copyOf(trustedCertificates);
-    }
+    return snapshot.get().trustedCertificates();
   }
 
   @Override
   public void setIssuerCrls(List<X509CRL> issuerCrls) {
-    synchronized (this.issuerCrls) {
-      this.issuerCrls.clear();
-      this.issuerCrls.addAll(issuerCrls);
-
-      lastUpdateTime.set(DateTime.now());
-    }
+    update(current -> current.withIssuerCrls(issuerCrls));
   }
 
   @Override
   public void setTrustedCrls(List<X509CRL> trustedCrls) {
-    synchronized (this.trustedCrls) {
-      this.trustedCrls.clear();
-      this.trustedCrls.addAll(trustedCrls);
-
-      lastUpdateTime.set(DateTime.now());
-    }
+    update(current -> current.withTrustedCrls(trustedCrls));
   }
 
   @Override
   public void setIssuerCertificates(List<X509Certificate> issuerCertificates) {
-    synchronized (this.issuerCertificates) {
-      this.issuerCertificates.clear();
-      this.issuerCertificates.addAll(issuerCertificates);
-
-      lastUpdateTime.set(DateTime.now());
-    }
+    update(current -> current.withIssuerCertificates(issuerCertificates));
   }
 
   @Override
   public void setTrustedCertificates(List<X509Certificate> trustedCertificates) {
-    synchronized (this.trustedCertificates) {
-      this.trustedCertificates.clear();
-      this.trustedCertificates.addAll(trustedCertificates);
-
-      lastUpdateTime.set(DateTime.now());
-    }
+    update(current -> current.withTrustedCertificates(trustedCertificates));
   }
 
   @Override
   public void addIssuerCertificate(X509Certificate certificate) {
-    issuerCertificates.add(certificate);
-
-    lastUpdateTime.set(DateTime.now());
+    update(
+        current ->
+            current.withIssuerCertificates(
+                TrustListEdits.append(current.issuerCertificates(), certificate)));
   }
 
   @Override
   public void addTrustedCertificate(X509Certificate certificate) {
-    trustedCertificates.add(certificate);
-
-    lastUpdateTime.set(DateTime.now());
+    update(
+        current ->
+            current.withTrustedCertificates(
+                TrustListEdits.append(current.trustedCertificates(), certificate)));
   }
 
   @Override
   public boolean removeIssuerCertificate(ByteString thumbprint) {
-    boolean removed = issuerCertificates.removeIf(c -> thumbprintMatches(c, thumbprint));
-
-    if (removed) {
-      lastUpdateTime.set(DateTime.now());
-    }
-
-    return removed;
+    return TrustListEdits.remove(
+        this,
+        thumbprint,
+        TrustListSnapshot::issuerCertificates,
+        TrustListSnapshot::withIssuerCertificates);
   }
 
   @Override
   public boolean removeTrustedCertificate(ByteString thumbprint) {
-    boolean removed = trustedCertificates.removeIf(c -> thumbprintMatches(c, thumbprint));
-
-    if (removed) {
-      lastUpdateTime.set(DateTime.now());
-    }
-
-    return removed;
+    return TrustListEdits.remove(
+        this,
+        thumbprint,
+        TrustListSnapshot::trustedCertificates,
+        TrustListSnapshot::withTrustedCertificates);
   }
 
   @Override
   public DateTime getLastUpdateTime() {
-    return lastUpdateTime.get();
-  }
-
-  private static boolean thumbprintMatches(X509Certificate certificate, ByteString thumbprint) {
-    try {
-      return CertificateUtil.thumbprint(certificate).equals(thumbprint);
-    } catch (UaException e) {
-      return false;
-    }
+    return snapshot.get().lastUpdateTime();
   }
 }

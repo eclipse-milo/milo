@@ -67,6 +67,8 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
   private final Lazy<Map<StructureField, Object>> hints = new Lazy<>();
 
   private final StructureDefinition definition;
+  private final String[] optionalFieldNames;
+  private final String[] fieldNames;
 
   private final DataType dataType;
   private final DataTypeTree dataTypeTree;
@@ -76,6 +78,13 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
     this.dataTypeTree = dataTypeTree;
 
     definition = (StructureDefinition) dataType.getDataTypeDefinition();
+    StructureField[] fields = requireNonNullElse(definition.getFields(), new StructureField[0]);
+    optionalFieldNames =
+        Arrays.stream(fields)
+            .filter(StructureField::getIsOptional)
+            .map(StructureField::getName)
+            .toArray(String[]::new);
+    fieldNames = Arrays.stream(fields).map(StructureField::getName).toArray(String[]::new);
   }
 
   @Override
@@ -98,9 +107,9 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
   private JsonStruct decodeStruct(UaDecoder decoder) throws UaSerializationException {
     var jsonObject = new JsonObject();
 
-    var switchField = 0xFFFFFFFFL;
+    var encodingMask = 0xFFFFFFFFL;
     if (definition.getStructureType() == StructureType.StructureWithOptionalFields) {
-      switchField = decoder.decodeUInt32("SwitchField").longValue();
+      encodingMask = decoder.decodeEncodingMask(optionalFieldNames).longValue();
     }
 
     StructureField[] fields = requireNonNullElse(definition.getFields(), new StructureField[0]);
@@ -108,7 +117,7 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
     if (definition.getStructureType() == StructureType.StructureWithOptionalFields) {
       int optionalFieldIndex = 0;
       for (StructureField field : fields) {
-        if (!field.getIsOptional() || (switchField >>> optionalFieldIndex++ & 1L) == 1L) {
+        if (!field.getIsOptional() || (encodingMask >>> optionalFieldIndex++ & 1L) == 1L) {
           JsonElement value = decodeFieldValue(decoder, field);
 
           jsonObject.add(requireNonNull(field.getName()), value);
@@ -130,7 +139,7 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
   }
 
   private JsonStruct decodeUnion(UaDecoder decoder) throws UaSerializationException {
-    int switchField = decoder.decodeUInt32("SwitchField").intValue();
+    int switchField = decoder.decodeSwitchField(fieldNames).intValue();
     StructureField[] fields = requireNonNullElse(definition.getFields(), new StructureField[0]);
 
     if (switchField == 0) {
@@ -141,7 +150,7 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
       jsonObject.add("__metadata", metadata);
 
       return new JsonStruct(dataType, jsonObject);
-    } else if (switchField <= fields.length) {
+    } else if (switchField > 0 && switchField <= fields.length) {
       StructureField field = fields[switchField - 1];
       JsonElement value = decodeFieldValue(decoder, field);
 
@@ -190,8 +199,10 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
       if (hint instanceof OpcUaDataType) {
         return decodeBuiltinDataTypeArray(decoder, fieldName, (OpcUaDataType) hint);
       } else if (hint instanceof EnumHint) {
+        Integer[] values = decoder.decodeEnumArray(fieldName);
+        if (values == null) return JsonNull.INSTANCE;
         var array = new JsonArray();
-        for (int value : decoder.decodeEnumArray(fieldName)) {
+        for (int value : values) {
           array.add(value);
         }
         return array;
@@ -199,14 +210,19 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
         var array = new JsonArray();
 
         if (dataTypeId.equals(NodeIds.Structure) || fieldAllowsSubtyping(field)) {
-          for (ExtensionObject value : decoder.decodeExtensionObjectArray(fieldName)) {
-            JsonStruct struct = (JsonStruct) value.decode(decoder.getEncodingContext());
-            array.add(struct.getJsonObject());
+          ExtensionObject[] values = decoder.decodeExtensionObjectArray(fieldName);
+          if (values == null) return JsonNull.INSTANCE;
+          for (ExtensionObject value : values) {
+            JsonStruct struct =
+                value == null ? null : (JsonStruct) value.decode(decoder.getEncodingContext());
+            array.add(struct == null ? JsonNull.INSTANCE : struct.getJsonObject());
           }
         } else {
-          for (Object o : decoder.decodeStructArray(fieldName, dataTypeId)) {
+          Object[] values = decoder.decodeStructArray(fieldName, dataTypeId);
+          if (values == null) return JsonNull.INSTANCE;
+          for (Object o : values) {
             JsonStruct struct = (JsonStruct) o;
-            array.add(struct.getJsonObject());
+            array.add(struct == null ? JsonNull.INSTANCE : struct.getJsonObject());
           }
         }
         return array;
@@ -292,202 +308,40 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
 
   private static JsonElement decodeBuiltinDataTypeArray(
       UaDecoder decoder, String fieldName, OpcUaDataType dataType) {
-    switch (dataType) {
-      case Boolean:
-        {
-          var array = new JsonArray();
-          for (boolean value : decoder.decodeBooleanArray(fieldName)) {
-            array.add(JsonConversions.fromBoolean(value));
-          }
-          return array;
-        }
-      case SByte:
-        {
-          var array = new JsonArray();
-          for (byte value : decoder.decodeSByteArray(fieldName)) {
-            array.add(JsonConversions.fromSByte(value));
-          }
-          return array;
-        }
-      case Byte:
-        {
-          var array = new JsonArray();
-          for (UByte value : decoder.decodeByteArray(fieldName)) {
-            array.add(JsonConversions.fromByte(value));
-          }
-          return array;
-        }
-      case Int16:
-        {
-          var array = new JsonArray();
-          for (short value : decoder.decodeInt16Array(fieldName)) {
-            array.add(JsonConversions.fromInt16(value));
-          }
-          return array;
-        }
-      case UInt16:
-        {
-          var array = new JsonArray();
-          for (UShort value : decoder.decodeUInt16Array(fieldName)) {
-            array.add(JsonConversions.fromUInt16(value));
-          }
-          return array;
-        }
-      case Int32:
-        {
-          var array = new JsonArray();
-          for (int value : decoder.decodeInt32Array(fieldName)) {
-            array.add(JsonConversions.fromInt32(value));
-          }
-          return array;
-        }
-      case UInt32:
-        {
-          var array = new JsonArray();
-          for (UInteger value : decoder.decodeUInt32Array(fieldName)) {
-            array.add(JsonConversions.fromUInt32(value));
-          }
-          return array;
-        }
-      case Int64:
-        {
-          var array = new JsonArray();
-          for (long value : decoder.decodeInt64Array(fieldName)) {
-            array.add(JsonConversions.fromInt64(value));
-          }
-          return array;
-        }
-      case UInt64:
-        {
-          var array = new JsonArray();
-          for (ULong value : decoder.decodeUInt64Array(fieldName)) {
-            array.add(JsonConversions.fromUInt64(value));
-          }
-          return array;
-        }
-      case Float:
-        {
-          var array = new JsonArray();
-          for (float value : decoder.decodeFloatArray(fieldName)) {
-            array.add(JsonConversions.fromFloat(value));
-          }
-          return array;
-        }
-      case Double:
-        {
-          var array = new JsonArray();
-          for (double value : decoder.decodeDoubleArray(fieldName)) {
-            array.add(JsonConversions.fromDouble(value));
-          }
-          return array;
-        }
-      case String:
-        {
-          var array = new JsonArray();
-          for (String value : decoder.decodeStringArray(fieldName)) {
-            array.add(JsonConversions.fromString(value));
-          }
-          return array;
-        }
-      case DateTime:
-        {
-          var array = new JsonArray();
-          for (DateTime value : decoder.decodeDateTimeArray(fieldName)) {
-            array.add(JsonConversions.fromDateTime(value));
-          }
-          return array;
-        }
-      case Guid:
-        {
-          var array = new JsonArray();
-          for (UUID value : decoder.decodeGuidArray(fieldName)) {
-            array.add(JsonConversions.fromGuid(value));
-          }
-          return array;
-        }
-      case ByteString:
-        {
-          var array = new JsonArray();
-          for (ByteString value : decoder.decodeByteStringArray(fieldName)) {
-            array.add(JsonConversions.fromByteString(value));
-          }
-          return array;
-        }
-      case XmlElement:
-        {
-          var array = new JsonArray();
-          for (XmlElement value : decoder.decodeXmlElementArray(fieldName)) {
-            array.add(JsonConversions.fromXmlElement(value));
-          }
-          return array;
-        }
-      case NodeId:
-        {
-          var array = new JsonArray();
-          for (NodeId value : decoder.decodeNodeIdArray(fieldName)) {
-            array.add(JsonConversions.fromNodeId(value));
-          }
-          return array;
-        }
-      case ExpandedNodeId:
-        {
-          var array = new JsonArray();
-          for (ExpandedNodeId value : decoder.decodeExpandedNodeIdArray(fieldName)) {
-            array.add(JsonConversions.fromExpandedNodeId(value));
-          }
-          return array;
-        }
-      case StatusCode:
-        {
-          var array = new JsonArray();
-          for (StatusCode value : decoder.decodeStatusCodeArray(fieldName)) {
-            array.add(JsonConversions.fromStatusCode(value));
-          }
-          return array;
-        }
-      case QualifiedName:
-        {
-          var array = new JsonArray();
-          for (QualifiedName value : decoder.decodeQualifiedNameArray(fieldName)) {
-            array.add(JsonConversions.fromQualifiedName(value));
-          }
-          return array;
-        }
-      case LocalizedText:
-        {
-          var array = new JsonArray();
-          for (LocalizedText value : decoder.decodeLocalizedTextArray(fieldName)) {
-            array.add(JsonConversions.fromLocalizedText(value));
-          }
-          return array;
-        }
-      case ExtensionObject:
-        {
-          var array = new JsonArray();
-          for (ExtensionObject value : decoder.decodeExtensionObjectArray(fieldName)) {
-            array.add(JsonConversions.fromExtensionObject(value));
-          }
-          return array;
-        }
-      case DataValue:
-        {
-          var array = new JsonArray();
-          for (DataValue value : decoder.decodeDataValueArray(fieldName)) {
-            array.add(JsonConversions.fromDataValue(value));
-          }
-          return array;
-        }
-      case Variant:
-        var array = new JsonArray();
-        for (Variant value : decoder.decodeVariantArray(fieldName)) {
-          array.add(JsonConversions.fromVariant(value));
-        }
-        return array;
-
-      case DiagnosticInfo:
-      default:
-        return JsonNull.INSTANCE;
+    Object[] values =
+        switch (dataType) {
+          case Boolean -> decoder.decodeBooleanArray(fieldName);
+          case SByte -> decoder.decodeSByteArray(fieldName);
+          case Byte -> decoder.decodeByteArray(fieldName);
+          case Int16 -> decoder.decodeInt16Array(fieldName);
+          case UInt16 -> decoder.decodeUInt16Array(fieldName);
+          case Int32 -> decoder.decodeInt32Array(fieldName);
+          case UInt32 -> decoder.decodeUInt32Array(fieldName);
+          case Int64 -> decoder.decodeInt64Array(fieldName);
+          case UInt64 -> decoder.decodeUInt64Array(fieldName);
+          case Float -> decoder.decodeFloatArray(fieldName);
+          case Double -> decoder.decodeDoubleArray(fieldName);
+          case String -> decoder.decodeStringArray(fieldName);
+          case DateTime -> decoder.decodeDateTimeArray(fieldName);
+          case Guid -> decoder.decodeGuidArray(fieldName);
+          case ByteString -> decoder.decodeByteStringArray(fieldName);
+          case XmlElement -> decoder.decodeXmlElementArray(fieldName);
+          case NodeId -> decoder.decodeNodeIdArray(fieldName);
+          case ExpandedNodeId -> decoder.decodeExpandedNodeIdArray(fieldName);
+          case StatusCode -> decoder.decodeStatusCodeArray(fieldName);
+          case QualifiedName -> decoder.decodeQualifiedNameArray(fieldName);
+          case LocalizedText -> decoder.decodeLocalizedTextArray(fieldName);
+          case ExtensionObject -> decoder.decodeExtensionObjectArray(fieldName);
+          case DataValue -> decoder.decodeDataValueArray(fieldName);
+          case Variant -> decoder.decodeVariantArray(fieldName);
+          default -> throw new IllegalArgumentException("Unsupported BuiltinDataType: " + dataType);
+        };
+    if (values == null) return JsonNull.INSTANCE;
+    var array = new JsonArray();
+    for (Object value : values) {
+      array.add(JsonConversions.from(value, dataType));
     }
+    return array;
   }
 
   static JsonElement decodeBuiltinDataTypeMatrix(Matrix matrix) {
@@ -602,21 +456,24 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
   private void encodeStruct(UaEncoder encoder, JsonStruct value) {
     StructureField[] fields = requireNonNullElse(definition.getFields(), new StructureField[0]);
 
-    var switchField = 0L;
+    var encodingMask = 0L;
     if (definition.getStructureType() == StructureType.StructureWithOptionalFields) {
       int optionalFieldIndex = 0;
       for (StructureField field : fields) {
-        if (field.getIsOptional() && value.getJsonObject().has(requireNonNull(field.getName()))) {
-          switchField = switchField | (1L << optionalFieldIndex++);
+        if (field.getIsOptional()) {
+          if (value.getJsonObject().has(requireNonNull(field.getName()))) {
+            encodingMask |= 1L << optionalFieldIndex;
+          }
+          optionalFieldIndex++;
         }
       }
-      encoder.encodeUInt32("SwitchField", UInteger.valueOf(switchField));
+      encoder.encodeEncodingMask(UInteger.valueOf(encodingMask));
     }
 
     if (definition.getStructureType() == StructureType.StructureWithOptionalFields) {
       int optionalFieldIndex = 0;
       for (StructureField field : fields) {
-        if (!field.getIsOptional() || ((switchField >>> optionalFieldIndex++) & 1L) == 1L) {
+        if (!field.getIsOptional() || ((encodingMask >>> optionalFieldIndex++) & 1L) == 1L) {
           JsonElement fieldValue = value.getJsonObject().get(requireNonNull(field.getName()));
           encodeFieldValue(encoder, field, fieldValue);
         }
@@ -636,18 +493,18 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
       StructureField field = fields[i];
 
       if (value.getJsonObject().has(requireNonNull(field.getName()))) {
-        encoder.encodeUInt32("SwitchValue", UInteger.valueOf(i + 1));
+        encoder.encodeSwitchField(UInteger.valueOf(i + 1));
         JsonElement fieldValue = value.getJsonObject().get(requireNonNull(field.getName()));
         encodeFieldValue(encoder, field, fieldValue);
 
         // Return as soon as a field has been encoded.
-        // Unions are only one field, indicated by SwitchValue.
+        // Unions are only one field, indicated by SwitchField.
         return;
       }
     }
 
     // No field was found, so the union is null/empty.
-    encoder.encodeUInt32("SwitchValue", UInteger.valueOf(0));
+    encoder.encodeSwitchField(UInteger.valueOf(0));
   }
 
   private void encodeFieldValue(UaEncoder encoder, StructureField field, JsonElement value) {
@@ -678,12 +535,16 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
         throw new IllegalArgumentException("hint: " + hint);
       }
     } else if (field.getValueRank() == 1) {
-      JsonArray jsonArray = value.getAsJsonArray();
+      JsonArray jsonArray = value == null || value.isJsonNull() ? null : value.getAsJsonArray();
 
       Object hint = getHint(field);
       if (hint instanceof OpcUaDataType) {
         encodeBuiltinDataTypeArray(encoder, fieldName, (OpcUaDataType) hint, jsonArray);
       } else if (hint instanceof EnumHint) {
+        if (jsonArray == null) {
+          encoder.encodeEnumArray(fieldName, null);
+          return;
+        }
         JsonEnumWrapper[] enumValues = new JsonEnumWrapper[jsonArray.size()];
         for (int i = 0; i < jsonArray.size(); i++) {
           enumValues[i] = new JsonEnumWrapper(jsonArray.get(i).getAsInt(), dataTypeId.expanded());
@@ -691,6 +552,10 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
         encoder.encodeEnumArray(fieldName, enumValues);
       } else if (hint instanceof StructHint) {
         if (dataTypeId.equals(NodeIds.Structure) || fieldAllowsSubtyping(field)) {
+          if (jsonArray == null) {
+            encoder.encodeExtensionObjectArray(fieldName, null);
+            return;
+          }
           var xoArray = new ExtensionObject[jsonArray.size()];
 
           NodeId concreteDataTypeId = dataTypeId;
@@ -708,6 +573,10 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
 
           encoder.encodeExtensionObjectArray(fieldName, xoArray);
         } else {
+          if (jsonArray == null) {
+            encoder.encodeStructArray(fieldName, null, dataTypeId);
+            return;
+          }
           var structArray = new JsonStruct[jsonArray.size()];
 
           for (int i = 0; i < jsonArray.size(); i++) {
@@ -730,20 +599,30 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
         encoder.encodeMatrix(fieldName, matrix);
       } else if (hint instanceof EnumHint) {
         Object[] flatArray = encodeEnumMatrix(dataTypeId.expanded(), jsonArray);
-        var matrix = new Matrix(flatArray, getDimensions(jsonArray), OpcUaDataType.Int32);
+        var matrix =
+            new Matrix(
+                flatArray, getDimensions(jsonArray), OpcUaDataType.Int32, dataTypeId.expanded());
         encoder.encodeEnumMatrix(fieldName, matrix);
       } else if (hint instanceof StructHint) {
         if (dataTypeId.equals(NodeIds.Structure) || fieldAllowsSubtyping(field)) {
           Object[] flatArray =
               encodeStructMatrix(encoder.getEncodingContext(), dataTypeTree, jsonArray, true);
           var matrix =
-              new Matrix(flatArray, getDimensions(jsonArray), OpcUaDataType.ExtensionObject);
+              new Matrix(
+                  flatArray,
+                  getDimensions(jsonArray),
+                  OpcUaDataType.ExtensionObject,
+                  dataTypeId.expanded());
           encoder.encodeMatrix(fieldName, matrix);
         } else {
           Object[] flatArray =
               encodeStructMatrix(encoder.getEncodingContext(), dataTypeTree, jsonArray, false);
           var matrix =
-              new Matrix(flatArray, getDimensions(jsonArray), OpcUaDataType.ExtensionObject);
+              new Matrix(
+                  flatArray,
+                  getDimensions(jsonArray),
+                  OpcUaDataType.ExtensionObject,
+                  dataTypeId.expanded());
           encoder.encodeStructMatrix(fieldName, matrix, dataTypeId);
         }
       } else {
@@ -791,7 +670,9 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
         encoder.encodeDouble(fieldName, JsonConversions.toDouble(value));
         break;
       case String:
-        encoder.encodeString(fieldName, JsonConversions.toString(value));
+        encoder.encodeString(
+            fieldName,
+            value == null || value.isJsonNull() ? null : JsonConversions.toString(value));
         break;
       case DateTime:
         encoder.encodeDateTime(fieldName, JsonConversions.toDateTime(value));
@@ -837,228 +718,43 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
   }
 
   private void encodeBuiltinDataTypeArray(
-      UaEncoder encoder, String fieldName, OpcUaDataType dataType, JsonArray value) {
+      UaEncoder encoder, String fieldName, OpcUaDataType dataType, @Nullable JsonArray value) {
+    Object[] values = null;
+    if (value != null) {
+      values = (Object[]) Array.newInstance(dataType.getBackingClass(), value.size());
+      for (int i = 0; i < value.size(); i++) {
+        JsonElement element = value.get(i);
+        values[i] = element.isJsonNull() ? null : JsonConversions.to(element, dataType);
+      }
+    }
     switch (dataType) {
-      case Boolean:
-        {
-          Boolean[] array = new Boolean[value.size()];
-          for (int i = 0; i < value.size(); i++) {
-            array[i] = JsonConversions.toBoolean(value.get(i));
-          }
-          encoder.encodeBooleanArray(fieldName, array);
-          break;
-        }
-      case SByte:
-        {
-          Byte[] array = new Byte[value.size()];
-          for (int i = 0; i < value.size(); i++) {
-            array[i] = JsonConversions.toSByte(value.get(i));
-          }
-          encoder.encodeSByteArray(fieldName, array);
-          break;
-        }
-      case Byte:
-        {
-          UByte[] array = new UByte[value.size()];
-          for (int i = 0; i < value.size(); i++) {
-            array[i] = JsonConversions.toByte(value.get(i));
-          }
-          encoder.encodeByteArray(fieldName, array);
-          break;
-        }
-      case Int16:
-        {
-          Short[] array = new Short[value.size()];
-          for (int i = 0; i < value.size(); i++) {
-            array[i] = JsonConversions.toInt16(value.get(i));
-          }
-          encoder.encodeInt16Array(fieldName, array);
-          break;
-        }
-      case UInt16:
-        {
-          UShort[] array = new UShort[value.size()];
-          for (int i = 0; i < value.size(); i++) {
-            array[i] = JsonConversions.toUInt16(value.get(i));
-          }
-          encoder.encodeUInt16Array(fieldName, array);
-          break;
-        }
-      case Int32:
-        {
-          Integer[] array = new Integer[value.size()];
-          for (int i = 0; i < value.size(); i++) {
-            array[i] = JsonConversions.toInt32(value.get(i));
-          }
-          encoder.encodeInt32Array(fieldName, array);
-          break;
-        }
-      case UInt32:
-        {
-          UInteger[] array = new UInteger[value.size()];
-          for (int i = 0; i < value.size(); i++) {
-            array[i] = JsonConversions.toUInt32(value.get(i));
-          }
-          encoder.encodeUInt32Array(fieldName, array);
-          break;
-        }
-      case Int64:
-        {
-          Long[] array = new Long[value.size()];
-          for (int i = 0; i < value.size(); i++) {
-            array[i] = JsonConversions.toInt64(value.get(i));
-          }
-          encoder.encodeInt64Array(fieldName, array);
-          break;
-        }
-      case UInt64:
-        {
-          ULong[] array = new ULong[value.size()];
-          for (int i = 0; i < value.size(); i++) {
-            array[i] = JsonConversions.toUInt64(value.get(i));
-          }
-          encoder.encodeUInt64Array(fieldName, array);
-          break;
-        }
-      case Float:
-        {
-          Float[] array = new Float[value.size()];
-          for (int i = 0; i < value.size(); i++) {
-            array[i] = JsonConversions.toFloat(value.get(i));
-          }
-          encoder.encodeFloatArray(fieldName, array);
-          break;
-        }
-      case Double:
-        {
-          Double[] array = new Double[value.size()];
-          for (int i = 0; i < value.size(); i++) {
-            array[i] = JsonConversions.toDouble(value.get(i));
-          }
-          encoder.encodeDoubleArray(fieldName, array);
-          break;
-        }
-      case String:
-        {
-          String[] array = new String[value.size()];
-          for (int i = 0; i < value.size(); i++) {
-            array[i] = JsonConversions.toString(value.get(i));
-          }
-          encoder.encodeStringArray(fieldName, array);
-          break;
-        }
-      case DateTime:
-        {
-          DateTime[] array = new DateTime[value.size()];
-          for (int i = 0; i < value.size(); i++) {
-            array[i] = JsonConversions.toDateTime(value.get(i));
-          }
-          encoder.encodeDateTimeArray(fieldName, array);
-          break;
-        }
-      case Guid:
-        {
-          UUID[] array = new UUID[value.size()];
-          for (int i = 0; i < value.size(); i++) {
-            array[i] = JsonConversions.toGuid(value.get(i));
-          }
-          encoder.encodeGuidArray(fieldName, array);
-          break;
-        }
-      case ByteString:
-        {
-          ByteString[] array = new ByteString[value.size()];
-          for (int i = 0; i < value.size(); i++) {
-            array[i] = JsonConversions.toByteString(value.get(i));
-          }
-          encoder.encodeByteStringArray(fieldName, array);
-          break;
-        }
-      case XmlElement:
-        {
-          XmlElement[] array = new XmlElement[value.size()];
-          for (int i = 0; i < value.size(); i++) {
-            array[i] = JsonConversions.toXmlElement(value.get(i));
-          }
-          encoder.encodeXmlElementArray(fieldName, array);
-          break;
-        }
-      case NodeId:
-        {
-          NodeId[] array = new NodeId[value.size()];
-          for (int i = 0; i < value.size(); i++) {
-            array[i] = JsonConversions.toNodeId(value.get(i));
-          }
-          encoder.encodeNodeIdArray(fieldName, array);
-          break;
-        }
-      case ExpandedNodeId:
-        {
-          ExpandedNodeId[] array = new ExpandedNodeId[value.size()];
-          for (int i = 0; i < value.size(); i++) {
-            array[i] = JsonConversions.toExpandedNodeId(value.get(i));
-          }
-          encoder.encodeExpandedNodeIdArray(fieldName, array);
-          break;
-        }
-      case StatusCode:
-        {
-          StatusCode[] array = new StatusCode[value.size()];
-          for (int i = 0; i < value.size(); i++) {
-            array[i] = JsonConversions.toStatusCode(value.get(i));
-          }
-          encoder.encodeStatusCodeArray(fieldName, array);
-          break;
-        }
-      case QualifiedName:
-        {
-          QualifiedName[] array = new QualifiedName[value.size()];
-          for (int i = 0; i < value.size(); i++) {
-            array[i] = JsonConversions.toQualifiedName(value.get(i));
-          }
-          encoder.encodeQualifiedNameArray(fieldName, array);
-          break;
-        }
-      case LocalizedText:
-        {
-          LocalizedText[] array = new LocalizedText[value.size()];
-          for (int i = 0; i < value.size(); i++) {
-            array[i] = JsonConversions.toLocalizedText(value.get(i));
-          }
-          encoder.encodeLocalizedTextArray(fieldName, array);
-          break;
-        }
-      case ExtensionObject:
-        {
-          ExtensionObject[] array = new ExtensionObject[value.size()];
-          for (int i = 0; i < value.size(); i++) {
-            array[i] = JsonConversions.toExtensionObject(value.get(i));
-          }
-          encoder.encodeExtensionObjectArray(fieldName, array);
-          break;
-        }
-      case DataValue:
-        {
-          DataValue[] array = new DataValue[value.size()];
-          for (int i = 0; i < value.size(); i++) {
-            array[i] = JsonConversions.toDataValue(value.get(i));
-          }
-          encoder.encodeDataValueArray(fieldName, array);
-          break;
-        }
-      case Variant:
-        {
-          Variant[] array = new Variant[value.size()];
-          for (int i = 0; i < value.size(); i++) {
-            array[i] = JsonConversions.toVariant(value.get(i));
-          }
-          encoder.encodeVariantArray(fieldName, array);
-          break;
-        }
-
-      case DiagnosticInfo:
-      default:
-        throw new IllegalArgumentException("Unsupported BuiltinDataType: " + dataType);
+      case Boolean -> encoder.encodeBooleanArray(fieldName, (Boolean[]) values);
+      case SByte -> encoder.encodeSByteArray(fieldName, (Byte[]) values);
+      case Byte -> encoder.encodeByteArray(fieldName, (UByte[]) values);
+      case Int16 -> encoder.encodeInt16Array(fieldName, (Short[]) values);
+      case UInt16 -> encoder.encodeUInt16Array(fieldName, (UShort[]) values);
+      case Int32 -> encoder.encodeInt32Array(fieldName, (Integer[]) values);
+      case UInt32 -> encoder.encodeUInt32Array(fieldName, (UInteger[]) values);
+      case Int64 -> encoder.encodeInt64Array(fieldName, (Long[]) values);
+      case UInt64 -> encoder.encodeUInt64Array(fieldName, (ULong[]) values);
+      case Float -> encoder.encodeFloatArray(fieldName, (Float[]) values);
+      case Double -> encoder.encodeDoubleArray(fieldName, (Double[]) values);
+      case String -> encoder.encodeStringArray(fieldName, (String[]) values);
+      case DateTime -> encoder.encodeDateTimeArray(fieldName, (DateTime[]) values);
+      case Guid -> encoder.encodeGuidArray(fieldName, (UUID[]) values);
+      case ByteString -> encoder.encodeByteStringArray(fieldName, (ByteString[]) values);
+      case XmlElement -> encoder.encodeXmlElementArray(fieldName, (XmlElement[]) values);
+      case NodeId -> encoder.encodeNodeIdArray(fieldName, (NodeId[]) values);
+      case ExpandedNodeId ->
+          encoder.encodeExpandedNodeIdArray(fieldName, (ExpandedNodeId[]) values);
+      case StatusCode -> encoder.encodeStatusCodeArray(fieldName, (StatusCode[]) values);
+      case QualifiedName -> encoder.encodeQualifiedNameArray(fieldName, (QualifiedName[]) values);
+      case LocalizedText -> encoder.encodeLocalizedTextArray(fieldName, (LocalizedText[]) values);
+      case ExtensionObject ->
+          encoder.encodeExtensionObjectArray(fieldName, (ExtensionObject[]) values);
+      case DataValue -> encoder.encodeDataValueArray(fieldName, (DataValue[]) values);
+      case Variant -> encoder.encodeVariantArray(fieldName, (Variant[]) values);
+      default -> throw new IllegalArgumentException("Unsupported BuiltinDataType: " + dataType);
     }
   }
 
@@ -1189,6 +885,11 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
     @Override
     public ExpandedNodeId getTypeId() {
       return typeId;
+    }
+
+    @Override
+    public @Nullable String getName() {
+      return null;
     }
 
     @Override

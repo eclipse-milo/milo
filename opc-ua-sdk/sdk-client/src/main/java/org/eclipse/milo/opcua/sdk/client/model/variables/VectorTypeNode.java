@@ -106,7 +106,10 @@ public class VectorTypeNode extends BaseDataVariableTypeNode implements VectorTy
   @Override
   public void writeVectorUnit(EUInformation value) throws UaException {
     try {
-      writeVectorUnitAsync(value).get();
+      StatusCode statusCode = writeVectorUnitAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

@@ -936,6 +936,22 @@ public class Subscription {
         setState(State.KeepAlive);
         resetKeepAliveCounter();
         keepAliveCounter--;
+
+        if (keepAliveCounter < 1) {
+          PendingPublish pending = publishRequestQueued ? publishQueue().poll() : null;
+
+          if (pending != null) {
+            subscriptionDiagnostics.getPublishRequestCount().increment();
+
+            resetLifetimeCounter();
+            resetKeepAliveCounter();
+            messageSent = true;
+            returnKeepAlive(pending);
+          } else {
+            setState(State.Late);
+            publishQueue().addSubscription(Subscription.this);
+          }
+        }
       } else {
         throw new IllegalStateException("unhandled subscription state");
       }

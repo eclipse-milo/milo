@@ -54,6 +54,34 @@ public interface UaDecoder {
 
   UInteger decodeUInt32(String field) throws UaSerializationException;
 
+  /**
+   * Decodes the optional-field presence mask before reading the structure's fields.
+   *
+   * <p>Encodings without a numeric mask derive the bits from member presence. A present member with
+   * a null or default value still sets its bit. Other encodings read {@code EncodingMask}.
+   *
+   * @param optionalFieldNames the unique optional-field names in definition order, excluding
+   *     mandatory fields; at most 32 names, with the first name corresponding to bit zero.
+   * @return the optional-field presence mask.
+   */
+  default UInteger decodeEncodingMask(String... optionalFieldNames)
+      throws UaSerializationException {
+    return decodeUInt32("EncodingMask");
+  }
+
+  /**
+   * Decodes the union selector before reading its member.
+   *
+   * <p>Encodings without a numeric selector derive it from member presence. Other encodings read
+   * {@code SwitchField}. Codecs must reject selectors outside their definition's range.
+   *
+   * @param fieldNames the unique union-member names in definition order.
+   * @return the one-based member position, or zero for no member.
+   */
+  default UInteger decodeSwitchField(String... fieldNames) throws UaSerializationException {
+    return decodeUInt32("SwitchField");
+  }
+
   ULong decodeUInt64(String field) throws UaSerializationException;
 
   Float decodeFloat(String field) throws UaSerializationException;

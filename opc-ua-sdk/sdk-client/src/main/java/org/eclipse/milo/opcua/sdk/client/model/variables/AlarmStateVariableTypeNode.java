@@ -107,7 +107,10 @@ public class AlarmStateVariableTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeHighestActiveSeverity(UShort value) throws UaException {
     try {
-      writeHighestActiveSeverityAsync(value).get();
+      StatusCode statusCode = writeHighestActiveSeverityAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -181,7 +184,10 @@ public class AlarmStateVariableTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeHighestUnackSeverity(UShort value) throws UaException {
     try {
-      writeHighestUnackSeverityAsync(value).get();
+      StatusCode statusCode = writeHighestUnackSeverityAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -254,7 +260,10 @@ public class AlarmStateVariableTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeActiveCount(UInteger value) throws UaException {
     try {
-      writeActiveCountAsync(value).get();
+      StatusCode statusCode = writeActiveCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -324,7 +333,10 @@ public class AlarmStateVariableTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeUnacknowledgedCount(UInteger value) throws UaException {
     try {
-      writeUnacknowledgedCountAsync(value).get();
+      StatusCode statusCode = writeUnacknowledgedCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -397,7 +409,10 @@ public class AlarmStateVariableTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeUnconfirmedCount(UInteger value) throws UaException {
     try {
-      writeUnconfirmedCountAsync(value).get();
+      StatusCode statusCode = writeUnconfirmedCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -471,7 +486,10 @@ public class AlarmStateVariableTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeFilter(ContentFilter value) throws UaException {
     try {
-      writeFilterAsync(value).get();
+      StatusCode statusCode = writeFilterAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

@@ -91,7 +91,10 @@ public class PublishedEventsTypeNode extends PublishedDataSetTypeNode
   @Override
   public void writePubSubEventNotifier(NodeId value) throws UaException {
     try {
-      writePubSubEventNotifierAsync(value).get();
+      StatusCode statusCode = writePubSubEventNotifierAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -166,7 +169,10 @@ public class PublishedEventsTypeNode extends PublishedDataSetTypeNode
   @Override
   public void writeSelectedFields(SimpleAttributeOperand[] value) throws UaException {
     try {
-      writeSelectedFieldsAsync(value).get();
+      StatusCode statusCode = writeSelectedFieldsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -240,7 +246,10 @@ public class PublishedEventsTypeNode extends PublishedDataSetTypeNode
   @Override
   public void writeFilter(ContentFilter value) throws UaException {
     try {
-      writeFilterAsync(value).get();
+      StatusCode statusCode = writeFilterAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

@@ -50,6 +50,23 @@ class OpcUaDataTypeTest {
         clazz.getSimpleName() + " should be recognized as a built-in type");
   }
 
+  // Callers branch on a -1 sentinel (Variant.getDataTypeId, OpcUaBinaryEncoder.encodeVariant), so
+  // an unknown class must return -1 rather than throwing on an unboxed null.
+  @Test
+  void getBuiltinTypeIdReturnsMinusOneForNonBuiltinClass() {
+    assertEquals(-1, OpcUaDataType.getBuiltinTypeId(Object.class));
+    assertEquals(-1, OpcUaDataType.getBuiltinTypeId(java.util.List.class));
+  }
+
+  @ParameterizedTest
+  @MethodSource("allBackingClasses")
+  void getBuiltinTypeIdResolvesBackingClasses(Class<?> clazz) {
+    assertNotEquals(
+        -1,
+        OpcUaDataType.getBuiltinTypeId(clazz),
+        clazz.getSimpleName() + " should resolve to a built-in type id");
+  }
+
   private static Stream<Class<?>> allBackingClasses() {
     return Stream.concat(standardBackingClasses(), extensionObjectSubtypeBackingClasses());
   }

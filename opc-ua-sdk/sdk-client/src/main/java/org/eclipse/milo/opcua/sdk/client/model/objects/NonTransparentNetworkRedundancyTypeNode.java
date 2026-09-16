@@ -92,7 +92,10 @@ public class NonTransparentNetworkRedundancyTypeNode extends NonTransparentRedun
   @Override
   public void writeServerNetworkGroups(NetworkGroupDataType[] value) throws UaException {
     try {
-      writeServerNetworkGroupsAsync(value).get();
+      StatusCode statusCode = writeServerNetworkGroupsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

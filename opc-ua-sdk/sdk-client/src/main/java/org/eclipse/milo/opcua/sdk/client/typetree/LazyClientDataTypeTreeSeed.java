@@ -25,7 +25,6 @@ import org.eclipse.milo.opcua.stack.core.util.Tree;
 public final class LazyClientDataTypeTreeSeed {
   private LazyClientDataTypeTreeSeed() {}
 
-  @SuppressWarnings("unused")
   public static Tree<DataType> createSeedTree() {
     Tree<DataType> root =
         new Tree<>(

@@ -107,7 +107,10 @@ public class SessionDiagnosticsArrayTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeSessionDiagnostics(SessionDiagnosticsDataType value) throws UaException {
     try {
-      writeSessionDiagnosticsAsync(value).get();
+      StatusCode statusCode = writeSessionDiagnosticsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

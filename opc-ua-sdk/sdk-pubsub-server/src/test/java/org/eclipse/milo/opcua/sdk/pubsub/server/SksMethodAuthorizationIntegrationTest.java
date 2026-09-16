@@ -253,10 +253,7 @@ class SksMethodAuthorizationIntegrationTest {
                   .setIdentityProvider(identityProvider)
                   .setRequestTimeout(uint(5_000));
               if (keyPair != null && certificate != null) {
-                clientConfigBuilder
-                    .setKeyPair(keyPair)
-                    .setCertificate(certificate)
-                    .setCertificateChain(new X509Certificate[] {certificate});
+                clientConfigBuilder.setCertificateIdentity(keyPair, certificate);
               }
             });
 

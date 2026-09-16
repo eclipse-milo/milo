@@ -19,11 +19,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.security.KeyPair;
+import java.security.Provider;
+import java.security.cert.CRL;
+import java.security.cert.CRLException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.CertificateParsingException;
+import java.security.cert.X509CRL;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -55,6 +59,7 @@ import org.bouncycastle.util.io.pem.PemWriter;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
+import org.jspecify.annotations.Nullable;
 
 public class CertificateUtil {
 
@@ -65,8 +70,8 @@ public class CertificateUtil {
   /**
    * Decode a DER-encoded X.509 certificate.
    *
-   * @param certificateBytes DER-encoded certificate bytes.
-   * @return an {@link X509Certificate}
+   * @param certificateBytes the DER-encoded certificate bytes.
+   * @return an {@link X509Certificate}.
    * @throws UaException if decoding the certificate fails.
    */
   public static X509Certificate decodeCertificate(byte[] certificateBytes) throws UaException {
@@ -78,8 +83,8 @@ public class CertificateUtil {
   /**
    * Decode a DER-encoded X.509 certificate.
    *
-   * @param inputStream {@link InputStream} containing DER-encoded certificate bytes.
-   * @return an {@link X509Certificate}
+   * @param inputStream the {@link InputStream} containing DER-encoded certificate bytes.
+   * @return an {@link X509Certificate}.
    * @throws UaException if decoding the certificate fails.
    */
   public static X509Certificate decodeCertificate(InputStream inputStream) throws UaException {
@@ -90,7 +95,7 @@ public class CertificateUtil {
    * Decode either a sequence of DER-encoded X.509 certificates or a PKCS#7 certificate chain.
    *
    * @param certificateBytes the byte[] to decode from.
-   * @return a {@link List} of certificates deocded from {@code certificateBytes}.
+   * @return a {@link List} of certificates decoded from {@code certificateBytes}.
    * @throws UaException if decoding fails.
    */
   public static List<X509Certificate> decodeCertificates(byte[] certificateBytes)
@@ -123,6 +128,79 @@ public class CertificateUtil {
       return certificates.stream().map(X509Certificate.class::cast).collect(Collectors.toList());
     } catch (CertificateException e) {
       throw new UaException(StatusCodes.Bad_CertificateInvalid, e);
+    }
+  }
+
+  /**
+   * Decode a DER-encoded X.509 CRL.
+   *
+   * @param crlBytes the DER-encoded CRL bytes.
+   * @return an {@link X509CRL}.
+   * @throws UaException if decoding the CRL fails or the bytes contain no CRL.
+   */
+  public static X509CRL decodeCrl(byte[] crlBytes) throws UaException {
+    Preconditions.checkNotNull(crlBytes, "crlBytes cannot be null");
+
+    return decodeCrl(new ByteArrayInputStream(crlBytes));
+  }
+
+  /**
+   * Decode a DER-encoded X.509 CRL.
+   *
+   * @param inputStream the {@link InputStream} containing DER-encoded CRL bytes.
+   * @return an {@link X509CRL}.
+   * @throws UaException if decoding the CRL fails or the stream contains no CRL.
+   */
+  public static X509CRL decodeCrl(InputStream inputStream) throws UaException {
+    List<X509CRL> crls = decodeCrls(inputStream);
+
+    if (crls.isEmpty()) {
+      throw new UaException(StatusCodes.Bad_DecodingError, "no CRL found");
+    }
+
+    return crls.get(0);
+  }
+
+  /**
+   * Decode either a sequence of DER-encoded X.509 CRLs or a PKCS#7 CRL set.
+   *
+   * @param crlBytes the byte[] to decode from.
+   * @return a {@link List} of CRLs decoded from {@code crlBytes}.
+   * @throws UaException if decoding fails.
+   */
+  public static List<X509CRL> decodeCrls(byte[] crlBytes) throws UaException {
+    Preconditions.checkNotNull(crlBytes, "crlBytes cannot be null");
+
+    return decodeCrls(new ByteArrayInputStream(crlBytes));
+  }
+
+  /**
+   * Decode either a sequence of DER-encoded X.509 CRLs or a PKCS#7 CRL set.
+   *
+   * @param inputStream the {@link InputStream} to decode from.
+   * @return a {@link List} of CRLs decoded from {@code inputStream}.
+   * @throws UaException if decoding fails.
+   */
+  public static List<X509CRL> decodeCrls(InputStream inputStream) throws UaException {
+    Preconditions.checkNotNull(inputStream, "inputStream cannot be null");
+
+    CertificateFactory factory;
+
+    try {
+      factory = CertificateFactory.getInstance("X.509");
+    } catch (CertificateException e) {
+      throw new UaException(StatusCodes.Bad_InternalError, e);
+    }
+
+    try {
+      Collection<? extends CRL> crls = factory.generateCRLs(inputStream);
+
+      return crls.stream()
+          .filter(X509CRL.class::isInstance)
+          .map(X509CRL.class::cast)
+          .collect(Collectors.toList());
+    } catch (CRLException e) {
+      throw new UaException(StatusCodes.Bad_DecodingError, e);
     }
   }
 
@@ -178,7 +256,7 @@ public class CertificateUtil {
    * Generate a {@link PKCS10CertificationRequest}.
    *
    * @param keyPair the {@link KeyPair} containing Public and Private keys.
-   * @param subjectName the subject name, in RFC 4519 style. (CN=foo,O=bar)
+   * @param subjectName the subject name, in RFC 4519 style, for example {@code CN=foo,O=bar}.
    * @param sanUri the URI to request in the SAN.
    * @param sanDnsNames the DNS names to request in the SAN.
    * @param sanIpAddresses the IP addresses to request in the SAN.
@@ -223,6 +301,90 @@ public class CertificateUtil {
       String signatureAlgorithm)
       throws Exception {
 
+    return generateCsr(
+        keyPair,
+        subject,
+        sanUri,
+        sanDnsNames,
+        sanIpAddresses,
+        signatureAlgorithm,
+        KeyUsage.digitalSignature
+            | KeyUsage.nonRepudiation
+            | KeyUsage.keyEncipherment
+            | KeyUsage.dataEncipherment,
+        List.of(KeyPurposeId.id_kp_clientAuth, KeyPurposeId.id_kp_serverAuth));
+  }
+
+  /**
+   * Generate a {@link PKCS10CertificationRequest}.
+   *
+   * @param keyPair the {@link KeyPair} containing Public and Private keys.
+   * @param subject the subject name {@link X500Name}.
+   * @param sanUri the URI to request in the SAN.
+   * @param sanDnsNames the DNS names to request in the SAN.
+   * @param sanIpAddresses the IP addresses to request in the SAN.
+   * @param signatureAlgorithm the signature algorithm to use when generating the signature to
+   *     validate the certificate.
+   * @param keyUsageFlags the requested KeyUsage flags.
+   * @param extendedKeyUsageIds the requested ExtendedKeyUsage IDs, or {@code null} to omit the
+   *     extension.
+   * @return a {@link PKCS10CertificationRequest}.
+   * @throws Exception if creating the signing request fails for any reason.
+   */
+  public static PKCS10CertificationRequest generateCsr(
+      KeyPair keyPair,
+      X500Name subject,
+      String sanUri,
+      List<String> sanDnsNames,
+      List<String> sanIpAddresses,
+      String signatureAlgorithm,
+      int keyUsageFlags,
+      @Nullable List<KeyPurposeId> extendedKeyUsageIds)
+      throws Exception {
+
+    return generateCsr(
+        keyPair,
+        subject,
+        sanUri,
+        sanDnsNames,
+        sanIpAddresses,
+        signatureAlgorithm,
+        keyUsageFlags,
+        extendedKeyUsageIds,
+        null);
+  }
+
+  /**
+   * Generate a {@link PKCS10CertificationRequest}.
+   *
+   * @param keyPair the {@link KeyPair} containing Public and Private keys.
+   * @param subject the subject name {@link X500Name}.
+   * @param sanUri the URI to request in the SAN.
+   * @param sanDnsNames the DNS names to request in the SAN.
+   * @param sanIpAddresses the IP addresses to request in the SAN.
+   * @param signatureAlgorithm the signature algorithm to use when generating the signature to
+   *     validate the certificate.
+   * @param keyUsageFlags the requested KeyUsage flags.
+   * @param extendedKeyUsageIds the requested ExtendedKeyUsage IDs, or {@code null} to omit the
+   *     extension.
+   * @param provider the JCA provider to use for signing, or {@code null} for normal provider
+   *     lookup. Use this when the private key or signature algorithm requires a provider that the
+   *     JVM would not reliably choose by default.
+   * @return a {@link PKCS10CertificationRequest}.
+   * @throws Exception if creating the signing request fails for any reason.
+   */
+  public static PKCS10CertificationRequest generateCsr(
+      KeyPair keyPair,
+      X500Name subject,
+      String sanUri,
+      List<String> sanDnsNames,
+      List<String> sanIpAddresses,
+      String signatureAlgorithm,
+      int keyUsageFlags,
+      @Nullable List<KeyPurposeId> extendedKeyUsageIds,
+      @Nullable Provider provider)
+      throws Exception {
+
     PKCS10CertificationRequestBuilder builder =
         new PKCS10CertificationRequestBuilder(
             subject, SubjectPublicKeyInfo.getInstance(keyPair.getPublic().getEncoded()));
@@ -246,18 +408,14 @@ public class CertificateUtil {
         false,
         new GeneralNames(generalNames.toArray(new GeneralName[0])));
 
-    KeyUsage keyUsage =
-        new KeyUsage(
-            KeyUsage.digitalSignature
-                | KeyUsage.nonRepudiation
-                | KeyUsage.keyEncipherment
-                | KeyUsage.dataEncipherment);
+    KeyUsage keyUsage = new KeyUsage(keyUsageFlags);
     extGen.addExtension(Extension.keyUsage, true, keyUsage);
 
-    ExtendedKeyUsage extendedKeyUsage =
-        new ExtendedKeyUsage(
-            new KeyPurposeId[] {KeyPurposeId.id_kp_clientAuth, KeyPurposeId.id_kp_serverAuth});
-    extGen.addExtension(Extension.extendedKeyUsage, false, extendedKeyUsage);
+    if (extendedKeyUsageIds != null && !extendedKeyUsageIds.isEmpty()) {
+      ExtendedKeyUsage extendedKeyUsage =
+          new ExtendedKeyUsage(extendedKeyUsageIds.toArray(new KeyPurposeId[0]));
+      extGen.addExtension(Extension.extendedKeyUsage, false, extendedKeyUsage);
+    }
 
     BasicConstraints basicConstraints = new BasicConstraints(false);
     extGen.addExtension(Extension.basicConstraints, true, basicConstraints);
@@ -265,6 +423,9 @@ public class CertificateUtil {
     builder.addAttribute(PKCSObjectIdentifiers.pkcs_9_at_extensionRequest, extGen.generate());
 
     JcaContentSignerBuilder signerBuilder = new JcaContentSignerBuilder(signatureAlgorithm);
+    if (provider != null) {
+      signerBuilder.setProvider(provider);
+    }
 
     ContentSigner signer = signerBuilder.build(keyPair.getPrivate());
 

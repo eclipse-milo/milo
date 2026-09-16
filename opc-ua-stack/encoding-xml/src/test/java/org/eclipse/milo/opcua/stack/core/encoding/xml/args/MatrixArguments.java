@@ -892,7 +892,7 @@ public class MatrixArguments {
               <uax:Elements>
                 <uax:ByteString>AQIDBA==</uax:ByteString>
                 <uax:ByteString></uax:ByteString>
-                <uax:ByteString></uax:ByteString>
+                <uax:ByteString xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:nil="true"></uax:ByteString>
                 <uax:ByteString>BQYHCA==</uax:ByteString>
               </uax:Elements>
             </Test>
@@ -927,7 +927,7 @@ public class MatrixArguments {
               <uax:Elements>
                 <uax:ByteString>AQIDBA==</uax:ByteString>
                 <uax:ByteString></uax:ByteString>
-                <uax:ByteString></uax:ByteString>
+                <uax:ByteString xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:nil="true"></uax:ByteString>
                 <uax:ByteString>BQYHCA==</uax:ByteString>
                 <uax:ByteString>CQoLDA==</uax:ByteString>
                 <uax:ByteString>DQ4PEA==</uax:ByteString>
@@ -961,7 +961,7 @@ public class MatrixArguments {
               <uax:Elements>
                 <uax:XmlElement><SimpleElement>Hello, World!</SimpleElement></uax:XmlElement>
                 <uax:XmlElement><Empty></Empty></uax:XmlElement>
-                <uax:XmlElement></uax:XmlElement>
+                <uax:XmlElement xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:nil="true"></uax:XmlElement>
                 <uax:XmlElement><Complex><Nested>Value</Nested></Complex></uax:XmlElement>
               </uax:Elements>
             </Test>

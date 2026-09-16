@@ -89,7 +89,10 @@ public class IIeeeTsnInterfaceConfigurationTalkerTypeNode
   @Override
   public void writeTimeAwareOffset(UInteger value) throws UaException {
     try {
-      writeTimeAwareOffsetAsync(value).get();
+      StatusCode statusCode = writeTimeAwareOffsetAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

@@ -12,9 +12,16 @@ package org.eclipse.milo.opcua.stack.core.util.validation;
 
 import com.google.common.base.Preconditions;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.URI;
+import java.net.UnknownHostException;
+import java.security.AlgorithmParameters;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.Provider;
 import java.security.PublicKey;
+import java.security.Security;
 import java.security.SignatureException;
 import java.security.cert.CertPath;
 import java.security.cert.CertPathBuilder;
@@ -31,32 +38,48 @@ import java.security.cert.PKIXBuilderParameters;
 import java.security.cert.PKIXCertPathBuilderResult;
 import java.security.cert.PKIXParameters;
 import java.security.cert.PKIXRevocationChecker;
+import java.security.cert.PKIXRevocationChecker.Option;
 import java.security.cert.TrustAnchor;
 import java.security.cert.X509CRL;
 import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
+import java.security.interfaces.ECPublicKey;
+import java.security.spec.ECGenParameterSpec;
+import java.security.spec.ECParameterSpec;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.bouncycastle.asn1.x509.Extension;
 import org.bouncycastle.asn1.x509.GeneralName;
 import org.bouncycastle.asn1.x509.GeneralNames;
 import org.bouncycastle.cert.X509CertificateHolder;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
+import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class CertificateValidationUtil {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CertificateValidationUtil.class);
+
+  /**
+   * Placeholder OCSP responder that keeps the JDK revocation checker from reading the {@code
+   * ocsp.responderURL} security property. Never contacted: the checker is configured for CRLs only.
+   */
+  private static final URI UNUSED_OCSP_RESPONDER = URI.create("urn:eclipse:milo:ocsp:unused");
 
   private static final String KEY_USAGE_OID = "2.5.29.15";
   private static final String EXTENDED_KEY_USAGE_OID = "2.5.29.37";
@@ -66,6 +89,19 @@ public class CertificateValidationUtil {
   private static final int SUBJECT_ALT_NAME_URI = 6;
   private static final int SUBJECT_ALT_NAME_DNS_NAME = 2;
   private static final int SUBJECT_ALT_NAME_IP_ADDRESS = 7;
+
+  /** Matches a dotted-quad IPv4 literal, rejecting any octet outside 0-255. */
+  private static final Pattern IPV4_LITERAL =
+      Pattern.compile(
+          "(?:(?:25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)\\.){3}(?:25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)");
+
+  private static final String BC_PROVIDER_NAME = "BC";
+
+  // Brainpool curves are not verifiable by the JDK's default JCA providers (SunEC parses the SPKI
+  // but throws "Curve not supported" at signature time). When a certificate in the picture uses one
+  // of these curves, signature verification is routed to Bouncy Castle.
+  private static final ECParameterSpec BRAINPOOL_P256R1 = brainpoolParameterSpec("brainpoolP256r1");
+  private static final ECParameterSpec BRAINPOOL_P384R1 = brainpoolParameterSpec("brainpoolP384r1");
 
   /**
    * Given a possibly partial certificate chain with at least one certificate in it, builds a path
@@ -78,8 +114,8 @@ public class CertificateValidationUtil {
    *
    * <p>The {@link CertPath} and {@link TrustAnchor} from the result is meant to be further
    * validated by {@link #validateTrustedCertPath(CertPath, TrustAnchor, Collection, Set, boolean)},
-   * which can return more detailed failure {@link StatusCodes} in its exceptions because it is
-   * dealing with a known trusted path.
+   * which can return more detailed failure {@link StatusCodes} in its exceptions after the trusted
+   * path is known.
    *
    * @param certificateChain a possibly partial certificate chain to build a trusted path from.
    * @param trustedCertificates a collection of known trusted certificates.
@@ -161,6 +197,9 @@ public class CertificateValidationUtil {
    *
    * <p>Each certificate is checked for validity, key usage, and revocation status. Whether a failed
    * check ultimately results in a thrown exception depends on the set of {@link ValidationCheck}s.
+   * A revocation established by an applicable CRL is always enforced; {@link
+   * ValidationCheck#REVOCATION_LISTS} decides whether an unknown revocation status is rejected or
+   * tolerated and logged.
    *
    * <p>The function is meant to be used in conjunction with {@link #buildTrustedCertPath(List,
    * Collection, Collection)}, the result of which contains a {@link CertPath} and {@link
@@ -170,9 +209,9 @@ public class CertificateValidationUtil {
    *     anchor.
    * @param trustAnchor a {@link TrustAnchor} containing the root of trust for the path being
    *     validated.
-   * @param crls a collection of {@link X509CRL}s. Every CA certificate in the trusted path except
-   *     the leaf should have a CRL, though whether that's enforced or not depends on {@link
-   *     ValidationCheck#REVOCATION_LISTS} being present.
+   * @param crls the {@link X509CRL}s available for revocation checking, normally the trust list's
+   *     CRLs. CRLs are evaluated by the JDK's PKIX revocation checker, which may fall back to a
+   *     distribution point named in a certificate when these CRLs do not cover its issuer.
    * @param validationChecks the set of {@link ValidationCheck}s to enforce.
    * @param endEntityIsClient {@code true} if the end-entity is a client, {@code false} if it is a
    *     server.
@@ -186,105 +225,281 @@ public class CertificateValidationUtil {
       boolean endEntityIsClient)
       throws UaException {
 
+    validateTrustedCertPath(certPath, trustAnchor, crls, validationChecks, endEntityIsClient, null);
+  }
+
+  /**
+   * Validates the trusted certificate path represented by a {@link TrustAnchor} and a {@link
+   * CertPath} against policy-aware OPC UA certificate usage rules.
+   *
+   * @param certPath a {@link CertPath} containing 0 or more certificates leading to the trust
+   *     anchor.
+   * @param trustAnchor a {@link TrustAnchor} containing the root of trust for the path being
+   *     validated.
+   * @param crls the {@link X509CRL}s available for revocation checking, normally the trust list's
+   *     CRLs.
+   * @param validationChecks the set of {@link ValidationCheck}s to enforce.
+   * @param endEntityIsClient {@code true} if the end-entity is a client, {@code false} if it is a
+   *     server.
+   * @param securityPolicyProfile the policy profile the end-entity certificate will be used with,
+   *     or {@code null} for legacy RSA-era usage checks.
+   * @throws UaException if a check from the set of {@link ValidationCheck}s failed.
+   */
+  public static void validateTrustedCertPath(
+      CertPath certPath,
+      TrustAnchor trustAnchor,
+      Collection<X509CRL> crls,
+      Set<ValidationCheck> validationChecks,
+      boolean endEntityIsClient,
+      @Nullable SecurityPolicyProfile securityPolicyProfile)
+      throws UaException {
+
     X509Certificate anchorCert = trustAnchor.getTrustedCert();
     boolean anchorIsEndEntity = certPath.getCertificates().isEmpty();
 
-    checkAnchorValidity(anchorCert, validationChecks, anchorIsEndEntity, endEntityIsClient);
+    checkAnchorValidity(
+        anchorCert, validationChecks, anchorIsEndEntity, endEntityIsClient, securityPolicyProfile);
 
     if (!anchorIsEndEntity) {
       // anchorCert is an issuer; validate the rest of the certPath
-      try {
-        CertPathValidator certPathValidator = CertPathValidator.getInstance("PKIX", "SUN");
+      List<CertPathValidatorException> unknownRevocationStatus =
+          validateIssuedCertPath(
+              certPath,
+              trustAnchor,
+              crls,
+              validationChecks,
+              endEntityIsClient,
+              securityPolicyProfile);
 
-        PKIXParameters parameters = new PKIXParameters(Set.of(trustAnchor));
+      for (CertPathValidatorException e : unknownRevocationStatus) {
+        X509Certificate certificate =
+            (X509Certificate) certPath.getCertificates().get(e.getIndex());
 
-        parameters.addCertPathChecker(
-            new OpcUaCertificateUsageChecker(certPath, validationChecks, endEntityIsClient));
-
-        try {
-          // Try to add our own custom revocation checker that can
-          // optionally suppress failures to locate the CRLs or allow
-          // certificates even if they've been revoked.
-
-          parameters.setRevocationEnabled(true);
-
-          if (!crls.isEmpty()) {
-            parameters.addCertStore(
-                CertStore.getInstance("Collection", new CollectionCertStoreParameters(crls)));
-          }
-
-          parameters.addCertPathChecker(
-              new OpcUaCertificateRevocationChecker(
-                  certPath, trustAnchor, parameters, validationChecks));
-        } catch (Exception e) {
-          // Couldn't add our custom revocation checker, so use the
-          // default one. It's not as fine-grained as ours - it's
-          // either enabled or it isn't, and CRL location is allowed
-          // to fail, regardless of the REVOCATION_LIST_FOUND check.
-
-          if (validationChecks.contains(ValidationCheck.REVOCATION)) {
-            parameters.setRevocationEnabled(true);
-
-            PKIXRevocationChecker pkixRevocationChecker =
-                (PKIXRevocationChecker) certPathValidator.getRevocationChecker();
-
-            pkixRevocationChecker.setOptions(
-                Set.of(
-                    PKIXRevocationChecker.Option.NO_FALLBACK,
-                    PKIXRevocationChecker.Option.PREFER_CRLS,
-                    PKIXRevocationChecker.Option.SOFT_FAIL));
-          } else {
-            parameters.setRevocationEnabled(false);
-          }
-
-          LOGGER.warn(
-              "Failed to add custom revocation checker; "
-                  + "REVOCATION_LIST_FOUND check will be ignored.");
-        }
-
-        certPathValidator.validate(certPath, parameters);
-      } catch (CertPathValidatorException e) {
-        CertPath path = e.getCertPath();
-        CertPathValidatorException.Reason reason = e.getReason();
-
-        int failedAtIndex = e.getIndex();
-
-        if (failedAtIndex < 0) {
-          throw new UaException(StatusCodes.Bad_SecurityChecksFailed, e);
-        } else {
-          X509Certificate failed = (X509Certificate) path.getCertificates().get(failedAtIndex);
-
-          LOGGER.debug(
-              "cert path validation failed at index={} reason={}, certificate={}",
-              failedAtIndex,
-              reason,
-              failed.getSubjectX500Principal().getName());
-
-          if (reason == BasicReason.REVOKED) {
-            if (failedAtIndex == 0) {
-              throw new UaException(StatusCodes.Bad_CertificateRevoked, e);
-            } else {
-              throw new UaException(StatusCodes.Bad_CertificateIssuerRevoked, e);
-            }
-          } else if (reason == BasicReason.UNDETERMINED_REVOCATION_STATUS) {
-            if (failedAtIndex == 0) {
-              throw new UaException(StatusCodes.Bad_CertificateRevocationUnknown, e);
-            } else {
-              throw new UaException(StatusCodes.Bad_CertificateIssuerRevocationUnknown, e);
-            }
-          } else if (reason == BasicReason.EXPIRED || reason == BasicReason.NOT_YET_VALID) {
-            if (failedAtIndex == 0) {
-              throw new UaException(StatusCodes.Bad_CertificateTimeInvalid, e);
-            } else {
-              throw new UaException(StatusCodes.Bad_CertificateIssuerTimeInvalid, e);
-            }
-          } else {
-            throw new UaException(StatusCodes.Bad_SecurityChecksFailed, e);
-          }
-        }
-      } catch (GeneralSecurityException e) {
-        throw new UaException(StatusCodes.Bad_SecurityChecksFailed, e);
+        LOGGER.warn(
+            "check suppressed: revocation status unknown for certificate '{}' issued by '{}': {}",
+            certificate.getSubjectX500Principal().getName(),
+            certificate.getIssuerX500Principal().getName(),
+            e.getMessage());
       }
+    }
+  }
+
+  /**
+   * Validates a non-empty {@code certPath} whose {@code trustAnchor} is an issuer of the end-entity
+   * certificate, including revocation checking against {@code crls}.
+   *
+   * <p>A revocation established by an applicable CRL always fails validation. When {@link
+   * ValidationCheck#REVOCATION_LISTS} is absent, a certificate whose revocation status cannot be
+   * established does not fail validation; the reason is returned instead so the caller can report
+   * it.
+   *
+   * @return the revocation checks that were tolerated because status could not be established, in
+   *     ascending order of {@link CertPathValidatorException#getIndex()}; empty when status was
+   *     established for every certificate or {@link ValidationCheck#REVOCATION_LISTS} is present.
+   * @throws UaException if validation failed.
+   */
+  static List<CertPathValidatorException> validateIssuedCertPath(
+      CertPath certPath,
+      TrustAnchor trustAnchor,
+      Collection<X509CRL> crls,
+      Set<ValidationCheck> validationChecks,
+      boolean endEntityIsClient,
+      @Nullable SecurityPolicyProfile securityPolicyProfile)
+      throws UaException {
+
+    X509Certificate anchorCert = trustAnchor.getTrustedCert();
+
+    try {
+      CertPathValidator certPathValidator = CertPathValidator.getInstance("PKIX", "SUN");
+
+      PKIXParameters parameters = new PKIXParameters(Set.of(trustAnchor));
+
+      // The SUN PKIX validator verifies each link's signature using the default JCA providers,
+      // which cannot handle Brainpool curves. Route signature verification to Bouncy Castle when
+      // any certificate in the path uses such a curve, leaving the SUN validation flow (usage and
+      // revocation checkers) otherwise unchanged.
+      List<X509Certificate> pathCertificates = new ArrayList<>();
+      certPath.getCertificates().stream()
+          .map(X509Certificate.class::cast)
+          .forEach(pathCertificates::add);
+      configureSignatureProvider(parameters, pathCertificates, List.of(anchorCert));
+
+      parameters.addCertPathChecker(
+          new OpcUaCertificateUsageChecker(
+              certPath, validationChecks, endEntityIsClient, securityPolicyProfile));
+
+      Collection<X509CRL> applicableCrls = selectApplicableCrls(crls, pathCertificates, anchorCert);
+
+      if (!applicableCrls.isEmpty()) {
+        parameters.addCertStore(
+            CertStore.getInstance("Collection", new CollectionCertStoreParameters(applicableCrls)));
+      }
+
+      PKIXRevocationChecker revocationChecker =
+          configureRevocationChecker(certPathValidator, parameters, anchorCert, validationChecks);
+
+      certPathValidator.validate(certPath, parameters);
+
+      return revocationChecker.getSoftFailExceptions();
+    } catch (CertPathValidatorException e) {
+      CertPath path = e.getCertPath();
+      CertPathValidatorException.Reason reason = e.getReason();
+
+      int failedAtIndex = e.getIndex();
+
+      if (failedAtIndex < 0) {
+        throw new UaException(StatusCodes.Bad_SecurityChecksFailed, e);
+      } else {
+        X509Certificate failed = (X509Certificate) path.getCertificates().get(failedAtIndex);
+
+        LOGGER.debug(
+            "cert path validation failed at index={} reason={}, certificate={}",
+            failedAtIndex,
+            reason,
+            failed.getSubjectX500Principal().getName());
+
+        if (reason == BasicReason.REVOKED) {
+          if (failedAtIndex == 0) {
+            throw new UaException(StatusCodes.Bad_CertificateRevoked, e);
+          } else {
+            throw new UaException(StatusCodes.Bad_CertificateIssuerRevoked, e);
+          }
+        } else if (reason == BasicReason.UNDETERMINED_REVOCATION_STATUS) {
+          if (failedAtIndex == 0) {
+            throw new UaException(StatusCodes.Bad_CertificateRevocationUnknown, e);
+          } else {
+            throw new UaException(StatusCodes.Bad_CertificateIssuerRevocationUnknown, e);
+          }
+        } else if (reason == BasicReason.EXPIRED || reason == BasicReason.NOT_YET_VALID) {
+          if (failedAtIndex == 0) {
+            throw new UaException(StatusCodes.Bad_CertificateTimeInvalid, e);
+          } else {
+            throw new UaException(StatusCodes.Bad_CertificateIssuerTimeInvalid, e);
+          }
+        } else {
+          throw new UaException(StatusCodes.Bad_SecurityChecksFailed, e);
+        }
+      }
+    } catch (GeneralSecurityException e) {
+      throw new UaException(StatusCodes.Bad_SecurityChecksFailed, e);
+    }
+  }
+
+  /**
+   * Adds the JDK's PKIX revocation checker to {@code parameters}, configured to evaluate the CRLs
+   * in the parameters' cert stores and nothing else, and returns that checker.
+   *
+   * <p>The checker never consults OCSP and is isolated from the JVM-wide {@code ocsp.*} security
+   * properties. When {@link ValidationCheck#REVOCATION_LISTS} is absent, the checker tolerates an
+   * unknown revocation status and records why it could not be established.
+   *
+   * @return the configured checker; its {@link PKIXRevocationChecker#getSoftFailExceptions()}
+   *     reports the tolerated failures once validation has run.
+   */
+  private static PKIXRevocationChecker configureRevocationChecker(
+      CertPathValidator certPathValidator,
+      PKIXParameters parameters,
+      X509Certificate anchorCert,
+      Set<ValidationCheck> validationChecks) {
+
+    // Disable the provider's automatic revocation checking, whose options come from JDK security
+    // properties, so only the explicitly configured checker added below runs.
+    parameters.setRevocationEnabled(false);
+
+    PKIXRevocationChecker revocationChecker =
+        (PKIXRevocationChecker) certPathValidator.getRevocationChecker();
+
+    EnumSet<Option> options = EnumSet.of(Option.PREFER_CRLS, Option.NO_FALLBACK);
+
+    if (!validationChecks.contains(ValidationCheck.REVOCATION_LISTS)) {
+      // SOFT_FAIL tolerates any result other than a confirmed revocation: a missing CRL, but also
+      // one that is expired, not yet valid, or signed by the wrong key. None of those establish a
+      // status, so the tolerated failures are reported to the caller rather than dropped.
+      options.add(Option.SOFT_FAIL);
+    }
+
+    revocationChecker.setOptions(options);
+
+    // The JDK initializes its checker from the global ocsp.* security properties even in CRL-only
+    // mode: it parses ocsp.responderURL, and it looks a responder named by
+    // ocsp.responderCertSubjectName (or the issuer/serial pair) up among this validation's trust
+    // anchors and cert stores. Either step fails the whole validation when another component in
+    // the JVM has set those properties for its own use. Values supplied through the public API
+    // take precedence over the properties. OCSP is never consulted with PREFER_CRLS and
+    // NO_FALLBACK, so the responder set here is never used; it exists only to keep unrelated OCSP
+    // configuration out of CRL validation. If OCSP is ever enabled for this checker, this override
+    // must be revisited.
+    revocationChecker.setOcspResponder(UNUSED_OCSP_RESPONDER);
+    revocationChecker.setOcspResponderCert(anchorCert);
+
+    // PKIXParameters clones the checker, but the JDK's implementation shares its list of tolerated
+    // failures with its clones, so the instance returned here sees what validation recorded.
+    // CertificateRevocationTest.ToleratedFailureReporting guards that assumption.
+    parameters.addCertPathChecker(revocationChecker);
+
+    return revocationChecker;
+  }
+
+  /**
+   * Removes CRLs that share an issuer name with a certificate in the path but were signed by a
+   * different key.
+   *
+   * <p>PKIX chooses candidate CRLs by issuer name. That is ambiguous whenever a trust list holds
+   * several CA certificates with the same subject name, which a Global Discovery Server produces as
+   * a matter of course: a certificate group that offers more than one certificate type issues one
+   * CA per type, all under the group's single configured subject name, and publishes a CRL for
+   * each. Handed a same-named CRL signed by a different key alongside the right one, PKIX can lose
+   * the usable CRL: it reports {@link BasicReason#UNDETERMINED_REVOCATION_STATUS} when status is
+   * required, and can accept a revoked certificate when unknown status is tolerated.
+   *
+   * <p>A CRL whose issuer name matches nothing in the path is left alone; it belongs to some other
+   * path and is not ours to judge.
+   *
+   * @param crls the CRLs from the trust list.
+   * @param pathCertificates the certificates of the path being validated.
+   * @param anchorCert the trust anchor certificate.
+   * @return the CRLs that PKIX can unambiguously attribute to an issuer in the path.
+   */
+  private static Collection<X509CRL> selectApplicableCrls(
+      Collection<X509CRL> crls,
+      List<X509Certificate> pathCertificates,
+      X509Certificate anchorCert) {
+
+    var issuers = new ArrayList<X509Certificate>(pathCertificates);
+    issuers.add(anchorCert);
+
+    var applicable = new ArrayList<X509CRL>(crls.size());
+
+    for (X509CRL crl : crls) {
+      List<X509Certificate> candidates =
+          issuers.stream()
+              .filter(c -> c.getSubjectX500Principal().equals(crl.getIssuerX500Principal()))
+              .collect(Collectors.toList());
+
+      if (candidates.isEmpty() || candidates.stream().anyMatch(c -> verifies(crl, c))) {
+        applicable.add(crl);
+      } else {
+        LOGGER.debug(
+            "Discarding CRL from issuer={} that no same-named certificate in the path signed.",
+            crl.getIssuerX500Principal().getName());
+      }
+    }
+
+    return applicable;
+  }
+
+  private static boolean verifies(X509CRL crl, X509Certificate issuer) {
+    try {
+      // Use the same provider routing as path validation so unsupported SunEC curves do not
+      // cause a valid CRL to be discarded before the revocation checker sees it.
+      if (usesUnsupportedCurve(issuer)) {
+        crl.verify(issuer.getPublicKey(), bouncyCastleProvider());
+      } else {
+        crl.verify(issuer.getPublicKey());
+      }
+      return true;
+    } catch (GeneralSecurityException e) {
+      return false;
     }
   }
 
@@ -292,7 +507,8 @@ public class CertificateValidationUtil {
       X509Certificate anchorCert,
       Set<ValidationCheck> validationChecks,
       boolean endEntity,
-      boolean endEntityIsClient)
+      boolean endEntityIsClient,
+      @Nullable SecurityPolicyProfile securityPolicyProfile)
       throws UaException {
 
     Set<String> criticalExtensions = anchorCert.getCriticalExtensionOIDs();
@@ -312,7 +528,7 @@ public class CertificateValidationUtil {
 
     if (endEntity) {
       try {
-        checkEndEntityKeyUsage(anchorCert);
+        checkEndEntityKeyUsage(anchorCert, securityPolicyProfile);
       } catch (UaException e) {
         if (validationChecks.contains(ValidationCheck.KEY_USAGE_END_ENTITY)
             || criticalExtensions.contains(KEY_USAGE_OID)) {
@@ -326,7 +542,7 @@ public class CertificateValidationUtil {
       }
 
       try {
-        checkEndEntityExtendedKeyUsage(anchorCert, endEntityIsClient);
+        checkEndEntityExtendedKeyUsage(anchorCert, endEntityIsClient, securityPolicyProfile);
       } catch (UaException e) {
         if (validationChecks.contains(ValidationCheck.EXTENDED_KEY_USAGE_END_ENTITY)
             || criticalExtensions.contains(EXTENDED_KEY_USAGE_OID)) {
@@ -377,6 +593,15 @@ public class CertificateValidationUtil {
         builderParams.addCertStore(certStore);
       }
 
+      // The default PKIX CertPathBuilder verifies each link's signature using the default JCA
+      // providers, which cannot handle Brainpool curves. Route signature verification to Bouncy
+      // Castle when any candidate certificate uses such a curve, leaving every other PKIX behavior
+      // (path building, anchor selection) unchanged.
+      List<X509Certificate> anchorCertificates =
+          trustAnchors.stream().map(TrustAnchor::getTrustedCert).collect(Collectors.toList());
+      configureSignatureProvider(
+          builderParams, certificateChain, intermediates, anchorCertificates);
+
       // Disable revocation checking in the CertPathBuilder; it will be
       // checked by a PKIXCertPathValidator after the CertPath is built.
       builderParams.setRevocationEnabled(false);
@@ -385,6 +610,8 @@ public class CertificateValidationUtil {
 
       return (PKIXCertPathBuilderResult) builder.build(builderParams);
     } catch (GeneralSecurityException e) {
+      // Presented certificates are only path candidates. Their validity cannot establish why
+      // construction failed, so preserve the builder's failure instead of guessing from the list.
       throw new UaException(StatusCodes.Bad_SecurityChecksFailed, e);
     }
   }
@@ -429,14 +656,27 @@ public class CertificateValidationUtil {
       return false;
     }
 
+    // Verify the certificate signature with its own public key.
+    PublicKey key = cert.getPublicKey();
+
     try {
-      // Verify the certificate signature with its own public key
-      PublicKey key = cert.getPublicKey();
       cert.verify(key);
       return true;
-    } catch (SignatureException | InvalidKeyException e) {
-      // Invalid signature or key: not self-signed
-      return false;
+    } catch (SignatureException | InvalidKeyException | NoSuchAlgorithmException e) {
+      // The default JCA providers could not verify the signature. This happens for curves the
+      // built-in providers cannot handle (e.g. Brainpool on SunEC, which throws SignatureException
+      // "Curve not supported"), so retry with the resolved Bouncy Castle provider before concluding
+      // the certificate is not self-signed. A genuine signature/key mismatch fails under BC too,
+      // and is reported as "not self-signed".
+      try {
+        cert.verify(key, bouncyCastleProvider());
+        return true;
+      } catch (SignatureException | InvalidKeyException | NoSuchAlgorithmException bcException) {
+        // Invalid signature or key under both providers: not self-signed.
+        return false;
+      } catch (Exception bcException) {
+        throw new UaException(StatusCodes.Bad_CertificateInvalid, bcException);
+      }
     } catch (Exception e) {
       throw new UaException(StatusCodes.Bad_CertificateInvalid, e);
     }
@@ -478,8 +718,13 @@ public class CertificateValidationUtil {
    * Validate that one of {@code hostNames} matches a SubjectAltName DNSName or IPAddress entry in
    * the certificate.
    *
+   * <p>DNSName entries are compared case-insensitively. IPAddress entries are compared by address
+   * rather than by text, so that the same address written in different forms still matches; an
+   * entry that is not an IP address literal never matches.
+   *
    * @param certificate the certificate to validate against.
-   * @param hostNames the host names or ip addresses to look for.
+   * @param hostNames the host names or ip addresses to look for. IPv6 addresses may be given in
+   *     either the bare or the bracketed URI form.
    * @throws UaException if there is no matching DNSName or IPAddress entry.
    */
   public static void checkHostnameOrIpAddress(X509Certificate certificate, String... hostNames)
@@ -504,9 +749,19 @@ public class CertificateValidationUtil {
         Arrays.stream(hostNames)
             .anyMatch(
                 n -> {
+                  byte[] address = parseIpAddress(n);
+
+                  if (address == null) {
+                    return false;
+                  }
+
                   try {
                     return checkSubjectAltNameField(
-                        certificate, SUBJECT_ALT_NAME_IP_ADDRESS, n::equals);
+                        certificate,
+                        SUBJECT_ALT_NAME_IP_ADDRESS,
+                        fieldValue ->
+                            (fieldValue instanceof String s)
+                                && Arrays.equals(address, parseIpAddress(s)));
                   } catch (Throwable t) {
                     return false;
                   }
@@ -518,6 +773,58 @@ public class CertificateValidationUtil {
   }
 
   public static void checkEndEntityKeyUsage(X509Certificate certificate) throws UaException {
+    checkEndEntityKeyUsage(certificate, null);
+  }
+
+  /**
+   * Check end-entity KeyUsage with {@link ValidationCheck} suppression applied.
+   *
+   * <p>ECC and Edwards-curve profiles always enforce their policy-specific KeyUsage rules. For
+   * legacy RSA-era profiles (and the {@code null} profile) the end-entity KeyUsage check is
+   * suppressible: {@link ValidationCheck#KEY_USAGE_END_ENTITY} is not part of {@link
+   * ValidationCheck#NO_OPTIONAL_CHECKS}, so a failure is suppressed unless that check is active or
+   * the KeyUsage extension is marked critical. This keeps legacy certificates that lack the
+   * KeyUsage extension, or omit {@code nonRepudiation}/{@code dataEncipherment}, from being
+   * rejected by default while still allowing strict enforcement to be opted into.
+   *
+   * @param certificate the end-entity certificate to check.
+   * @param securityPolicyProfile the policy profile the certificate will be used with, or {@code
+   *     null} for legacy RSA-era usage checks.
+   * @param validationChecks the set of active {@link ValidationCheck}s.
+   * @throws UaException if the KeyUsage check fails and is not suppressible.
+   */
+  public static void checkEndEntityKeyUsage(
+      X509Certificate certificate,
+      @Nullable SecurityPolicyProfile securityPolicyProfile,
+      Set<ValidationCheck> validationChecks)
+      throws UaException {
+
+    try {
+      checkEndEntityKeyUsage(certificate, securityPolicyProfile);
+    } catch (UaException e) {
+      // ECC/Edwards profiles always enforce their policy-specific KeyUsage rules.
+      if (isEccOrEdwardsApplicationProfile(securityPolicyProfile)) {
+        throw e;
+      }
+
+      Set<String> criticalExtensions = certificate.getCriticalExtensionOIDs();
+
+      if (validationChecks.contains(ValidationCheck.KEY_USAGE_END_ENTITY)
+          || (criticalExtensions != null && criticalExtensions.contains(KEY_USAGE_OID))) {
+
+        throw e;
+      }
+
+      LOGGER.warn(
+          "check suppressed: certificate failed end-entity KeyUsage check: {}",
+          certificate.getSubjectX500Principal().getName());
+    }
+  }
+
+  public static void checkEndEntityKeyUsage(
+      X509Certificate certificate, @Nullable SecurityPolicyProfile securityPolicyProfile)
+      throws UaException {
+
     boolean[] keyUsage = certificate.getKeyUsage();
 
     if (keyUsage == null) {
@@ -525,17 +832,27 @@ public class CertificateValidationUtil {
           StatusCodes.Bad_CertificateUseNotAllowed, "KeyUsage extension not found");
     }
 
-    boolean digitalSignature = keyUsage[0];
-    boolean nonRepudiation = keyUsage[1];
-    boolean keyEncipherment = keyUsage[2];
-    boolean dataEncipherment = keyUsage[3];
-    boolean keyCertSign = keyUsage[5];
+    boolean digitalSignature = hasKeyUsage(keyUsage, 0);
+    boolean keyCertSign = hasKeyUsage(keyUsage, 5);
 
     if (!digitalSignature) {
       throw new UaException(
           StatusCodes.Bad_CertificateUseNotAllowed,
           "required KeyUsage 'digitalSignature' not found");
     }
+
+    if (keyCertSignRequiredForSelfSigned(securityPolicyProfile)) {
+      if (!keyCertSign && certificateIsSelfSigned(certificate)) {
+        throw new UaException(
+            StatusCodes.Bad_CertificateUseNotAllowed, "required KeyUsage 'keyCertSign' not found");
+      }
+
+      return;
+    }
+
+    boolean nonRepudiation = hasKeyUsage(keyUsage, 1);
+    boolean keyEncipherment = hasKeyUsage(keyUsage, 2);
+    boolean dataEncipherment = hasKeyUsage(keyUsage, 3);
 
     if (!nonRepudiation) {
       throw new UaException(
@@ -563,6 +880,19 @@ public class CertificateValidationUtil {
   public static void checkEndEntityExtendedKeyUsage(
       X509Certificate certificate, boolean endEntityIsClient) throws UaException {
 
+    checkEndEntityExtendedKeyUsage(certificate, endEntityIsClient, null);
+  }
+
+  public static void checkEndEntityExtendedKeyUsage(
+      X509Certificate certificate,
+      boolean endEntityIsClient,
+      @Nullable SecurityPolicyProfile securityPolicyProfile)
+      throws UaException {
+
+    if (isEccOrEdwardsApplicationProfile(securityPolicyProfile)) {
+      return;
+    }
+
     try {
       List<String> extendedKeyUsage = certificate.getExtendedKeyUsage();
 
@@ -585,6 +915,33 @@ public class CertificateValidationUtil {
     } catch (CertificateParsingException e) {
       throw new UaException(StatusCodes.Bad_CertificateUseNotAllowed);
     }
+  }
+
+  private static boolean keyCertSignRequiredForSelfSigned(
+      @Nullable SecurityPolicyProfile securityPolicyProfile) {
+
+    return isEccOrEdwardsApplicationProfile(securityPolicyProfile);
+  }
+
+  private static boolean isEccOrEdwardsApplicationProfile(
+      @Nullable SecurityPolicyProfile securityPolicyProfile) {
+
+    if (securityPolicyProfile == null) {
+      return false;
+    }
+
+    AuthAxis authAxis = securityPolicyProfile.authAxis();
+
+    return authAxis == AuthAxis.ECDSA_NIST_P256_SHA256
+        || authAxis == AuthAxis.ECDSA_NIST_P384_SHA384
+        || authAxis == AuthAxis.ECDSA_BRAINPOOL_P256R1_SHA256
+        || authAxis == AuthAxis.ECDSA_BRAINPOOL_P384R1_SHA384
+        || authAxis == AuthAxis.ED25519
+        || authAxis == AuthAxis.ED448;
+  }
+
+  private static boolean hasKeyUsage(boolean[] keyUsage, int bitIndex) {
+    return keyUsage.length > bitIndex && keyUsage[bitIndex];
   }
 
   /**
@@ -627,6 +984,44 @@ public class CertificateValidationUtil {
       } catch (IOException | CertificateEncodingException e) {
         throw new UaException(StatusCodes.Bad_CertificateUriInvalid, e);
       }
+    }
+  }
+
+  /**
+   * Parse a textual IP address into its raw address bytes.
+   *
+   * <p>No name resolution is attempted: an argument that is not an IP address literal returns
+   * {@code null} rather than being looked up.
+   *
+   * @param address an IPv4 or IPv6 address literal. IPv6 literals may be bracketed, as they appear
+   *     in the host component of a URL (RFC 3986, section 3.2.2).
+   * @return the raw address bytes, or {@code null} if {@code address} is not an IP address literal.
+   */
+  private static byte @Nullable [] parseIpAddress(String address) {
+    String literal = address;
+
+    if (literal.length() > 2 && literal.startsWith("[") && literal.endsWith("]")) {
+      literal = literal.substring(1, literal.length() - 1);
+    }
+
+    // InetAddress.getByName() hands anything it cannot parse as a literal to the system resolver,
+    // including some strings that contain ':'. Only call it with the two forms it always treats as
+    // a literal: a strict dotted-quad, or a bracketed RFC 2732 IPv6 literal. A bracketed argument
+    // that is not a valid IPv6 address is rejected outright rather than looked up.
+    String candidate;
+
+    if (IPV4_LITERAL.matcher(literal).matches()) {
+      candidate = literal;
+    } else if (literal.indexOf(':') >= 0) {
+      candidate = "[" + literal + "]";
+    } else {
+      return null;
+    }
+
+    try {
+      return InetAddress.getByName(candidate).getAddress();
+    } catch (UnknownHostException e) {
+      return null;
     }
   }
 
@@ -679,5 +1074,105 @@ public class CertificateValidationUtil {
     } catch (CertificateParsingException e) {
       throw new UaException(StatusCodes.Bad_CertificateInvalid, e);
     }
+  }
+
+  /**
+   * Configure the signature provider used by a PKIX path build or validation when the certificate
+   * material requires a curve the JDK's default JCA providers cannot verify.
+   *
+   * <p>Brainpool ECDSA signatures cannot be verified by the built-in providers (SunEC throws "Curve
+   * not supported"). When a Brainpool certificate is present, the resolved Bouncy Castle provider
+   * is registered (append-only, lowest precedence) so it can be selected by name as the PKIX
+   * signature provider; this leaves provider selection for every other algorithm unchanged. For
+   * non-Brainpool material no signature provider is set, so the default JCA behavior is fully
+   * preserved.
+   *
+   * @param parameters the {@link PKIXParameters} (or {@link PKIXBuilderParameters}) to configure.
+   * @param certificateGroups the certificate collections that make up the path and trust material.
+   */
+  @SafeVarargs
+  private static void configureSignatureProvider(
+      PKIXParameters parameters, Collection<X509Certificate>... certificateGroups) {
+
+    boolean needsBouncyCastle =
+        Arrays.stream(certificateGroups)
+            .flatMap(Collection::stream)
+            .anyMatch(CertificateValidationUtil::usesUnsupportedCurve);
+
+    if (!needsBouncyCastle) {
+      return;
+    }
+
+    Provider provider = bouncyCastleProvider();
+
+    // PKIXParameters resolves the signature provider by name, so the resolved instance must be a
+    // registered provider. Register it append-only (lowest precedence) when absent; this is
+    // monotonic and race-safe and never changes selection for algorithms the default providers
+    // already handle.
+    if (Security.getProvider(provider.getName()) == null) {
+      Security.addProvider(provider);
+    }
+
+    parameters.setSigProvider(provider.getName());
+  }
+
+  /**
+   * Return {@code true} if {@code certificate} uses an EC curve the JDK's default JCA providers
+   * cannot verify (currently the Brainpool curves used by OPC UA ECC policies).
+   *
+   * @param certificate the certificate to inspect.
+   * @return {@code true} if the certificate's public key uses an unsupported curve.
+   */
+  private static boolean usesUnsupportedCurve(X509Certificate certificate) {
+    if (!(certificate.getPublicKey() instanceof ECPublicKey ecPublicKey)) {
+      return false;
+    }
+
+    ECParameterSpec params = ecPublicKey.getParams();
+
+    return isSameCurve(BRAINPOOL_P256R1, params) || isSameCurve(BRAINPOOL_P384R1, params);
+  }
+
+  private static boolean isSameCurve(
+      @Nullable ECParameterSpec expected, @Nullable ECParameterSpec actual) {
+
+    if (expected == null || actual == null) {
+      return false;
+    }
+
+    return Objects.equals(expected.getCurve(), actual.getCurve())
+        && Objects.equals(expected.getGenerator(), actual.getGenerator())
+        && Objects.equals(expected.getOrder(), actual.getOrder())
+        && expected.getCofactor() == actual.getCofactor();
+  }
+
+  @Nullable
+  private static ECParameterSpec brainpoolParameterSpec(String curveName) {
+    try {
+      AlgorithmParameters parameters =
+          AlgorithmParameters.getInstance("EC", new BouncyCastleProvider());
+      parameters.init(new ECGenParameterSpec(curveName));
+
+      return parameters.getParameterSpec(ECParameterSpec.class);
+    } catch (GeneralSecurityException e) {
+      // Bouncy Castle is on the classpath wherever ECC policies are configured, but if the curve
+      // cannot be resolved here, Brainpool detection simply degrades to "not detected" rather than
+      // failing class initialization.
+      LOGGER.debug("could not resolve Brainpool curve '{}' for signature routing", curveName, e);
+      return null;
+    }
+  }
+
+  /**
+   * Resolve the Bouncy Castle {@link Provider}, preferring an already-registered instance and
+   * falling back to a new instance otherwise. Mirrors the resolution used elsewhere in the stack
+   * (e.g. {@code SecurityProviderResolver}).
+   *
+   * @return the resolved Bouncy Castle {@link Provider}.
+   */
+  private static Provider bouncyCastleProvider() {
+    Provider provider = Security.getProvider(BC_PROVIDER_NAME);
+
+    return provider != null ? provider : new BouncyCastleProvider();
   }
 }

@@ -100,7 +100,10 @@ public class IetfBaseNetworkInterfaceTypeNode extends BaseObjectTypeNode
   @Override
   public void writeAdminStatus(InterfaceAdminStatus value) throws UaException {
     try {
-      writeAdminStatusAsync(value).get();
+      StatusCode statusCode = writeAdminStatusAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -186,7 +189,10 @@ public class IetfBaseNetworkInterfaceTypeNode extends BaseObjectTypeNode
   @Override
   public void writeOperStatus(InterfaceOperStatus value) throws UaException {
     try {
-      writeOperStatusAsync(value).get();
+      StatusCode statusCode = writeOperStatusAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -264,7 +270,10 @@ public class IetfBaseNetworkInterfaceTypeNode extends BaseObjectTypeNode
   @Override
   public void writePhysAddress(String value) throws UaException {
     try {
-      writePhysAddressAsync(value).get();
+      StatusCode statusCode = writePhysAddressAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -334,7 +343,10 @@ public class IetfBaseNetworkInterfaceTypeNode extends BaseObjectTypeNode
   @Override
   public void writeSpeed(ULong value) throws UaException {
     try {
-      writeSpeedAsync(value).get();
+      StatusCode statusCode = writeSpeedAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

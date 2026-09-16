@@ -88,7 +88,10 @@ public class HistoryServerCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeAccessHistoryDataCapability(Boolean value) throws UaException {
     try {
-      writeAccessHistoryDataCapabilityAsync(value).get();
+      StatusCode statusCode = writeAccessHistoryDataCapabilityAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -162,7 +165,10 @@ public class HistoryServerCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeAccessHistoryEventsCapability(Boolean value) throws UaException {
     try {
-      writeAccessHistoryEventsCapabilityAsync(value).get();
+      StatusCode statusCode = writeAccessHistoryEventsCapabilityAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -236,7 +242,10 @@ public class HistoryServerCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeMaxReturnDataValues(UInteger value) throws UaException {
     try {
-      writeMaxReturnDataValuesAsync(value).get();
+      StatusCode statusCode = writeMaxReturnDataValuesAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -309,7 +318,10 @@ public class HistoryServerCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeMaxReturnEventValues(UInteger value) throws UaException {
     try {
-      writeMaxReturnEventValuesAsync(value).get();
+      StatusCode statusCode = writeMaxReturnEventValuesAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -383,7 +395,10 @@ public class HistoryServerCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeInsertDataCapability(Boolean value) throws UaException {
     try {
-      writeInsertDataCapabilityAsync(value).get();
+      StatusCode statusCode = writeInsertDataCapabilityAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -457,7 +472,10 @@ public class HistoryServerCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeReplaceDataCapability(Boolean value) throws UaException {
     try {
-      writeReplaceDataCapabilityAsync(value).get();
+      StatusCode statusCode = writeReplaceDataCapabilityAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -531,7 +549,10 @@ public class HistoryServerCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeUpdateDataCapability(Boolean value) throws UaException {
     try {
-      writeUpdateDataCapabilityAsync(value).get();
+      StatusCode statusCode = writeUpdateDataCapabilityAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -605,7 +626,10 @@ public class HistoryServerCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeDeleteRawCapability(Boolean value) throws UaException {
     try {
-      writeDeleteRawCapabilityAsync(value).get();
+      StatusCode statusCode = writeDeleteRawCapabilityAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -678,7 +702,10 @@ public class HistoryServerCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeDeleteAtTimeCapability(Boolean value) throws UaException {
     try {
-      writeDeleteAtTimeCapabilityAsync(value).get();
+      StatusCode statusCode = writeDeleteAtTimeCapabilityAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -752,7 +779,10 @@ public class HistoryServerCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeInsertEventCapability(Boolean value) throws UaException {
     try {
-      writeInsertEventCapabilityAsync(value).get();
+      StatusCode statusCode = writeInsertEventCapabilityAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -826,7 +856,10 @@ public class HistoryServerCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeReplaceEventCapability(Boolean value) throws UaException {
     try {
-      writeReplaceEventCapabilityAsync(value).get();
+      StatusCode statusCode = writeReplaceEventCapabilityAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -900,7 +933,10 @@ public class HistoryServerCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeUpdateEventCapability(Boolean value) throws UaException {
     try {
-      writeUpdateEventCapabilityAsync(value).get();
+      StatusCode statusCode = writeUpdateEventCapabilityAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -974,7 +1010,10 @@ public class HistoryServerCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeDeleteEventCapability(Boolean value) throws UaException {
     try {
-      writeDeleteEventCapabilityAsync(value).get();
+      StatusCode statusCode = writeDeleteEventCapabilityAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -1048,7 +1087,10 @@ public class HistoryServerCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeInsertAnnotationCapability(Boolean value) throws UaException {
     try {
-      writeInsertAnnotationCapabilityAsync(value).get();
+      StatusCode statusCode = writeInsertAnnotationCapabilityAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -1122,7 +1164,10 @@ public class HistoryServerCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeServerTimestampSupported(Boolean value) throws UaException {
     try {
-      writeServerTimestampSupportedAsync(value).get();
+      StatusCode statusCode = writeServerTimestampSupportedAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

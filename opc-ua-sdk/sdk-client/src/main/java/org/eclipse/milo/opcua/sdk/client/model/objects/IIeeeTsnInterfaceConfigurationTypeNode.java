@@ -88,7 +88,10 @@ public class IIeeeTsnInterfaceConfigurationTypeNode extends BaseInterfaceTypeNod
   @Override
   public void writeMacAddress(String value) throws UaException {
     try {
-      writeMacAddressAsync(value).get();
+      StatusCode statusCode = writeMacAddressAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -158,7 +161,10 @@ public class IIeeeTsnInterfaceConfigurationTypeNode extends BaseInterfaceTypeNod
   @Override
   public void writeInterfaceName(String value) throws UaException {
     try {
-      writeInterfaceNameAsync(value).get();
+      StatusCode statusCode = writeInterfaceNameAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

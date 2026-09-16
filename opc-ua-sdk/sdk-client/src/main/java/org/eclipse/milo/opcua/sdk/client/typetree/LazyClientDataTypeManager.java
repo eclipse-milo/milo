@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -32,7 +32,6 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.BrowseResultMask;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.BrowseDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.BrowseResult;
-import org.eclipse.milo.opcua.stack.core.types.structured.StructureDefinition;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,6 +76,9 @@ public class LazyClientDataTypeManager extends DefaultDataTypeManager {
   private final DataTypeTree dataTypeTree;
   private final BiFunction<DataType, DataTypeTree, DataTypeCodec> codecFactory;
   private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+
+  // Read without the lock on fast paths; contains only ids whose resolution attempt has
+  // completed and failed, so an in-flight resolution is never mistaken for a failed one.
   private final Set<NodeId> attemptedResolution = ConcurrentHashMap.newKeySet();
 
   /**
@@ -156,18 +158,22 @@ public class LazyClientDataTypeManager extends DefaultDataTypeManager {
     // Slow path: attempt lazy resolution under write lock
     lock.writeLock().lock();
     try {
-      // Re-check in case another thread just resolved it
+      // Re-check in case another thread just resolved it or just failed to
       codec = super.getCodec(id);
       if (codec != null) {
         return codec;
       }
-
-      // Mark as attempted before trying resolution
-      if (!attemptedResolution.add(id)) {
+      if (attemptedResolution.contains(id)) {
         return null;
       }
 
-      return resolveAndRegisterCodec(id);
+      codec = resolveAndRegisterCodec(id);
+
+      if (codec == null) {
+        attemptedResolution.add(id);
+      }
+
+      return codec;
     } finally {
       lock.writeLock().unlock();
     }
@@ -204,7 +210,7 @@ public class LazyClientDataTypeManager extends DefaultDataTypeManager {
       return;
     }
 
-    // Skip if already attempted
+    // Skip if a previous attempt already failed
     if (attemptedResolution.contains(dataTypeId)) {
       return;
     }
@@ -212,13 +218,24 @@ public class LazyClientDataTypeManager extends DefaultDataTypeManager {
     // Slow path: attempt resolution under write lock
     lock.writeLock().lock();
     try {
-      // Re-check after acquiring lock
-      if (attemptedResolution.contains(dataTypeId)) {
+      // Re-check in case another thread just registered it or just failed to
+      if (super.getBinaryEncodingId(dataTypeId) != null
+          || super.getXmlEncodingId(dataTypeId) != null
+          || super.getJsonEncodingId(dataTypeId) != null
+          || attemptedResolution.contains(dataTypeId)) {
         return;
       }
 
-      attemptedResolution.add(dataTypeId);
       resolveAndRegisterCodecFromDataTypeId(dataTypeId);
+
+      boolean registered =
+          super.getBinaryEncodingId(dataTypeId) != null
+              || super.getXmlEncodingId(dataTypeId) != null
+              || super.getJsonEncodingId(dataTypeId) != null;
+
+      if (!registered) {
+        attemptedResolution.add(dataTypeId);
+      }
     } finally {
       lock.writeLock().unlock();
     }
@@ -266,7 +283,7 @@ public class LazyClientDataTypeManager extends DefaultDataTypeManager {
   }
 
   private @Nullable DataTypeCodec createAndRegisterCodec(DataType dataType) {
-    NodeId binaryEncodingId = getBinaryEncodingIdFromDataType(dataType);
+    NodeId binaryEncodingId = ClientBrowseUtils.getBinaryEncodingId(dataType);
 
     DataTypeCodec codec = codecFactory.apply(dataType, dataTypeTree);
 
@@ -283,22 +300,6 @@ public class LazyClientDataTypeManager extends DefaultDataTypeManager {
         dataType.getNodeId());
 
     return codec;
-  }
-
-  private static @Nullable NodeId getBinaryEncodingIdFromDataType(DataType dataType) {
-    NodeId binaryEncodingId = dataType.getBinaryEncodingId();
-
-    if (binaryEncodingId == null
-        && dataType.getDataTypeDefinition() instanceof StructureDefinition definition) {
-
-      // Workaround for non-compliant servers that don't have encoding nodes.
-      // The DefaultEncodingId in a StructureDefinition shall always be the Default Binary
-      // encoding.
-      // See https://reference.opcfoundation.org/Core/Part3/v105/docs/8.48
-      binaryEncodingId = definition.getDefaultEncodingId();
-    }
-
-    return binaryEncodingId;
   }
 
   private @Nullable NodeId browseDataTypeIdForEncoding(NodeId encodingId) {

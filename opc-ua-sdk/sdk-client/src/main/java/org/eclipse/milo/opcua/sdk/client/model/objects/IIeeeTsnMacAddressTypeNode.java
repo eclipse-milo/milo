@@ -88,7 +88,10 @@ public class IIeeeTsnMacAddressTypeNode extends BaseInterfaceTypeNode
   @Override
   public void writeDestinationAddress(UByte[] value) throws UaException {
     try {
-      writeDestinationAddressAsync(value).get();
+      StatusCode statusCode = writeDestinationAddressAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -161,7 +164,10 @@ public class IIeeeTsnMacAddressTypeNode extends BaseInterfaceTypeNode
   @Override
   public void writeSourceAddress(UByte[] value) throws UaException {
     try {
-      writeSourceAddressAsync(value).get();
+      StatusCode statusCode = writeSourceAddressAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

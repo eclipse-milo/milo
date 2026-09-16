@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -22,8 +22,6 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.DataTypeManager;
 import org.eclipse.milo.opcua.stack.core.types.DefaultDataTypeManager;
-import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
-import org.eclipse.milo.opcua.stack.core.types.structured.StructureDefinition;
 import org.eclipse.milo.opcua.stack.core.util.Tree;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -180,6 +178,14 @@ public interface DataTypeManagerFactory {
     public void initialize(
         NamespaceTable namespaceTable, DataTypeTree dataTypeTree, DataTypeManager dataTypeManager) {
 
+      if (dataTypeTree instanceof LazyClientDataTypeTree) {
+        LOGGER.warn(
+            "Eagerly initializing codecs against a lazy DataTypeTree; only types the tree has"
+                + " already resolved will be registered. Configure"
+                + " DataTypeManagerFactory.lazy() alongside DataTypeTreeFactory.lazy() for lazy"
+                + " codec resolution.");
+      }
+
       Tree<DataType> structureNode = dataTypeTree.getTreeNode(NodeIds.Structure);
 
       if (structureNode != null) {
@@ -203,7 +209,7 @@ public interface DataTypeManagerFactory {
                 dataTypeManager.registerType(
                     dataType.getNodeId(),
                     codecFactory.create(dataType, dataTypeTree),
-                    getBinaryEncodingId(dataType),
+                    ClientBrowseUtils.getBinaryEncodingId(dataType),
                     dataType.getXmlEncodingId(),
                     dataType.getJsonEncodingId());
               }
@@ -213,24 +219,6 @@ public interface DataTypeManagerFactory {
             "Structure (i=22) not found in the DataType tree; is the Server's DataType"
                 + " hierarchy sane?");
       }
-    }
-
-    private static NodeId getBinaryEncodingId(DataType dataType) {
-      NodeId binaryEncodingId = dataType.getBinaryEncodingId();
-
-      if (binaryEncodingId == null
-          && dataType.getDataTypeDefinition() instanceof StructureDefinition definition) {
-
-        // Hail mary work around for non-compliant Servers that don't have encoding nodes
-        // in their address space. The DefaultEncodingId in a StructureDefinition shall
-        // always be the Default Binary encoding, so let's see if the Server at least set
-        // this correctly.
-        // See https://reference.opcfoundation.org/Core/Part3/v105/docs/8.48
-
-        binaryEncodingId = definition.getDefaultEncodingId();
-      }
-
-      return binaryEncodingId;
     }
   }
 }

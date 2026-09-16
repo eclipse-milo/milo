@@ -17,7 +17,10 @@ import static org.eclipse.milo.opcua.sdk.core.Reference.HAS_PROPERTY_PREDICATE;
 import com.google.common.base.Preconditions;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -27,6 +30,7 @@ import org.eclipse.milo.opcua.sdk.core.nodes.MethodNodeProperties;
 import org.eclipse.milo.opcua.sdk.core.nodes.Node;
 import org.eclipse.milo.opcua.sdk.core.nodes.ObjectNode;
 import org.eclipse.milo.opcua.sdk.server.NodeManager;
+import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
 import org.eclipse.milo.opcua.sdk.server.methods.MethodInvocationHandler;
 import org.eclipse.milo.opcua.sdk.server.nodes.filters.AttributeFilter;
 import org.eclipse.milo.opcua.sdk.server.nodes.filters.AttributeFilterChain;
@@ -43,7 +47,10 @@ import org.jspecify.annotations.Nullable;
 
 public class UaMethodNode extends UaNode implements MethodNode {
 
-  private volatile MethodInvocationHandler handler = MethodInvocationHandler.NOT_IMPLEMENTED;
+  private final AtomicReference<MethodInvocationHandler> handler =
+      new AtomicReference<>(MethodInvocationHandler.NOT_IMPLEMENTED);
+
+  private final Map<NodeId, MethodInvocationHandler> objectHandlers = new ConcurrentHashMap<>();
 
   private Boolean executable;
   private Boolean userExecutable;
@@ -183,12 +190,97 @@ public class UaMethodNode extends UaNode implements MethodNode {
         .collect(Collectors.toList());
   }
 
+  /**
+   * Get the default invocation handler, which serves every ObjectId without a handler of its own.
+   *
+   * @return the default invocation handler.
+   */
   public MethodInvocationHandler getInvocationHandler() {
-    return handler;
+    return handler.get();
   }
 
+  /**
+   * Get the handler that serves an invocation of this Method with {@code objectId} as ObjectId.
+   *
+   * <p>A Method shared by several Objects can carry one handler per ObjectId. This returns that
+   * handler when one is installed and the default handler otherwise.
+   *
+   * @param objectId the ObjectId of the invocation.
+   * @return the handler serving that ObjectId.
+   */
+  public MethodInvocationHandler getInvocationHandler(NodeId objectId) {
+    MethodInvocationHandler objectHandler = objectHandlers.get(objectId);
+    return objectHandler != null ? objectHandler : handler.get();
+  }
+
+  /**
+   * Set the default invocation handler. ObjectId-specific handlers are unaffected.
+   *
+   * @param handler the default invocation handler.
+   */
   public void setInvocationHandler(MethodInvocationHandler handler) {
-    this.handler = handler;
+    this.handler.set(handler);
+  }
+
+  /**
+   * Install a handler that serves invocations with {@code objectId} as ObjectId, replacing any
+   * handler previously installed for that ObjectId. The default handler is unchanged.
+   *
+   * @param objectId the ObjectId the handler serves.
+   * @param handler the handler for that ObjectId.
+   */
+  public void setInvocationHandler(NodeId objectId, MethodInvocationHandler handler) {
+    objectHandlers.put(objectId, handler);
+  }
+
+  /**
+   * Remove the handler installed for {@code objectId} only while it is still {@code expected}, so
+   * an owner releasing its handler cannot remove one installed later for the same ObjectId.
+   *
+   * @param objectId the ObjectId whose handler to remove.
+   * @param expected the handler owned by the caller.
+   * @return whether a handler was removed.
+   */
+  public boolean removeInvocationHandler(NodeId objectId, MethodInvocationHandler expected) {
+    return objectHandlers.remove(objectId, expected);
+  }
+
+  /**
+   * Replace the invocation handler only while the current handler is {@code expected} by identity.
+   *
+   * <p>Behavior owners can release their dispatch without removing a handler installed later by
+   * another owner or by the application.
+   *
+   * @param expected the handler owned by the caller.
+   * @param replacement the handler to install if ownership has not changed.
+   * @return whether the replacement was applied.
+   */
+  public boolean compareAndSetInvocationHandler(
+      MethodInvocationHandler expected, MethodInvocationHandler replacement) {
+    return handler.compareAndSet(expected, replacement);
+  }
+
+  /**
+   * Set {@code handler} as this Method's invocation handler and publish the argument definitions it
+   * declares as the {@code InputArguments} and {@code OutputArguments} Properties.
+   *
+   * <p>An absent or empty argument declaration leaves the corresponding Property untouched, so a
+   * Method without inputs or outputs does not grow an empty argument Property.
+   *
+   * @param handler the handler to bind.
+   */
+  public void bindInvocationHandler(AbstractMethodInvocationHandler handler) {
+    Argument[] inputArguments = handler.getInputArguments();
+    Argument[] outputArguments = handler.getOutputArguments();
+
+    setInvocationHandler(handler);
+
+    if (inputArguments != null && inputArguments.length > 0) {
+      setInputArguments(inputArguments);
+    }
+    if (outputArguments != null && outputArguments.length > 0) {
+      setOutputArguments(outputArguments);
+    }
   }
 
   /**
@@ -208,8 +300,7 @@ public class UaMethodNode extends UaNode implements MethodNode {
    * @return the value of the InputArguments Property, if it exists.
    * @see MethodNodeProperties#InputArguments
    */
-  @Nullable
-  public Argument[] getInputArguments() {
+  public Argument @Nullable [] getInputArguments() {
     return getProperty(MethodNodeProperties.InputArguments).orElse(null);
   }
 
@@ -219,8 +310,7 @@ public class UaMethodNode extends UaNode implements MethodNode {
    * @return the value of the OutputArguments Property, if it exists.
    * @see MethodNodeProperties#OutputArguments
    */
-  @Nullable
-  public Argument[] getOutputArguments() {
+  public Argument @Nullable [] getOutputArguments() {
     return getProperty(MethodNodeProperties.OutputArguments).orElse(null);
   }
 

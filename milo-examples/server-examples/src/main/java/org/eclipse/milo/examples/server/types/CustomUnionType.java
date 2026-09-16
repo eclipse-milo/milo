@@ -106,7 +106,7 @@ public class CustomUnionType extends Union implements UaStructuredType {
 
     @Override
     public CustomUnionType decodeType(EncodingContext context, UaDecoder decoder) {
-      UInteger switchValue = decoder.decodeUInt32("SwitchValue");
+      UInteger switchValue = decoder.decodeSwitchField("foo", "bar");
       return switch (switchValue.intValue()) {
         case 0 -> CustomUnionType.ofNull();
         case 1 -> {
@@ -126,7 +126,7 @@ public class CustomUnionType extends Union implements UaStructuredType {
 
     @Override
     public void encodeType(EncodingContext context, UaEncoder encoder, CustomUnionType value) {
-      encoder.encodeUInt32("SwitchValue", uint(value.type.ordinal()));
+      encoder.encodeSwitchField(uint(value.type.ordinal()));
       switch (value.type) {
         case Null:
           break;

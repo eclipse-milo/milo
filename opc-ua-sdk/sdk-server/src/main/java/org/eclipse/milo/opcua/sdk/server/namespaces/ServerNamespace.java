@@ -29,9 +29,18 @@ import org.eclipse.milo.opcua.sdk.server.util.SubscriptionModel;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 
+/**
+ * Server-owned namespace that exposes nodes from the standard Server object hierarchy.
+ *
+ * <p>The namespace registers itself with the server address-space manager and owns fragments such
+ * as diagnostics. Those fragments can depend on their nodes and node managers still being
+ * registered while they shut down, so lifecycle shutdown runs in reverse registration order.
+ */
 public class ServerNamespace extends AddressSpaceComposite implements Lifecycle, Namespace {
 
-  private final LifecycleManager lifecycleManager = new LifecycleManager();
+  /** Keeps diagnostics and other child fragments alive until they have shut themselves down. */
+  private final LifecycleManager lifecycleManager =
+      new LifecycleManager(LifecycleManager.ShutdownOrder.INVERSE);
 
   private final String namespaceUri;
   private final UShort namespaceIndex;

@@ -30,7 +30,7 @@ import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.security.DefaultApplicationGroup;
+import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateGroup;
 import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateManager;
 import org.eclipse.milo.opcua.stack.core.security.DefaultServerCertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.MemoryCertificateQuarantine;
@@ -134,13 +134,15 @@ final class StubSksServer implements AutoCloseable {
         new DefaultServerCertificateValidator(trustListManager, certificateQuarantine);
 
     var defaultGroup =
-        DefaultApplicationGroup.createAndInitialize(
+        new DefaultCertificateGroup(
             trustListManager,
             new MemoryCertificateStore(),
-            certificateFactory,
+            certificateQuarantine,
             certificateValidator);
 
-    var certificateManager = new DefaultCertificateManager(certificateQuarantine, defaultGroup);
+    certificateFactory.createMissingCertificates(defaultGroup);
+
+    var certificateManager = new DefaultCertificateManager(defaultGroup);
 
     var usernameIdentityValidator =
         new UsernameIdentityValidator(

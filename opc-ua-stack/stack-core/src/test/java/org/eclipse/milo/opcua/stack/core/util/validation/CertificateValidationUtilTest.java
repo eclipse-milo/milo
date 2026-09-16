@@ -25,6 +25,7 @@ import static org.eclipse.milo.opcua.stack.core.util.validation.TestCertificateG
 import static org.eclipse.milo.opcua.stack.core.util.validation.TestCertificateGenerator.ALIAS_YES_KEY_USAGE_YES_CA;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -34,38 +35,45 @@ import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Security;
+import java.security.cert.CertPathBuilderException;
 import java.security.cert.PKIXCertPathBuilderResult;
 import java.security.cert.X509CRL;
 import java.security.cert.X509Certificate;
 import java.util.Date;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import org.bouncycastle.asn1.x500.X500Name;
-import org.bouncycastle.asn1.x509.CRLReason;
+import org.bouncycastle.asn1.x509.BasicConstraints;
+import org.bouncycastle.asn1.x509.Extension;
+import org.bouncycastle.asn1.x509.KeyPurposeId;
+import org.bouncycastle.asn1.x509.KeyUsage;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
-import org.bouncycastle.cert.X509CRLHolder;
-import org.bouncycastle.cert.X509v2CRLBuilder;
+import org.bouncycastle.cert.CertIOException;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
-import org.bouncycastle.cert.jcajce.JcaX509CRLConverter;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.util.CrlTestUtil;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
 import org.eclipse.milo.opcua.stack.core.util.validation.TestCertificateGenerator.TestCertificates;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class CertificateValidationUtilTest {
 
   static {
     Security.addProvider(new BouncyCastleProvider());
   }
+
+  private static final long ONE_DAY_MS = 24L * 60 * 60 * 1000;
 
   private static TestCertificates testCertificates;
   private static X509Certificate caIntermediate;
@@ -120,6 +128,153 @@ public class CertificateValidationUtilTest {
         emptySet(),
         ValidationCheck.ALL_OPTIONAL_CHECKS,
         true);
+  }
+
+  @Test
+  void profileAwareEccValidationAcceptsMinimalSelfSignedCertificate() throws Exception {
+    KeyPair keyPair = SelfSignedCertificateGenerator.generateNistP256KeyPair();
+    X509Certificate certificate =
+        SelfSignedCertificateBuilder.forEccApplicationCertificate(keyPair)
+            .setApplicationUri("urn:eclipse:milo:test")
+            .addDnsName("localhost")
+            .build();
+
+    PKIXCertPathBuilderResult result =
+        buildTrustedCertPath(List.of(certificate), Set.of(certificate), emptySet());
+
+    validateTrustedCertPath(
+        result.getCertPath(),
+        result.getTrustAnchor(),
+        emptySet(),
+        ValidationCheck.ALL_OPTIONAL_CHECKS,
+        false,
+        SecurityPolicy.ECC_nistP256_AesGcm.getProfile());
+  }
+
+  @Test
+  void legacyValidationRejectsMinimalEccCertificateWithoutProfile() throws Exception {
+    KeyPair keyPair = SelfSignedCertificateGenerator.generateNistP256KeyPair();
+    X509Certificate certificate =
+        SelfSignedCertificateBuilder.forEccApplicationCertificate(keyPair)
+            .setApplicationUri("urn:eclipse:milo:test")
+            .addDnsName("localhost")
+            .build();
+
+    PKIXCertPathBuilderResult result =
+        buildTrustedCertPath(List.of(certificate), Set.of(certificate), emptySet());
+
+    assertThrows(
+        UaException.class,
+        () ->
+            validateTrustedCertPath(
+                result.getCertPath(),
+                result.getTrustAnchor(),
+                emptySet(),
+                ValidationCheck.ALL_OPTIONAL_CHECKS,
+                false));
+  }
+
+  @Test
+  void profileAwareEccValidationRejectsMissingDigitalSignature() throws Exception {
+    KeyPair keyPair = SelfSignedCertificateGenerator.generateNistP256KeyPair();
+    X509Certificate certificate =
+        new SelfSignedCertificateBuilder(
+                keyPair, new KeyUsageCertificateGenerator(KeyUsage.keyCertSign))
+            .setApplicationUri("urn:eclipse:milo:test")
+            .addDnsName("localhost")
+            .build();
+
+    PKIXCertPathBuilderResult result =
+        buildTrustedCertPath(List.of(certificate), Set.of(certificate), emptySet());
+
+    UaException exception =
+        assertThrows(
+            UaException.class,
+            () ->
+                validateTrustedCertPath(
+                    result.getCertPath(),
+                    result.getTrustAnchor(),
+                    emptySet(),
+                    ValidationCheck.ALL_OPTIONAL_CHECKS,
+                    false,
+                    SecurityPolicy.ECC_nistP256_AesGcm.getProfile()));
+
+    assertEquals(StatusCodes.Bad_CertificateUseNotAllowed, exception.getStatusCode().getValue());
+  }
+
+  // Part 4 §6.1.3 allows the validity-period error to be suppressed, and VALIDITY is absent from
+  // NO_OPTIONAL_CHECKS, so an expired but trusted self-signed certificate is accepted by default.
+  @Test
+  void expiredTrustedSelfSignedCertificateIsAcceptedWhenValidityCheckIsSuppressed()
+      throws Exception {
+    X509Certificate expired = createExpiredSelfSignedCertificate();
+
+    PKIXCertPathBuilderResult result =
+        buildTrustedCertPath(List.of(expired), Set.of(expired), emptySet());
+
+    validateTrustedCertPath(
+        result.getCertPath(),
+        result.getTrustAnchor(),
+        emptySet(),
+        ValidationCheck.NO_OPTIONAL_CHECKS,
+        true);
+  }
+
+  @Test
+  void expiredTrustedSelfSignedCertificateIsRejectedWhenValidityCheckIsEnabled() throws Exception {
+    X509Certificate expired = createExpiredSelfSignedCertificate();
+
+    PKIXCertPathBuilderResult result =
+        buildTrustedCertPath(List.of(expired), Set.of(expired), emptySet());
+
+    UaException e =
+        assertThrows(
+            UaException.class,
+            () ->
+                validateTrustedCertPath(
+                    result.getCertPath(),
+                    result.getTrustAnchor(),
+                    emptySet(),
+                    Set.of(ValidationCheck.VALIDITY),
+                    true));
+
+    assertEquals(StatusCodes.Bad_CertificateTimeInvalid, e.getStatusCode().value());
+  }
+
+  // Suppression stops at the trust anchor. The JDK checks the validity period of every certificate
+  // inside a path while building it and offers no way to relax that, so an expired CA-issued
+  // certificate never reaches the VALIDITY decision. Preserve the path-building failure because
+  // the builder does not establish that validity is the only reason no path could be built.
+  @Test
+  void expiredCaIssuedCertificateIsRejectedWhilePathIsBuilt() throws Exception {
+    long now = System.currentTimeMillis();
+    X509Certificate expiredLeaf =
+        new CaSignedCertificateBuilder(
+                SelfSignedCertificateGenerator.generateRsaKeyPair(2048),
+                caIntermediate,
+                testCertificates.getPrivateKey(ALIAS_CA_INTERMEDIATE))
+            .setCommonName("Test Expired Leaf")
+            .setOrganization("Eclipse Milo")
+            .setApplicationUri("urn:eclipse:milo:test:expired-leaf")
+            .setValidity(new Date(now - 2 * ONE_DAY_MS), new Date(now - ONE_DAY_MS))
+            .setIsCa(false)
+            .setKeyUsage(
+                KeyUsage.digitalSignature
+                    | KeyUsage.nonRepudiation
+                    | KeyUsage.keyEncipherment
+                    | KeyUsage.dataEncipherment)
+            .setExtendedKeyUsage(
+                List.of(KeyPurposeId.id_kp_serverAuth, KeyPurposeId.id_kp_clientAuth))
+            .build();
+
+    UaException e =
+        assertThrows(
+            UaException.class,
+            () ->
+                buildTrustedCertPath(List.of(expiredLeaf), Set.of(caIntermediate), Set.of(caRoot)));
+
+    assertEquals(StatusCodes.Bad_SecurityChecksFailed, e.getStatusCode().value());
+    assertInstanceOf(CertPathBuilderException.class, e.getCause());
   }
 
   @Test
@@ -194,6 +349,8 @@ public class CertificateValidationUtilTest {
     }
   }
 
+  // A revocation established by an available CRL is enforced even under the default policy, which
+  // tolerates missing CRLs but never ignores one that is present (Part 4 §6.1.3).
   @Test
   public void testBuildAndValidate_LeafIntermediateSigned_Revoked() {
     // chain: leaf
@@ -209,8 +366,9 @@ public class CertificateValidationUtilTest {
               () -> {
                 Set<X509CRL> x509CRLS =
                     Set.of(
-                        generateCrl(caRoot, testCertificates.getPrivateKey(ALIAS_CA_ROOT)),
-                        generateCrl(
+                        CrlTestUtil.generateCrl(
+                            caRoot, testCertificates.getPrivateKey(ALIAS_CA_ROOT)),
+                        CrlTestUtil.generateCrl(
                             caIntermediate,
                             testCertificates.getPrivateKey(ALIAS_CA_INTERMEDIATE),
                             leafIntermediateSigned));
@@ -222,14 +380,14 @@ public class CertificateValidationUtilTest {
                     pathBuilderResult.getCertPath(),
                     pathBuilderResult.getTrustAnchor(),
                     x509CRLS,
-                    EnumSet.of(ValidationCheck.REVOCATION),
+                    ValidationCheck.NO_OPTIONAL_CHECKS,
                     true);
 
                 validateTrustedCertPath(
                     pathBuilderResult.getCertPath(),
                     pathBuilderResult.getTrustAnchor(),
                     x509CRLS,
-                    EnumSet.of(ValidationCheck.REVOCATION),
+                    ValidationCheck.NO_OPTIONAL_CHECKS,
                     false);
               });
 
@@ -249,9 +407,9 @@ public class CertificateValidationUtilTest {
               () -> {
                 Set<X509CRL> x509CRLS =
                     Set.of(
-                        generateCrl(
+                        CrlTestUtil.generateCrl(
                             caRoot, testCertificates.getPrivateKey(ALIAS_CA_ROOT), caIntermediate),
-                        generateCrl(
+                        CrlTestUtil.generateCrl(
                             caIntermediate, testCertificates.getPrivateKey(ALIAS_CA_INTERMEDIATE)));
 
                 PKIXCertPathBuilderResult pathBuilderResult =
@@ -261,14 +419,14 @@ public class CertificateValidationUtilTest {
                     pathBuilderResult.getCertPath(),
                     pathBuilderResult.getTrustAnchor(),
                     x509CRLS,
-                    EnumSet.of(ValidationCheck.REVOCATION),
+                    ValidationCheck.NO_OPTIONAL_CHECKS,
                     true);
 
                 validateTrustedCertPath(
                     pathBuilderResult.getCertPath(),
                     pathBuilderResult.getTrustAnchor(),
                     x509CRLS,
-                    EnumSet.of(ValidationCheck.REVOCATION),
+                    ValidationCheck.NO_OPTIONAL_CHECKS,
                     false);
               });
 
@@ -345,7 +503,7 @@ public class CertificateValidationUtilTest {
               () -> {
                 Set<X509CRL> x509CRLS =
                     Set.of(
-                        generateCrl(
+                        CrlTestUtil.generateCrl(
                             caRoot, testCertificates.getPrivateKey(ALIAS_CA_ROOT), caIntermediate));
 
                 PKIXCertPathBuilderResult pathBuilderResult =
@@ -355,14 +513,14 @@ public class CertificateValidationUtilTest {
                     pathBuilderResult.getCertPath(),
                     pathBuilderResult.getTrustAnchor(),
                     x509CRLS,
-                    EnumSet.of(ValidationCheck.REVOCATION),
+                    ValidationCheck.NO_OPTIONAL_CHECKS,
                     true);
 
                 CertificateValidationUtil.validateTrustedCertPath(
                     pathBuilderResult.getCertPath(),
                     pathBuilderResult.getTrustAnchor(),
                     x509CRLS,
-                    EnumSet.of(ValidationCheck.REVOCATION),
+                    ValidationCheck.NO_OPTIONAL_CHECKS,
                     false);
               });
 
@@ -420,33 +578,179 @@ public class CertificateValidationUtilTest {
     checkHostnameOrIpAddress(createSelfSignedCertificate("DigitalPetri.com"), hostname);
   }
 
-  private X509CRL generateCrl(
-      X509Certificate ca, PrivateKey caPrivateKey, X509Certificate... revoked) throws Exception {
-    X509v2CRLBuilder builder =
-        new X509v2CRLBuilder(
-            X500Name.getInstance(ca.getSubjectX500Principal().getEncoded()), new Date());
+  @Test
+  public void testIpv4Address() throws Exception {
+    X509Certificate certificate = createSelfSignedCertificateWithIpAddress("192.168.0.1");
 
-    builder.setNextUpdate(new Date(System.currentTimeMillis() + 60_000));
+    checkHostnameOrIpAddress(certificate, "192.168.0.1");
+  }
 
-    for (X509Certificate certificate : revoked) {
-      builder.addCRLEntry(
-          certificate.getSerialNumber(),
-          new Date(System.currentTimeMillis() - 60_000),
-          CRLReason.privilegeWithdrawn);
-    }
+  // EndpointUtil.getHost() returns IPv6 hosts in the bracketed form they have in the endpoint URL,
+  // and that value is what the client passes here (SessionFsmFactory, UsernameProvider). The
+  // certificate stores the address unbracketed.
+  @Test
+  public void testIpv6AddressInBracketedUriForm() throws Exception {
+    X509Certificate certificate = createSelfSignedCertificateWithIpAddress("2001:db8::1");
 
-    JcaContentSignerBuilder contentSignerBuilder =
-        new JcaContentSignerBuilder("SHA256WithRSAEncryption");
+    checkHostnameOrIpAddress(certificate, "[2001:db8::1]");
+  }
 
-    contentSignerBuilder.setProvider("BC");
+  // The JDK renders a SubjectAltName IPAddress entry from its raw bytes, so the text in the
+  // certificate need not use the same notation the caller does.
+  @Test
+  public void testIpv6AddressNotationDiffers() throws Exception {
+    X509Certificate certificate = createSelfSignedCertificateWithIpAddress("2001:db8::1");
 
-    X509CRLHolder crlHolder = builder.build(contentSignerBuilder.build(caPrivateKey));
+    checkHostnameOrIpAddress(certificate, "2001:db8::1");
+    checkHostnameOrIpAddress(certificate, "2001:0db8:0000:0000:0000:0000:0000:0001");
+    checkHostnameOrIpAddress(certificate, "2001:DB8::1");
+  }
 
-    JcaX509CRLConverter converter = new JcaX509CRLConverter();
+  @Test
+  public void testNonMatchingIpAddressIsRejected() throws Exception {
+    X509Certificate certificate = createSelfSignedCertificateWithIpAddress("2001:db8::1");
 
-    converter.setProvider("BC");
+    assertThrows(UaException.class, () -> checkHostnameOrIpAddress(certificate, "[2001:db8::2]"));
+    assertThrows(UaException.class, () -> checkHostnameOrIpAddress(certificate, "192.168.0.1"));
+  }
 
-    return converter.getCRL(crlHolder);
+  // A host name is matched against DNSName entries only; it must never be resolved to an address
+  // and compared against IPAddress entries. Names containing ':' are included because
+  // InetAddress.getByName() would hand those to the system resolver.
+  @Test
+  public void testHostNameIsNotResolvedToIpAddress() throws Exception {
+    X509Certificate certificate = createSelfSignedCertificateWithIpAddress("127.0.0.1");
+
+    assertThrows(UaException.class, () -> checkHostnameOrIpAddress(certificate, "localhost"));
+    assertThrows(UaException.class, () -> checkHostnameOrIpAddress(certificate, "[not:an:ip]"));
+    assertThrows(UaException.class, () -> checkHostnameOrIpAddress(certificate, "not:an:ip"));
+  }
+
+  /**
+   * A Global Discovery Server certificate group that offers more than one certificate type issues
+   * one CA per type, all under the group's single configured subject name, and publishes a CRL for
+   * each. The trust list a client pulls then holds several same-named CAs, and PKIX chooses
+   * candidate CRLs by issuer name.
+   */
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void revocationResolvesWhenSeveralCasShareASubjectName(boolean requireCrls) throws Exception {
+    String sharedSubject = "Plant Default CA";
+
+    KeyPair issuingCaKeyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+    X509Certificate issuingCa = createSharedNameCa(issuingCaKeyPair, sharedSubject);
+
+    // The second CA of the group is ECC, as it would be for a group that offers an ECC certificate
+    // type alongside RSA.
+    KeyPair sameNameCaKeyPair = SelfSignedCertificateGenerator.generateNistP256KeyPair();
+    X509Certificate sameNameCa = createSharedNameCa(sameNameCaKeyPair, sharedSubject);
+
+    KeyPair leafKeyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+    X509Certificate leaf =
+        new CaSignedCertificateBuilder(leafKeyPair, issuingCa, issuingCaKeyPair.getPrivate())
+            .setCommonName("Ignition OPC UA Client")
+            .setOrganization("Eclipse Milo")
+            .setApplicationUri("urn:eclipse:milo:test:shared-name-ca-client")
+            .addDnsName("localhost")
+            .setIsCa(false)
+            .setKeyUsage(
+                KeyUsage.digitalSignature
+                    | KeyUsage.nonRepudiation
+                    | KeyUsage.keyEncipherment
+                    | KeyUsage.dataEncipherment)
+            .setExtendedKeyUsage(
+                List.of(KeyPurposeId.id_kp_serverAuth, KeyPurposeId.id_kp_clientAuth))
+            .build();
+
+    Set<X509CRL> crls =
+        Set.of(
+            CrlTestUtil.generateCrl(issuingCa, issuingCaKeyPair.getPrivate()),
+            CrlTestUtil.generateCrl(sameNameCa, sameNameCaKeyPair.getPrivate()));
+
+    PKIXCertPathBuilderResult pathBuilderResult =
+        buildTrustedCertPath(List.of(leaf), Set.of(issuingCa, sameNameCa), emptySet());
+
+    // Both CRLs are candidates by issuer name and only one of them verifies. Passing both to PKIX
+    // unfiltered yields Bad_CertificateRevocationUnknown instead of a successful validation.
+    validateTrustedCertPath(
+        pathBuilderResult.getCertPath(),
+        pathBuilderResult.getTrustAnchor(),
+        crls,
+        revocationPolicy(requireCrls),
+        true);
+  }
+
+  /**
+   * The revoking CRL must still be honored when a same-named CA's CRL is alongside it. This matters
+   * most when unknown status is tolerated: handed both CRLs unfiltered, PKIX reports the status as
+   * unknown, and the tolerated unknown status would hide the revocation.
+   */
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void revocationIsDetectedWhenSeveralCasShareASubjectName(boolean requireCrls) throws Exception {
+    String sharedSubject = "Plant Default CA";
+
+    KeyPair issuingCaKeyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+    X509Certificate issuingCa = createSharedNameCa(issuingCaKeyPair, sharedSubject);
+
+    // The second CA of the group is ECC, as it would be for a group that offers an ECC certificate
+    // type alongside RSA.
+    KeyPair sameNameCaKeyPair = SelfSignedCertificateGenerator.generateNistP256KeyPair();
+    X509Certificate sameNameCa = createSharedNameCa(sameNameCaKeyPair, sharedSubject);
+
+    KeyPair leafKeyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+    X509Certificate leaf =
+        new CaSignedCertificateBuilder(leafKeyPair, issuingCa, issuingCaKeyPair.getPrivate())
+            .setCommonName("Ignition OPC UA Client")
+            .setOrganization("Eclipse Milo")
+            .setApplicationUri("urn:eclipse:milo:test:shared-name-ca-client-revoked")
+            .addDnsName("localhost")
+            .setIsCa(false)
+            .setKeyUsage(
+                KeyUsage.digitalSignature
+                    | KeyUsage.nonRepudiation
+                    | KeyUsage.keyEncipherment
+                    | KeyUsage.dataEncipherment)
+            .setExtendedKeyUsage(
+                List.of(KeyPurposeId.id_kp_serverAuth, KeyPurposeId.id_kp_clientAuth))
+            .build();
+
+    Set<X509CRL> crls =
+        Set.of(
+            CrlTestUtil.generateCrl(issuingCa, issuingCaKeyPair.getPrivate(), leaf),
+            CrlTestUtil.generateCrl(sameNameCa, sameNameCaKeyPair.getPrivate()));
+
+    PKIXCertPathBuilderResult pathBuilderResult =
+        buildTrustedCertPath(List.of(leaf), Set.of(issuingCa, sameNameCa), emptySet());
+
+    UaException e =
+        assertThrows(
+            UaException.class,
+            () ->
+                validateTrustedCertPath(
+                    pathBuilderResult.getCertPath(),
+                    pathBuilderResult.getTrustAnchor(),
+                    crls,
+                    revocationPolicy(requireCrls),
+                    true));
+
+    assertEquals(new StatusCode(StatusCodes.Bad_CertificateRevoked), e.getStatusCode());
+  }
+
+  private static Set<ValidationCheck> revocationPolicy(boolean requireCrls) {
+    return requireCrls
+        ? Set.of(ValidationCheck.REVOCATION_LISTS)
+        : ValidationCheck.NO_OPTIONAL_CHECKS;
+  }
+
+  private static X509Certificate createSharedNameCa(KeyPair keyPair, String commonName)
+      throws Exception {
+
+    return new SelfSignedCertificateBuilder(keyPair, new CaCertificateGenerator())
+        .setCommonName(commonName)
+        .setOrganization("Ignition QA")
+        .setApplicationUri("urn:eclipse:milo:test:" + commonName.toLowerCase().replace(" ", "-"))
+        .build();
   }
 
   private static X509Certificate createSelfSignedCertificate(String dnsName) throws Exception {
@@ -460,13 +764,45 @@ public class CertificateValidationUtilTest {
     return builder.build();
   }
 
+  private static X509Certificate createSelfSignedCertificateWithIpAddress(String ipAddress)
+      throws Exception {
+
+    KeyPair keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+
+    SelfSignedCertificateBuilder builder =
+        new SelfSignedCertificateBuilder(keyPair)
+            .setApplicationUri("urn:eclipse:milo:test")
+            .addIpAddress(ipAddress);
+
+    return builder.build();
+  }
+
+  private static X509Certificate createExpiredSelfSignedCertificate() throws Exception {
+    KeyPair keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+    long now = System.currentTimeMillis();
+
+    return createCertificateWithKeys(
+        keyPair.getPublic(),
+        keyPair.getPrivate(),
+        new Date(now - 2 * ONE_DAY_MS),
+        new Date(now - ONE_DAY_MS));
+  }
+
   private static X509Certificate createCertificateWithKeys(
       PublicKey publicKey, PrivateKey privateKey) throws Exception {
 
+    return createCertificateWithKeys(
+        publicKey,
+        privateKey,
+        new Date(System.currentTimeMillis() - ONE_DAY_MS),
+        new Date(System.currentTimeMillis() + 365 * ONE_DAY_MS));
+  }
+
+  private static X509Certificate createCertificateWithKeys(
+      PublicKey publicKey, PrivateKey privateKey, Date notBefore, Date notAfter) throws Exception {
+
     X500Name subject = new X500Name("CN=Test Certificate");
     BigInteger serialNumber = BigInteger.valueOf(System.currentTimeMillis());
-    Date notBefore = new Date(System.currentTimeMillis() - 86400000);
-    Date notAfter = new Date(System.currentTimeMillis() + 31536000000L);
 
     SubjectPublicKeyInfo publicKeyInfo = SubjectPublicKeyInfo.getInstance(publicKey.getEncoded());
 
@@ -481,5 +817,43 @@ public class CertificateValidationUtilTest {
     JcaX509CertificateConverter converter = new JcaX509CertificateConverter();
     converter.setProvider("BC");
     return converter.getCertificate(certBuilder.build(signer));
+  }
+
+  /** Generates a self-signed CA certificate that can sign certificates and CRLs. */
+  private static final class CaCertificateGenerator extends SelfSignedCertificateGenerator {
+
+    @Override
+    protected void addExtendedKeyUsage(X509v3CertificateBuilder certificateBuilder) {}
+
+    @Override
+    protected void addKeyUsage(X509v3CertificateBuilder certificateBuilder) throws CertIOException {
+      certificateBuilder.addExtension(
+          Extension.keyUsage, true, new KeyUsage(KeyUsage.keyCertSign | KeyUsage.cRLSign));
+    }
+
+    @Override
+    protected void addBasicConstraints(
+        X509v3CertificateBuilder certificateBuilder, BasicConstraints basicConstraints)
+        throws CertIOException {
+
+      certificateBuilder.addExtension(Extension.basicConstraints, true, new BasicConstraints(true));
+    }
+  }
+
+  private static final class KeyUsageCertificateGenerator extends SelfSignedCertificateGenerator {
+    private final int keyUsage;
+
+    KeyUsageCertificateGenerator(int keyUsage) {
+      this.keyUsage = keyUsage;
+    }
+
+    @Override
+    protected void addExtendedKeyUsage(X509v3CertificateBuilder certificateBuilder) {}
+
+    @Override
+    protected void addKeyUsage(X509v3CertificateBuilder certificateBuilder) throws CertIOException {
+
+      certificateBuilder.addExtension(Extension.keyUsage, false, new KeyUsage(keyUsage));
+    }
   }
 }

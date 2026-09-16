@@ -104,7 +104,10 @@ public class ThreeDCartesianCoordinatesTypeNode extends CartesianCoordinatesType
   @Override
   public void writeX(Double value) throws UaException {
     try {
-      writeXAsync(value).get();
+      StatusCode statusCode = writeXAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -173,7 +176,10 @@ public class ThreeDCartesianCoordinatesTypeNode extends CartesianCoordinatesType
   @Override
   public void writeY(Double value) throws UaException {
     try {
-      writeYAsync(value).get();
+      StatusCode statusCode = writeYAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -242,7 +248,10 @@ public class ThreeDCartesianCoordinatesTypeNode extends CartesianCoordinatesType
   @Override
   public void writeZ(Double value) throws UaException {
     try {
-      writeZAsync(value).get();
+      StatusCode statusCode = writeZAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

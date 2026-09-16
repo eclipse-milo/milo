@@ -16,9 +16,12 @@ import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
+import org.eclipse.milo.opcua.sdk.core.ValueRanks;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataType;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree;
 import org.eclipse.milo.opcua.sdk.server.AccessContext;
+import org.eclipse.milo.opcua.sdk.server.AddressSpace.CallContext;
+import org.eclipse.milo.opcua.sdk.server.DiagnosticsContext;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
@@ -34,16 +37,26 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.Matrix;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodResult;
+import org.eclipse.milo.opcua.stack.core.util.ArrayUtil;
+import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * A partial implementation of {@link MethodInvocationHandler} that handles checking the Executable
- * and UserExecutable attributes as well as validating the supplied input values against the input
- * {@link Argument}s.
+ * A partial implementation of {@link MethodInvocationHandler} that validates input argument counts,
+ * shapes and data types before invoking application code.
+ *
+ * <p>Callers are responsible for access checks. Normal server Method dispatch applies the
+ * configured access controller before invoking this handler.
  */
 public abstract class AbstractMethodInvocationHandler implements MethodInvocationHandler {
+
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(AbstractMethodInvocationHandler.class);
 
   private final UaMethodNode node;
 
@@ -60,30 +73,44 @@ public abstract class AbstractMethodInvocationHandler implements MethodInvocatio
 
   @Override
   public final CallMethodResult invoke(AccessContext accessContext, CallMethodRequest request) {
-    try {
-      // Defensive copy: values for structure-typed arguments may be substituted with their
-      // decoded values below, and the request's array should not be modified.
-      Variant[] inputArgumentValues =
-          requireNonNullElse(request.getInputArguments(), new Variant[0]).clone();
+    // Defensive copy: values for structure-typed arguments may be substituted with their
+    // decoded values below, and the request's array should not be modified.
+    Variant[] inputArgumentValues =
+        requireNonNullElse(request.getInputArguments(), new Variant[0]).clone();
 
-      if (inputArgumentValues.length < getInputArguments().length) {
+    CallMethodResult result;
+    try {
+      // Read the metadata once so the count check and the loop below see the same Arguments.
+      Argument[] inputArguments = getInputArguments();
+      int requiredCount = getRequiredInputArgumentCount(inputArguments);
+      if (requiredCount < 0 || requiredCount > inputArguments.length) {
+        throw new UaException(StatusCodes.Bad_InternalError, "Invalid required input count");
+      }
+      if (inputArgumentValues.length < requiredCount) {
         throw new UaException(StatusCodes.Bad_ArgumentsMissing);
       }
-      if (inputArgumentValues.length > getInputArguments().length) {
+      if (inputArgumentValues.length > inputArguments.length) {
         throw new UaException(StatusCodes.Bad_TooManyArguments);
       }
 
       StatusCode[] inputDataTypeCheckResults = new StatusCode[inputArgumentValues.length];
 
       for (int i = 0; i < inputArgumentValues.length; i++) {
-        Argument argument = getInputArguments()[i];
+        Argument argument = inputArguments[i];
 
         Variant variant = inputArgumentValues[i];
         Object value = variant.value();
 
-        boolean dataTypeMatch = true;
+        if (value instanceof Matrix matrix && matrix.isNull()) {
+          // A null Matrix is just a null value; deliver it as one.
+          inputArgumentValues[i] = Variant.NULL_VALUE;
+          value = null;
+        }
 
-        if (value != null) {
+        // Check the shape first; it is cheap and avoids decoding elements of a mismatched value.
+        boolean dataTypeMatch = shapeMatches(argument, value);
+
+        if (dataTypeMatch && value != null) {
           NodeId argDataTypeId = argument.getDataType();
 
           DataTypeTree dataTypeTree = node.getNodeContext().getServer().getDataTypeTree();
@@ -91,11 +118,18 @@ public abstract class AbstractMethodInvocationHandler implements MethodInvocatio
           boolean argIsStructType =
               NodeIds.Structure.equals(argDataTypeId) || dataTypeTree.isStructType(argDataTypeId);
 
-          if (argIsStructType) {
+          if (dataTypeTree.getBackingClass(argDataTypeId) == Variant.class) {
+            // Variant-backed declarations accept payload types, not just the wrapper class.
+            // Check Matrix elements without replacing the original representation.
+            try {
+              Variant.of(elementsOf(value));
+            } catch (IllegalArgumentException | ClassCastException e) {
+              dataTypeMatch = false;
+            }
+          } else if (argIsStructType) {
             try {
               if (value instanceof ExtensionObject xo) {
-                UaStructuredType decoded =
-                    xo.decode(node.getNodeContext().getServer().getStaticEncodingContext());
+                UaStructuredType decoded = decodeStructure(xo);
 
                 dataTypeMatch = structureTypeMatches(dataTypeTree, argDataTypeId, decoded);
 
@@ -105,23 +139,10 @@ public abstract class AbstractMethodInvocationHandler implements MethodInvocatio
                   inputArgumentValues[i] = new Variant(decoded);
                 }
               } else if (value instanceof ExtensionObject[] xos) {
-                var decodedElements = new UaStructuredType[xos.length];
+                UaStructuredType[] decodedElements =
+                    decodeMatchingStructures(dataTypeTree, argDataTypeId, xos);
 
-                for (int j = 0; dataTypeMatch && j < xos.length; j++) {
-                  ExtensionObject xo = xos[j];
-
-                  if (xo == null || xo.isNull()) {
-                    // A struct array with null elements has no typed representation.
-                    dataTypeMatch = false;
-                  } else {
-                    UaStructuredType decoded =
-                        xo.decode(node.getNodeContext().getServer().getStaticEncodingContext());
-
-                    dataTypeMatch = structureTypeMatches(dataTypeTree, argDataTypeId, decoded);
-
-                    decodedElements[j] = decoded;
-                  }
-                }
+                dataTypeMatch = decodedElements != null;
 
                 if (dataTypeMatch) {
                   // Substitute a correctly-typed array of the decoded values, so that e.g. an
@@ -131,26 +152,10 @@ public abstract class AbstractMethodInvocationHandler implements MethodInvocatio
                 }
               } else if (value instanceof UaStructuredType structValue) {
                 dataTypeMatch = structureTypeMatches(dataTypeTree, argDataTypeId, structValue);
-              } else if (value instanceof UaStructuredType[] structValues) {
-                for (int j = 0; dataTypeMatch && j < structValues.length; j++) {
-                  UaStructuredType structValue = structValues[j];
-
-                  dataTypeMatch =
-                      structValue != null
-                          && structureTypeMatches(dataTypeTree, argDataTypeId, structValue);
-                }
-              } else if (value instanceof Matrix) {
-                // TODO decoding a Matrix of ExtensionObject into its struct elements is not
-                //  supported; accept it only if the DataType ids already match exactly.
-                NodeId valueDataTypeId =
-                    variant
-                        .getDataTypeId()
-                        .flatMap(xni -> xni.toNodeId(node.getNodeContext().getNamespaceTable()))
-                        .orElse(NodeId.NULL_VALUE);
-
-                dataTypeMatch = argDataTypeId.equals(valueDataTypeId);
               } else {
-                dataTypeMatch = false;
+                // Validate each element without changing the value passed to subclasses.
+                dataTypeMatch =
+                    structureElementsMatch(dataTypeTree, argDataTypeId, elementsOf(value));
               }
             } catch (UaSerializationException e) {
               dataTypeMatch = false;
@@ -163,36 +168,14 @@ public abstract class AbstractMethodInvocationHandler implements MethodInvocatio
                     .orElse(NodeId.NULL_VALUE);
 
             if (!argDataTypeId.equals(valueDataTypeId)) {
-              dataTypeMatch = dataTypeTree.isAssignable(argDataTypeId, value.getClass());
+              Class<?> elementType = ArrayUtil.getBoxedType(elementsOf(value));
+              dataTypeMatch = dataTypeTree.isAssignable(argDataTypeId, elementType);
             }
           }
         }
 
-        int valueRank = argument.getValueRank();
-
-        if (valueRank == -1) {
-          // scalar
-          if (value != null && (value.getClass().isArray() || value instanceof Matrix)) {
-            dataTypeMatch = false;
-          }
-        } else if (valueRank == 1) {
-          // one dimension
-          if (value != null && !value.getClass().isArray()) {
-            dataTypeMatch = false;
-          }
-        } else if (valueRank == 0) {
-          // one or more dimension
-          if (value != null && !(value.getClass().isArray() || value instanceof Matrix)) {
-            dataTypeMatch = false;
-          }
-        } else if (valueRank > 1) {
-          // matrix (2+ dimensions)
-          if (value != null && !(value instanceof Matrix)) {
-            dataTypeMatch = false;
-          }
-        }
-
         if (dataTypeMatch) {
+          inputArgumentValues[i] = restoreMatrixRank(argument, inputArgumentValues[i]);
           inputDataTypeCheckResults[i] = StatusCode.GOOD;
         } else {
           inputDataTypeCheckResults[i] = new StatusCode(StatusCodes.Bad_TypeMismatch);
@@ -226,21 +209,196 @@ public abstract class AbstractMethodInvocationHandler implements MethodInvocatio
             public Optional<Session> getSession() {
               return accessContext.getSession();
             }
+
+            @Override
+            public Optional<DiagnosticsContext<CallMethodRequest>> getCallDiagnostics() {
+              return accessContext instanceof CallContext callContext
+                  ? Optional.of(callContext.getDiagnosticsContext())
+                  : Optional.empty();
+            }
           };
 
-      Variant[] outputValues = invoke(invocationContext, inputArgumentValues);
-
-      return new CallMethodResult(
-          StatusCode.GOOD, new StatusCode[0], new DiagnosticInfo[0], outputValues);
+      result = invokeResult(invocationContext, inputArgumentValues);
     } catch (InvalidArgumentException e) {
-      return new CallMethodResult(
-          e.getStatusCode(),
-          e.getInputArgumentResults(),
-          e.getInputArgumentDiagnosticInfos(),
-          new Variant[0]);
+      result =
+          new CallMethodResult(
+              e.getStatusCode(),
+              e.getInputArgumentResults(),
+              e.getInputArgumentDiagnosticInfos(),
+              new Variant[0]);
     } catch (UaException e) {
-      return new CallMethodResult(
-          e.getStatusCode(), new StatusCode[0], new DiagnosticInfo[0], new Variant[0]);
+      return failure(e.getStatusCode());
+    }
+
+    String problem = problemWith(result, inputArgumentValues.length);
+    if (problem == null) {
+      return result;
+    } else {
+      LOGGER.warn("Invalid result for methodId={}: {}", node.getNodeId(), problem);
+      return failure(new StatusCode(StatusCodes.Bad_InternalError));
+    }
+  }
+
+  /**
+   * Check {@code result} against the CallMethodResult rules in OPC 10000-4, 5.12.2.2: a Bad status
+   * carries no outputs, and input argument results are populated only for Bad_InvalidArgument, one
+   * per supplied input. Argument diagnostics, when present, are also one per supplied input.
+   *
+   * @return a description of the first rule {@code result} breaks, or {@code null} if it is valid.
+   */
+  private static @Nullable String problemWith(@Nullable CallMethodResult result, int inputCount) {
+    if (result == null || result.getStatusCode() == null) {
+      return "null result or status";
+    }
+    StatusCode status = result.getStatusCode();
+    int results = lengthOf(result.getInputArgumentResults());
+    int diagnostics = lengthOf(result.getInputArgumentDiagnosticInfos());
+    int outputs = lengthOf(result.getOutputArguments());
+
+    if (status.isBad() && outputs != 0) {
+      return "Bad status with output arguments";
+    }
+    if (results != 0 && status.getValue() != StatusCodes.Bad_InvalidArgument) {
+      return "input argument results with a status other than Bad_InvalidArgument";
+    }
+    if (results != 0 && results != inputCount) {
+      return results + " input argument results for " + inputCount + " inputs";
+    }
+    if (diagnostics != 0 && diagnostics != inputCount) {
+      return diagnostics + " input argument diagnostics for " + inputCount + " inputs";
+    }
+    return null;
+  }
+
+  private static int lengthOf(Object @Nullable [] array) {
+    return array == null ? 0 : array.length;
+  }
+
+  private static CallMethodResult failure(StatusCode statusCode) {
+    return new CallMethodResult(
+        statusCode, new StatusCode[0], new DiagnosticInfo[0], new Variant[0]);
+  }
+
+  /** The flat elements of a Matrix, or {@code value} itself for any other value. */
+  private static @Nullable Object elementsOf(@Nullable Object value) {
+    return value instanceof Matrix matrix ? matrix.getElements() : value;
+  }
+
+  // Part 3, 8.6: ArrayDimensions specifies maxima; zero means unknown.
+  private static boolean shapeMatches(Argument argument, @Nullable Object value) {
+    if (value == null) {
+      return true;
+    }
+
+    // ByteString and String have scalar semantics, i.e. rank -1.
+    int rank =
+        value instanceof Matrix matrix ? matrix.getValueRank() : ArrayUtil.getValueRank(value);
+    int valueRank = argument.getValueRank();
+    boolean emptyArray = isEmptyArray(value);
+    boolean rankMatches =
+        switch (valueRank) {
+          case ValueRanks.ScalarOrOneDimension -> rank == ValueRanks.Scalar || rank == 1;
+          case ValueRanks.Any -> true;
+          case ValueRanks.Scalar -> rank == ValueRanks.Scalar;
+          case ValueRanks.OneOrMoreDimensions -> rank >= 1;
+          default -> valueRank > 0 && (rank == valueRank || emptyArray);
+        };
+    if (!rankMatches) {
+      return false;
+    }
+
+    UInteger[] maxima = argument.getArrayDimensions();
+    // An empty array has no element to exceed a maximum, and its single dimension does not line up
+    // with the dimensions declared for a higher rank.
+    if (valueRank > 0 && !emptyArray && maxima != null && maxima.length > 0) {
+      int[] dimensions =
+          value instanceof Matrix matrix ? matrix.getDimensions() : ArrayUtil.getDimensions(value);
+      if (maxima.length != dimensions.length) {
+        return false;
+      }
+      for (int i = 0; i < dimensions.length; i++) {
+        long maximum = maxima[i].longValue();
+        if (maximum != 0 && dimensions[i] > maximum) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Whether {@code value} is a zero-length one-dimensional array, the form an empty value of any
+   * rank arrives in.
+   *
+   * <p>OPC 10000-6, 5.2.2.16 and 5.3.1.17 carry an empty Matrix as an empty array with no
+   * ArrayDimensions, so an empty value has no rank of its own on the wire.
+   */
+  private static boolean isEmptyArray(@Nullable Object value) {
+    return value != null && ArrayUtil.getValueRank(value) == 1 && Array.getLength(value) == 0;
+  }
+
+  /**
+   * Give an empty value supplied for an Argument of ValueRank 2 or greater the Matrix
+   * representation its declared rank calls for, with a zero length in every dimension.
+   *
+   * @param argument the {@link Argument} the value was supplied for.
+   * @param variant the value supplied for {@code argument}.
+   * @return {@code variant}, or an empty {@link Matrix} of the Argument's declared rank.
+   */
+  private static Variant restoreMatrixRank(Argument argument, Variant variant) {
+    int valueRank = argument.getValueRank();
+    Object value = variant.value();
+
+    if (valueRank >= 2 && isEmptyArray(value)) {
+      return new Variant(new Matrix(value, new int[valueRank]));
+    } else {
+      return variant;
+    }
+  }
+
+  private @Nullable UaStructuredType decodeStructure(@Nullable ExtensionObject xo) {
+    if (xo == null || xo.isNull()) {
+      return null;
+    }
+    return xo.decode(node.getNodeContext().getServer().getStaticEncodingContext());
+  }
+
+  /**
+   * Decode each element of {@code xos} and check it against the Argument's DataType, stopping at
+   * the first mismatch.
+   *
+   * @return the decoded elements, or {@code null} if any element does not match.
+   */
+  private UaStructuredType @Nullable [] decodeMatchingStructures(
+      DataTypeTree dataTypeTree, NodeId argDataTypeId, ExtensionObject[] xos) {
+
+    var decodedElements = new UaStructuredType[xos.length];
+
+    for (int j = 0; j < xos.length; j++) {
+      decodedElements[j] = decodeStructure(xos[j]);
+
+      if (!structureTypeMatches(dataTypeTree, argDataTypeId, decodedElements[j])) {
+        return null;
+      }
+    }
+
+    return decodedElements;
+  }
+
+  /**
+   * Check that every element of a structure array matches the Argument's DataType. Null elements
+   * match; {@link ExtensionObject} elements are decoded first. Any other value does not match.
+   */
+  private boolean structureElementsMatch(
+      DataTypeTree dataTypeTree, NodeId argDataTypeId, @Nullable Object elements) {
+
+    if (elements instanceof ExtensionObject[] xos) {
+      return decodeMatchingStructures(dataTypeTree, argDataTypeId, xos) != null;
+    } else if (elements instanceof UaStructuredType[] structs) {
+      return Arrays.stream(structs)
+          .allMatch(s -> structureTypeMatches(dataTypeTree, argDataTypeId, s));
+    } else {
+      return false;
     }
   }
 
@@ -257,7 +415,11 @@ public abstract class AbstractMethodInvocationHandler implements MethodInvocatio
    * @return {@code true} if {@code structValue}'s DataType matches the Argument's DataType.
    */
   private boolean structureTypeMatches(
-      DataTypeTree dataTypeTree, NodeId argDataTypeId, UaStructuredType structValue) {
+      DataTypeTree dataTypeTree, NodeId argDataTypeId, @Nullable UaStructuredType structValue) {
+
+    if (structValue == null) {
+      return true;
+    }
 
     NodeId valueDataTypeId =
         structValue
@@ -323,22 +485,65 @@ public abstract class AbstractMethodInvocationHandler implements MethodInvocatio
   public abstract Argument[] getOutputArguments();
 
   /**
+   * Get the number of leading inputs a caller must supply; any inputs after them are optional.
+   *
+   * <p>The default requires every declared input. Override this to accept calls that omit trailing
+   * inputs. Omitted inputs are absent from the array passed to {@link #invokeResult}, whereas a
+   * supplied null value keeps its position. A count outside the valid range fails the call with
+   * Bad_InternalError before any application code runs.
+   *
+   * @param inputArguments the input {@link Argument}s this call is validated against; do not
+   *     modify.
+   * @return a count between zero and {@code inputArguments.length}, inclusive.
+   */
+  protected int getRequiredInputArgumentCount(Argument[] inputArguments) {
+    return inputArguments.length;
+  }
+
+  /**
+   * Invoke this Method with its validated inputs and return the complete result.
+   *
+   * <p>The default delegates to {@link #invoke(InvocationContext, Variant[])} and reports Good.
+   * Override this to return a different status, for example Uncertain with outputs. A Bad status
+   * carries no outputs. Input argument results may be populated only with Bad_InvalidArgument, one
+   * per supplied input; argument diagnostics, when present, are also one per supplied input. A
+   * result that breaks these rules, or a null result, is logged and reported as Bad_InternalError.
+   *
+   * @param context the {@link InvocationContext}.
+   * @param suppliedValues the supplied inputs, validated and decoded as described by {@link
+   *     #invoke(InvocationContext, Variant[])}. Omitted optional inputs are absent, not padded.
+   * @return the complete result.
+   * @throws UaException if invocation fails; its status is reported without outputs.
+   */
+  protected CallMethodResult invokeResult(InvocationContext context, Variant[] suppliedValues)
+      throws UaException {
+    return new CallMethodResult(
+        StatusCode.GOOD, new StatusCode[0], new DiagnosticInfo[0], invoke(context, suppliedValues));
+  }
+
+  /**
    * Invoke this method and return the values for its output arguments, if any.
    *
-   * <p>The Executable and UserExecutable attributes have already been checked to ensure this method
-   * is allowed to execute.
+   * <p>Input arguments have already passed shape, data type and application value validation.
+   * Callers remain responsible for access checks.
    *
    * @param invocationContext the {@link InvocationContext}.
    * @param inputValues the user-supplied values for the input arguments. Each value has been
    *     verified to be of the type specified by its {@link Argument}. Values for arguments with a
    *     structured DataType carry the decoded {@link UaStructuredType} value (or, for array
    *     arguments, an array of the DataType's registered class, e.g. {@code XVType[]}) rather than
-   *     the raw {@link ExtensionObject}(s) received in the request.
+   *     the raw {@link ExtensionObject}(s) received in the request. A null ExtensionObject, whether
+   *     scalar or an array element, is delivered as {@code null}. Matrix arguments retain their
+   *     original representation; their elements are decoded only for validation. An empty value for
+   *     an argument of ValueRank 2 or greater is delivered as an empty {@link Matrix} of the
+   *     declared rank, because its wire form carries no dimensions.
    * @return this output values matching this Method's output arguments, if any.
    * @throws UaException if invocation has failed for some reason.
    */
-  protected abstract Variant[] invoke(InvocationContext invocationContext, Variant[] inputValues)
-      throws UaException;
+  protected Variant[] invoke(InvocationContext invocationContext, Variant[] inputValues)
+      throws UaException {
+    throw new UaException(StatusCodes.Bad_NotImplemented);
+  }
 
   /**
    * Validate the input values against the expected input arguments.
@@ -360,6 +565,15 @@ public abstract class AbstractMethodInvocationHandler implements MethodInvocatio
    * AbstractMethodInvocationHandler}.
    */
   public interface InvocationContext extends AccessContext {
+
+    /**
+     * Get the request-wide Call diagnostics context, when invoked through the Call service.
+     *
+     * @return the context used to intern diagnostic strings, or empty for independent invocations.
+     */
+    default Optional<DiagnosticsContext<CallMethodRequest>> getCallDiagnostics() {
+      return Optional.empty();
+    }
 
     /**
      * Get the {@link OpcUaServer} instance.

@@ -41,6 +41,7 @@ public class AddressSpaceManager extends AddressSpaceComposite {
   public synchronized void register(NodeManager<UaNode> nodeManager) {
     if (!nodeManagers.contains(nodeManager)) {
       nodeManagers.add(nodeManager);
+      invalidateTypeModels();
     } else {
       logger.warn("NodeManager already registered: {}", nodeManager);
     }
@@ -49,14 +50,33 @@ public class AddressSpaceManager extends AddressSpaceComposite {
   /**
    * Unregister a {@link NodeManager} with this {@link AddressSpaceManager}.
    *
-   * @param nodeManager the {@link NodeManager} to register.
+   * @param nodeManager the {@link NodeManager} to unregister.
    */
   public synchronized void unregister(NodeManager<UaNode> nodeManager) {
     if (nodeManagers.contains(nodeManager)) {
       nodeManagers.remove(nodeManager);
+      invalidateTypeModels();
     } else {
       logger.warn("NodeManager not registered: {}", nodeManager);
     }
+  }
+
+  /**
+   * Conservatively invalidate all cached type instantiation models: a registration change can add
+   * or remove any node a cached model was compiled from.
+   */
+  private void invalidateTypeModels() {
+    getServer().getTypeModelCache().invalidateAll();
+  }
+
+  /**
+   * Check if {@code nodeManager} is registered with this {@link AddressSpaceManager}.
+   *
+   * @param nodeManager the {@link NodeManager} to check.
+   * @return {@code true} if {@code nodeManager} is registered.
+   */
+  public boolean isRegistered(NodeManager<UaNode> nodeManager) {
+    return nodeManagers.contains(nodeManager);
   }
 
   /**
@@ -113,5 +133,19 @@ public class AddressSpaceManager extends AddressSpaceComposite {
         .map(n -> n.getReferences(nodeId, filter))
         .flatMap(Collection::stream)
         .collect(Collectors.toList());
+  }
+
+  /**
+   * Remove {@code reference} and its inverse from every registered {@link NodeManager}.
+   *
+   * <p>References may be stored by either endpoint's manager, or by another registered manager. Use
+   * this when removing an association collected through {@link #getManagedReferences(NodeId)}.
+   *
+   * @param reference the association to remove in both directions.
+   */
+  public void removeManagedReferences(Reference reference) {
+    for (NodeManager<UaNode> nodeManager : nodeManagers) {
+      nodeManager.removeReferences(reference, getServer().getNamespaceTable());
+    }
   }
 }

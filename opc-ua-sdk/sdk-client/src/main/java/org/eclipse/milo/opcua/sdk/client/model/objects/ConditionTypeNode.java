@@ -90,7 +90,10 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   @Override
   public void writeConditionClassId(NodeId value) throws UaException {
     try {
-      writeConditionClassIdAsync(value).get();
+      StatusCode statusCode = writeConditionClassIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -163,7 +166,10 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   @Override
   public void writeConditionClassName(LocalizedText value) throws UaException {
     try {
-      writeConditionClassNameAsync(value).get();
+      StatusCode statusCode = writeConditionClassNameAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -237,7 +243,10 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   @Override
   public void writeConditionSubClassId(NodeId[] value) throws UaException {
     try {
-      writeConditionSubClassIdAsync(value).get();
+      StatusCode statusCode = writeConditionSubClassIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -310,7 +319,10 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   @Override
   public void writeConditionSubClassName(LocalizedText[] value) throws UaException {
     try {
-      writeConditionSubClassNameAsync(value).get();
+      StatusCode statusCode = writeConditionSubClassNameAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -384,7 +396,10 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   @Override
   public void writeConditionName(String value) throws UaException {
     try {
-      writeConditionNameAsync(value).get();
+      StatusCode statusCode = writeConditionNameAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -454,7 +469,10 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   @Override
   public void writeBranchId(NodeId value) throws UaException {
     try {
-      writeBranchIdAsync(value).get();
+      StatusCode statusCode = writeBranchIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -524,7 +542,10 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   @Override
   public void writeRetain(Boolean value) throws UaException {
     try {
-      writeRetainAsync(value).get();
+      StatusCode statusCode = writeRetainAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -594,7 +615,10 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   @Override
   public void writeSupportsFilteredRetain(Boolean value) throws UaException {
     try {
-      writeSupportsFilteredRetainAsync(value).get();
+      StatusCode statusCode = writeSupportsFilteredRetainAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -668,7 +692,10 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   @Override
   public void writeClientUserId(String value) throws UaException {
     try {
-      writeClientUserIdAsync(value).get();
+      StatusCode statusCode = writeClientUserIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -738,7 +765,10 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   @Override
   public void writeEnabledState(LocalizedText value) throws UaException {
     try {
-      writeEnabledStateAsync(value).get();
+      StatusCode statusCode = writeEnabledStateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -808,7 +838,10 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   @Override
   public void writeQuality(StatusCode value) throws UaException {
     try {
-      writeQualityAsync(value).get();
+      StatusCode statusCode = writeQualityAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -878,7 +911,10 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   @Override
   public void writeLastSeverity(UShort value) throws UaException {
     try {
-      writeLastSeverityAsync(value).get();
+      StatusCode statusCode = writeLastSeverityAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -948,7 +984,10 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   @Override
   public void writeComment(LocalizedText value) throws UaException {
     try {
-      writeCommentAsync(value).get();
+      StatusCode statusCode = writeCommentAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

@@ -88,7 +88,10 @@ public class TrustListUpdatedAuditEventTypeNode extends AuditUpdateMethodEventTy
   @Override
   public void writeTrustListId(NodeId value) throws UaException {
     try {
-      writeTrustListIdAsync(value).get();
+      StatusCode statusCode = writeTrustListIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

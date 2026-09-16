@@ -97,7 +97,10 @@ public class LldpLocalSystemTypeNode extends BaseObjectTypeNode implements LldpL
   @Override
   public void writeChassisIdSubtype(ChassisIdSubtype value) throws UaException {
     try {
-      writeChassisIdSubtypeAsync(value).get();
+      StatusCode statusCode = writeChassisIdSubtypeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -179,7 +182,10 @@ public class LldpLocalSystemTypeNode extends BaseObjectTypeNode implements LldpL
   @Override
   public void writeChassisId(String value) throws UaException {
     try {
-      writeChassisIdAsync(value).get();
+      StatusCode statusCode = writeChassisIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -249,7 +255,10 @@ public class LldpLocalSystemTypeNode extends BaseObjectTypeNode implements LldpL
   @Override
   public void writeSystemName(String value) throws UaException {
     try {
-      writeSystemNameAsync(value).get();
+      StatusCode statusCode = writeSystemNameAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -319,7 +328,10 @@ public class LldpLocalSystemTypeNode extends BaseObjectTypeNode implements LldpL
   @Override
   public void writeSystemDescription(String value) throws UaException {
     try {
-      writeSystemDescriptionAsync(value).get();
+      StatusCode statusCode = writeSystemDescriptionAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -392,7 +404,10 @@ public class LldpLocalSystemTypeNode extends BaseObjectTypeNode implements LldpL
   @Override
   public void writeSystemCapabilitiesSupported(LldpSystemCapabilitiesMap value) throws UaException {
     try {
-      writeSystemCapabilitiesSupportedAsync(value).get();
+      StatusCode statusCode = writeSystemCapabilitiesSupportedAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -467,7 +482,10 @@ public class LldpLocalSystemTypeNode extends BaseObjectTypeNode implements LldpL
   @Override
   public void writeSystemCapabilitiesEnabled(LldpSystemCapabilitiesMap value) throws UaException {
     try {
-      writeSystemCapabilitiesEnabledAsync(value).get();
+      StatusCode statusCode = writeSystemCapabilitiesEnabledAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

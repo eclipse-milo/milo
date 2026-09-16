@@ -23,6 +23,7 @@ import org.eclipse.milo.opcua.sdk.server.nodes.UaObjectTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaServerNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.factories.NodeFactory;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
+import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
@@ -74,6 +75,13 @@ public abstract class ManagedAddressSpace implements AddressSpace {
     nodeFactory = createNodeFactory();
   }
 
+  /**
+   * @deprecated the legacy {@link NodeFactory} is replaced by {@link
+   *     org.eclipse.milo.opcua.sdk.server.nodes.instantiation.NodeInstantiator}, obtained from
+   *     {@code getServer().getNodeInstantiator()} and targeted at {@link #getNodeManager()}. See
+   *     {@code docs/features/node-instantiation-migration.md}.
+   */
+  @Deprecated
   protected NodeFactory createNodeFactory() {
     return new NodeFactory(nodeContext);
   }
@@ -86,6 +94,13 @@ public abstract class ManagedAddressSpace implements AddressSpace {
     return nodeContext;
   }
 
+  /**
+   * @deprecated the legacy {@link NodeFactory} is replaced by {@link
+   *     org.eclipse.milo.opcua.sdk.server.nodes.instantiation.NodeInstantiator}, obtained from
+   *     {@code getServer().getNodeInstantiator()} and targeted at {@link #getNodeManager()}. See
+   *     {@code docs/features/node-instantiation-migration.md}.
+   */
+  @Deprecated
   public NodeFactory getNodeFactory() {
     return nodeFactory;
   }
@@ -264,18 +279,90 @@ public abstract class ManagedAddressSpace implements AddressSpace {
             .getNode(objectId)
             .orElseThrow(() -> new UaException(StatusCodes.Bad_NodeIdUnknown));
 
+    // ObjectTypes are valid targets for type-level Methods, so they cannot be rejected
+    // unconditionally. Validate modelled Methods before consulting ConditionManager; otherwise an
+    // instance Method called on its type node could reach a handler and return an unrelated error.
+    if (node instanceof UaObjectTypeNode objectTypeNode) {
+      validateObjectTypeMethodCall(objectTypeNode, methodId);
+    }
+
+    MethodInvocationHandler conditionHandler =
+        server.getConditionManager().findMethodInvocationHandler(objectId, methodId).orElse(null);
+    if (conditionHandler != null) {
+      return conditionHandler;
+    }
+
     UaMethodNode methodNode = null;
 
     if (node instanceof UaObjectNode objectNode) {
       methodNode = objectNode.findMethodNode(methodId);
+
+      if (methodNode == null) {
+        methodNode = server.getConditionManager().findMethodNode(objectId, methodId).orElse(null);
+      }
     } else if (node instanceof UaObjectTypeNode objectTypeNode) {
       methodNode = objectTypeNode.findMethodNode(methodId);
     }
 
     if (methodNode != null) {
-      return methodNode.getInvocationHandler();
+      return methodNode.getInvocationHandler(objectId);
     } else {
       throw new UaException(StatusCodes.Bad_MethodInvalid);
     }
+  }
+
+  /*
+   * Part 4 §5.12.2 permits an ObjectType as ObjectId only when the Method has no ModellingRule. A
+   * Method with a ModellingRule is an InstanceDeclaration, for which generic Call processing
+   * returns Bad_MethodInvalid. Part 9 §§5.5.6 and 5.7.3 specialize that result to Bad_NodeIdInvalid
+   * when a Condition instance Method such as AddComment or Acknowledge is called on a Condition
+   * type node.
+   */
+  private void validateObjectTypeMethodCall(UaObjectTypeNode objectTypeNode, NodeId methodId)
+      throws UaException {
+
+    UaNode requestedNode = server.getAddressSpaceManager().getManagedNode(methodId).orElse(null);
+
+    if (requestedNode instanceof UaMethodNode requestedMethod
+        && requestedMethod.getModellingRuleNode().isPresent()) {
+
+      long statusCode =
+          isConditionType(objectTypeNode.getNodeId()) && isConditionInstanceMethod(requestedMethod)
+              ? StatusCodes.Bad_NodeIdInvalid
+              : StatusCodes.Bad_MethodInvalid;
+
+      throw new UaException(statusCode);
+    }
+  }
+
+  /*
+   * Derive Condition ownership from the Method's inverse ComponentOf reference instead of keeping
+   * a list of Method NodeIds. This also covers inherited and vendor-defined Methods declared by a
+   * subtype of ConditionType.
+   */
+  private boolean isConditionInstanceMethod(UaMethodNode methodNode) {
+    return methodNode.getReferences().stream()
+        .filter(
+            reference ->
+                reference.isInverse()
+                    && (reference.getReferenceTypeId().equals(NodeIds.HasComponent)
+                        || server
+                            .getReferenceTypeTree()
+                            .isSubtypeOf(reference.getReferenceTypeId(), NodeIds.HasComponent)))
+        .flatMap(
+            reference ->
+                server
+                    .getAddressSpaceManager()
+                    .getManagedNode(reference.getTargetNodeId())
+                    .stream())
+        .filter(UaObjectTypeNode.class::isInstance)
+        .map(UaObjectTypeNode.class::cast)
+        .anyMatch(typeNode -> isConditionType(typeNode.getNodeId()));
+  }
+
+  private boolean isConditionType(NodeId typeId) {
+    // TypeTree.isSubtypeOf() does not consider a type to be a subtype of itself.
+    return NodeIds.ConditionType.equals(typeId)
+        || server.getObjectTypeTree().isSubtypeOf(typeId, NodeIds.ConditionType);
   }
 }

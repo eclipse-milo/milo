@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.stack.transport.client.uasc;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.eclipse.milo.opcua.stack.core.UaException;
@@ -57,7 +58,7 @@ public abstract class InboundUascResponseHandler extends SimpleChannelInboundHan
     } else if (evt instanceof ErrorMessage errorMessage) {
       StatusCode statusCode = errorMessage.getError();
 
-      handleChannelError(new UaException(statusCode, errorMessage.getReason()));
+      handleChannelError(ctx.channel(), new UaException(statusCode, errorMessage.getReason()));
     }
 
     super.userEventTriggered(ctx, evt);
@@ -65,7 +66,7 @@ public abstract class InboundUascResponseHandler extends SimpleChannelInboundHan
 
   @Override
   public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-    handleChannelInactive();
+    handleChannelInactive(ctx.channel());
 
     super.channelInactive(ctx);
   }
@@ -94,13 +95,13 @@ public abstract class InboundUascResponseHandler extends SimpleChannelInboundHan
     }
 
     @Override
-    public void handleChannelError(UaException exception) {
-      delegate.handleChannelError(exception);
+    public void handleChannelError(Channel channel, UaException exception) {
+      delegate.handleChannelError(channel, exception);
     }
 
     @Override
-    public void handleChannelInactive() {
-      delegate.handleChannelInactive();
+    public void handleChannelInactive(Channel channel) {
+      delegate.handleChannelInactive(channel);
     }
   }
 }

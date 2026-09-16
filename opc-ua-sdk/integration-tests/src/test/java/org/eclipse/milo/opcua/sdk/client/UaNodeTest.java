@@ -10,17 +10,15 @@
 
 package org.eclipse.milo.opcua.sdk.client;
 
+import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
 import org.eclipse.milo.opcua.sdk.client.AddressSpace.BrowseOptions;
 import org.eclipse.milo.opcua.sdk.client.model.objects.ServerTypeNode;
 import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
@@ -31,6 +29,8 @@ import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.ReferenceTypes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
@@ -41,12 +41,8 @@ import org.eclipse.milo.opcua.stack.core.types.structured.ReadResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescription;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class UaNodeTest extends AbstractClientServerTest {
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(UaNodeTest.class);
 
   @Test
   public void browse() throws UaException {
@@ -97,44 +93,40 @@ public class UaNodeTest extends AbstractClientServerTest {
   }
 
   @Test
-  public void read() throws UaException {
-    AddressSpace addressSpace = client.getAddressSpace();
-
-    UaVariableNode testNode = (UaVariableNode) addressSpace.getNode(new NodeId(2, "TestInt32"));
-
-    DataValue value = testNode.readValue();
-    assertNotNull(value);
-
-    QualifiedName browseName = testNode.readBrowseName();
-    assertNotNull(browseName);
-
-    DataValue descriptionValue = testNode.readAttribute(AttributeId.Description);
-    assertNotNull(descriptionValue);
-  }
-
-  @Test
-  public void readBaseNodeAttributes() throws ExecutionException, InterruptedException {
+  public void readIgnoresDataEncoding() throws UaException {
     NodeId nodeId = new NodeId(2, "TestInt32");
 
     List<ReadValueId> readValueIds =
-        AttributeId.BASE_ATTRIBUTES.stream()
-            .map(aid -> new ReadValueId(nodeId, aid.uid(), null, QualifiedName.NULL_VALUE))
-            .collect(Collectors.toList());
+        List.of(
+            new ReadValueId(
+                nodeId, AttributeId.Value.uid(), null, new QualifiedName(0, "Default Binary")),
+            new ReadValueId(nodeId, AttributeId.Value.uid(), null, new QualifiedName(0, "Modbus")),
+            new ReadValueId(
+                nodeId, AttributeId.Value.uid(), null, new QualifiedName(9999, "Default Binary")),
+            new ReadValueId(
+                nodeId,
+                AttributeId.BrowseName.uid(),
+                null,
+                new QualifiedName(0, "Default Binary")));
 
-    ReadResponse response = client.readAsync(0.0, TimestampsToReturn.Both, readValueIds).get();
+    ReadResponse response = client.read(0.0, TimestampsToReturn.Both, readValueIds);
+    DataValue[] results = requireNonNull(response.getResults());
 
-    Arrays.stream(response.getResults()).forEach(v -> LOGGER.debug("{}", v.value().value()));
-  }
+    assertEquals(4, results.length);
 
-  @Test
-  public void readBaseNodeAttributes2() throws UaException {
-    NodeId nodeId = new NodeId(2, "TestInt32");
+    Object expectedValue = results[0].value().value();
 
-    UaNode node = client.getAddressSpace().getNode(nodeId);
+    for (int i = 0; i < 3; i++) {
+      assertTrue(results[i].statusCode().isGood());
+      assertEquals(expectedValue, results[i].value().value());
+      assertNotNull(results[i].sourceTime());
+      assertNotNull(results[i].serverTime());
+    }
 
-    assertNotNull(node.getRolePermissions());
-    assertNotNull(node.getUserRolePermissions());
-    assertNotNull(node.getAccessRestrictions());
+    assertTrue(results[3].statusCode().isGood());
+    assertEquals(new QualifiedName(2, "TestInt32"), results[3].value().value());
+    assertEquals(DateTime.NULL_VALUE, results[3].sourceTime());
+    assertNotNull(results[3].serverTime());
   }
 
   @Test
@@ -159,17 +151,25 @@ public class UaNodeTest extends AbstractClientServerTest {
 
   @Test
   public void refresh() throws UaException {
-    AddressSpace addressSpace = client.getAddressSpace();
+    NodeId nodeId = newNodeId("TestInt32");
+    UaNode node = client.getAddressSpace().getNode(nodeId);
+    var serverNode = testNamespace.getNodeManager().getNode(nodeId).orElseThrow();
+    LocalizedText original = serverNode.getDescription();
+    LocalizedText updated = LocalizedText.english("Updated description");
+    try {
+      serverNode.setDescription(updated);
+      assertEquals(original, node.getDescription());
 
-    UaNode serverNode = addressSpace.getNode(NodeIds.Server);
+      List<DataValue> values = node.refresh(EnumSet.of(AttributeId.Description));
 
-    List<DataValue> values = serverNode.refresh(AttributeId.OBJECT_ATTRIBUTES);
-
-    values.forEach(
-        v -> {
-          assertNotNull(v.statusCode());
-          assertTrue(v.statusCode().isGood() || v.value().isNull());
-        });
+      assertEquals(1, values.size());
+      assertEquals(StatusCode.GOOD, values.get(0).statusCode());
+      assertEquals(updated, values.get(0).value().value());
+      assertEquals(updated, node.getDescription());
+    } finally {
+      serverNode.setDescription(original);
+      node.refresh(EnumSet.of(AttributeId.Description));
+    }
   }
 
   @Test

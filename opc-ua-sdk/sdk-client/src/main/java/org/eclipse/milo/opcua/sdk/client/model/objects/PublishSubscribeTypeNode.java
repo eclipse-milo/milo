@@ -92,7 +92,10 @@ public class PublishSubscribeTypeNode extends PubSubKeyServiceTypeNode
   @Override
   public void writeSupportedTransportProfiles(String[] value) throws UaException {
     try {
-      writeSupportedTransportProfilesAsync(value).get();
+      StatusCode statusCode = writeSupportedTransportProfilesAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -166,7 +169,10 @@ public class PublishSubscribeTypeNode extends PubSubKeyServiceTypeNode
   @Override
   public void writeDefaultDatagramPublisherId(ULong value) throws UaException {
     try {
-      writeDefaultDatagramPublisherIdAsync(value).get();
+      StatusCode statusCode = writeDefaultDatagramPublisherIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -240,7 +246,10 @@ public class PublishSubscribeTypeNode extends PubSubKeyServiceTypeNode
   @Override
   public void writeConfigurationVersion(UInteger value) throws UaException {
     try {
-      writeConfigurationVersionAsync(value).get();
+      StatusCode statusCode = writeConfigurationVersionAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -316,7 +325,10 @@ public class PublishSubscribeTypeNode extends PubSubKeyServiceTypeNode
   @Override
   public void writeDefaultSecurityKeyServices(EndpointDescription[] value) throws UaException {
     try {
-      writeDefaultSecurityKeyServicesAsync(value).get();
+      StatusCode statusCode = writeDefaultSecurityKeyServicesAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -394,7 +406,10 @@ public class PublishSubscribeTypeNode extends PubSubKeyServiceTypeNode
   @Override
   public void writeConfigurationProperties(KeyValuePair[] value) throws UaException {
     try {
-      writeConfigurationPropertiesAsync(value).get();
+      StatusCode statusCode = writeConfigurationPropertiesAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

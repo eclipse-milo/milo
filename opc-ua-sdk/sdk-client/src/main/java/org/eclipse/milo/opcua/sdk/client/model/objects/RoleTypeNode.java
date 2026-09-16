@@ -92,7 +92,10 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
   @Override
   public void writeIdentities(IdentityMappingRuleType[] value) throws UaException {
     try {
-      writeIdentitiesAsync(value).get();
+      StatusCode statusCode = writeIdentitiesAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -164,7 +167,10 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
   @Override
   public void writeApplicationsExclude(Boolean value) throws UaException {
     try {
-      writeApplicationsExcludeAsync(value).get();
+      StatusCode statusCode = writeApplicationsExcludeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -237,7 +243,10 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
   @Override
   public void writeApplications(String[] value) throws UaException {
     try {
-      writeApplicationsAsync(value).get();
+      StatusCode statusCode = writeApplicationsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -307,7 +316,10 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
   @Override
   public void writeEndpointsExclude(Boolean value) throws UaException {
     try {
-      writeEndpointsExcludeAsync(value).get();
+      StatusCode statusCode = writeEndpointsExcludeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -382,7 +394,10 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
   @Override
   public void writeEndpoints(EndpointType[] value) throws UaException {
     try {
-      writeEndpointsAsync(value).get();
+      StatusCode statusCode = writeEndpointsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -454,7 +469,10 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
   @Override
   public void writeCustomConfiguration(Boolean value) throws UaException {
     try {
-      writeCustomConfigurationAsync(value).get();
+      StatusCode statusCode = writeCustomConfigurationAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

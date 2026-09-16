@@ -12,7 +12,6 @@ package org.eclipse.milo.opcua.sdk.server;
 
 import static org.eclipse.milo.opcua.stack.core.util.ArrayUtil.transformArray;
 
-import java.util.Optional;
 import org.eclipse.milo.opcua.sdk.core.NumericRange;
 import org.eclipse.milo.opcua.sdk.core.nodes.Node;
 import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
@@ -58,25 +57,6 @@ public class AttributeReader {
 
     if (!AttributeId.getAttributes(node.getNodeClass()).contains(attributeId)) {
       return new DataValue(StatusCodes.Bad_AttributeIdInvalid);
-    }
-
-    if (encodingName != null && encodingName.isNotNull()) {
-      if (attributeId != AttributeId.Value) {
-        return new DataValue(StatusCodes.Bad_DataEncodingInvalid);
-      }
-
-      NodeId dataTypeId;
-      if (node instanceof VariableNode) {
-        dataTypeId = ((VariableNode) node).getDataType();
-      } else if (node instanceof VariableTypeNode) {
-        dataTypeId = ((VariableTypeNode) node).getDataType();
-      } else {
-        return new DataValue(StatusCodes.Bad_DataEncodingInvalid);
-      }
-
-      if (!isStructureSubtype(node.getNodeContext().getServer(), dataTypeId)) {
-        return new DataValue(StatusCodes.Bad_DataEncodingInvalid);
-      }
     }
 
     Object value;
@@ -194,24 +174,6 @@ public class AttributeReader {
           .setStatus(StatusCode.GOOD)
           .applyTimestamps(attributeId, timestamps)
           .build();
-    }
-  }
-
-  private static boolean isStructureSubtype(OpcUaServer server, NodeId dataTypeId) {
-    UaNode dataTypeNode = server.getAddressSpaceManager().getManagedNode(dataTypeId).orElse(null);
-
-    if (dataTypeNode != null) {
-      Optional<NodeId> superTypeId =
-          dataTypeNode.getReferences().stream()
-              .filter(r -> r.isInverse() && r.getReferenceTypeId().equals(NodeIds.HasSubtype))
-              .flatMap(r -> r.getTargetNodeId().toNodeId(server.getNamespaceTable()).stream())
-              .findFirst();
-
-      return superTypeId
-          .map(id -> id.equals(NodeIds.Structure) || isStructureSubtype(server, id))
-          .orElse(false);
-    } else {
-      return false;
     }
   }
 

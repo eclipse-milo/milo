@@ -103,7 +103,10 @@ public class RationalNumberTypeNode extends BaseDataVariableTypeNode implements 
   @Override
   public void writeNumerator(Integer value) throws UaException {
     try {
-      writeNumeratorAsync(value).get();
+      StatusCode statusCode = writeNumeratorAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -173,7 +176,10 @@ public class RationalNumberTypeNode extends BaseDataVariableTypeNode implements 
   @Override
   public void writeDenominator(UInteger value) throws UaException {
     try {
-      writeDenominatorAsync(value).get();
+      StatusCode statusCode = writeDenominatorAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

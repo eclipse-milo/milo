@@ -88,7 +88,10 @@ public class LldpRemoteStatisticsTypeNode extends BaseObjectTypeNode
   @Override
   public void writeLastChangeTime(UInteger value) throws UaException {
     try {
-      writeLastChangeTimeAsync(value).get();
+      StatusCode statusCode = writeLastChangeTimeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -158,7 +161,10 @@ public class LldpRemoteStatisticsTypeNode extends BaseObjectTypeNode
   @Override
   public void writeRemoteInserts(UInteger value) throws UaException {
     try {
-      writeRemoteInsertsAsync(value).get();
+      StatusCode statusCode = writeRemoteInsertsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -228,7 +234,10 @@ public class LldpRemoteStatisticsTypeNode extends BaseObjectTypeNode
   @Override
   public void writeRemoteDeletes(UInteger value) throws UaException {
     try {
-      writeRemoteDeletesAsync(value).get();
+      StatusCode statusCode = writeRemoteDeletesAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -298,7 +307,10 @@ public class LldpRemoteStatisticsTypeNode extends BaseObjectTypeNode
   @Override
   public void writeRemoteDrops(UInteger value) throws UaException {
     try {
-      writeRemoteDropsAsync(value).get();
+      StatusCode statusCode = writeRemoteDropsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -368,7 +380,10 @@ public class LldpRemoteStatisticsTypeNode extends BaseObjectTypeNode
   @Override
   public void writeRemoteAgeouts(UInteger value) throws UaException {
     try {
-      writeRemoteAgeoutsAsync(value).get();
+      StatusCode statusCode = writeRemoteAgeoutsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

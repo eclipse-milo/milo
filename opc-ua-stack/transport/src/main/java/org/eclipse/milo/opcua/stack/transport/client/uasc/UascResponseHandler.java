@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.stack.transport.client.uasc;
 
+import io.netty.channel.Channel;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.UaResponseMessageType;
 
@@ -24,8 +25,25 @@ public interface UascResponseHandler {
   // failed while decoding response, aborted, decode exception, ServiceFault
   void handleReceiveFailure(long requestId, UaException exception);
 
-  void handleChannelError(UaException exception);
+  /**
+   * A channel-level Error message arrived on {@code channel}.
+   *
+   * <p>Implementations must scope the resulting failure to requests carried by {@code channel}: a
+   * transport can outlive any one channel, and requests not yet written may be waiting for its
+   * replacement. See the {@link org.eclipse.milo.opcua.stack.transport.client} package
+   * documentation for the channel and request lifecycle.
+   *
+   * @param channel the {@link Channel} the Error message arrived on.
+   * @param exception the {@link UaException} carrying the Error message's status and reason.
+   */
+  void handleChannelError(Channel channel, UaException exception);
 
-  // channel inactive, cancel pending requests?
-  void handleChannelInactive();
+  /**
+   * {@code channel} went inactive; fail the requests it was carrying.
+   *
+   * <p>The same scoping requirement described on {@link #handleChannelError} applies.
+   *
+   * @param channel the {@link Channel} that went inactive.
+   */
+  void handleChannelInactive(Channel channel);
 }

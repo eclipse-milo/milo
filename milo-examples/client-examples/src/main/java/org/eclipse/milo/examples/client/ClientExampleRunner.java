@@ -10,22 +10,26 @@
 
 package org.eclipse.milo.examples.client;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.Security;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.eclipse.milo.examples.server.ExampleServer;
+import org.eclipse.milo.opcua.sdk.client.EndpointConfiguration;
+import org.eclipse.milo.opcua.sdk.client.EndpointResolver;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
+import org.eclipse.milo.opcua.sdk.client.OpcUaClientConfig;
+import org.eclipse.milo.opcua.sdk.client.OpcUaClientConfigBuilder;
 import org.eclipse.milo.opcua.stack.core.Stack;
+import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
 import org.eclipse.milo.opcua.stack.core.security.DefaultClientCertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.FileBasedTrustListManager;
 import org.eclipse.milo.opcua.stack.core.security.MemoryCertificateQuarantine;
-import org.eclipse.milo.opcua.stack.core.security.TrustListManager;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.util.EndpointUtil;
 import org.slf4j.Logger;
@@ -33,21 +37,16 @@ import org.slf4j.LoggerFactory;
 
 public class ClientExampleRunner {
 
-  static {
-    // Required for SecurityPolicy.Aes256_Sha256_RsaPss
-    Security.addProvider(new BouncyCastleProvider());
-  }
-
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   private final CompletableFuture<OpcUaClient> future = new CompletableFuture<>();
 
   private ExampleServer exampleServer;
 
-  private TrustListManager clientTrustListManager;
-
   private final ClientExample clientExample;
   private final boolean serverRequired;
+  private final Path securityTempDir;
+  private final FileBasedTrustListManager clientTrustListManager;
 
   public ClientExampleRunner(ClientExample clientExample) throws Exception {
     this(clientExample, true);
@@ -62,10 +61,8 @@ public class ClientExampleRunner {
       exampleServer = new ExampleServer(port, clientExample::configureServer);
       exampleServer.startup().get();
     }
-  }
 
-  private OpcUaClient createClient() throws Exception {
-    Path securityTempDir = Paths.get(System.getProperty("java.io.tmpdir"), "client", "security");
+    securityTempDir = Paths.get(System.getProperty("java.io.tmpdir"), "client", "security");
     Files.createDirectories(securityTempDir);
     if (!Files.exists(securityTempDir)) {
       throw new Exception("unable to create security dir: " + securityTempDir);
@@ -76,29 +73,52 @@ public class ClientExampleRunner {
     LoggerFactory.getLogger(getClass()).info("security dir: {}", securityTempDir.toAbsolutePath());
     LoggerFactory.getLogger(getClass()).info("security pki dir: {}", pkiDir.toAbsolutePath());
 
-    KeyStoreLoader loader = new KeyStoreLoader().load(securityTempDir);
-
     clientTrustListManager = FileBasedTrustListManager.createAndInitialize(pkiDir);
+  }
+
+  private OpcUaClient createClient() throws Exception {
+    KeyStoreLoader loader = new KeyStoreLoader().load(securityTempDir);
 
     var certificateValidator =
         new DefaultClientCertificateValidator(
             clientTrustListManager, new MemoryCertificateQuarantine());
 
-    return OpcUaClient.create(
-        clientExample.getEndpointUrl(),
-        endpoints -> endpoints.stream().filter(clientExample.endpointFilter()).findFirst(),
-        transportConfigBuilder -> {},
-        clientConfigBuilder -> {
-          clientConfigBuilder
-              .setApplicationName(LocalizedText.english("eclipse milo opc-ua client"))
-              .setApplicationUri("urn:eclipse:milo:examples:client")
-              .setKeyPair(loader.getClientKeyPair())
-              .setCertificate(loader.getClientCertificate())
-              .setCertificateChain(loader.getClientCertificateChain())
-              .setCertificateValidator(certificateValidator)
-              .setIdentityProvider(clientExample.getIdentityProvider());
-          clientExample.configureClient(clientConfigBuilder);
-        });
+    // The resolver owns discovery and endpoint selection. It runs once here for the initial
+    // connection, and the client keeps it to rediscover the endpoint if SecureChannel
+    // establishment later fails on a secured endpoint, e.g. after the server's certificate is
+    // replaced. OpcUaClient.create(url, ...) builds and retains an equivalent resolver itself;
+    // this example spells it out to show the pieces involved.
+    EndpointResolver endpointResolver =
+        EndpointResolver.create(
+            clientExample.getEndpointUrl(),
+            endpoints -> endpoints.stream().filter(clientExample.endpointFilter()).findFirst(),
+            transportConfigBuilder -> {},
+            Duration.ofSeconds(10));
+
+    EndpointConfiguration resolved;
+    try {
+      resolved = endpointResolver.resolve().get();
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    }
+
+    // The example client has one key pair and certificate chain on hand, so it presents them
+    // directly. Its trust list lives inside the validator above, which is the only place that
+    // reads it. See GdsPullExample for a client that puts the trust list on a CertificateGroup
+    // instead, because the pull cycle has to reach it through the group to install into it.
+    OpcUaClientConfigBuilder clientConfigBuilder =
+        OpcUaClientConfig.builder()
+            .setEndpoint(resolved.endpoint())
+            .setDiscoveryEndpoints(resolved.discoveryEndpoints())
+            .setEndpointResolver(endpointResolver)
+            .setApplicationName(LocalizedText.english("eclipse milo opc-ua client"))
+            .setApplicationUri("urn:eclipse:milo:examples:client")
+            .setCertificateIdentity(loader.getClientKeyPair(), loader.getClientCertificateChain())
+            .setCertificateValidator(certificateValidator)
+            .setIdentityProvider(clientExample.getIdentityProvider());
+    clientExample.configureClient(clientConfigBuilder);
+
+    return OpcUaClient.create(clientConfigBuilder.build());
   }
 
   public void run() {
@@ -118,14 +138,20 @@ public class ClientExampleRunner {
         // Make the example server trust the example client certificate by default.
         client
             .getConfig()
-            .getCertificate()
+            .getCertificateGroup()
             .ifPresent(
-                certificate ->
-                    certificateManager
-                        .getCertificateGroups()
+                clientGroup ->
+                    clientGroup
+                        .getCertificateIdentities()
                         .forEach(
-                            group ->
-                                group.getTrustListManager().addTrustedCertificate(certificate)));
+                            identity ->
+                                certificateManager
+                                    .getCertificateGroups()
+                                    .forEach(
+                                        group ->
+                                            group
+                                                .getTrustListManager()
+                                                .addTrustedCertificate(identity.certificate()))));
 
         // Make the example client trust the example server certificate by default.
         exampleServer
@@ -140,7 +166,7 @@ public class ClientExampleRunner {
                         .forEach(
                             entry ->
                                 clientTrustListManager.addTrustedCertificate(
-                                    entry.certificateChain[0])));
+                                    entry.certificateChain()[0])));
       }
 
       future.whenCompleteAsync(
@@ -152,13 +178,13 @@ public class ClientExampleRunner {
             try {
               client.disconnectAsync().get();
               if (serverRequired && exampleServer != null) {
-                // let the session listener callbacks run
-                Thread.sleep(500);
                 exampleServer.shutdown().get();
               }
-              Stack.releaseSharedResources();
             } catch (ExecutionException | InterruptedException e) {
               logger.error("Error disconnecting: {}", e.getMessage(), e);
+            } finally {
+              closeClientTrustListManager();
+              Stack.releaseSharedResources();
             }
 
             try {
@@ -180,6 +206,7 @@ public class ClientExampleRunner {
       logger.error("Error getting client: {}", t.getMessage(), t);
 
       future.completeExceptionally(t);
+      closeClientTrustListManager();
 
       try {
         Thread.sleep(1000);
@@ -193,6 +220,14 @@ public class ClientExampleRunner {
       Thread.sleep(999_999_999);
     } catch (InterruptedException e) {
       e.printStackTrace();
+    }
+  }
+
+  private void closeClientTrustListManager() {
+    try {
+      clientTrustListManager.close();
+    } catch (IOException e) {
+      logger.error("Error closing TrustListManager: {}", e.getMessage(), e);
     }
   }
 }

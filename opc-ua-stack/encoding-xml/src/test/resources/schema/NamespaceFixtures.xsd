@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copyright (c) 2026 the Eclipse Milo Authors
+  SPDX-License-Identifier: EPL-2.0
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    xmlns:tns="urn:milo:test:xml" xmlns:amb="http://opcfoundation.org/UA/AMB/Types.xsd"
+    xmlns:di="http://opcfoundation.org/UA/DI/Types.xsd"
+    xmlns:ua="http://opcfoundation.org/UA/2008/02/Types.xsd"
+    targetNamespace="urn:milo:test:xml" elementFormDefault="qualified">
+  <xs:import namespace="http://opcfoundation.org/UA/DI/Types.xsd"/>
+  <xs:import namespace="http://opcfoundation.org/UA/AMB/Types.xsd"/>
+  <xs:import namespace="http://opcfoundation.org/UA/2008/02/Types.xsd"/>
+  <xs:element name="Derived">
+    <xs:complexType>
+      <xs:complexContent>
+        <xs:extension base="amb:NameNodeIdDataType">
+          <xs:sequence>
+            <xs:element name="Cause" type="amb:RootCauseDataType"/>
+            <xs:element name="After" type="xs:int"/>
+          </xs:sequence>
+        </xs:extension>
+      </xs:complexContent>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="Arrays">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="Parameters" type="di:ListOfParameterResultDataType"/>
+        <xs:element name="Health" type="di:ListOfDeviceHealthEnumeration"/>
+        <xs:element name="After" type="xs:string"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="Wrapped">
+    <xs:complexType>
+      <xs:sequence><xs:element name="Value" type="ua:ExtensionObject"/></xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="VariantValue">
+    <xs:complexType>
+      <xs:sequence><xs:element name="Value" type="ua:Variant"/></xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

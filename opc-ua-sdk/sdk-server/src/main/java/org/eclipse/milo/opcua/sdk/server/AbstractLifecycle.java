@@ -21,6 +21,10 @@ public abstract class AbstractLifecycle implements Lifecycle {
    *
    * <p>Subsequent invocations throw {@link IllegalStateException}.
    *
+   * <p>If {@link #onStartup()} throws, the state transitions to stopped: {@link #isRunning()} is
+   * false, and a subsequent {@link #shutdown()} has no effect, so a lifecycle whose startup failed
+   * (and cleaned up after itself) is safely disposable.
+   *
    * @throws IllegalStateException on subsequent invocations.
    */
   @Override
@@ -29,7 +33,12 @@ public abstract class AbstractLifecycle implements Lifecycle {
         state.getAndUpdate(prev -> prev == LifecycleState.NEW ? LifecycleState.RUNNING : prev);
 
     if (previous == LifecycleState.NEW) {
-      this.onStartup();
+      try {
+        this.onStartup();
+      } catch (Throwable t) {
+        state.set(LifecycleState.STOPPED);
+        throw t;
+      }
     } else {
       throw new IllegalStateException("cannot call startup when state=" + previous);
     }

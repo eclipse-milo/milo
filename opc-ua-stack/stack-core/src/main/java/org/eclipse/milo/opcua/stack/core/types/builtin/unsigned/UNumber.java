@@ -29,4 +29,36 @@ public abstract class UNumber extends Number {
   public BigInteger toBigInteger() {
     return new BigInteger(toString());
   }
+
+  /**
+   * Figure out the size of a value precache from a system property.
+   *
+   * @param propertyName the name of the system property holding the requested size.
+   * @param defaultSize the size to use if the property is not set, empty, not a number, or cannot
+   *     be read.
+   * @param maxSize the maximum size the parsed value is capped at.
+   * @return the precache size; if the parsed value is zero or negative no cache should be created.
+   */
+  static int getPrecacheSize(String propertyName, int defaultSize, long maxSize) {
+    String prop;
+    long propParsed;
+
+    try {
+      prop = System.getProperty(propertyName);
+    } catch (SecurityException e) {
+      // security manager stopped us so use default
+      return defaultSize;
+    }
+    if (prop == null) return defaultSize;
+    if (prop.isEmpty()) return defaultSize;
+    try {
+      propParsed = Long.parseLong(prop);
+    } catch (NumberFormatException e) {
+      // not a valid number
+      return defaultSize;
+    }
+    // treat negative value as no cache...
+    if (propParsed < 0) return 0;
+    return (int) Math.min(propParsed, maxSize);
+  }
 }

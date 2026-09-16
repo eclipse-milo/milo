@@ -88,7 +88,10 @@ public class ProvisionableDeviceTypeNode extends BaseObjectTypeNode
   @Override
   public void writeIsSingleton(Boolean value) throws UaException {
     try {
-      writeIsSingletonAsync(value).get();
+      StatusCode statusCode = writeIsSingletonAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

@@ -88,7 +88,10 @@ public class ProgramTransitionAuditEventTypeNode extends AuditUpdateStateEventTy
   @Override
   public void writeTransition(LocalizedText value) throws UaException {
     try {
-      writeTransitionAsync(value).get();
+      StatusCode statusCode = writeTransitionAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

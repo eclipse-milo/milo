@@ -105,7 +105,10 @@ public class TwoStateVariableTypeNode extends StateVariableTypeNode
   @Override
   public void writeId(Boolean value) throws UaException {
     try {
-      writeIdAsync(value).get();
+      StatusCode statusCode = writeIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -174,7 +177,10 @@ public class TwoStateVariableTypeNode extends StateVariableTypeNode
   @Override
   public void writeTransitionTime(DateTime value) throws UaException {
     try {
-      writeTransitionTimeAsync(value).get();
+      StatusCode statusCode = writeTransitionTimeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -244,7 +250,10 @@ public class TwoStateVariableTypeNode extends StateVariableTypeNode
   @Override
   public void writeEffectiveTransitionTime(DateTime value) throws UaException {
     try {
-      writeEffectiveTransitionTimeAsync(value).get();
+      StatusCode statusCode = writeEffectiveTransitionTimeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -318,7 +327,10 @@ public class TwoStateVariableTypeNode extends StateVariableTypeNode
   @Override
   public void writeTrueState(LocalizedText value) throws UaException {
     try {
-      writeTrueStateAsync(value).get();
+      StatusCode statusCode = writeTrueStateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -388,7 +400,10 @@ public class TwoStateVariableTypeNode extends StateVariableTypeNode
   @Override
   public void writeFalseState(LocalizedText value) throws UaException {
     try {
-      writeFalseStateAsync(value).get();
+      StatusCode statusCode = writeFalseStateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

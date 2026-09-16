@@ -10,10 +10,19 @@
 
 package org.eclipse.milo.opcua.sdk.server;
 
+/**
+ * A {@link ManagedAddressSpace} whose registration is controlled by a {@link LifecycleManager}.
+ *
+ * <p>Subclasses can add their own lifecycle work with {@link #getLifecycleManager()}. Shutdown runs
+ * in reverse registration order, so subclass lifecycles are stopped before this base class
+ * unregisters the {@link UaNodeManager} from the server's {@link AddressSpaceManager}.
+ */
 public abstract class ManagedAddressSpaceWithLifecycle extends ManagedAddressSpace
     implements Lifecycle {
 
-  private final LifecycleManager lifecycleManager = new LifecycleManager();
+  /** Keeps child lifecycle shutdown ahead of base address-space unregistration. */
+  private final LifecycleManager lifecycleManager =
+      new LifecycleManager(LifecycleManager.ShutdownOrder.INVERSE);
 
   public ManagedAddressSpaceWithLifecycle(OpcUaServer server) {
     super(server);

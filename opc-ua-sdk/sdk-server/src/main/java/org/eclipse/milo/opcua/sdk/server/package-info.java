@@ -1,0 +1,96 @@
+/*
+ * Copyright (c) 2026 the Eclipse Milo Authors
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
+
+/**
+ * Server-side SDK entry points and configuration for hosting OPC UA services.
+ *
+ * <p>{@link org.eclipse.milo.opcua.sdk.server.OpcUaServer} owns the server lifecycle. It binds
+ * configured {@link org.eclipse.milo.opcua.sdk.server.EndpointConfig endpoints} to transport
+ * implementations, exposes the service sets used by clients, and provides the transport layer with
+ * access to encoding, certificate, session, and namespace state through its application context.
+ *
+ * <h2>Endpoint advertisement</h2>
+ *
+ * <p>Endpoint advertisement starts from the {@link
+ * org.eclipse.milo.opcua.sdk.server.EndpointConfig} instances in {@link
+ * org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig}. The application registers its {@link
+ * org.eclipse.milo.opcua.stack.core.security.CertificateGroup}s under {@code CertificateGroupType}
+ * NodeIds in the configured {@link org.eclipse.milo.opcua.stack.core.security.CertificateManager},
+ * and endpoints reference registered groups by those ids. A secure endpoint may advertise a fixed
+ * certificate supplied directly on the endpoint config, use {@link
+ * org.eclipse.milo.opcua.sdk.server.EndpointCertificateConfig} to name the group and certificate
+ * type to select a compatible local identity from, or, with neither configured, select from the
+ * group registered as the DefaultApplicationGroup. An endpoint that names a group the manager does
+ * not have is omitted. A SecurityPolicy.None endpoint whose UserName or IssuedToken policies
+ * encrypt secrets with a legacy RSA policy selects a certificate the same way, against the token
+ * policies' profiles. An implicit selection failure keeps the None endpoint advertised without a
+ * certificate, while an unsatisfied explicit certificate request omits it. Other endpoints whose
+ * security policy or certificate request cannot be served by the current runtime are omitted from
+ * discovery advertisements.
+ *
+ * <h2>Lifecycle extensions</h2>
+ *
+ * <p>{@link org.eclipse.milo.opcua.sdk.server.OpcUaServer#addLifecycleParticipant(
+ * org.eclipse.milo.opcua.sdk.server.Lifecycle)} transfers lifecycle ownership of an application
+ * component to the server before startup. The server starts these participants in registration
+ * order after its standard namespaces and event facilities are available, then exposes passive and
+ * reverse-connect endpoints. Startup rollback and terminal shutdown stop only successfully started
+ * participants, in reverse order. On normal shutdown, transports and sessions are quiesced first;
+ * participant shutdown therefore runs without external server visibility but before the standard
+ * address space and event facilities are torn down. Shutdown waits for the actual startup work,
+ * even if an application cancels or completes the public startup result.
+ *
+ * <p>{@link org.eclipse.milo.opcua.sdk.server.LifecycleManager} applies the same ownership rule
+ * within composite components: failed child startup unwinds successfully started children in
+ * reverse order. A managed namespace therefore releases its base address-space registrations when a
+ * later child fails. Each failing child cleans up its own partial startup before propagating the
+ * failure.
+ *
+ * <h2>Node storage</h2>
+ *
+ * <p>{@link org.eclipse.milo.opcua.sdk.server.NodeManager} owns node identity and reference
+ * storage. The built-in manager serializes mutations, batch commits, and identity-conditional
+ * cleanup on its monitor. It resolves node attributes and invokes reference filters outside that
+ * monitor because attribute observers may call back into the manager while holding a node's
+ * monitor. Application managers that use the default batch and cleanup primitives need a single
+ * writer.
+ *
+ * <h2>Session response preparation</h2>
+ *
+ * <p>A Session owns a timeout as soon as it is constructed. Failed CreateSession preparation must
+ * close that provisional Session before returning an error. ActivateSession prepares its response
+ * additional header before committing identity, nonce, locale, or channel changes. A failed
+ * negotiation therefore leaves an existing Session usable on its previous channel and leaves an
+ * initial Session unactivated. Enhanced username-token keys consumed during validation remain
+ * single-use even if later response preparation fails.
+ *
+ * <h2>Reference storage</h2>
+ *
+ * <p>{@link org.eclipse.milo.opcua.sdk.server.AddressSpaceManager} aggregates references from every
+ * registered NodeManager. Reference ownership is independent of node ownership: either endpoint's
+ * manager, or another registered manager, can store an association. Removing an association through
+ * the address-space manager removes both directions from all registered stores, matching the scope
+ * used for discovery.
+ *
+ * <h2>Runtime boundaries</h2>
+ *
+ * <p>The SDK server package coordinates high-level server configuration and lifecycle. Certificate
+ * storage and trust decisions remain owned by the stack security APIs, transport binding remains
+ * owned by the transport package, and request handling is delegated to service-set implementations.
+ * Code added to this package should preserve those boundaries and keep endpoint validation aligned
+ * with the certificates and security policies that the transport layer can actually serve.
+ *
+ * <p>Sessions retain the server certificate and key pair they were created with, separately from
+ * the current channel configuration. When a retained Session moves to a replacement SecureChannel,
+ * application signatures still include that original certificate. Enhanced signatures also include
+ * the replacement channel's certificate and thumbprint. A certificate rotation can remove
+ * old-thumbprint lookup without rewriting the security information of retained Sessions.
+ */
+package org.eclipse.milo.opcua.sdk.server;

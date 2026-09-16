@@ -27,7 +27,7 @@ import org.eclipse.milo.opcua.sdk.server.RoleMapper;
 import org.eclipse.milo.opcua.sdk.server.identity.AnonymousIdentityValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.CompositeValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.UsernameIdentityValidator;
-import org.eclipse.milo.opcua.stack.core.security.DefaultApplicationGroup;
+import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateGroup;
 import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateManager;
 import org.eclipse.milo.opcua.stack.core.security.DefaultServerCertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.MemoryCertificateQuarantine;
@@ -116,10 +116,12 @@ final class SksTestServer implements AutoCloseable {
         new DefaultServerCertificateValidator(trustListManager, certificateQuarantine);
 
     var defaultGroup =
-        DefaultApplicationGroup.createAndInitialize(
-            trustListManager, certificateStore, certificateFactory, certificateValidator);
+        new DefaultCertificateGroup(
+            trustListManager, certificateStore, certificateQuarantine, certificateValidator);
 
-    var certificateManager = new DefaultCertificateManager(certificateQuarantine, defaultGroup);
+    certificateFactory.createMissingCertificates(defaultGroup);
+
+    var certificateManager = new DefaultCertificateManager(defaultGroup);
 
     UsernameIdentityValidator usernameValidator =
         new UsernameIdentityValidator(

@@ -266,7 +266,10 @@ public class SubscriptionManager {
         byMonitoredItemType(
             deletedItems,
             dataItems -> server.getAddressSpaceManager().onDataItemsDeleted(dataItems),
-            eventItems -> server.getAddressSpaceManager().onEventItemsDeleted(eventItems));
+            eventItems -> {
+              unregisterEventItems(eventItems);
+              server.getAddressSpaceManager().onEventItemsDeleted(eventItems);
+            });
 
         results[i] = StatusCode.GOOD;
 
@@ -413,43 +416,56 @@ public class SubscriptionManager {
     long sessionMax = server.getConfig().getLimits().getMaxMonitoredItemsPerSession().longValue();
 
     for (MonitoredItemCreateRequest request : requests) {
+      long globalCount = server.getMonitoredItemCount().incrementAndGet();
+      long sessionCount = monitoredItemCount.incrementAndGet();
+      boolean created = false;
+
       try {
-        long globalCount = server.getMonitoredItemCount().incrementAndGet();
-        long sessionCount = monitoredItemCount.incrementAndGet();
-
-        if (globalCount <= globalMax && sessionCount <= sessionMax) {
-          BaseMonitoredItem<?> monitoredItem;
-
-          boolean isValueAttribute =
-              request.getItemToMonitor().getAttributeId().equals(AttributeId.Value.uid());
-
-          AttributesResponse attributesResponse =
-              (isValueAttribute && hasPercentDeadbandFilter(request))
-                  ? analogItemAttributes.get(request.getItemToMonitor().getNodeId())
-                  : regularAttributes.get(request.getItemToMonitor().getNodeId());
-
-          monitoredItem =
-              createMonitoredItem(request, subscription, timestamps, attributesResponse);
-
-          monitoredItems.add(monitoredItem);
-
-          results.add(
-              new MonitoredItemCreateResult(
-                  StatusCode.GOOD,
-                  monitoredItem.getId(),
-                  monitoredItem.getSamplingInterval(),
-                  uint(monitoredItem.getQueueSize()),
-                  monitoredItem.getFilterResult()));
-        } else {
+        if (globalCount > globalMax || sessionCount > sessionMax) {
           throw new UaException(StatusCodes.Bad_TooManyMonitoredItems);
         }
-      } catch (UaException e) {
-        monitoredItemCount.decrementAndGet();
-        server.getMonitoredItemCount().decrementAndGet();
+
+        boolean isValueAttribute =
+            request.getItemToMonitor().getAttributeId().equals(AttributeId.Value.uid());
+
+        AttributesResponse attributesResponse =
+            (isValueAttribute && hasPercentDeadbandFilter(request))
+                ? analogItemAttributes.get(request.getItemToMonitor().getNodeId())
+                : regularAttributes.get(request.getItemToMonitor().getNodeId());
+
+        BaseMonitoredItem<?> monitoredItem =
+            createMonitoredItem(request, subscription, timestamps, attributesResponse);
+
+        // getFilterResult() can throw while encoding the filter result, so it must be
+        // called before the item is added to monitoredItems; otherwise a failure would
+        // commit an item to the subscription after its quota reservation is released.
+        MonitoredItemCreateResult result =
+            new MonitoredItemCreateResult(
+                StatusCode.GOOD,
+                monitoredItem.getId(),
+                monitoredItem.getSamplingInterval(),
+                uint(monitoredItem.getQueueSize()),
+                monitoredItem.getFilterResult());
+
+        monitoredItems.add(monitoredItem);
+        results.add(result);
+        created = true;
+      } catch (Exception e) {
+        StatusCode statusCode;
+        if (e instanceof UaException ue) {
+          statusCode = ue.getStatusCode();
+        } else {
+          logger.error("Unexpected error creating MonitoredItem", e);
+          statusCode = new StatusCode(StatusCodes.Bad_InternalError);
+        }
 
         results.add(
-            new MonitoredItemCreateResult(
-                e.getStatusCode(), UInteger.MIN, 0.0, UInteger.MIN, null));
+            new MonitoredItemCreateResult(statusCode, UInteger.MIN, 0.0, UInteger.MIN, null));
+      } finally {
+        if (!created) {
+          monitoredItemCount.decrementAndGet();
+          server.getMonitoredItemCount().decrementAndGet();
+        }
       }
     }
 
@@ -458,7 +474,10 @@ public class SubscriptionManager {
     byMonitoredItemType(
         monitoredItems,
         dataItems -> server.getAddressSpaceManager().onDataItemsCreated(dataItems),
-        eventItems -> server.getAddressSpaceManager().onEventItemsCreated(eventItems));
+        eventItems -> {
+          registerEventItems(eventItems);
+          server.getAddressSpaceManager().onEventItemsCreated(eventItems);
+        });
 
     return results;
   }
@@ -587,10 +606,23 @@ public class SubscriptionManager {
       throw new UaException(StatusCodes.Bad_AttributeIdInvalid);
     }
 
-    Object filterObject =
-        request.getRequestedParameters().getFilter().decode(server.getStaticEncodingContext());
+    MonitoringFilter filter;
 
-    MonitoringFilter filter = validateEventItemFilter(filterObject);
+    try {
+      ExtensionObject filterXo = request.getRequestedParameters().getFilter();
+
+      if (filterXo == null || filterXo.isNull()) {
+        throw new UaException(StatusCodes.Bad_MonitoredItemFilterInvalid);
+      }
+
+      Object filterObject = filterXo.decode(server.getStaticEncodingContext());
+
+      filter = validateEventItemFilter(filterObject);
+    } catch (UaSerializationException e) {
+      logger.debug("error decoding MonitoringFilter", e);
+
+      throw new UaException(StatusCodes.Bad_MonitoredItemFilterInvalid, e);
+    }
 
     RevisedEventItemParameters revisedParameters;
 
@@ -636,20 +668,9 @@ public class SubscriptionManager {
       AttributesResponse attributeResponse)
       throws UaException {
 
-    QualifiedName dataEncoding = request.getItemToMonitor().getDataEncoding();
     AttributeId attributeId =
         AttributeId.from(request.getItemToMonitor().getAttributeId())
             .orElseThrow(() -> new UaException(StatusCodes.Bad_AttributeIdInvalid));
-
-    if (dataEncoding.isNotNull()) {
-      if (attributeId != AttributeId.Value) {
-        throw new UaException(StatusCodes.Bad_DataEncodingInvalid);
-      }
-
-      if (!server.getEncodingManager().hasEncoding(dataEncoding)) {
-        throw new UaException(StatusCodes.Bad_DataEncodingUnsupported);
-      }
-    }
 
     if (attributeResponse instanceof NegativeResponse negativeResponse) {
       throw new UaException(negativeResponse.statusCode());
@@ -806,7 +827,10 @@ public class SubscriptionManager {
     byMonitoredItemType(
         monitoredItems,
         dataItems -> server.getAddressSpaceManager().onDataItemsModified(dataItems),
-        eventItems -> server.getAddressSpaceManager().onEventItemsModified(eventItems));
+        eventItems -> {
+          registerEventItems(eventItems);
+          server.getAddressSpaceManager().onEventItemsModified(eventItems);
+        });
 
     /*
      * AddressSpaces have been notified; send the response.
@@ -847,10 +871,23 @@ public class SubscriptionManager {
     }
 
     if (attributeId == AttributeId.EventNotifier) {
-      Object filterObject =
-          request.getRequestedParameters().getFilter().decode(server.getStaticEncodingContext());
+      MonitoringFilter filter;
 
-      MonitoringFilter filter = validateEventItemFilter(filterObject);
+      try {
+        ExtensionObject filterXo = request.getRequestedParameters().getFilter();
+
+        if (filterXo == null || filterXo.isNull()) {
+          throw new UaException(StatusCodes.Bad_MonitoredItemFilterInvalid);
+        }
+
+        Object filterObject = filterXo.decode(server.getStaticEncodingContext());
+
+        filter = validateEventItemFilter(filterObject);
+      } catch (UaSerializationException e) {
+        logger.debug("error decoding MonitoringFilter", e);
+
+        throw new UaException(StatusCodes.Bad_MonitoredItemFilterInvalid, e);
+      }
 
       RevisedEventItemParameters revisedParameters;
 
@@ -1289,7 +1326,10 @@ public class SubscriptionManager {
     byMonitoredItemType(
         deletedItems,
         dataItems -> server.getAddressSpaceManager().onDataItemsDeleted(dataItems),
-        eventItems -> server.getAddressSpaceManager().onEventItemsDeleted(eventItems));
+        eventItems -> {
+          unregisterEventItems(eventItems);
+          server.getAddressSpaceManager().onEventItemsDeleted(eventItems);
+        });
 
     /*
      * Build and return results.
@@ -1336,6 +1376,21 @@ public class SubscriptionManager {
         results[i] = StatusCode.GOOD;
       } else {
         results[i] = new StatusCode(StatusCodes.Bad_MonitoredItemIdInvalid);
+      }
+    }
+
+    /*
+     * Toggle EventNotifier registration for EventItems whose sampling state changed with the
+     * MonitoringMode.
+     */
+
+    for (MonitoredItem item : modified) {
+      if (item instanceof EventItem eventItem) {
+        if (eventItem.isSamplingEnabled()) {
+          server.getEventNotifier().register(eventItem);
+        } else {
+          server.getEventNotifier().unregister(eventItem);
+        }
       }
     }
 
@@ -1529,7 +1584,10 @@ public class SubscriptionManager {
         byMonitoredItemType(
             deletedItems,
             dataItems -> server.getAddressSpaceManager().onDataItemsDeleted(dataItems),
-            eventItems -> server.getAddressSpaceManager().onEventItemsDeleted(eventItems));
+            eventItems -> {
+              unregisterEventItems(eventItems);
+              server.getAddressSpaceManager().onEventItemsDeleted(eventItems);
+            });
 
         monitoredItemCount.getAndUpdate(count -> count - deletedItems.size());
         server.getMonitoredItemCount().getAndUpdate(count -> count - deletedItems.size());
@@ -1618,7 +1676,10 @@ public class SubscriptionManager {
             byMonitoredItemType(
                 monitoredItems.values(),
                 dataItems -> server.getAddressSpaceManager().onDataItemsDeleted(dataItems),
-                eventItems -> server.getAddressSpaceManager().onEventItemsDeleted(eventItems));
+                eventItems -> {
+                  unregisterEventItems(eventItems);
+                  server.getAddressSpaceManager().onEventItemsDeleted(eventItems);
+                });
 
             monitoredItemCount.getAndUpdate(count -> count - monitoredItems.size());
             server.getMonitoredItemCount().getAndUpdate(count -> count - monitoredItems.size());
@@ -1626,6 +1687,28 @@ public class SubscriptionManager {
             monitoredItems.clear();
           }
         });
+  }
+
+  /**
+   * Register or unregister {@code eventItems} with the Server's {@link
+   * org.eclipse.milo.opcua.sdk.server.EventNotifier} according to each item's sampling state.
+   *
+   * <p>Registration is SDK-owned and idempotent, for items from all namespaces; the {@code
+   * AddressSpace.onEventItems*} callbacks are lifecycle notifications only.
+   */
+  private void registerEventItems(List<EventItem> eventItems) {
+    for (EventItem item : eventItems) {
+      if (item.isSamplingEnabled()) {
+        server.getEventNotifier().register(item);
+      } else {
+        server.getEventNotifier().unregister(item);
+      }
+    }
+  }
+
+  /** Unregister {@code eventItems} from the Server's EventNotifier. */
+  private void unregisterEventItems(List<EventItem> eventItems) {
+    eventItems.forEach(item -> server.getEventNotifier().unregister(item));
   }
 
   /**

@@ -18,11 +18,16 @@ package org.eclipse.milo.opcua.sdk.server;
  *
  * <p>Subclasses can register additional startup/shutdown tasks with the {@link LifecycleManager}
  * obtained from {@link #getLifecycleManager()}.
+ *
+ * <p>Shutdown runs in reverse registration order, so subclass lifecycles are stopped before this
+ * base class unregisters the fragment and its {@link UaNodeManager}.
  */
 public abstract class ManagedAddressSpaceFragmentWithLifecycle extends ManagedAddressSpaceFragment
     implements Lifecycle {
 
-  private final LifecycleManager lifecycleManager = new LifecycleManager();
+  /** Keeps child lifecycle shutdown ahead of base fragment unregistration. */
+  private final LifecycleManager lifecycleManager =
+      new LifecycleManager(LifecycleManager.ShutdownOrder.INVERSE);
 
   private final AddressSpaceComposite composite;
 

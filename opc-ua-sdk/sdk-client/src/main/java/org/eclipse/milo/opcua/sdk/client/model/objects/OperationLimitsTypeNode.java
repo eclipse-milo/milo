@@ -87,7 +87,10 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   @Override
   public void writeMaxNodesPerRead(UInteger value) throws UaException {
     try {
-      writeMaxNodesPerReadAsync(value).get();
+      StatusCode statusCode = writeMaxNodesPerReadAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -157,7 +160,10 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   @Override
   public void writeMaxNodesPerHistoryReadData(UInteger value) throws UaException {
     try {
-      writeMaxNodesPerHistoryReadDataAsync(value).get();
+      StatusCode statusCode = writeMaxNodesPerHistoryReadDataAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -231,7 +237,10 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   @Override
   public void writeMaxNodesPerHistoryReadEvents(UInteger value) throws UaException {
     try {
-      writeMaxNodesPerHistoryReadEventsAsync(value).get();
+      StatusCode statusCode = writeMaxNodesPerHistoryReadEventsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -305,7 +314,10 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   @Override
   public void writeMaxNodesPerWrite(UInteger value) throws UaException {
     try {
-      writeMaxNodesPerWriteAsync(value).get();
+      StatusCode statusCode = writeMaxNodesPerWriteAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -378,7 +390,10 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   @Override
   public void writeMaxNodesPerHistoryUpdateData(UInteger value) throws UaException {
     try {
-      writeMaxNodesPerHistoryUpdateDataAsync(value).get();
+      StatusCode statusCode = writeMaxNodesPerHistoryUpdateDataAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -452,7 +467,10 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   @Override
   public void writeMaxNodesPerHistoryUpdateEvents(UInteger value) throws UaException {
     try {
-      writeMaxNodesPerHistoryUpdateEventsAsync(value).get();
+      StatusCode statusCode = writeMaxNodesPerHistoryUpdateEventsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -527,7 +545,10 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   @Override
   public void writeMaxNodesPerMethodCall(UInteger value) throws UaException {
     try {
-      writeMaxNodesPerMethodCallAsync(value).get();
+      StatusCode statusCode = writeMaxNodesPerMethodCallAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -601,7 +622,10 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   @Override
   public void writeMaxNodesPerBrowse(UInteger value) throws UaException {
     try {
-      writeMaxNodesPerBrowseAsync(value).get();
+      StatusCode statusCode = writeMaxNodesPerBrowseAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -674,7 +698,10 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   @Override
   public void writeMaxNodesPerRegisterNodes(UInteger value) throws UaException {
     try {
-      writeMaxNodesPerRegisterNodesAsync(value).get();
+      StatusCode statusCode = writeMaxNodesPerRegisterNodesAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -748,7 +775,10 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   @Override
   public void writeMaxNodesPerTranslateBrowsePathsToNodeIds(UInteger value) throws UaException {
     try {
-      writeMaxNodesPerTranslateBrowsePathsToNodeIdsAsync(value).get();
+      StatusCode statusCode = writeMaxNodesPerTranslateBrowsePathsToNodeIdsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -823,7 +853,10 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   @Override
   public void writeMaxNodesPerNodeManagement(UInteger value) throws UaException {
     try {
-      writeMaxNodesPerNodeManagementAsync(value).get();
+      StatusCode statusCode = writeMaxNodesPerNodeManagementAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -897,7 +930,10 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   @Override
   public void writeMaxMonitoredItemsPerCall(UInteger value) throws UaException {
     try {
-      writeMaxMonitoredItemsPerCallAsync(value).get();
+      StatusCode statusCode = writeMaxMonitoredItemsPerCallAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

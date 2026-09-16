@@ -89,7 +89,10 @@ public class TrustListTypeNode extends FileTypeNode implements TrustListType {
   @Override
   public void writeLastUpdateTime(DateTime value) throws UaException {
     try {
-      writeLastUpdateTimeAsync(value).get();
+      StatusCode statusCode = writeLastUpdateTimeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -159,7 +162,10 @@ public class TrustListTypeNode extends FileTypeNode implements TrustListType {
   @Override
   public void writeUpdateFrequency(Double value) throws UaException {
     try {
-      writeUpdateFrequencyAsync(value).get();
+      StatusCode statusCode = writeUpdateFrequencyAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -229,7 +235,10 @@ public class TrustListTypeNode extends FileTypeNode implements TrustListType {
   @Override
   public void writeActivityTimeout(Double value) throws UaException {
     try {
-      writeActivityTimeoutAsync(value).get();
+      StatusCode statusCode = writeActivityTimeoutAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -299,7 +308,10 @@ public class TrustListTypeNode extends FileTypeNode implements TrustListType {
   @Override
   public void writeDefaultValidationOptions(TrustListValidationOptions value) throws UaException {
     try {
-      writeDefaultValidationOptionsAsync(value).get();
+      StatusCode statusCode = writeDefaultValidationOptionsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

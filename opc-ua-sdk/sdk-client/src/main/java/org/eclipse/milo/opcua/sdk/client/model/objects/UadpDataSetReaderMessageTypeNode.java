@@ -92,7 +92,10 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
   @Override
   public void writeGroupVersion(UInteger value) throws UaException {
     try {
-      writeGroupVersionAsync(value).get();
+      StatusCode statusCode = writeGroupVersionAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -162,7 +165,10 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
   @Override
   public void writeNetworkMessageNumber(UShort value) throws UaException {
     try {
-      writeNetworkMessageNumberAsync(value).get();
+      StatusCode statusCode = writeNetworkMessageNumberAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -235,7 +241,10 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
   @Override
   public void writeDataSetOffset(UShort value) throws UaException {
     try {
-      writeDataSetOffsetAsync(value).get();
+      StatusCode statusCode = writeDataSetOffsetAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -305,7 +314,10 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
   @Override
   public void writeDataSetClassId(UUID value) throws UaException {
     try {
-      writeDataSetClassIdAsync(value).get();
+      StatusCode statusCode = writeDataSetClassIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -527,7 +539,10 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
   @Override
   public void writePublishingInterval(Double value) throws UaException {
     try {
-      writePublishingIntervalAsync(value).get();
+      StatusCode statusCode = writePublishingIntervalAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -600,7 +615,10 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
   @Override
   public void writeProcessingOffset(Double value) throws UaException {
     try {
-      writeProcessingOffsetAsync(value).get();
+      StatusCode statusCode = writeProcessingOffsetAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -673,7 +691,10 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
   @Override
   public void writeReceiveOffset(Double value) throws UaException {
     try {
-      writeReceiveOffsetAsync(value).get();
+      StatusCode statusCode = writeReceiveOffsetAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

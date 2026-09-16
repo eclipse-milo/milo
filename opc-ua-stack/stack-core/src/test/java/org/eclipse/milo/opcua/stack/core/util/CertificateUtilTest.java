@@ -13,9 +13,13 @@ package org.eclipse.milo.opcua.stack.core.util;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.google.common.primitives.Bytes;
+import java.io.StringReader;
 import java.security.KeyPair;
+import java.security.cert.X509CRL;
 import java.security.cert.X509Certificate;
 import java.util.List;
 import org.bouncycastle.asn1.pkcs.Attribute;
@@ -26,7 +30,10 @@ import org.bouncycastle.asn1.x509.Extension;
 import org.bouncycastle.asn1.x509.Extensions;
 import org.bouncycastle.asn1.x509.KeyPurposeId;
 import org.bouncycastle.asn1.x509.KeyUsage;
+import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.pkcs.PKCS10CertificationRequest;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaException;
 import org.junit.jupiter.api.Test;
 
 public class CertificateUtilTest {
@@ -49,36 +56,12 @@ public class CertificateUtilTest {
   }
 
   @Test
-  public void testGenerateCsr() throws Exception {
-    assertNotNull(CertificateUtil.generateCsr(keyPair, certificate));
-  }
-
-  @Test
   public void testGenerateCsrPem() throws Exception {
     PKCS10CertificationRequest csr = CertificateUtil.generateCsr(keyPair, certificate);
 
-    assertNotNull(CertificateUtil.getCsrPem(csr));
-  }
-
-  @Test
-  public void testGetSubjectAltNameField() {
-    Object uri =
-        CertificateUtil.getSubjectAltNameField(certificate, CertificateUtil.SUBJECT_ALT_NAME_URI)
-            .get(0);
-
-    Object dnsName =
-        CertificateUtil.getSubjectAltNameField(
-                certificate, CertificateUtil.SUBJECT_ALT_NAME_DNS_NAME)
-            .get(0);
-
-    Object ipAddress =
-        CertificateUtil.getSubjectAltNameField(
-                certificate, CertificateUtil.SUBJECT_ALT_NAME_IP_ADDRESS)
-            .get(0);
-
-    assertEquals("urn:eclipse:milo:test", uri);
-    assertEquals("localhost", dnsName);
-    assertEquals("127.0.0.1", ipAddress);
+    try (PEMParser parser = new PEMParser(new StringReader(CertificateUtil.getCsrPem(csr)))) {
+      assertEquals(csr, parser.readObject());
+    }
   }
 
   @Test
@@ -143,5 +126,46 @@ public class CertificateUtilTest {
     BasicConstraints basicConstraints =
         BasicConstraints.getInstance(basicConstraintsExt.getParsedValue());
     assertFalse(basicConstraints.isCA(), "basicConstraints should have cA=false");
+  }
+
+  // A GDS TrustList delivers CRLs as bare DER ByteStrings (Part 12 §7.8.2.8); the decoded CRL
+  // must carry the revocation entries of the original so validation can act on them.
+  @Test
+  public void decodeCrlRoundTripsDerEncodedCrl() throws Exception {
+    X509CRL crl = CrlTestUtil.generateCrl(certificate, keyPair.getPrivate(), certificate);
+
+    X509CRL decoded = CertificateUtil.decodeCrl(crl.getEncoded());
+
+    assertEquals(crl, decoded);
+    assertTrue(decoded.isRevoked(certificate), "revocation entry survives decode");
+  }
+
+  @Test
+  public void decodeCrlsDecodesConcatenatedDerCrls() throws Exception {
+    X509CRL crl1 = CrlTestUtil.generateCrl(certificate, keyPair.getPrivate());
+    X509CRL crl2 = CrlTestUtil.generateCrl(certificate, keyPair.getPrivate(), certificate);
+    byte[] concatenated = Bytes.concat(crl1.getEncoded(), crl2.getEncoded());
+
+    List<X509CRL> decoded = CertificateUtil.decodeCrls(concatenated);
+
+    assertEquals(List.of(crl1, crl2), decoded);
+  }
+
+  // Trust list application must fail loudly on a corrupt CRL rather than silently dropping it,
+  // otherwise a revoked certificate could stay trusted.
+  @Test
+  public void decodeCrlRejectsMalformedBytesWithBadDecodingError() {
+    byte[] garbage = {0x30, 0x03, 0x02, 0x01};
+
+    UaException e = assertThrows(UaException.class, () -> CertificateUtil.decodeCrl(garbage));
+
+    assertEquals(StatusCodes.Bad_DecodingError, e.getStatusCode().value());
+  }
+
+  @Test
+  public void decodeCrlRejectsEmptyInput() {
+    UaException e = assertThrows(UaException.class, () -> CertificateUtil.decodeCrl(new byte[0]));
+
+    assertEquals(StatusCodes.Bad_DecodingError, e.getStatusCode().value());
   }
 }

@@ -91,7 +91,10 @@ public class LldpPortInformationTypeNode extends BaseObjectTypeNode
   @Override
   public void writeIetfBaseNetworkInterfaceName(String value) throws UaException {
     try {
-      writeIetfBaseNetworkInterfaceNameAsync(value).get();
+      StatusCode statusCode = writeIetfBaseNetworkInterfaceNameAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -165,7 +168,10 @@ public class LldpPortInformationTypeNode extends BaseObjectTypeNode
   @Override
   public void writeDestMacAddress(UByte[] value) throws UaException {
     try {
-      writeDestMacAddressAsync(value).get();
+      StatusCode statusCode = writeDestMacAddressAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -243,7 +249,10 @@ public class LldpPortInformationTypeNode extends BaseObjectTypeNode
   @Override
   public void writePortIdSubtype(PortIdSubtype value) throws UaException {
     try {
-      writePortIdSubtypeAsync(value).get();
+      StatusCode statusCode = writePortIdSubtypeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -321,7 +330,10 @@ public class LldpPortInformationTypeNode extends BaseObjectTypeNode
   @Override
   public void writePortId(String value) throws UaException {
     try {
-      writePortIdAsync(value).get();
+      StatusCode statusCode = writePortIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -391,7 +403,10 @@ public class LldpPortInformationTypeNode extends BaseObjectTypeNode
   @Override
   public void writePortDescription(String value) throws UaException {
     try {
-      writePortDescriptionAsync(value).get();
+      StatusCode statusCode = writePortDescriptionAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

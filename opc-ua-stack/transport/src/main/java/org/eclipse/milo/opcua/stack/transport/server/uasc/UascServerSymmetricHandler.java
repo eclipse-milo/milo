@@ -14,7 +14,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageCodec;
-import java.util.ArrayList;
 import java.util.List;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
@@ -24,6 +23,7 @@ import org.eclipse.milo.opcua.stack.core.channel.ChunkDecoder;
 import org.eclipse.milo.opcua.stack.core.channel.ChunkDecoder.DecodedMessage;
 import org.eclipse.milo.opcua.stack.core.channel.ChunkEncoder;
 import org.eclipse.milo.opcua.stack.core.channel.ChunkEncoder.EncodedMessage;
+import org.eclipse.milo.opcua.stack.core.channel.ExceptionHandler;
 import org.eclipse.milo.opcua.stack.core.channel.MessageAbortException;
 import org.eclipse.milo.opcua.stack.core.channel.MessageDecodeException;
 import org.eclipse.milo.opcua.stack.core.channel.MessageEncodeException;
@@ -38,6 +38,7 @@ import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.types.UaRequestMessageType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.ResponseHeader;
 import org.eclipse.milo.opcua.stack.core.types.structured.ServiceFault;
 import org.eclipse.milo.opcua.stack.core.util.BufferUtil;
@@ -52,7 +53,7 @@ public class UascServerSymmetricHandler extends ByteToMessageCodec<UascServiceRe
 
   private final int maxChunkCount;
   private final int maxChunkSize;
-  private List<ByteBuf> chunkBuffers;
+  private final ChunkBufferAccumulator chunkBuffers;
 
   private final OpcUaBinaryEncoder binaryEncoder;
   private final OpcUaBinaryDecoder binaryDecoder;
@@ -88,14 +89,35 @@ public class UascServerSymmetricHandler extends ByteToMessageCodec<UascServiceRe
     maxChunkCount = channelParameters.getLocalMaxChunkCount();
     maxChunkSize = channelParameters.getLocalReceiveBufferSize();
 
-    chunkBuffers = new ArrayList<>(maxChunkCount);
+    chunkBuffers = new ChunkBufferAccumulator(maxChunkCount);
   }
 
   @Override
   public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
-    ctx.pipeline().addLast(new UascServiceRequestHandler(config, applicationContext));
+    ctx.pipeline().addLast(new UascServiceRequestHandler(applicationContext));
 
     super.handlerAdded(ctx);
+  }
+
+  @Override
+  public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
+    chunkBuffers.releaseAll();
+
+    super.handlerRemoved(ctx);
+  }
+
+  @Override
+  public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+    chunkBuffers.releaseAll();
+
+    super.channelInactive(ctx);
+  }
+
+  @Override
+  public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+    chunkBuffers.releaseAll();
+
+    super.exceptionCaught(ctx, cause);
   }
 
   @Override
@@ -113,7 +135,7 @@ public class UascServerSymmetricHandler extends ByteToMessageCodec<UascServiceRe
   @Override
   protected void encode(ChannelHandlerContext ctx, UascServiceResponse response, ByteBuf buffer)
       throws Exception {
-    sendServiceResponse(response, buffer);
+    sendServiceResponse(ctx, response, buffer);
   }
 
   @Override
@@ -141,83 +163,82 @@ public class UascServerSymmetricHandler extends ByteToMessageCodec<UascServiceRe
 
     char chunkType = (char) buffer.readByte();
 
-    if (chunkType == 'A') {
-      chunkBuffers.forEach(ByteBuf::release);
-      chunkBuffers.clear();
-    } else {
-      buffer.skipBytes(4); // Skip messageSize
+    buffer.skipBytes(4); // Skip messageSize
 
-      long secureChannelId = buffer.readUnsignedIntLE();
-      if (secureChannelId != secureChannel.getChannelId()) {
-        throw new UaException(
-            StatusCodes.Bad_SecureChannelIdInvalid,
-            "invalid secure channel id: " + secureChannelId);
-      }
+    long secureChannelId = buffer.readUnsignedIntLE();
+    if (secureChannelId != secureChannel.getChannelId()) {
+      throw new UaException(
+          StatusCodes.Bad_SecureChannelIdInvalid, "invalid secure channel id: " + secureChannelId);
+    }
 
-      int chunkSize = buffer.readerIndex(0).readableBytes();
-      if (chunkSize > maxChunkSize) {
-        throw new UaException(
-            StatusCodes.Bad_TcpMessageTooLarge,
-            String.format("max chunk size exceeded (%s)", maxChunkSize));
-      }
+    int chunkSize = buffer.readerIndex(0).readableBytes();
+    if (chunkSize > maxChunkSize) {
+      throw new UaException(
+          StatusCodes.Bad_TcpMessageTooLarge,
+          String.format("max chunk size exceeded (%s)", maxChunkSize));
+    }
 
-      chunkBuffers.add(buffer.retain());
+    chunkBuffers.add(buffer);
 
-      if (maxChunkCount > 0 && chunkBuffers.size() > maxChunkCount) {
-        throw new UaException(
-            StatusCodes.Bad_TcpMessageTooLarge,
-            String.format("max chunk count exceeded (%s)", maxChunkCount));
-      }
+    if (chunkType != 'A' && maxChunkCount > 0 && chunkBuffers.size() > maxChunkCount) {
+      throw new UaException(
+          StatusCodes.Bad_TcpMessageTooLarge,
+          String.format("max chunk count exceeded (%s)", maxChunkCount));
+    }
 
-      if (chunkType == 'F') {
-        final List<ByteBuf> buffersToDecode = chunkBuffers;
-        chunkBuffers = new ArrayList<>();
+    // Abort terminates a message only after all accumulated chunks pass security and sequence
+    // checks. The decoder consumes the Abort sequence number before reporting
+    // MessageAbortException.
+    if (chunkType == 'F' || chunkType == 'A') {
+      final List<ByteBuf> buffersToDecode = chunkBuffers.takeAll();
 
-        ByteBuf message = null;
+      ByteBuf message = null;
 
-        try {
-          DecodedMessage decodedMessage =
-              chunkDecoder.decodeSymmetric(secureChannel, buffersToDecode);
+      try {
+        DecodedMessage decodedMessage =
+            chunkDecoder.decodeSymmetric(secureChannel, buffersToDecode);
 
-          message = decodedMessage.getMessage();
-          long requestId = decodedMessage.getRequestId();
+        message = decodedMessage.getMessage();
+        long requestId = decodedMessage.getRequestId();
 
-          binaryDecoder.setBuffer(message);
-          UaRequestMessageType requestMessage =
-              (UaRequestMessageType) binaryDecoder.decodeMessage(null);
+        binaryDecoder.setBuffer(message);
+        UaRequestMessageType requestMessage =
+            (UaRequestMessageType) binaryDecoder.decodeMessage(null);
 
-          String endpointUrl = ctx.channel().attr(UascServerHelloHandler.ENDPOINT_URL_KEY).get();
+        String endpointUrl = ctx.channel().attr(UascServerHelloHandler.ENDPOINT_URL_KEY).get();
 
-          var serviceRequest =
-              new UascServiceRequest(
-                  endpointUrl,
-                  transportProfile,
-                  ctx.channel(),
-                  secureChannel,
-                  requestMessage,
-                  requestId);
+        EndpointDescription endpoint =
+            ctx.channel().attr(UascServerAsymmetricHandler.ENDPOINT_KEY).get();
 
-          out.add(serviceRequest);
-        } catch (MessageAbortException e) {
-          logger.warn(
-              "Received message abort chunk; error={}, reason={}",
-              e.getStatusCode(),
-              e.getMessage());
-        } catch (MessageDecodeException e) {
-          logger.error("Error decoding symmetric message", e);
+        var serviceRequest =
+            new UascServiceRequest(
+                endpointUrl,
+                transportProfile,
+                ctx.channel(),
+                secureChannel,
+                endpoint,
+                requestMessage,
+                requestId);
 
-          ctx.close();
-        } finally {
-          if (message != null) {
-            message.release();
-          }
-          buffersToDecode.clear();
+        out.add(serviceRequest);
+      } catch (MessageAbortException e) {
+        logger.warn(
+            "Received message abort chunk; error={}, reason={}", e.getStatusCode(), e.getMessage());
+      } catch (MessageDecodeException e) {
+        logger.error("Error decoding symmetric message", e);
+
+        ctx.close();
+      } finally {
+        if (message != null) {
+          message.release();
         }
+        buffersToDecode.clear();
       }
     }
   }
 
-  private void sendServiceResponse(UascServiceResponse response, ByteBuf outBuffer) {
+  private void sendServiceResponse(
+      ChannelHandlerContext ctx, UascServiceResponse response, ByteBuf outBuffer) {
     ByteBuf messageBuffer = BufferUtil.pooledBuffer();
     CompositeByteBuf chunkComposite = BufferUtil.compositeBuffer();
 
@@ -240,22 +261,23 @@ public class UascServerSymmetricHandler extends ByteToMessageCodec<UascServiceRe
     } catch (MessageEncodeException e) {
       logger.error("Error encoding {}: {}", response, e.getMessage(), e);
 
-      sendServiceFault(response, outBuffer, e);
+      sendServiceFault(ctx, response, outBuffer, e);
     } catch (UaSerializationException e) {
       logger.error("Error serializing response: {}", e.getStatusCode(), e);
 
-      sendServiceFault(response, outBuffer, e);
+      sendServiceFault(ctx, response, outBuffer, e);
     } catch (Throwable t) {
       logger.error("Uncaught error sending service response", t);
 
-      sendServiceFault(response, outBuffer, t);
+      sendServiceFault(ctx, response, outBuffer, t);
     } finally {
       messageBuffer.release();
       chunkComposite.release();
     }
   }
 
-  private void sendServiceFault(UascServiceResponse response, ByteBuf outBuffer, Throwable fault) {
+  private void sendServiceFault(
+      ChannelHandlerContext ctx, UascServiceResponse response, ByteBuf outBuffer, Throwable fault) {
     StatusCode statusCode =
         UaException.extract(fault)
             .map(UaException::getStatusCode)
@@ -290,13 +312,31 @@ public class UascServerSymmetricHandler extends ByteToMessageCodec<UascServiceRe
       }
 
       outBuffer.writeBytes(chunkComposite);
-    } catch (MessageEncodeException e) {
-      logger.error("Error encoding {}: {}", serviceFault, e.getMessage(), e);
-    } catch (UaSerializationException e) {
-      logger.error("Error serializing ServiceFault: {}", e.getStatusCode(), e);
+    } catch (MessageEncodeException | UaSerializationException e) {
+      // The ServiceFault could not be framed either. This happens when the outbound stream itself
+      // is unusable (for example an AEAD SecureChannel whose sequence stream cannot produce another
+      // unique nonce), so the server can never send anything more on this channel. Closing with an
+      // Error tells the client to drop the half-dead channel and reconnect instead of waiting for
+      // responses that will never arrive.
+      logger.error(
+          "Error encoding ServiceFault on secure channel id={}; closing channel with Error",
+          secureChannel.getChannelId(),
+          e);
+
+      closeChannelWithError(ctx, fault);
     } finally {
       messageBuffer.release();
       chunkComposite.release();
+    }
+  }
+
+  private void closeChannelWithError(ChannelHandlerContext ctx, Throwable cause) {
+    try {
+      ExceptionHandler.sendErrorMessage(ctx, cause);
+    } catch (Exception e) {
+      logger.error("Error sending Error message; closing channel", e);
+
+      ctx.close();
     }
   }
 

@@ -90,7 +90,10 @@ public class UadpWriterGroupMessageTypeNode extends WriterGroupMessageTypeNode
   @Override
   public void writeGroupVersion(UInteger value) throws UaException {
     try {
-      writeGroupVersionAsync(value).get();
+      StatusCode statusCode = writeGroupVersionAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -168,7 +171,10 @@ public class UadpWriterGroupMessageTypeNode extends WriterGroupMessageTypeNode
   @Override
   public void writeDataSetOrdering(DataSetOrderingType value) throws UaException {
     try {
-      writeDataSetOrderingAsync(value).get();
+      StatusCode statusCode = writeDataSetOrderingAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -323,7 +329,10 @@ public class UadpWriterGroupMessageTypeNode extends WriterGroupMessageTypeNode
   @Override
   public void writeSamplingOffset(Double value) throws UaException {
     try {
-      writeSamplingOffsetAsync(value).get();
+      StatusCode statusCode = writeSamplingOffsetAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -393,7 +402,10 @@ public class UadpWriterGroupMessageTypeNode extends WriterGroupMessageTypeNode
   @Override
   public void writePublishingOffset(Double[] value) throws UaException {
     try {
-      writePublishingOffsetAsync(value).get();
+      StatusCode statusCode = writePublishingOffsetAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -14,7 +14,6 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.stream.Collectors;
@@ -26,7 +25,6 @@ import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.types.DataTypeEncoding;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
@@ -71,11 +69,21 @@ public class DataTypeTreeBuilder {
                 null,
                 true));
 
+    // The build is pinned to the session it starts on: if the session closes or changes mid-build
+    // the build fails instead of silently continuing (and caching an incomplete tree) on a session
+    // it didn't start on.
+    NodeId sessionId = client.getSession().getSessionId();
+
     NamespaceTable namespaceTable = client.readNamespaceTable();
 
     OperationLimits operationLimits = client.getOperationLimits();
 
-    addChildren(List.of(root), client, namespaceTable, operationLimits);
+    addChildren(List.of(root), client, sessionId, namespaceTable, operationLimits);
+
+    // Final check: the last batch of requests could have been issued just as the session changed
+    // and succeeded against the new session; don't return a tree partially read from another
+    // session.
+    ClientBrowseUtils.checkSessionUnchanged(client, sessionId);
 
     return new DataTypeTree(root);
   }
@@ -103,8 +111,12 @@ public class DataTypeTreeBuilder {
   private static void addChildren(
       List<Tree<DataType>> parentTypes,
       OpcUaClient client,
+      NodeId sessionId,
       NamespaceTable namespaceTable,
-      OperationLimits operationLimits) {
+      OperationLimits operationLimits)
+      throws UaException {
+
+    ClientBrowseUtils.checkSessionUnchanged(client, sessionId);
 
     List<List<ReferenceDescription>> parentSubtypes =
         ClientBrowseUtils.browseWithOperationLimits(
@@ -136,10 +148,10 @@ public class DataTypeTreeBuilder {
               .collect(Collectors.toList());
 
       List<List<ReferenceDescription>> encodingReferences =
-          browseEncodings(client, dataTypeIds, operationLimits);
+          browseEncodings(client, sessionId, dataTypeIds, operationLimits);
 
       List<Attributes> dataTypeAttributes =
-          readDataTypeAttributes(client, dataTypeIds, operationLimits);
+          readDataTypeAttributes(client, sessionId, dataTypeIds, operationLimits);
 
       assert subtypes.size() == dataTypeIds.size()
           && subtypes.size() == encodingReferences.size()
@@ -154,36 +166,16 @@ public class DataTypeTreeBuilder {
         DataTypeDefinition dataTypeDefinition = dataTypeAttributes.get(j).definition;
         Boolean isAbstract = dataTypeAttributes.get(j).isAbstract;
 
-        NodeId binaryEncodingId = null;
-        NodeId xmlEncodingId = null;
-        NodeId jsonEncodingId = null;
-
-        for (ReferenceDescription r : encodings) {
-          // Observed multiple servers at IOP using the wrong namespace index...
-          // Be lenient and also allow matching on the unqualified browse name.
-
-          if (r.getBrowseName().equals(DataTypeEncoding.BINARY_ENCODING_NAME)
-              || Objects.equals(r.getBrowseName().name(), "Default Binary")) {
-
-            binaryEncodingId = r.getNodeId().toNodeId(namespaceTable).orElse(null);
-          } else if (r.getBrowseName().equals(DataTypeEncoding.XML_ENCODING_NAME)
-              || Objects.equals(r.getBrowseName().name(), "Default XML")) {
-
-            xmlEncodingId = r.getNodeId().toNodeId(namespaceTable).orElse(null);
-          } else if (r.getBrowseName().equals(DataTypeEncoding.JSON_ENCODING_NAME)
-              || Objects.equals(r.getBrowseName().name(), "Default JSON")) {
-
-            jsonEncodingId = r.getNodeId().toNodeId(namespaceTable).orElse(null);
-          }
-        }
+        ClientBrowseUtils.EncodingIds encodingIds =
+            ClientBrowseUtils.extractEncodingIds(encodings, namespaceTable);
 
         var dataType =
             new ClientDataType(
                 browseName,
                 dataTypeId,
-                binaryEncodingId,
-                xmlEncodingId,
-                jsonEncodingId,
+                encodingIds.binaryEncodingId(),
+                encodingIds.xmlEncodingId(),
+                encodingIds.jsonEncodingId(),
                 dataTypeDefinition,
                 isAbstract);
 
@@ -200,35 +192,34 @@ public class DataTypeTreeBuilder {
     }
 
     if (!childTypes.isEmpty()) {
-      addChildren(childTypes, client, namespaceTable, operationLimits);
+      addChildren(childTypes, client, sessionId, namespaceTable, operationLimits);
     }
   }
 
   private static List<List<ReferenceDescription>> browseEncodings(
-      OpcUaClient client, List<NodeId> dataTypeIds, OperationLimits operationLimits) {
+      OpcUaClient client,
+      NodeId sessionId,
+      List<NodeId> dataTypeIds,
+      OperationLimits operationLimits)
+      throws UaException {
 
-    List<BrowseDescription> browseDescriptions =
-        dataTypeIds.stream()
-            .map(
-                dataTypeId ->
-                    new BrowseDescription(
-                        dataTypeId,
-                        BrowseDirection.Forward,
-                        NodeIds.HasEncoding,
-                        false,
-                        uint(NodeClass.Object.getValue()),
-                        uint(BrowseResultMask.All.getValue())))
-            .collect(Collectors.toList());
+    ClientBrowseUtils.checkSessionUnchanged(client, sessionId);
 
-    return ClientBrowseUtils.browseWithOperationLimits(client, browseDescriptions, operationLimits);
+    return ClientBrowseUtils.browseEncodings(client, dataTypeIds, operationLimits);
   }
 
   private static List<@Nullable Attributes> readDataTypeAttributes(
-      OpcUaClient client, List<NodeId> dataTypeIds, OperationLimits operationLimits) {
+      OpcUaClient client,
+      NodeId sessionId,
+      List<NodeId> dataTypeIds,
+      OperationLimits operationLimits)
+      throws UaException {
 
     if (dataTypeIds.isEmpty()) {
       return List.of();
     }
+
+    ClientBrowseUtils.checkSessionUnchanged(client, sessionId);
 
     var readValueIds = new ArrayList<ReadValueId>();
 
@@ -276,13 +267,5 @@ public class DataTypeTreeBuilder {
     return attributes;
   }
 
-  private static class Attributes {
-    final Boolean isAbstract;
-    final DataTypeDefinition definition;
-
-    private Attributes(Boolean isAbstract, DataTypeDefinition definition) {
-      this.isAbstract = isAbstract;
-      this.definition = definition;
-    }
-  }
+  private record Attributes(Boolean isAbstract, DataTypeDefinition definition) {}
 }

@@ -15,43 +15,51 @@ import static org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig.USER_TOKEN_POL
 import static org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig.USER_TOKEN_POLICY_X509;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.KeyPair;
-import java.security.Security;
 import java.security.cert.X509Certificate;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.eclipse.milo.opcua.sdk.server.EndpointConfig;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfigBuilder;
+import org.eclipse.milo.opcua.sdk.server.aliases.AliasCategoryConfig;
+import org.eclipse.milo.opcua.sdk.server.aliases.AliasManager;
+import org.eclipse.milo.opcua.sdk.server.aliases.AliasManagerConfig;
+import org.eclipse.milo.opcua.sdk.server.aliases.AliasTarget;
 import org.eclipse.milo.opcua.sdk.server.identity.AnonymousIdentityValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.CompositeValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.UsernameIdentityValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.X509IdentityValidator;
 import org.eclipse.milo.opcua.sdk.server.util.HostnameUtil;
+import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
-import org.eclipse.milo.opcua.stack.core.security.DefaultApplicationGroup;
+import org.eclipse.milo.opcua.stack.core.security.AbstractCertificateFactory;
+import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateGroup;
 import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateManager;
 import org.eclipse.milo.opcua.stack.core.security.DefaultServerCertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.FileBasedCertificateQuarantine;
 import org.eclipse.milo.opcua.stack.core.security.FileBasedTrustListManager;
 import org.eclipse.milo.opcua.stack.core.security.KeyStoreCertificateStore;
-import org.eclipse.milo.opcua.stack.core.security.RsaSha256CertificateFactory;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.structured.BuildInfo;
 import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
@@ -67,13 +75,10 @@ public class ExampleServer {
   private final int tcpBindPort;
 
   static {
-    // Required for SecurityPolicy.Aes256_Sha256_RsaPss
-    Security.addProvider(new BouncyCastleProvider());
-
     try {
       NonceUtil.blockUntilSecureRandomSeeded(10, TimeUnit.SECONDS);
     } catch (ExecutionException | InterruptedException | TimeoutException e) {
-      e.printStackTrace();
+      e.printStackTrace(System.err);
       System.exit(-1);
     }
   }
@@ -92,6 +97,9 @@ public class ExampleServer {
 
   private final OpcUaServer server;
   private final ExampleNamespace exampleNamespace;
+  private final AlarmConditionsNamespace alarmConditionsNamespace;
+  private final AliasManager aliasManager;
+  private final FileBasedTrustListManager trustListManager;
 
   public ExampleServer() throws Exception {
     this(DEFAULT_TCP_BIND_PORT, builder -> {});
@@ -109,6 +117,21 @@ public class ExampleServer {
    * @param configCustomizer a consumer that can modify the server config builder.
    */
   public ExampleServer(int tcpBindPort, Consumer<OpcUaServerConfigBuilder> configCustomizer)
+      throws Exception {
+    this(tcpBindPort, configCustomizer, null);
+  }
+
+  /**
+   * Creates an ExampleServer with a custom TCP bind port, optional application URI, and additional
+   * configuration applied to the {@link OpcUaServerConfigBuilder} before the config is built.
+   *
+   * @param tcpBindPort the TCP port to bind the server on.
+   * @param configCustomizer a consumer that can modify the server config builder.
+   * @param applicationUri the application URI to advertise for examples that need distinct logical
+   *     servers, or {@code null} to use the URI from the server certificate.
+   */
+  public ExampleServer(
+      int tcpBindPort, Consumer<OpcUaServerConfigBuilder> configCustomizer, String applicationUri)
       throws Exception {
     this.tcpBindPort = tcpBindPort;
     Path securityTempDir = Paths.get(System.getProperty("java.io.tmpdir"), "server", "security");
@@ -131,13 +154,13 @@ public class ExampleServer {
                 "password"::toCharArray,
                 alias -> "password".toCharArray()));
 
-    var trustListManager = FileBasedTrustListManager.createAndInitialize(pkiDir.toPath());
+    trustListManager = FileBasedTrustListManager.createAndInitialize(pkiDir.toPath());
 
     var certificateQuarantine =
         FileBasedCertificateQuarantine.create(pkiDir.toPath().resolve("rejected").resolve("certs"));
 
     var certificateFactory =
-        new RsaSha256CertificateFactory() {
+        new AbstractCertificateFactory() {
           @Override
           protected KeyPair createRsaSha256KeyPair() {
             return loader.getServerKeyPair();
@@ -153,10 +176,12 @@ public class ExampleServer {
         new DefaultServerCertificateValidator(trustListManager, certificateQuarantine);
 
     var defaultGroup =
-        DefaultApplicationGroup.createAndInitialize(
-            trustListManager, certificateStore, certificateFactory, certificateValidator);
+        new DefaultCertificateGroup(
+            trustListManager, certificateStore, certificateQuarantine, certificateValidator);
 
-    var certificateManager = new DefaultCertificateManager(certificateQuarantine, defaultGroup);
+    certificateFactory.createMissingCertificates(defaultGroup);
+
+    var certificateManager = new DefaultCertificateManager(defaultGroup);
 
     var identityValidator =
         new UsernameIdentityValidator(
@@ -174,8 +199,9 @@ public class ExampleServer {
 
     X509Certificate certificate = loader.getServerCertificate();
 
-    // The configured application URI must match the one in the certificate(s)
-    String applicationUri =
+    // Use the certificate URI by default; selected examples can override the advertised
+    // application URI when they run with SecurityPolicy.None.
+    String certificateApplicationUri =
         CertificateUtil.getSanUri(certificate)
             .orElseThrow(
                 () ->
@@ -187,7 +213,7 @@ public class ExampleServer {
 
     var serverConfigBuilder =
         OpcUaServerConfig.builder()
-            .setApplicationUri(applicationUri)
+            .setApplicationUri(applicationUri != null ? applicationUri : certificateApplicationUri)
             .setApplicationName(LocalizedText.english("Eclipse Milo OPC UA Example Server"))
             .setEndpoints(endpointConfigurations)
             .setBuildInfo(
@@ -222,6 +248,56 @@ public class ExampleServer {
 
     exampleNamespace = new ExampleNamespace(server);
     exampleNamespace.startup();
+
+    alarmConditionsNamespace = new AlarmConditionsNamespace(server);
+    alarmConditionsNamespace.startup();
+
+    // Opt-in OPC UA Part 17 Alias Names support: binds FindAlias on the standard Aliases,
+    // TagVariables, and Topics Objects and, with FindAliasVerbose enabled, materializes
+    // FindAliasVerbose Method instances alongside them, with NodeIds allocated in the example
+    // namespace. The manager is started in startup(), after the server itself has started.
+    aliasManager =
+        new AliasManager(
+            server,
+            AliasManagerConfig.builder()
+                .nodeNamespaceIndex(exampleNamespace.getNamespaceIndex())
+                .findAliasVerboseEnabled(true)
+                .build());
+  }
+
+  /**
+   * Creates a demo alias category, "MiloDemo", organized under the standard {@code TagVariables}
+   * Object, with aliases targeting HelloWorld scalar Variables. The AliasNamesExample client
+   * example resolves these aliases via FindAlias/FindAliasVerbose and reads the targets.
+   */
+  private void addDemoAliases() throws UaException {
+    var categoryConfig =
+        new AliasCategoryConfig(
+            new NodeId(exampleNamespace.getNamespaceIndex(), "Aliases/MiloDemo"),
+            NodeIds.TagVariables,
+            new QualifiedName(exampleNamespace.getNamespaceIndex().intValue(), "MiloDemo"),
+            exampleNamespace.getNodeManager(),
+            name -> new NodeId(exampleNamespace.getNamespaceIndex(), "Aliases/" + name),
+            false,
+            false,
+            false);
+
+    NodeId categoryId = aliasManager.addCategory(categoryConfig).nodeId();
+
+    addDemoAlias(categoryId, "Demo.ScalarDouble", "HelloWorld/ScalarTypes/Double");
+    addDemoAlias(categoryId, "Demo.ScalarInt32", "HelloWorld/ScalarTypes/Int32");
+  }
+
+  private void addDemoAlias(NodeId categoryId, String aliasName, String targetIdentifier)
+      throws UaException {
+
+    var target =
+        new AliasTarget(
+            new NodeId(exampleNamespace.getNamespaceIndex(), targetIdentifier).expanded(),
+            null,
+            NodeIds.AliasFor);
+
+    aliasManager.addAlias(categoryId, aliasName, List.of(target));
   }
 
   private Set<EndpointConfig> createEndpointConfigs(X509Certificate certificate) {
@@ -299,12 +375,42 @@ public class ExampleServer {
   }
 
   public CompletableFuture<OpcUaServer> startup() {
-    return server.startup();
+    return server
+        .startup()
+        .thenApply(
+            s -> {
+              // The standard alias Objects and their FindAlias Method Nodes exist once the
+              // OpcUaServer is constructed, but the AliasManager is documented to start after
+              // the server itself has started.
+              aliasManager.startup();
+
+              try {
+                addDemoAliases();
+              } catch (UaException e) {
+                throw new CompletionException(e);
+              }
+
+              return s;
+            });
   }
 
   public CompletableFuture<OpcUaServer> shutdown() {
+    if (aliasManager.isRunning()) {
+      aliasManager.shutdown();
+    }
+
+    alarmConditionsNamespace.shutdown();
     exampleNamespace.shutdown();
 
-    return server.shutdown();
+    return server
+        .shutdown()
+        .whenComplete(
+            (server, ex) -> {
+              try {
+                trustListManager.close();
+              } catch (IOException e) {
+                throw new CompletionException(e);
+              }
+            });
   }
 }

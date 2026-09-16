@@ -11,13 +11,21 @@
 package org.eclipse.milo.opcua.sdk.server;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.Mockito.mock;
 
-import java.util.concurrent.Executors;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
-import org.eclipse.milo.opcua.sdk.server.identity.AnonymousIdentityValidator;
-import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateManager;
-import org.eclipse.milo.opcua.stack.core.security.MemoryCertificateQuarantine;
+import org.eclipse.milo.opcua.sdk.server.diagnostics.SessionSecurityDiagnosticsAccessMode;
+import org.eclipse.milo.opcua.sdk.server.identity.IdentityValidator;
+import org.eclipse.milo.opcua.sdk.server.reverse.ReverseConnectTarget;
+import org.eclipse.milo.opcua.stack.core.channel.EncodingLimits;
+import org.eclipse.milo.opcua.stack.core.channel.SecurityKeysListener;
+import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.structured.BuildInfo;
 import org.junit.jupiter.api.Test;
 
@@ -25,23 +33,65 @@ public class OpcUaServerConfigTest {
 
   @Test
   public void testCopy() {
-    ScheduledExecutorService scheduledExecutorService =
-        Executors.newSingleThreadScheduledExecutor();
+    var endpoints = Set.of(mock(EndpointConfig.class));
+    var applicationName = LocalizedText.english("application-name");
+    var buildInfo = new BuildInfo("a", "b", "c", "d", "e", DateTime.MIN_VALUE);
+    IdentityValidator identityValidator = mock(IdentityValidator.class);
+    var encodingLimits = new EncodingLimits(8196, 2, 16392, 4);
+    OpcUaServerConfigLimits limits = new OpcUaServerConfigLimits() {};
+    CertificateManager certificateManager = mock(CertificateManager.class);
+    RoleMapper roleMapper = identity -> List.of();
+    var sessionSecurityDiagnosticsAccessMode = SessionSecurityDiagnosticsAccessMode.LEGACY;
+    SecurityKeysListener securityKeysListener = keyset -> {};
+    ExecutorService executor = mock(ExecutorService.class);
+    ScheduledExecutorService scheduledExecutor = mock(ScheduledExecutorService.class);
+    ReverseConnectTarget reverseConnectTarget =
+        ReverseConnectTarget.builder()
+            .setClientListenerUrl("opc.tcp://localhost:4841")
+            .setEndpointUrl("opc.tcp://localhost:4840")
+            .build();
 
     OpcUaServerConfig original =
         OpcUaServerConfig.builder()
-            .setCertificateManager(new DefaultCertificateManager(new MemoryCertificateQuarantine()))
-            .setIdentityValidator(AnonymousIdentityValidator.INSTANCE)
-            .setBuildInfo(new BuildInfo("a", "b", "c", "d", "e", DateTime.MIN_VALUE))
-            .setLimits(new OpcUaServerConfigLimits() {})
-            .setScheduledExecutor(scheduledExecutorService)
+            .setEndpoints(endpoints)
+            .addReverseConnectTarget(reverseConnectTarget)
+            .setApplicationName(applicationName)
+            .setApplicationUri("urn:application")
+            .setProductUri("urn:product")
+            .setBuildInfo(buildInfo)
+            .setIdentityValidator(identityValidator)
+            .setEncodingLimits(encodingLimits)
+            .setLimits(limits)
+            .setCertificateManager(certificateManager)
+            .setRoleMapper(roleMapper)
+            .setSessionSecurityDiagnosticsAccessMode(sessionSecurityDiagnosticsAccessMode)
+            .setSecurityKeysListener(securityKeysListener)
+            .setExecutor(executor)
+            .setScheduledExecutor(scheduledExecutor)
             .build();
 
     OpcUaServerConfig copy = OpcUaServerConfig.copy(original).build();
 
-    assertEquals(original.getIdentityValidator(), copy.getIdentityValidator());
-    assertEquals(original.getBuildInfo(), copy.getBuildInfo());
-    assertEquals(original.getLimits(), copy.getLimits());
-    assertEquals(original.getScheduledExecutorService(), copy.getScheduledExecutorService());
+    // The builder defensively copies the endpoint set (like reverse-connect targets), so copies
+    // are equal but not the same instance.
+    assertEquals(original.getEndpoints(), copy.getEndpoints());
+    assertEquals(original.getReverseConnectTargets(), copy.getReverseConnectTargets());
+    assertSame(original.getApplicationName(), copy.getApplicationName());
+    assertEquals(original.getApplicationUri(), copy.getApplicationUri());
+    assertEquals(original.getProductUri(), copy.getProductUri());
+    assertSame(original.getBuildInfo(), copy.getBuildInfo());
+    assertSame(original.getIdentityValidator(), copy.getIdentityValidator());
+    assertSame(original.getEncodingLimits(), copy.getEncodingLimits());
+    assertSame(original.getLimits(), copy.getLimits());
+    assertSame(original.getCertificateManager(), copy.getCertificateManager());
+    assertSame(original.getRoleMapper().orElseThrow(), copy.getRoleMapper().orElseThrow());
+    assertSame(
+        original.getSessionSecurityDiagnosticsAccessMode(),
+        copy.getSessionSecurityDiagnosticsAccessMode());
+    assertSame(
+        original.getSecurityKeysListener().orElseThrow(),
+        copy.getSecurityKeysListener().orElseThrow());
+    assertSame(original.getExecutor(), copy.getExecutor());
+    assertSame(original.getScheduledExecutorService(), copy.getScheduledExecutorService());
   }
 }

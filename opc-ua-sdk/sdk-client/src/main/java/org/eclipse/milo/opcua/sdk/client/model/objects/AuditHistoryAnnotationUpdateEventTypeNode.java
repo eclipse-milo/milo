@@ -99,7 +99,10 @@ public class AuditHistoryAnnotationUpdateEventTypeNode extends AuditHistoryUpdat
   @Override
   public void writePerformInsertReplace(PerformUpdateType value) throws UaException {
     try {
-      writePerformInsertReplaceAsync(value).get();
+      StatusCode statusCode = writePerformInsertReplaceAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -183,7 +186,10 @@ public class AuditHistoryAnnotationUpdateEventTypeNode extends AuditHistoryUpdat
   @Override
   public void writeNewValues(Annotation[] value) throws UaException {
     try {
-      writeNewValuesAsync(value).get();
+      StatusCode statusCode = writeNewValuesAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -257,7 +263,10 @@ public class AuditHistoryAnnotationUpdateEventTypeNode extends AuditHistoryUpdat
   @Override
   public void writeOldValues(Annotation[] value) throws UaException {
     try {
-      writeOldValuesAsync(value).get();
+      StatusCode statusCode = writeOldValuesAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

@@ -10,18 +10,24 @@
 
 package org.eclipse.milo.opcua.sdk.client;
 
-import java.security.KeyPair;
-import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.eclipse.milo.opcua.sdk.client.identity.IdentityProvider;
+import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.channel.EncodingLimits;
 import org.eclipse.milo.opcua.stack.core.channel.SecurityKeysListener;
+import org.eclipse.milo.opcua.stack.core.security.CertificateGroup;
+import org.eclipse.milo.opcua.stack.core.security.CertificateIdentity;
+import org.eclipse.milo.opcua.stack.core.security.CertificateIdentitySelectionContext;
+import org.eclipse.milo.opcua.stack.core.security.CertificateIdentitySelector;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
+import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateIdentitySelector;
+import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishRequest;
@@ -30,6 +36,10 @@ public interface OpcUaClientConfig {
 
   /**
    * Get the endpoint to connect to.
+   *
+   * <p>When an {@link #getEndpointResolver() EndpointResolver} is configured, the client may later
+   * connect with a refreshed description of this same endpoint, for example after the server's
+   * application certificate has been replaced. The configuration itself is immutable.
    *
    * @return the {@link EndpointDescription} to connect to.
    */
@@ -48,34 +58,81 @@ public interface OpcUaClientConfig {
   List<EndpointDescription> getDiscoveryEndpoints();
 
   /**
-   * Get the {@link KeyPair} to use.
+   * Get the resolver used to refresh {@link #getEndpoint()} after SecureChannel establishment fails
+   * on a secured endpoint.
    *
-   * <p>May be absent if connecting without security, must be present if connecting with security.
-   *
-   * @return an {@link Optional} containing the {@link KeyPair} to use.
+   * @return the refresh strategy, or empty to always connect with the configured endpoint.
    */
-  Optional<KeyPair> getKeyPair();
+  default Optional<EndpointResolver> getEndpointResolver() {
+    return Optional.empty();
+  }
 
   /**
-   * Get the {@link X509Certificate} to use.
+   * Get the {@link CertificateGroup} holding this client's identity and trust material.
    *
-   * <p>May be absent if connecting without security, must be present if connecting with security.
+   * <p>A client configures at most one group, either directly with {@link
+   * OpcUaClientConfigBuilder#setCertificateGroup} or as the group of one the builder creates for
+   * {@link OpcUaClientConfigBuilder#setCertificateIdentity}. A secured endpoint requires a group
+   * holding an identity compatible with the endpoint's security policy; without one, connecting
+   * fails with {@code Bad_ConfigurationError}. A {@link
+   * org.eclipse.milo.opcua.stack.core.security.SecurityPolicy#None} endpoint needs no group.
    *
-   * @return an {@link Optional} containing the {@link X509Certificate} to use.
+   * @return the configured {@link CertificateGroup}, or empty when none is configured.
    */
-  Optional<X509Certificate> getCertificate();
+  default Optional<CertificateGroup> getCertificateGroup() {
+    return Optional.empty();
+  }
 
   /**
-   * Get the {@link X509Certificate} to use as well as any certificates in the certificate chain.
+   * Get the selector used with {@link #getCertificateGroup()} to choose a local client identity.
    *
-   * @return the {@link X509Certificate} to use as well as any certificates in the certificate
-   *     chain.
+   * @return the certificate identity selector.
    */
-  Optional<X509Certificate[]> getCertificateChain();
+  default CertificateIdentitySelector getCertificateIdentitySelector() {
+    return DefaultCertificateIdentitySelector.create();
+  }
+
+  /**
+   * Get the requested certificate type for client identity selection.
+   *
+   * @return the requested certificate type ID, or empty when the policy should choose.
+   */
+  default Optional<NodeId> getCertificateTypeId() {
+    return Optional.empty();
+  }
+
+  /**
+   * Get a local certificate identity for the chosen endpoint security policy.
+   *
+   * @param securityPolicyProfile the selected endpoint security-policy profile.
+   * @return the selected identity, or empty when no {@link CertificateGroup} is configured or no
+   *     identity in the group matches.
+   * @throws UaException if the selector fails while evaluating identities.
+   */
+  default Optional<CertificateIdentity> getCertificateIdentity(
+      SecurityPolicyProfile securityPolicyProfile) throws UaException {
+
+    Optional<CertificateGroup> certificateGroup = getCertificateGroup();
+
+    if (certificateGroup.isEmpty()) {
+      return Optional.empty();
+    }
+
+    CertificateIdentitySelectionContext context =
+        CertificateIdentitySelectionContext.forClientConnectionSetup(
+            List.of(certificateGroup.get()),
+            securityPolicyProfile,
+            getCertificateTypeId().orElse(null));
+
+    return getCertificateIdentitySelector().select(context);
+  }
 
   /**
    * Get the {@link CertificateValidator} this client will use to validate server certificates when
    * connecting.
+   *
+   * <p>Unless set explicitly, this is the validator of the configured {@link CertificateGroup}, or
+   * an insecure validator when no group is configured.
    *
    * @return the validator this client will use to validate server certificates when connecting.
    */
@@ -87,10 +144,15 @@ public interface OpcUaClientConfig {
   LocalizedText getApplicationName();
 
   /**
-   * @return a URI for the client's application instance. This should be the same as the URI in the
-   *     client certificate, if present.
+   * The explicitly configured client application URI.
+   *
+   * <p>When empty, the client derives the URI from its effective certificate identity; see {@link
+   * OpcUaClient#resolveApplicationUri(CertificateIdentity)}.
+   *
+   * @return the explicitly configured client application URI, or empty when it should be derived
+   *     from the effective certificate identity.
    */
-  String getApplicationUri();
+  Optional<String> getApplicationUri();
 
   /**
    * @return the URI for the client's application product.
@@ -103,7 +165,7 @@ public interface OpcUaClientConfig {
   Supplier<String> getSessionName();
 
   /**
-   * @return the list of locale ids in priority order for localized strings
+   * @return the locale ids in priority order for localized strings.
    */
   String[] getSessionLocaleIds();
 
@@ -193,12 +255,14 @@ public interface OpcUaClientConfig {
     OpcUaClientConfigBuilder builder = new OpcUaClientConfigBuilder();
 
     builder.setEndpoint(config.getEndpoint());
-    config.getKeyPair().ifPresent(builder::setKeyPair);
     builder.setDiscoveryEndpoints(new ArrayList<>(config.getDiscoveryEndpoints()));
-    config.getCertificate().ifPresent(builder::setCertificate);
-    config.getCertificateChain().ifPresent(builder::setCertificateChain);
+    config.getEndpointResolver().ifPresent(builder::setEndpointResolver);
+    config.getCertificateGroup().ifPresent(builder::setCertificateGroup);
+    builder.setCertificateIdentitySelector(config.getCertificateIdentitySelector());
+    builder.setCertificateTypeId(config.getCertificateTypeId().orElse(null));
+    builder.setCertificateValidator(config.getCertificateValidator());
     builder.setApplicationName(config.getApplicationName());
-    builder.setApplicationUri(config.getApplicationUri());
+    config.getApplicationUri().ifPresent(builder::setApplicationUri);
     builder.setProductUri(config.getProductUri());
     builder.setSessionName(config.getSessionName());
     builder.setSessionTimeout(config.getSessionTimeout());

@@ -13,6 +13,7 @@ package org.eclipse.milo.opcua.sdk.core.types.codec;
 import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 
+import java.util.Arrays;
 import java.util.Map;
 import org.eclipse.milo.opcua.sdk.core.types.DynamicUnionType;
 import org.eclipse.milo.opcua.sdk.core.types.DynamicUnionType.UnionValue;
@@ -34,6 +35,7 @@ public class DynamicUnionCodec extends GenericDataTypeCodec<DynamicUnionType> {
   private final Lazy<Map<StructureField, FieldUtil.FieldHint>> fieldHints = new Lazy<>();
 
   private final StructureDefinition definition;
+  private final String[] fieldNames;
 
   private final DataType dataType;
   private final DataTypeTree dataTypeTree;
@@ -43,6 +45,10 @@ public class DynamicUnionCodec extends GenericDataTypeCodec<DynamicUnionType> {
     this.dataTypeTree = dataTypeTree;
 
     definition = (StructureDefinition) requireNonNull(dataType.getDataTypeDefinition());
+    fieldNames =
+        Arrays.stream(requireNonNullElse(definition.getFields(), new StructureField[0]))
+            .map(StructureField::getName)
+            .toArray(String[]::new);
   }
 
   @Override
@@ -73,13 +79,13 @@ public class DynamicUnionCodec extends GenericDataTypeCodec<DynamicUnionType> {
   }
 
   private DynamicUnionType decodeUnion(UaDecoder decoder) {
-    int switchField = decoder.decodeUInt32("SwitchField").intValue();
+    int switchField = decoder.decodeSwitchField(fieldNames).intValue();
 
     StructureField[] fields = requireNonNullElse(definition.getFields(), new StructureField[0]);
 
     if (switchField == 0) {
       return DynamicUnionType.newInstance(dataType, null);
-    } else if (switchField <= fields.length) {
+    } else if (switchField > 0 && switchField <= fields.length) {
       StructureField field = fields[switchField - 1];
 
       Object value = FieldUtil.decodeFieldValue(decoder, definition, field, getFieldHints());
@@ -96,7 +102,7 @@ public class DynamicUnionCodec extends GenericDataTypeCodec<DynamicUnionType> {
     StructureField[] fields = requireNonNullElse(definition.getFields(), new StructureField[0]);
 
     if (union.isNull()) {
-      encoder.encodeUInt32("SwitchValue", UInteger.valueOf(0));
+      encoder.encodeSwitchField(UInteger.valueOf(0));
     } else {
       UnionValue value = union.getValue().orElseThrow();
 
@@ -105,13 +111,13 @@ public class DynamicUnionCodec extends GenericDataTypeCodec<DynamicUnionType> {
         String fieldName = field.getName();
 
         if (value.fieldName().equals(fieldName)) {
-          encoder.encodeUInt32("SwitchValue", UInteger.valueOf(i + 1));
+          encoder.encodeSwitchField(UInteger.valueOf(i + 1));
 
           FieldUtil.encodeFieldValue(
               encoder, definition, field, getFieldHints(), value.fieldValue());
 
           // Return as soon as a field has been encoded.
-          // Unions are only one field, indicated by SwitchValue.
+          // Unions are only one field, indicated by SwitchField.
           return;
         }
       }

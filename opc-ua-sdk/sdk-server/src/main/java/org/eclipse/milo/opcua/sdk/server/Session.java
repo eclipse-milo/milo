@@ -11,6 +11,7 @@
 package org.eclipse.milo.opcua.sdk.server;
 
 import java.net.InetAddress;
+import java.security.KeyPair;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -23,6 +24,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.milo.opcua.sdk.server.diagnostics.SessionDiagnostics;
 import org.eclipse.milo.opcua.sdk.server.diagnostics.SessionSecurityDiagnostics;
 import org.eclipse.milo.opcua.sdk.server.identity.Identity;
@@ -44,6 +46,19 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Server-side representation of an OPC UA Session.
+ *
+ * <p>A Session owns the per-client state established by CreateSession and ActivateSession:
+ * diagnostics, security context, user identity, continuation points, subscriptions, timeout
+ * tracking, and the secure channel association used to validate service calls. The {@link
+ * SessionManager} creates and indexes sessions, while the Session itself owns cleanup of the
+ * resources that hang from that client relationship.
+ *
+ * <p>Closing a Session is terminal and idempotent. Several paths can race to close the same
+ * Session, including client CloseSession, timeout checks, explicit server-side session removal, and
+ * server shutdown. Lifecycle listeners therefore observe at most one close notification.
+ */
 public class Session {
 
   private static final int IDENTITY_HISTORY_MAX_SIZE = 10;
@@ -57,6 +72,9 @@ public class Session {
 
   private final SubscriptionManager subscriptionManager;
 
+  /** Ensures timeout, subscription, and lifecycle cleanup run once across all close paths. */
+  private final AtomicBoolean closed = new AtomicBoolean(false);
+
   private final LinkedList<String> clientUserIdHistory = new LinkedList<>();
 
   private final Map<ByteString, ContinuationPoint> browseContinuationPoints =
@@ -68,11 +86,15 @@ public class Session {
   private volatile Identity identity;
 
   private volatile ByteString lastNonce = ByteString.NULL_VALUE;
+  private volatile ByteString clientNonce = ByteString.NULL_VALUE;
+  private volatile @Nullable KeyPair userTokenEphemeralKeyPair;
+  private volatile ByteString userTokenEphemeralPublicKey = ByteString.NULL_VALUE;
 
   private volatile long lastActivityNanos = System.nanoTime();
   private volatile ScheduledFuture<?> checkTimeoutFuture;
 
   private volatile EndpointDescription endpoint;
+  private final SessionServerCertificate originalServerCertificate;
   private volatile long secureChannelId;
   private volatile SecurityConfiguration securityConfiguration;
   private volatile InetAddress clientAddress;
@@ -113,6 +135,7 @@ public class Session {
     this.secureChannelId = secureChannelId;
     this.securityConfiguration = securityConfiguration;
     this.endpoint = endpoint;
+    originalServerCertificate = SessionServerCertificate.of(endpoint, securityConfiguration);
 
     sessionDiagnostics = new SessionDiagnostics(this);
     sessionSecurityDiagnostics = new SessionSecurityDiagnostics(this);
@@ -132,6 +155,19 @@ public class Session {
 
   public SecurityConfiguration getSecurityConfiguration() {
     return securityConfiguration;
+  }
+
+  /**
+   * Get the server application certificate this Session was created with.
+   *
+   * <p>Unlike {@link #getSecurityConfiguration()}, which follows the Session onto a replacement
+   * SecureChannel, this never changes: ActivateSession signatures and encrypted token secrets are
+   * bound to it for the life of the Session.
+   *
+   * @return the CreateSession server certificate and its key material.
+   */
+  public SessionServerCertificate getOriginalServerCertificate() {
+    return originalServerCertificate;
   }
 
   public EndpointDescription getEndpoint() {
@@ -290,8 +326,76 @@ public class Session {
     this.lastNonce = lastNonce;
   }
 
+  void setClientNonce(ByteString clientNonce) {
+    this.clientNonce = clientNonce;
+  }
+
+  /**
+   * Get the last server nonce issued for this session.
+   *
+   * <p>The value is the CreateSession nonce before first activation and then the newest
+   * ActivateSession nonce after each successful activation or reactivation.
+   *
+   * @return the latest server nonce issued to the client.
+   */
   public ByteString getLastNonce() {
     return lastNonce;
+  }
+
+  /**
+   * Get the client nonce from the original CreateSession request.
+   *
+   * <p>SecureChannel-enhancement ActivateSession signatures keep using this nonce when the session
+   * is later reactivated on a different SecureChannel.
+   *
+   * @return the CreateSession client nonce.
+   */
+  public ByteString getClientNonce() {
+    return clientNonce;
+  }
+
+  /**
+   * Get the server ephemeral key pair issued for enhanced username-token encryption.
+   *
+   * <p>The key pair is generated during CreateSession when the client asks for enhanced user-token
+   * key material. The username validator uses it during ActivateSession to decrypt the password
+   * secret.
+   *
+   * @return the session-scoped enhanced user-token key pair.
+   */
+  public Optional<KeyPair> getUserTokenEphemeralKeyPair() {
+    return Optional.ofNullable(userTokenEphemeralKeyPair);
+  }
+
+  /**
+   * Get the encoded server public key that was returned to the client.
+   *
+   * @return the encoded session public key advertised for enhanced username-token encryption.
+   */
+  public Optional<ByteString> getUserTokenEphemeralPublicKey() {
+    return userTokenEphemeralPublicKey.isNotNull()
+        ? Optional.of(userTokenEphemeralPublicKey)
+        : Optional.empty();
+  }
+
+  /**
+   * Store the session-scoped key pair returned to the client for enhanced username-token
+   * encryption.
+   *
+   * @param userTokenEphemeralKeyPair the private/public key pair retained for ActivateSession
+   *     decryption.
+   * @param userTokenEphemeralPublicKey the encoded public key returned in CreateSession.
+   */
+  public void setUserTokenEphemeralKeyPair(
+      KeyPair userTokenEphemeralKeyPair, ByteString userTokenEphemeralPublicKey) {
+    this.userTokenEphemeralKeyPair = userTokenEphemeralKeyPair;
+    this.userTokenEphemeralPublicKey = userTokenEphemeralPublicKey;
+  }
+
+  /** Clear the enhanced username-token key pair after it has been consumed by ActivateSession. */
+  public void clearUserTokenEphemeralKeyPair() {
+    userTokenEphemeralKeyPair = null;
+    userTokenEphemeralPublicKey = ByteString.NULL_VALUE;
   }
 
   private void checkTimeout() {
@@ -329,12 +433,11 @@ public class Session {
     return sessionName;
   }
 
-  @Nullable
-  public String[] getLocaleIds() {
+  public String @Nullable [] getLocaleIds() {
     return localeIds;
   }
 
-  public void setLocaleIds(@Nullable String[] localeIds) {
+  public void setLocaleIds(String @Nullable [] localeIds) {
     this.localeIds = localeIds;
   }
 
@@ -346,7 +449,21 @@ public class Session {
     return callSemaphore;
   }
 
+  /**
+   * Close this Session and release the resources owned by it.
+   *
+   * <p>This method may be reached concurrently from protocol handling, timeout handling, explicit
+   * administrative removal, and server shutdown. Only the first caller performs cleanup and
+   * notifies lifecycle listeners; later callers return without changing state.
+   *
+   * @param deleteSubscriptions {@code true} if subscriptions owned by this Session should be
+   *     deleted as part of the close.
+   */
   void close(boolean deleteSubscriptions) {
+    if (!closed.compareAndSet(false, true)) {
+      return;
+    }
+
     if (checkTimeoutFuture != null) {
       checkTimeoutFuture.cancel(false);
     }

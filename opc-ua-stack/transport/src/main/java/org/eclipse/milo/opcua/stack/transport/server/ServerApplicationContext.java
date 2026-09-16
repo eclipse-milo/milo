@@ -11,6 +11,7 @@
 package org.eclipse.milo.opcua.stack.transport.server;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.eclipse.milo.opcua.stack.core.channel.SecurityKeysListener;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
@@ -28,6 +29,25 @@ public interface ServerApplicationContext {
    * @return the {@link EndpointDescription}s the server is providing.
    */
   List<EndpointDescription> getEndpointDescriptions();
+
+  /**
+   * Select the unique {@link EndpointDescription} identified by {@code key}.
+   *
+   * <p>Used by the server transport to associate exactly one endpoint with a SecureChannel during
+   * OpenSecureChannel. Implementations must never choose arbitrarily among multiple non-equivalent
+   * endpoints matching {@code key}: if the key is ambiguous, they must return empty.
+   *
+   * @param key the {@link EndpointSelectionKey} derived from the channel's wire-observable inputs.
+   * @param requestedEndpointUrl the endpoint URL requested by the client, used to prefer among
+   *     host/port substitution aliases of the same effective endpoint; may be null.
+   * @return the unique endpoint identified by {@code key}, or empty if there is none or the key is
+   *     ambiguous.
+   */
+  default Optional<EndpointDescription> selectEndpoint(
+      EndpointSelectionKey key, @Nullable String requestedEndpointUrl) {
+
+    return EndpointSelectionKey.selectUnique(getEndpointDescriptions(), key, requestedEndpointUrl);
+  }
 
   /**
    * Get the server's {@link CertificateManager}.

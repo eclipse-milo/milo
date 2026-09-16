@@ -93,7 +93,10 @@ public class UserManagementTypeNode extends BaseObjectTypeNode implements UserMa
   @Override
   public void writeUsers(UserManagementDataType[] value) throws UaException {
     try {
-      writeUsersAsync(value).get();
+      StatusCode statusCode = writeUsersAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -166,7 +169,10 @@ public class UserManagementTypeNode extends BaseObjectTypeNode implements UserMa
   @Override
   public void writePasswordLength(Range value) throws UaException {
     try {
-      writePasswordLengthAsync(value).get();
+      StatusCode statusCode = writePasswordLengthAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -238,7 +244,10 @@ public class UserManagementTypeNode extends BaseObjectTypeNode implements UserMa
   @Override
   public void writePasswordOptions(PasswordOptionsMask value) throws UaException {
     try {
-      writePasswordOptionsAsync(value).get();
+      StatusCode statusCode = writePasswordOptionsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -309,7 +318,10 @@ public class UserManagementTypeNode extends BaseObjectTypeNode implements UserMa
   @Override
   public void writePasswordRestrictions(LocalizedText value) throws UaException {
     try {
-      writePasswordRestrictionsAsync(value).get();
+      StatusCode statusCode = writePasswordRestrictionsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
