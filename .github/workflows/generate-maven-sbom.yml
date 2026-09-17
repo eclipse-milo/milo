@@ -26,8 +26,9 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch' || 
       (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
-    outputs:
-      project-version: ${{ steps.version.outputs.PROJECT_VERSION }}
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -54,17 +55,8 @@ jobs:
           echo "Product version is: $VERSION"
 
       - name: Upload sbom
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: eclipse-csi/workflows/upload-sbom@20e3c63807b2bd61b7f1a9f438e5ce588c054efc # main
         with:
-          name: sbom
-          path: ${{ env.PRODUCT_PATH }}/target/bom.json
-
-  store-sbom-data: # stores sbom and metadata in a predefined format for otterdog to pick up
-    needs: ['generate-sbom']
-    uses: eclipse-csi/workflows/.github/workflows/store-sbom-data.yml@main
-    with:
-      projectName: 'milo'
-      projectVersion: ${{ needs.generate-sbom.outputs.project-version }}
-      bomArtifact: 'sbom'
-      bomFilename: 'bom.json'
-      parentProject: '5a8aca4c-6bd9-4755-88d6-082de6be1f48'
+          sbom-file: ${{ env.PRODUCT_PATH }}/target/bom.json
+          product-name: 'milo'
+          product-version: ${{ steps.version.outputs.PROJECT_VERSION }}
