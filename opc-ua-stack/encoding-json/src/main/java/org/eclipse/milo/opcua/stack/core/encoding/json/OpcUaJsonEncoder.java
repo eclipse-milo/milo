@@ -1030,6 +1030,8 @@ public class OpcUaJsonEncoder implements UaEncoder, AutoCloseable {
 
       if (typeId == OpcUaDataType.DataValue.getTypeId()) {
         encodeDataValueElement((DataValue) o);
+      } else if (typeHint == TypeHint.BUILTIN) {
+        encodeBuiltinTypeArrayElement(typeId, o);
       } else {
         encodeVariantBodyValue(o, typeHint, typeId);
       }
@@ -1069,6 +1071,22 @@ public class OpcUaJsonEncoder implements UaEncoder, AutoCloseable {
           encodeBuiltinTypeValue(null, typeId, optionSetValue);
           break;
         }
+    }
+  }
+
+  private void encodeBuiltinTypeArrayElement(int typeId, Object value)
+      throws UaSerializationException {
+    if (value == null
+        && (typeId == OpcUaDataType.ExtensionObject.getTypeId()
+            || typeId == OpcUaDataType.DiagnosticInfo.getTypeId())) {
+      // Part 6, 5.4.5: null elements override these types' scalar empty-object defaults.
+      try {
+        jsonWriter.nullValue();
+      } catch (IOException e) {
+        throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
+      }
+    } else {
+      encodeBuiltinTypeValue(null, typeId, value);
     }
   }
 
@@ -1192,24 +1210,27 @@ public class OpcUaJsonEncoder implements UaEncoder, AutoCloseable {
           return;
         }
 
-        contextPush(EncoderContext.STRUCT);
-        jsonWriter.beginObject();
-        encodeDiagnosticInfoInt32("SymbolicId", value.symbolicId());
-        encodeDiagnosticInfoInt32("NamespaceUri", value.namespaceUri());
-        encodeDiagnosticInfoInt32("Locale", value.locale());
-        encodeDiagnosticInfoInt32("LocalizedText", value.localizedText());
-        encodeString("AdditionalInfo", value.additionalInfo());
-        if (value.innerStatusCode() != null) {
-          // Per OPC 10000-6 §5.4.2.13 InnerStatusCode is omitted when Good. Encoding in the
-          // surrounding STRUCT context honors that rule: CompactEncoding omits a Good code,
-          // while VerboseEncoding still emits the field.
-          encodeStatusCode("InnerStatusCode", value.innerStatusCode());
+        // Part 6, 5.4.2.13: DiagnosticInfo fields omit their defaults in both modes.
+        contextPush(EncoderContext.BUILTIN);
+        try {
+          jsonWriter.beginObject();
+          encodeDiagnosticInfoInt32("SymbolicId", value.symbolicId());
+          encodeDiagnosticInfoInt32("NamespaceUri", value.namespaceUri());
+          encodeDiagnosticInfoInt32("Locale", value.locale());
+          encodeDiagnosticInfoInt32("LocalizedText", value.localizedText());
+          if (value.additionalInfo() != null) {
+            encodeString("AdditionalInfo", value.additionalInfo());
+          }
+          if (value.innerStatusCode() != null && value.innerStatusCode().value() != 0L) {
+            encodeStatusCode("InnerStatusCode", value.innerStatusCode());
+          }
+          if (value.innerDiagnosticInfo() != null) {
+            encodeDiagnosticInfo("InnerDiagnosticInfo", value.innerDiagnosticInfo());
+          }
+          jsonWriter.endObject();
+        } finally {
+          contextPop();
         }
-        if (value.innerDiagnosticInfo() != null) {
-          encodeDiagnosticInfo("InnerDiagnosticInfo", value.innerDiagnosticInfo());
-        }
-        jsonWriter.endObject();
-        contextPop();
       }
     } catch (IOException e) {
       throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
@@ -1218,10 +1239,10 @@ public class OpcUaJsonEncoder implements UaEncoder, AutoCloseable {
 
   /**
    * Encode a DiagnosticInfo Int32 field whose default value is -1 (per OPC 10000-6 §5.4.2.13).
-   * Omitted in COMPACT when equal to -1; always written in VERBOSE.
+   * Omitted in both encoding modes when equal to -1.
    */
   private void encodeDiagnosticInfoInt32(String field, int value) throws IOException {
-    if (encoding == Encoding.VERBOSE || value != -1) {
+    if (value != -1) {
       jsonWriter.name(field).value(value);
     }
   }
@@ -1452,18 +1473,7 @@ public class OpcUaJsonEncoder implements UaEncoder, AutoCloseable {
     encodeArray(
         field,
         value,
-        (f, v) -> {
-          if (v == null) {
-            // Part 6, 5.4.5: array nulls override the scalar VERBOSE empty-object default.
-            try {
-              jsonWriter.nullValue();
-            } catch (IOException e) {
-              throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
-            }
-          } else {
-            encodeExtensionObject(f, v);
-          }
-        });
+        (f, v) -> encodeBuiltinTypeArrayElement(OpcUaDataType.ExtensionObject.getTypeId(), v));
   }
 
   @Override
@@ -1489,7 +1499,10 @@ public class OpcUaJsonEncoder implements UaEncoder, AutoCloseable {
   @Override
   public void encodeDiagnosticInfoArray(String field, DiagnosticInfo[] value)
       throws UaSerializationException {
-    encodeArray(field, value, this::encodeDiagnosticInfo);
+    encodeArray(
+        field,
+        value,
+        (f, v) -> encodeBuiltinTypeArrayElement(OpcUaDataType.DiagnosticInfo.getTypeId(), v));
   }
 
   @Override
@@ -1594,7 +1607,7 @@ public class OpcUaJsonEncoder implements UaEncoder, AutoCloseable {
             jsonWriter.beginArray();
             for (int i = 0; i < Array.getLength(flatArray); i++) {
               Object e = Array.get(flatArray, i);
-              encodeBuiltinTypeValue(null, dataType.getTypeId(), e);
+              encodeBuiltinTypeArrayElement(dataType.getTypeId(), e);
             }
             jsonWriter.endArray();
 

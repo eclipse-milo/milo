@@ -1174,6 +1174,11 @@ public class OpcUaJsonDecoder implements UaDecoder {
         }
       }
 
+      if (jsonReader.peek() == JsonToken.NULL) {
+        jsonReader.nextNull();
+        return null;
+      }
+
       jsonReader.beginObject();
 
       int symbolicId = -1;
