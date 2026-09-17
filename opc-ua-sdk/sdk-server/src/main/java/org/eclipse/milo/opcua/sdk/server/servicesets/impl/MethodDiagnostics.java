@@ -13,6 +13,7 @@ package org.eclipse.milo.opcua.sdk.server.servicesets.impl;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.eclipse.milo.opcua.stack.core.ReturnDiagnostics;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
@@ -40,14 +41,13 @@ final class MethodDiagnostics {
 
   private static final DiagnosticInfo[] NONE = new DiagnosticInfo[0];
 
-  // OPC 10000-4, Table 1: the operation-level ReturnDiagnostics bits.
-  private static final int SYMBOLIC_ID = 0x20;
-  private static final int LOCALIZED_TEXT = 0x40;
-  private static final int ADDITIONAL_INFO = 0x80;
-  private static final int INNER_STATUS_CODE = 0x100;
-  private static final int INNER_DIAGNOSTICS = 0x200;
-  private static final int OPERATION_LEVEL =
-      SYMBOLIC_ID | LOCALIZED_TEXT | ADDITIONAL_INFO | INNER_STATUS_CODE | INNER_DIAGNOSTICS;
+  // The operation-level ReturnDiagnostics bits, as defined by ReturnDiagnostics.
+  private static final int SYMBOLIC_ID = ReturnDiagnostics.OPERATION_LEVEL_SYMBOLIC_ID;
+  private static final int LOCALIZED_TEXT = ReturnDiagnostics.OPERATION_LEVEL_LOCALIZED_TEXT;
+  private static final int ADDITIONAL_INFO = ReturnDiagnostics.OPERATION_LEVEL_ADDITIONAL_INFO;
+  private static final int INNER_STATUS_CODE = ReturnDiagnostics.OPERATION_LEVEL_INNER_STATUS_CODE;
+  private static final int INNER_DIAGNOSTICS = ReturnDiagnostics.OPERATION_LEVEL_INNER_DIAGNOSTICS;
+  private static final int OPERATION_LEVEL = ReturnDiagnostics.OPERATION_LEVEL_ALL;
 
   private final Map<String, Integer> table = new LinkedHashMap<>();
 

@@ -21,14 +21,12 @@
  * cannot remove a handler installed later. A call that already obtained the old handler may finish
  * after replacement; changing the handler controls subsequent dispatch.
  *
- * <p>A Method shared by several Objects can also carry one handler per invocation ObjectId, set
- * with {@link org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode#setInvocationHandler(NodeId,
+ * <p>An Object can also hold its own handler for one of its Method nodes, set with {@link
+ * org.eclipse.milo.opcua.sdk.server.nodes.UaObjectNode#setMethodHandler(NodeId,
  * MethodInvocationHandler)}. Call dispatch resolves the Method through the ObjectId's ownership
- * rules first, then selects that ObjectId's handler and falls back to the default handler. The two
- * are independent: replacing the default never touches ObjectId handlers, and owners release an
- * ObjectId handler with {@link
- * org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode#removeInvocationHandler} so a stale owner
- * cannot remove a replacement.
+ * rules first, then uses the Object's handler for that Method node and falls back to the Method
+ * node's handler. The two are independent: replacing one never touches the other. Handler lifetime
+ * is node lifetime.
  *
  * <p>Object and ObjectType Method lookup follows forward HasComponent references and their
  * subtypes, including HasOrderedComponent, as recorded in the server's ReferenceTypeTree. A

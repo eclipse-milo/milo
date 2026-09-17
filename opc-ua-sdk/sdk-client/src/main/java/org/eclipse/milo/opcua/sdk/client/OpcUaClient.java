@@ -34,6 +34,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallOptions;
 import org.eclipse.milo.opcua.sdk.client.model.ObjectTypeInitializer;
 import org.eclipse.milo.opcua.sdk.client.model.VariableTypeInitializer;
 import org.eclipse.milo.opcua.sdk.client.reverse.DiscoveryFirstReverseConnectClient;
@@ -1537,11 +1538,27 @@ public class OpcUaClient {
    * @return a new {@link RequestHeader} created with {@code authToken} and {@code requestTimeout}.
    */
   public RequestHeader newRequestHeader(NodeId authToken, UInteger requestTimeout) {
+    return newRequestHeader(authToken, requestTimeout, uint(0));
+  }
+
+  /**
+   * Create a new {@link RequestHeader} with {@code authToken}, {@code requestTimeout} and {@code
+   * returnDiagnostics}.
+   *
+   * <p>A unique request handle will be automatically assigned to the header.
+   *
+   * @param authToken the authentication token to create the header with.
+   * @param requestTimeout the timeout hint to create the header with.
+   * @param returnDiagnostics the ReturnDiagnostics mask to create the header with.
+   * @return a new {@link RequestHeader} created with the given values.
+   */
+  public RequestHeader newRequestHeader(
+      NodeId authToken, UInteger requestTimeout, UInteger returnDiagnostics) {
     return new RequestHeader(
         authToken,
         DateTime.now(),
         uint(requestHandles.getAndIncrement()),
-        uint(0),
+        returnDiagnostics,
         null,
         requestTimeout,
         null);
@@ -1962,14 +1979,7 @@ public class OpcUaClient {
    *     https://reference.opcfoundation.org/Core/Part4/v105/docs/5.11.2</a>
    */
   public CallResponse call(List<CallMethodRequest> requests) throws UaException {
-    try {
-      return callAsync(requests).get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return call(requests, MethodCallOptions.DEFAULT);
   }
 
   /**
@@ -1983,12 +1993,64 @@ public class OpcUaClient {
    *     https://reference.opcfoundation.org/Core/Part4/v105/docs/5.11.2</a>
    */
   public CompletableFuture<CallResponse> callAsync(List<CallMethodRequest> requests) {
+    return callAsync(requests, MethodCallOptions.DEFAULT);
+  }
+
+  /**
+   * Call (invoke) one or more methods, with per-call request options.
+   *
+   * @param requests the {@link CallMethodRequest}s identifying the object/method to call and the
+   *     input arguments.
+   * @param options the ReturnDiagnostics mask and timeout hint for the request; an unset timeout
+   *     uses the client's configured request timeout and an unset mask requests no diagnostics.
+   * @return the {@link CallResponse}.
+   * @throws UaException if an error occurs.
+   * @see <a href="https://reference.opcfoundation.org/Core/Part4/v105/docs/5.11.2">
+   *     https://reference.opcfoundation.org/Core/Part4/v105/docs/5.11.2</a>
+   */
+  public CallResponse call(List<CallMethodRequest> requests, MethodCallOptions options)
+      throws UaException {
+    try {
+      return callAsync(requests, options).get();
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
+    }
+  }
+
+  /**
+   * Call (invoke) one or more methods, with per-call request options.
+   *
+   * @param requests the {@link CallMethodRequest}s identifying the object/method to call and the
+   *     input arguments.
+   * @param options the ReturnDiagnostics mask and timeout hint for the request; an unset timeout
+   *     uses the client's configured request timeout and an unset mask requests no diagnostics.
+   * @return a {@link CompletableFuture} that completes successfully with the {@link CallResponse},
+   *     or completes exceptionally if an error occurs.
+   * @see <a href="https://reference.opcfoundation.org/Core/Part4/v105/docs/5.11.2">
+   *     https://reference.opcfoundation.org/Core/Part4/v105/docs/5.11.2</a>
+   */
+  public CompletableFuture<CallResponse> callAsync(
+      List<CallMethodRequest> requests, MethodCallOptions options) {
+
+    UInteger requestTimeout =
+        options
+            .timeout()
+            .map(timeout -> uint(timeout.toMillis()))
+            .orElseGet(config::getRequestTimeout);
+
+    UInteger returnDiagnostics =
+        options.returnDiagnostics().map(ReturnDiagnostics::toUInteger).orElse(uint(0));
+
     return getSessionAsync()
         .thenCompose(
             session -> {
               CallRequest request =
                   new CallRequest(
-                      newRequestHeader(session.getAuthenticationToken()),
+                      newRequestHeader(
+                          session.getAuthenticationToken(), requestTimeout, returnDiagnostics),
                       requests.toArray(new CallMethodRequest[0]));
 
               return sendRequestAsync(request).thenApply(CallResponse.class::cast);

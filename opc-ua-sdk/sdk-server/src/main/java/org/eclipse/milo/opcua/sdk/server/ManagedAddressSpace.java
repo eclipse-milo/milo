@@ -300,12 +300,21 @@ public abstract class ManagedAddressSpace implements AddressSpace {
       if (methodNode == null) {
         methodNode = server.getConditionManager().findMethodNode(objectId, methodId).orElse(null);
       }
+
+      if (methodNode != null) {
+        // The Object's own handler for its (resolved) Method node wins over the node's handler,
+        // whichever route resolved the node.
+        MethodInvocationHandler objectHandler = objectNode.getMethodHandler(methodNode.getNodeId());
+        if (objectHandler != null) {
+          return objectHandler;
+        }
+      }
     } else if (node instanceof UaObjectTypeNode objectTypeNode) {
       methodNode = objectTypeNode.findMethodNode(methodId);
     }
 
     if (methodNode != null) {
-      return methodNode.getInvocationHandler(objectId);
+      return methodNode.getInvocationHandler();
     } else {
       throw new UaException(StatusCodes.Bad_MethodInvalid);
     }

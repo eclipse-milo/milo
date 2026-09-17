@@ -21,7 +21,9 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import com.google.common.base.Preconditions;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -32,6 +34,7 @@ import org.eclipse.milo.opcua.sdk.core.nodes.ObjectNodeProperties;
 import org.eclipse.milo.opcua.sdk.core.nodes.ObjectTypeNode;
 import org.eclipse.milo.opcua.sdk.server.AddressSpaceManager;
 import org.eclipse.milo.opcua.sdk.server.NodeManager;
+import org.eclipse.milo.opcua.sdk.server.methods.MethodInvocationHandler;
 import org.eclipse.milo.opcua.sdk.server.nodes.filters.AttributeFilter;
 import org.eclipse.milo.opcua.sdk.server.nodes.filters.AttributeFilterChain;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
@@ -52,6 +55,8 @@ import org.jspecify.annotations.Nullable;
 public class UaObjectNode extends UaNode implements ObjectNode {
 
   private UByte eventNotifier = ubyte(0);
+
+  private final Map<NodeId, MethodInvocationHandler> methodHandlers = new ConcurrentHashMap<>();
 
   /** Construct a {@link UaObjectNode} using only attributes defined prior to OPC UA 1.04. */
   public UaObjectNode(
@@ -198,6 +203,52 @@ public class UaObjectNode extends UaNode implements ObjectNode {
     }
   }
 
+  /**
+   * Get the handler this Object holds for the Method node identified by {@code methodId}.
+   *
+   * @param methodId the NodeId of one of this Object's Method nodes.
+   * @return the handler, or {@code null} if this Object has none for that Method.
+   * @see #setMethodHandler(NodeId, MethodInvocationHandler)
+   */
+  public @Nullable MethodInvocationHandler getMethodHandler(NodeId methodId) {
+    return methodHandlers.get(methodId);
+  }
+
+  /**
+   * Set the handler this Object uses when the Method node identified by {@code methodId} is called
+   * with this Object as the ObjectId.
+   *
+   * <p>A handler set here takes precedence over the Method node's own handler, so a Method node
+   * shared by several Objects can behave differently on each. The Call service resolves the
+   * requested MethodId to this Object's Method node first, accepting the declaration on the type
+   * definition as well, so {@code methodId} should be the NodeId of the instance's Method node, as
+   * returned by {@link #findMethodNode(NodeId)} or {@link #getMethodNodes()}.
+   *
+   * <p>The handler's lifetime is this node's lifetime; nothing releases it when the node is
+   * deleted. Setting {@code null} removes the handler, after which calls fall back to the Method
+   * node's handler again.
+   *
+   * @param methodId the NodeId of one of this Object's Method nodes.
+   * @param handler the handler, or {@code null} to remove the current one.
+   */
+  public void setMethodHandler(NodeId methodId, @Nullable MethodInvocationHandler handler) {
+    if (handler == null) {
+      methodHandlers.remove(methodId);
+    } else {
+      methodHandlers.put(methodId, handler);
+    }
+  }
+
+  /**
+   * Find this Object's Method node identified by {@code methodId}.
+   *
+   * <p>{@code methodId} may name the Method node itself or its declaration on this Object's type
+   * definition (or a supertype), in which case the instance's Method with the same BrowseName is
+   * returned.
+   *
+   * @param methodId the NodeId of the Method node or of its declaration.
+   * @return the Method node, or {@code null} if this Object has no such Method.
+   */
   @Nullable
   public UaMethodNode findMethodNode(NodeId methodId) {
     List<UaMethodNode> methodNodes = getMethodNodes();

@@ -34,13 +34,14 @@
  * org.eclipse.milo.opcua.sdk.server.methods.InvalidArgumentException}. The invocation context
  * preserves the calling session, object and Method node.
  *
- * <p>A handler chooses one of two callbacks. The output callback, {@code invoke}, receives every
- * declared input and reports Good with its output array. The result callback, {@code invokeResult},
- * returns a complete result, so it can report Uncertain with outputs or Bad without them. A handler
- * overriding the result callback can also override {@code getRequiredInputArgumentCount} to let
- * callers omit trailing inputs; omitted inputs are absent from the supplied array, while a supplied
- * null keeps its position. A result that breaks the CallMethodResult rules is logged and reported
- * as Bad_InternalError.
+ * <p>A handler chooses one of two callbacks. The output callback, {@code invoke}, receives the
+ * supplied inputs and returns its output array; the result carries the status of the invocation
+ * context, Good unless the callback set a Good subcode or an Uncertain status on it. Failures are
+ * thrown. The result callback, {@code invokeResult}, returns a complete result instead. A handler
+ * can override {@code getRequiredInputArgumentCount} to let callers omit trailing inputs; omitted
+ * inputs are absent from the supplied array, while a supplied null keeps its position, and the
+ * context reports how many inputs were actually sent. A result that breaks the CallMethodResult
+ * rules is logged and reported as Bad_InternalError.
  *
  * <p>When dispatched through the Call service, the invocation context exposes the request's {@link
  * org.eclipse.milo.opcua.sdk.server.DiagnosticsContext}. A handler interns diagnostic strings there
@@ -48,17 +49,17 @@
  * address-space group has finished, the service keeps only the fields the ReturnDiagnostics mask
  * requests and builds the response StringTable from the strings those fields reference.
  *
- * <p>{@link org.eclipse.milo.opcua.sdk.server.methods.MethodBindings} is an application-owned
- * lifetime for ObjectId-specific handlers on Methods shared by several Objects. Bind validates the
- * ownership relationship and typed argument metadata, then installs the handler on the Method node
- * for that ObjectId. Each {@link org.eclipse.milo.opcua.sdk.server.methods.MethodBinding} token
- * owns only its registration; closing a replaced token cannot remove the replacement. The Method's
- * default handler is never touched, so raw handler replacement and ObjectId registrations do not
- * interfere.
+ * <p>Behavior can belong to the invoked Object instead of the Method node. {@link
+ * org.eclipse.milo.opcua.sdk.server.nodes.UaObjectNode#setMethodHandler} stores a handler per
+ * Method node on the Object; Call dispatch resolves the requested MethodId to the Object's own
+ * Method node, accepting the declaration on its type definition, and consults that map before the
+ * Method node's handler. A Method node shared by several Objects can therefore behave differently
+ * on each, while hand-written servers that install a handler on the Method node keep working.
+ * Handler lifetime is node lifetime; nothing releases handlers when nodes are deleted. Dispatch
+ * continues to enforce Method ownership, ConditionManager precedence and session access.
  *
- * <p>Applications close tokens or remove ObjectId registrations before deleting owner nodes, and
- * close the registry on namespace shutdown. Cleanup does not delete nodes, cancel callbacks or wait
- * for selected invocations. A callback selected before cleanup can complete afterward. Actual Call
- * dispatch continues to enforce Method ownership, ConditionManager precedence and session access.
+ * <p>{@link org.eclipse.milo.opcua.sdk.server.methods.MethodArgumentValidator} is the standalone
+ * form of the count, shape and DataType checks, for handlers that do not extend the abstract
+ * handler but still need validated and decoded inputs.
  */
 package org.eclipse.milo.opcua.sdk.server.methods;

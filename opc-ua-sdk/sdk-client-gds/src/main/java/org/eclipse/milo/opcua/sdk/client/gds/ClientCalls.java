@@ -90,7 +90,8 @@ final class ClientCalls {
                     new UaMethodException(
                         statusCode,
                         result.getInputArgumentResults(),
-                        result.getInputArgumentDiagnosticInfos()));
+                        result.getInputArgumentDiagnosticInfos(),
+                        response.getResponseHeader()));
               }
 
               try {

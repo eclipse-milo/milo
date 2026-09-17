@@ -143,6 +143,100 @@ class SynchronousMethodOutcomeTest {
     assertEquals(1, calls.get());
   }
 
+  // One handler shape covers every outcome: a callback returns outputs, and reports a Good subcode
+  // or Uncertain by setting it on the context. Bad must be thrown, never set.
+  @Test
+  void contextStatusIsReturnedWithOutputsAndBadContextStatusIsRejected() {
+    AbstractMethodInvocationHandler handler =
+        new AbstractMethodInvocationHandler(node) {
+          public Argument[] getInputArguments() {
+            return new Argument[] {arguments[0]};
+          }
+
+          public Argument[] getOutputArguments() {
+            return new Argument[0];
+          }
+
+          protected Variant[] invoke(InvocationContext context, Variant[] values) {
+            assertEquals(StatusCode.GOOD, context.getStatusCode(), "default status");
+            int value = (int) values[0].value();
+            if (value < 0) {
+              context.setStatusCode(new StatusCode(StatusCodes.Bad_OutOfRange));
+            } else if (value == 0) {
+              context.setStatusCode(new StatusCode(StatusCodes.Uncertain_SubNormal));
+            }
+            return values;
+          }
+        };
+    CallMethodResult uncertain = call(handler, new Variant(0));
+    assertEquals(new StatusCode(StatusCodes.Uncertain_SubNormal), uncertain.getStatusCode());
+    assertEquals(1, uncertain.getOutputArguments().length, "Uncertain keeps its outputs");
+    assertEquals(StatusCode.GOOD, call(handler, new Variant(1)).getStatusCode());
+    assertThrows(IllegalArgumentException.class, () -> call(handler, new Variant(-1)));
+  }
+
+  // Omission is observable through the context without changing the handler signature.
+  @Test
+  void suppliedInputCountDistinguishesOmissionFromSuppliedNull() {
+    AtomicInteger supplied = new AtomicInteger();
+    AbstractMethodInvocationHandler handler =
+        new AbstractMethodInvocationHandler(node) {
+          public Argument[] getInputArguments() {
+            return arguments;
+          }
+
+          public Argument[] getOutputArguments() {
+            return new Argument[0];
+          }
+
+          protected int getRequiredInputArgumentCount(Argument[] inputArguments) {
+            return 1;
+          }
+
+          protected Variant[] invoke(InvocationContext context, Variant[] values) {
+            supplied.set(context.suppliedInputCount());
+            return new Variant[0];
+          }
+        };
+    assertEquals(StatusCode.GOOD, call(handler, new Variant(7)).getStatusCode());
+    assertEquals(1, supplied.get());
+    assertEquals(
+        StatusCode.GOOD, call(handler, new Variant(7), Variant.NULL_VALUE).getStatusCode());
+    assertEquals(2, supplied.get());
+  }
+
+  // A handler rejecting one argument by index should not have to know how many inputs arrived;
+  // the result is still one status per supplied input, as Part 4 §5.12.2.2 requires.
+  @Test
+  void sparseInvalidArgumentIsPaddedToSuppliedInputsAndCarriesDiagnosticText() {
+    AbstractMethodInvocationHandler handler =
+        new AbstractMethodInvocationHandler(node) {
+          public Argument[] getInputArguments() {
+            return arguments;
+          }
+
+          public Argument[] getOutputArguments() {
+            return new Argument[0];
+          }
+
+          protected Variant[] invoke(InvocationContext context, Variant[] values)
+              throws InvalidArgumentException {
+            throw InvalidArgumentException.builder()
+                .argument(0, StatusCodes.Bad_OutOfRange, "value must be positive")
+                .build();
+          }
+        };
+    CallMethodResult result = call(handler, new Variant(-1), new Variant("label"));
+    assertEquals(new StatusCode(StatusCodes.Bad_InvalidArgument), result.getStatusCode());
+    assertArrayEquals(
+        new StatusCode[] {new StatusCode(StatusCodes.Bad_OutOfRange), StatusCode.GOOD},
+        result.getInputArgumentResults());
+    DiagnosticInfo[] diagnostics = result.getInputArgumentDiagnosticInfos();
+    assertEquals(2, diagnostics.length);
+    assertEquals("value must be positive", diagnostics[0].additionalInfo());
+    assertEquals(DiagnosticInfo.NULL_VALUE, diagnostics[1]);
+  }
+
   @Test
   void legacySubclassRetainsExactCountAndGoodOutcome() {
     AbstractMethodInvocationHandler legacy =
@@ -203,6 +297,38 @@ class SynchronousMethodOutcomeTest {
         new CallMethodResult(new StatusCode(StatusCodes.Good_Clamped), null, null, null);
     assertEquals(
         outcome.getStatusCode(), call(handler(1, outcome), new Variant(7)).getStatusCode());
+  }
+
+  // A builder-built rejection of an input the caller omitted cannot be represented per argument;
+  // the call still reports Bad_InvalidArgument sized to the supplied inputs, not Bad_InternalError.
+  @Test
+  void sparseInvalidArgumentBeyondSuppliedInputsIsTrimmedToSuppliedInputs() {
+    AbstractMethodInvocationHandler handler =
+        new AbstractMethodInvocationHandler(node) {
+          public Argument[] getInputArguments() {
+            return arguments;
+          }
+
+          public Argument[] getOutputArguments() {
+            return new Argument[0];
+          }
+
+          protected int getRequiredInputArgumentCount(Argument[] inputArguments) {
+            return 1;
+          }
+
+          protected Variant[] invoke(InvocationContext context, Variant[] values)
+              throws InvalidArgumentException {
+            throw InvalidArgumentException.builder()
+                .argument(1, StatusCodes.Bad_ArgumentsMissing, "label is required in this mode")
+                .build();
+          }
+        };
+    CallMethodResult result = call(handler, new Variant(7));
+    assertEquals(new StatusCode(StatusCodes.Bad_InvalidArgument), result.getStatusCode());
+    assertArrayEquals(new StatusCode[] {StatusCode.GOOD}, result.getInputArgumentResults());
+    assertArrayEquals(
+        new DiagnosticInfo[] {DiagnosticInfo.NULL_VALUE}, result.getInputArgumentDiagnosticInfos());
   }
 
   // The exception path is checked by the same rules as a returned result.
