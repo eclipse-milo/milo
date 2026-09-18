@@ -102,6 +102,27 @@ class ObjectMethodHandlerDispatchTest {
     }
   }
 
+  // The handler map is created on first use, so a node that never held a handler, and removal
+  // from such a node, must behave exactly like an empty map.
+  @Test
+  void handlerMapIsAbsentUntilFirstHandlerAndRoundTrips() throws Exception {
+    try (Fixture f = new Fixture()) {
+      NodeId methodId = f.method.getNodeId();
+      assertNull(f.second.getMethodHandler(methodId));
+
+      f.second.setMethodHandler(methodId, null);
+      assertNull(f.second.getMethodHandler(methodId));
+
+      MethodInvocationHandler handler = reply("second");
+      f.second.setMethodHandler(methodId, handler);
+      assertSame(handler, f.second.getMethodHandler(methodId));
+      assertNull(f.first.getMethodHandler(methodId), "handlers are per Object");
+
+      f.second.setMethodHandler(methodId, null);
+      assertNull(f.second.getMethodHandler(methodId));
+    }
+  }
+
   private static final class Fixture implements AutoCloseable {
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();

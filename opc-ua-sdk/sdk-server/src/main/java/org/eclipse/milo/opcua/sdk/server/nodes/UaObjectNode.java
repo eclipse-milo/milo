@@ -56,7 +56,10 @@ public class UaObjectNode extends UaNode implements ObjectNode {
 
   private UByte eventNotifier = ubyte(0);
 
-  private final Map<NodeId, MethodInvocationHandler> methodHandlers = new ConcurrentHashMap<>();
+  // Created on the first setMethodHandler call. Few Objects ever hold a handler, so an eager map
+  // would cost every node in a large address space for nothing. Reads see the map through the
+  // volatile field; writes are serialized on this node's monitor.
+  private volatile @Nullable Map<NodeId, MethodInvocationHandler> methodHandlers;
 
   /** Construct a {@link UaObjectNode} using only attributes defined prior to OPC UA 1.04. */
   public UaObjectNode(
@@ -211,7 +214,8 @@ public class UaObjectNode extends UaNode implements ObjectNode {
    * @see #setMethodHandler(NodeId, MethodInvocationHandler)
    */
   public @Nullable MethodInvocationHandler getMethodHandler(NodeId methodId) {
-    return methodHandlers.get(methodId);
+    Map<NodeId, MethodInvocationHandler> handlers = methodHandlers;
+    return handlers == null ? null : handlers.get(methodId);
   }
 
   /**
@@ -231,11 +235,21 @@ public class UaObjectNode extends UaNode implements ObjectNode {
    * @param methodId the NodeId of one of this Object's Method nodes.
    * @param handler the handler, or {@code null} to remove the current one.
    */
-  public void setMethodHandler(NodeId methodId, @Nullable MethodInvocationHandler handler) {
+  public synchronized void setMethodHandler(
+      NodeId methodId, @Nullable MethodInvocationHandler handler) {
+
+    Map<NodeId, MethodInvocationHandler> handlers = methodHandlers;
+
     if (handler == null) {
-      methodHandlers.remove(methodId);
+      if (handlers != null) {
+        handlers.remove(methodId);
+      }
     } else {
-      methodHandlers.put(methodId, handler);
+      if (handlers == null) {
+        handlers = new ConcurrentHashMap<>();
+        methodHandlers = handlers;
+      }
+      handlers.put(methodId, handler);
     }
   }
 
