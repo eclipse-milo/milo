@@ -51,12 +51,14 @@ public abstract class AbstractMethodInvocationHandler implements MethodInvocatio
       LoggerFactory.getLogger(AbstractMethodInvocationHandler.class);
 
   private final UaMethodNode node;
+  private final MethodArgumentValidator argumentValidator;
 
   /**
    * @param node the {@link UaMethodNode} this handler will be installed on.
    */
   public AbstractMethodInvocationHandler(UaMethodNode node) {
     this.node = node;
+    argumentValidator = new MethodArgumentValidator(node.getNodeContext().getServer());
   }
 
   public UaMethodNode getNode() {
@@ -78,8 +80,7 @@ public abstract class AbstractMethodInvocationHandler implements MethodInvocatio
       OpcUaServer server = node.getNodeContext().getServer();
 
       Variant[] inputArgumentValues =
-          new MethodArgumentValidator(server)
-              .validate(inputArguments, requiredCount, suppliedInputs);
+          argumentValidator.validate(inputArguments, requiredCount, suppliedInputs);
 
       validateInputArgumentValues(inputArgumentValues);
 
