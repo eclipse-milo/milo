@@ -1,31 +1,15 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
-import org.eclipse.milo.opcua.sdk.client.model.variables.BaseDataVariableTypeNode;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
+import org.eclipse.milo.opcua.sdk.client.nodes.UaVariableNode;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
@@ -33,7 +17,15 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.UnsignedRationalNumber;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link IIeeeBaseTsnTrafficSpecificationType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.8">Model
+ *     documentation</a>
+ */
 public class IIeeeBaseTsnTrafficSpecificationTypeNode extends BaseInterfaceTypeNode
     implements IIeeeBaseTsnTrafficSpecificationType {
   public IIeeeBaseTsnTrafficSpecificationTypeNode(
@@ -42,12 +34,12 @@ public class IIeeeBaseTsnTrafficSpecificationTypeNode extends BaseInterfaceTypeN
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         client,
@@ -65,226 +57,218 @@ public class IIeeeBaseTsnTrafficSpecificationTypeNode extends BaseInterfaceTypeN
   }
 
   @Override
-  public UShort getMaxIntervalFrames() throws UaException {
-    BaseDataVariableTypeNode node = getMaxIntervalFramesNode();
-    return (UShort) node.getValue().getValue().getValue();
+  public UaVariableNode getMaxFrameSizeNode() throws UaException {
+    return ClientNodeSupport.await(getMaxFrameSizeNodeAsync());
   }
 
   @Override
-  public void setMaxIntervalFrames(UShort value) throws UaException {
-    BaseDataVariableTypeNode node = getMaxIntervalFramesNode();
-    node.setValue(new Variant(value));
+  public CompletableFuture<? extends UaVariableNode> getMaxFrameSizeNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "MaxFrameSize",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
   }
 
   @Override
-  public UShort readMaxIntervalFrames() throws UaException {
-    try {
-      return readMaxIntervalFramesAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable UInteger readMaxFrameSize() throws UaException {
+    return ClientNodeSupport.await(readMaxFrameSizeAsync());
   }
 
   @Override
-  public void writeMaxIntervalFrames(UShort value) throws UaException {
-    try {
-      StatusCode statusCode = writeMaxIntervalFramesAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public void writeMaxFrameSize(@Nullable UInteger value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeMaxFrameSizeAsync(value)),
+        "http://opcfoundation.org/UA/}MaxFrameSize");
   }
 
   @Override
-  public CompletableFuture<? extends UShort> readMaxIntervalFramesAsync() {
-    return getMaxIntervalFramesNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (UShort) v.getValue().getValue());
+  public CompletableFuture<? extends @Nullable UInteger> readMaxFrameSizeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getMaxFrameSizeNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}MaxFrameSize",
+                            true,
+                            UInteger.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable UInteger) v)));
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeMaxIntervalFramesAsync(UShort maxIntervalFrames) {
-    DataValue value = DataValue.valueOnly(new Variant(maxIntervalFrames));
-    return getMaxIntervalFramesNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<StatusCode> writeMaxFrameSizeAsync(@Nullable UInteger value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getMaxFrameSizeNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}MaxFrameSize",
+                        value,
+                        UInteger.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public BaseDataVariableTypeNode getMaxIntervalFramesNode() throws UaException {
-    try {
-      return getMaxIntervalFramesNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public UaVariableNode getMaxIntervalFramesNode() throws UaException {
+    return ClientNodeSupport.await(getMaxIntervalFramesNodeAsync());
   }
 
   @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getMaxIntervalFramesNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "MaxIntervalFrames",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
+  public CompletableFuture<? extends UaVariableNode> getMaxIntervalFramesNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "MaxIntervalFrames",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
   }
 
   @Override
-  public UInteger getMaxFrameSize() throws UaException {
-    BaseDataVariableTypeNode node = getMaxFrameSizeNode();
-    return (UInteger) node.getValue().getValue().getValue();
+  public @Nullable UShort readMaxIntervalFrames() throws UaException {
+    return ClientNodeSupport.await(readMaxIntervalFramesAsync());
   }
 
   @Override
-  public void setMaxFrameSize(UInteger value) throws UaException {
-    BaseDataVariableTypeNode node = getMaxFrameSizeNode();
-    node.setValue(new Variant(value));
+  public void writeMaxIntervalFrames(@Nullable UShort value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeMaxIntervalFramesAsync(value)),
+        "http://opcfoundation.org/UA/}MaxIntervalFrames");
   }
 
   @Override
-  public UInteger readMaxFrameSize() throws UaException {
-    try {
-      return readMaxFrameSizeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable UShort> readMaxIntervalFramesAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getMaxIntervalFramesNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}MaxIntervalFrames",
+                            true,
+                            UShort.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable UShort) v)));
   }
 
   @Override
-  public void writeMaxFrameSize(UInteger value) throws UaException {
-    try {
-      StatusCode statusCode = writeMaxFrameSizeAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<StatusCode> writeMaxIntervalFramesAsync(@Nullable UShort value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getMaxIntervalFramesNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}MaxIntervalFrames",
+                        value,
+                        UShort.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public CompletableFuture<? extends UInteger> readMaxFrameSizeAsync() {
-    return getMaxFrameSizeNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (UInteger) v.getValue().getValue());
+  public UaVariableNode getIntervalNode() throws UaException {
+    return ClientNodeSupport.await(getIntervalNodeAsync());
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeMaxFrameSizeAsync(UInteger maxFrameSize) {
-    DataValue value = DataValue.valueOnly(new Variant(maxFrameSize));
-    return getMaxFrameSizeNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<? extends UaVariableNode> getIntervalNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "Interval",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
   }
 
   @Override
-  public BaseDataVariableTypeNode getMaxFrameSizeNode() throws UaException {
-    try {
-      return getMaxFrameSizeNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable UnsignedRationalNumber readInterval() throws UaException {
+    return ClientNodeSupport.await(readIntervalAsync());
   }
 
   @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getMaxFrameSizeNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "MaxFrameSize", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
+  public void writeInterval(@Nullable UnsignedRationalNumber value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeIntervalAsync(value)),
+        "http://opcfoundation.org/UA/}Interval");
   }
 
   @Override
-  public UnsignedRationalNumber getInterval() throws UaException {
-    BaseDataVariableTypeNode node = getIntervalNode();
-    return cast(node.getValue().getValue().getValue(), UnsignedRationalNumber.class);
+  public CompletableFuture<? extends @Nullable UnsignedRationalNumber> readIntervalAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getIntervalNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}Interval",
+                            true,
+                            UnsignedRationalNumber.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable UnsignedRationalNumber) v)));
   }
 
   @Override
-  public void setInterval(UnsignedRationalNumber value) throws UaException {
-    BaseDataVariableTypeNode node = getIntervalNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
-  }
-
-  @Override
-  public UnsignedRationalNumber readInterval() throws UaException {
-    try {
-      return readIntervalAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeInterval(UnsignedRationalNumber value) throws UaException {
-    try {
-      StatusCode statusCode = writeIntervalAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends UnsignedRationalNumber> readIntervalAsync() {
-    return getIntervalNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), UnsignedRationalNumber.class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeIntervalAsync(UnsignedRationalNumber interval) {
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), interval);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getIntervalNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getIntervalNode() throws UaException {
-    try {
-      return getIntervalNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getIntervalNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Interval", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
+  public CompletableFuture<StatusCode> writeIntervalAsync(@Nullable UnsignedRationalNumber value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getIntervalNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}Interval",
+                        value,
+                        UnsignedRationalNumber.class,
+                        -1,
+                        null)));
   }
 }

@@ -1,37 +1,31 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyTypeNode;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.sdk.client.nodes.UaObjectNode;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ConversionLimitEnum;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link ServerUnitType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part8/6.4.2/#6.4.2.3">Model
+ *     documentation</a>
+ */
 public class ServerUnitTypeNode extends UnitTypeNode implements ServerUnitType {
   public ServerUnitTypeNode(
       OpcUaClient client,
@@ -39,12 +33,12 @@ public class ServerUnitTypeNode extends UnitTypeNode implements ServerUnitType {
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         client,
@@ -62,135 +56,119 @@ public class ServerUnitTypeNode extends UnitTypeNode implements ServerUnitType {
   }
 
   @Override
-  public ConversionLimitEnum getConversionLimit() throws UaException {
-    PropertyTypeNode node = getConversionLimitNode();
-    Object value = node.getValue().getValue().getValue();
-
-    if (value instanceof Integer) {
-      return ConversionLimitEnum.from((Integer) value);
-    } else if (value instanceof ConversionLimitEnum) {
-      return (ConversionLimitEnum) value;
-    } else {
-      return null;
-    }
+  public @Nullable UnitTypeNode getCoherentUnitNode() throws UaException {
+    return ClientNodeSupport.await(getCoherentUnitNodeAsync());
   }
 
   @Override
-  public void setConversionLimit(ConversionLimitEnum value) throws UaException {
-    PropertyTypeNode node = getConversionLimitNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public ConversionLimitEnum readConversionLimit() throws UaException {
-    try {
-      return readConversionLimitAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeConversionLimit(ConversionLimitEnum value) throws UaException {
-    try {
-      StatusCode statusCode = writeConversionLimitAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends ConversionLimitEnum> readConversionLimitAsync() {
-    return getConversionLimitNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(
-            v -> {
-              Object value = v.getValue().getValue();
-              if (value instanceof Integer) {
-                return ConversionLimitEnum.from((Integer) value);
-              } else {
-                return null;
-              }
-            });
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeConversionLimitAsync(
-      ConversionLimitEnum conversionLimit) {
-    DataValue value = DataValue.valueOnly(new Variant(conversionLimit));
-    return getConversionLimitNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<? extends @Nullable UnitTypeNode> getCoherentUnitNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "CoherentUnit",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Object,
+                        UnitTypeNode.class)));
   }
 
   @Override
   public PropertyTypeNode getConversionLimitNode() throws UaException {
-    try {
-      return getConversionLimitNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getConversionLimitNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends PropertyTypeNode> getConversionLimitNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "ConversionLimit", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "ConversionLimit",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public BaseObjectTypeNode getAlternativeUnitsNode() throws UaException {
-    try {
-      return getAlternativeUnitsNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable ConversionLimitEnum readConversionLimit() throws UaException {
+    return ClientNodeSupport.await(readConversionLimitAsync());
   }
 
   @Override
-  public CompletableFuture<? extends BaseObjectTypeNode> getAlternativeUnitsNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "AlternativeUnits",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (BaseObjectTypeNode) node);
+  public void writeConversionLimit(@Nullable ConversionLimitEnum value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeConversionLimitAsync(value)),
+        "http://opcfoundation.org/UA/}ConversionLimit");
   }
 
   @Override
-  public UnitTypeNode getCoherentUnitNode() throws UaException {
-    try {
-      return getCoherentUnitNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable ConversionLimitEnum> readConversionLimitAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getConversionLimitNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}ConversionLimit",
+                            true,
+                            ConversionLimitEnum.class,
+                            -1,
+                            ConversionLimitEnum::from)),
+                v -> CompletableFuture.completedFuture((@Nullable ConversionLimitEnum) v)));
   }
 
   @Override
-  public CompletableFuture<? extends UnitTypeNode> getCoherentUnitNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "CoherentUnit", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (UnitTypeNode) node);
+  public CompletableFuture<StatusCode> writeConversionLimitAsync(
+      @Nullable ConversionLimitEnum value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getConversionLimitNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}ConversionLimit",
+                        value,
+                        ConversionLimitEnum.class,
+                        -1,
+                        ConversionLimitEnum::from)));
+  }
+
+  @Override
+  public @Nullable UaObjectNode getAlternativeUnitsNode() throws UaException {
+    return ClientNodeSupport.await(getAlternativeUnitsNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable UaObjectNode> getAlternativeUnitsNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "AlternativeUnits",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Object,
+                        UaObjectNode.class)));
   }
 }

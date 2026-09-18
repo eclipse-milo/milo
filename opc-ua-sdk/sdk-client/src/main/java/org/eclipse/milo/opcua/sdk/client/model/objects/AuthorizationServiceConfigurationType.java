@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
@@ -17,249 +7,135 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/9.7.4">https://reference.opcfoundation.org/v105/Core/docs/Part12/9.7.4</a>
+ * Client API for the AuthorizationServiceConfigurationType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/9.7.4">Model
+ *     documentation</a>
  */
 public interface AuthorizationServiceConfigurationType extends BaseObjectType {
-  QualifiedProperty<String> SERVICE_URI =
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 17852L);
+
+  QualifiedProperty<String> ServiceUri_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "ServiceUri",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
           -1,
           String.class);
 
-  QualifiedProperty<ByteString> SERVICE_CERTIFICATE =
+  QualifiedProperty<String> IssuerEndpointUrl_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
+          "IssuerEndpointUrl",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+          -1,
+          String.class);
+
+  QualifiedProperty<ByteString> ServiceCertificate_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
           "ServiceCertificate",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 15L),
           -1,
           ByteString.class);
 
-  QualifiedProperty<String> ISSUER_ENDPOINT_URL =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "IssuerEndpointUrl",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
-
   /**
-   * Get the local value of the ServiceUri Node.
+   * Resolves the mandatory ServiceUri child, a PropertyType with DataType String.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ServiceUri Node.
-   * @throws UaException if an error occurs creating or getting the ServiceUri Node.
-   */
-  String getServiceUri() throws UaException;
-
-  /**
-   * Set the local value of the ServiceUri Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ServiceUri Node.
-   * @throws UaException if an error occurs creating or getting the ServiceUri Node.
-   */
-  void setServiceUri(String value) throws UaException;
-
-  /**
-   * Read the value of the ServiceUri Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String readServiceUri() throws UaException;
-
-  /**
-   * Write a new value for the ServiceUri Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeServiceUri(String value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readServiceUri}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String> readServiceUriAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeServiceUri}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeServiceUriAsync(String value);
-
-  /**
-   * Get the ServiceUri {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ServiceUri {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getServiceUriNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getServiceUriNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getServiceUriNode()}. */
   CompletableFuture<? extends PropertyType> getServiceUriNodeAsync();
 
   /**
-   * Get the local value of the ServiceCertificate Node.
+   * Reads the Value of the ServiceUri child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ServiceCertificate Node.
-   * @throws UaException if an error occurs creating or getting the ServiceCertificate Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  ByteString getServiceCertificate() throws UaException;
+  @Nullable String readServiceUri() throws UaException;
 
   /**
-   * Set the local value of the ServiceCertificate Node.
+   * Writes the Value of the ServiceUri child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ServiceCertificate Node.
-   * @throws UaException if an error occurs creating or getting the ServiceCertificate Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setServiceCertificate(ByteString value) throws UaException;
+  void writeServiceUri(@Nullable String value) throws UaException;
+
+  /** Asynchronous form of {@link #readServiceUri()}. */
+  CompletableFuture<? extends @Nullable String> readServiceUriAsync();
+
+  /** Asynchronous form of {@link #writeServiceUri}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeServiceUriAsync(@Nullable String value);
 
   /**
-   * Read the value of the ServiceCertificate Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the mandatory IssuerEndpointUrl child, a PropertyType with DataType String.
    *
-   * @return the {@link ByteString} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  ByteString readServiceCertificate() throws UaException;
-
-  /**
-   * Write a new value for the ServiceCertificate Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link ByteString} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeServiceCertificate(ByteString value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readServiceCertificate}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends ByteString> readServiceCertificateAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeServiceCertificate}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeServiceCertificateAsync(ByteString value);
-
-  /**
-   * Get the ServiceCertificate {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ServiceCertificate {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getServiceCertificateNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getServiceCertificateNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getServiceCertificateNodeAsync();
-
-  /**
-   * Get the local value of the IssuerEndpointUrl Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the IssuerEndpointUrl Node.
-   * @throws UaException if an error occurs creating or getting the IssuerEndpointUrl Node.
-   */
-  String getIssuerEndpointUrl() throws UaException;
-
-  /**
-   * Set the local value of the IssuerEndpointUrl Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the IssuerEndpointUrl Node.
-   * @throws UaException if an error occurs creating or getting the IssuerEndpointUrl Node.
-   */
-  void setIssuerEndpointUrl(String value) throws UaException;
-
-  /**
-   * Read the value of the IssuerEndpointUrl Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String readIssuerEndpointUrl() throws UaException;
-
-  /**
-   * Write a new value for the IssuerEndpointUrl Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeIssuerEndpointUrl(String value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readIssuerEndpointUrl}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String> readIssuerEndpointUrlAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeIssuerEndpointUrl}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeIssuerEndpointUrlAsync(String value);
-
-  /**
-   * Get the IssuerEndpointUrl {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the IssuerEndpointUrl {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getIssuerEndpointUrlNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getIssuerEndpointUrlNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getIssuerEndpointUrlNode()}. */
   CompletableFuture<? extends PropertyType> getIssuerEndpointUrlNodeAsync();
+
+  /**
+   * Reads the Value of the IssuerEndpointUrl child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable String readIssuerEndpointUrl() throws UaException;
+
+  /**
+   * Writes the Value of the IssuerEndpointUrl child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeIssuerEndpointUrl(@Nullable String value) throws UaException;
+
+  /** Asynchronous form of {@link #readIssuerEndpointUrl()}. */
+  CompletableFuture<? extends @Nullable String> readIssuerEndpointUrlAsync();
+
+  /** Asynchronous form of {@link #writeIssuerEndpointUrl}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeIssuerEndpointUrlAsync(@Nullable String value);
+
+  /**
+   * Resolves the mandatory ServiceCertificate child, a PropertyType with DataType ByteString.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getServiceCertificateNode() throws UaException;
+
+  /** Asynchronous form of {@link #getServiceCertificateNode()}. */
+  CompletableFuture<? extends PropertyType> getServiceCertificateNodeAsync();
+
+  /**
+   * Reads the Value of the ServiceCertificate child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable ByteString readServiceCertificate() throws UaException;
+
+  /**
+   * Writes the Value of the ServiceCertificate child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeServiceCertificate(@Nullable ByteString value) throws UaException;
+
+  /** Asynchronous form of {@link #readServiceCertificate()}. */
+  CompletableFuture<? extends @Nullable ByteString> readServiceCertificateAsync();
+
+  /** Asynchronous form of {@link #writeServiceCertificate}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeServiceCertificateAsync(@Nullable ByteString value);
 }

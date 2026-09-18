@@ -1,38 +1,30 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyTypeNode;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.QosDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link DatagramConnectionTransportType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.3.1/#9.3.1.1">Model
+ *     documentation</a>
+ */
 public class DatagramConnectionTransportTypeNode extends ConnectionTransportTypeNode
     implements DatagramConnectionTransportType {
   public DatagramConnectionTransportTypeNode(
@@ -41,12 +33,12 @@ public class DatagramConnectionTransportTypeNode extends ConnectionTransportType
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         client,
@@ -64,329 +56,315 @@ public class DatagramConnectionTransportTypeNode extends ConnectionTransportType
   }
 
   @Override
-  public UInteger getDiscoveryAnnounceRate() throws UaException {
-    PropertyTypeNode node = getDiscoveryAnnounceRateNode();
-    return (UInteger) node.getValue().getValue().getValue();
+  public @Nullable PropertyTypeNode getDatagramQosNode() throws UaException {
+    return ClientNodeSupport.await(getDatagramQosNodeAsync());
   }
 
   @Override
-  public void setDiscoveryAnnounceRate(UInteger value) throws UaException {
-    PropertyTypeNode node = getDiscoveryAnnounceRateNode();
-    node.setValue(new Variant(value));
+  public CompletableFuture<? extends @Nullable PropertyTypeNode> getDatagramQosNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "DatagramQos",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public UInteger readDiscoveryAnnounceRate() throws UaException {
-    try {
-      return readDiscoveryAnnounceRateAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable QosDataType @Nullable [] readDatagramQos() throws UaException {
+    return ClientNodeSupport.await(readDatagramQosAsync());
   }
 
   @Override
-  public void writeDiscoveryAnnounceRate(UInteger value) throws UaException {
-    try {
-      StatusCode statusCode = writeDiscoveryAnnounceRateAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public void writeDatagramQos(@Nullable QosDataType @Nullable [] value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeDatagramQosAsync(value)),
+        "http://opcfoundation.org/UA/}DatagramQos");
   }
 
   @Override
-  public CompletableFuture<? extends UInteger> readDiscoveryAnnounceRateAsync() {
-    return getDiscoveryAnnounceRateNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (UInteger) v.getValue().getValue());
+  public CompletableFuture<? extends @Nullable QosDataType @Nullable []> readDatagramQosAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getDatagramQosNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}DatagramQos",
+                            false,
+                            QosDataType.class,
+                            1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable QosDataType @Nullable []) v)));
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeDiscoveryAnnounceRateAsync(
-      UInteger discoveryAnnounceRate) {
-    DataValue value = DataValue.valueOnly(new Variant(discoveryAnnounceRate));
-    return getDiscoveryAnnounceRateNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<StatusCode> writeDatagramQosAsync(
+      @Nullable QosDataType @Nullable [] value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getDatagramQosNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}DatagramQos",
+                        value,
+                        QosDataType.class,
+                        1,
+                        null)));
   }
 
   @Override
-  public PropertyTypeNode getDiscoveryAnnounceRateNode() throws UaException {
-    try {
-      return getDiscoveryAnnounceRateNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable PropertyTypeNode getQosCategoryNode() throws UaException {
+    return ClientNodeSupport.await(getQosCategoryNodeAsync());
   }
 
   @Override
-  public CompletableFuture<? extends PropertyTypeNode> getDiscoveryAnnounceRateNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "DiscoveryAnnounceRate",
-            ExpandedNodeId.parse("i=46"),
-            false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+  public CompletableFuture<? extends @Nullable PropertyTypeNode> getQosCategoryNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "QosCategory",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public UInteger getDiscoveryMaxMessageSize() throws UaException {
-    PropertyTypeNode node = getDiscoveryMaxMessageSizeNode();
-    return (UInteger) node.getValue().getValue().getValue();
+  public @Nullable String readQosCategory() throws UaException {
+    return ClientNodeSupport.await(readQosCategoryAsync());
   }
 
   @Override
-  public void setDiscoveryMaxMessageSize(UInteger value) throws UaException {
-    PropertyTypeNode node = getDiscoveryMaxMessageSizeNode();
-    node.setValue(new Variant(value));
+  public void writeQosCategory(@Nullable String value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeQosCategoryAsync(value)),
+        "http://opcfoundation.org/UA/}QosCategory");
   }
 
   @Override
-  public UInteger readDiscoveryMaxMessageSize() throws UaException {
-    try {
-      return readDiscoveryMaxMessageSizeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable String> readQosCategoryAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getQosCategoryNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}QosCategory",
+                            false,
+                            String.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable String) v)));
   }
 
   @Override
-  public void writeDiscoveryMaxMessageSize(UInteger value) throws UaException {
-    try {
-      StatusCode statusCode = writeDiscoveryMaxMessageSizeAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends UInteger> readDiscoveryMaxMessageSizeAsync() {
-    return getDiscoveryMaxMessageSizeNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (UInteger) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeDiscoveryMaxMessageSizeAsync(
-      UInteger discoveryMaxMessageSize) {
-    DataValue value = DataValue.valueOnly(new Variant(discoveryMaxMessageSize));
-    return getDiscoveryMaxMessageSizeNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public PropertyTypeNode getDiscoveryMaxMessageSizeNode() throws UaException {
-    try {
-      return getDiscoveryMaxMessageSizeNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends PropertyTypeNode> getDiscoveryMaxMessageSizeNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "DiscoveryMaxMessageSize",
-            ExpandedNodeId.parse("i=46"),
-            false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
-  }
-
-  @Override
-  public String getQosCategory() throws UaException {
-    PropertyTypeNode node = getQosCategoryNode();
-    return (String) node.getValue().getValue().getValue();
-  }
-
-  @Override
-  public void setQosCategory(String value) throws UaException {
-    PropertyTypeNode node = getQosCategoryNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public String readQosCategory() throws UaException {
-    try {
-      return readQosCategoryAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeQosCategory(String value) throws UaException {
-    try {
-      StatusCode statusCode = writeQosCategoryAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends String> readQosCategoryAsync() {
-    return getQosCategoryNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (String) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeQosCategoryAsync(String qosCategory) {
-    DataValue value = DataValue.valueOnly(new Variant(qosCategory));
-    return getQosCategoryNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public PropertyTypeNode getQosCategoryNode() throws UaException {
-    try {
-      return getQosCategoryNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends PropertyTypeNode> getQosCategoryNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "QosCategory", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
-  }
-
-  @Override
-  public QosDataType[] getDatagramQos() throws UaException {
-    PropertyTypeNode node = getDatagramQosNode();
-    return cast(node.getValue().getValue().getValue(), QosDataType[].class);
-  }
-
-  @Override
-  public void setDatagramQos(QosDataType[] value) throws UaException {
-    PropertyTypeNode node = getDatagramQosNode();
-    ExtensionObject[] encoded =
-        ExtensionObject.encodeArray(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
-  }
-
-  @Override
-  public QosDataType[] readDatagramQos() throws UaException {
-    try {
-      return readDatagramQosAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeDatagramQos(QosDataType[] value) throws UaException {
-    try {
-      StatusCode statusCode = writeDatagramQosAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends QosDataType[]> readDatagramQosAsync() {
-    return getDatagramQosNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), QosDataType[].class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeDatagramQosAsync(QosDataType[] datagramQos) {
-    ExtensionObject[] encoded =
-        ExtensionObject.encodeArray(client.getStaticEncodingContext(), datagramQos);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getDatagramQosNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public PropertyTypeNode getDatagramQosNode() throws UaException {
-    try {
-      return getDatagramQosNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends PropertyTypeNode> getDatagramQosNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "DatagramQos", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+  public CompletableFuture<StatusCode> writeQosCategoryAsync(@Nullable String value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getQosCategoryNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}QosCategory",
+                        value,
+                        String.class,
+                        -1,
+                        null)));
   }
 
   @Override
   public NetworkAddressTypeNode getDiscoveryAddressNode() throws UaException {
-    try {
-      return getDiscoveryAddressNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getDiscoveryAddressNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends NetworkAddressTypeNode> getDiscoveryAddressNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "DiscoveryAddress",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (NetworkAddressTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "DiscoveryAddress",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Object,
+                        NetworkAddressTypeNode.class)));
+  }
+
+  @Override
+  public @Nullable PropertyTypeNode getDiscoveryAnnounceRateNode() throws UaException {
+    return ClientNodeSupport.await(getDiscoveryAnnounceRateNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable PropertyTypeNode>
+      getDiscoveryAnnounceRateNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "DiscoveryAnnounceRate",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
+  }
+
+  @Override
+  public @Nullable UInteger readDiscoveryAnnounceRate() throws UaException {
+    return ClientNodeSupport.await(readDiscoveryAnnounceRateAsync());
+  }
+
+  @Override
+  public void writeDiscoveryAnnounceRate(@Nullable UInteger value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeDiscoveryAnnounceRateAsync(value)),
+        "http://opcfoundation.org/UA/}DiscoveryAnnounceRate");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable UInteger> readDiscoveryAnnounceRateAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getDiscoveryAnnounceRateNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}DiscoveryAnnounceRate",
+                            false,
+                            UInteger.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable UInteger) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeDiscoveryAnnounceRateAsync(@Nullable UInteger value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getDiscoveryAnnounceRateNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}DiscoveryAnnounceRate",
+                        value,
+                        UInteger.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public @Nullable PropertyTypeNode getDiscoveryMaxMessageSizeNode() throws UaException {
+    return ClientNodeSupport.await(getDiscoveryMaxMessageSizeNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable PropertyTypeNode>
+      getDiscoveryMaxMessageSizeNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "DiscoveryMaxMessageSize",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
+  }
+
+  @Override
+  public @Nullable UInteger readDiscoveryMaxMessageSize() throws UaException {
+    return ClientNodeSupport.await(readDiscoveryMaxMessageSizeAsync());
+  }
+
+  @Override
+  public void writeDiscoveryMaxMessageSize(@Nullable UInteger value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeDiscoveryMaxMessageSizeAsync(value)),
+        "http://opcfoundation.org/UA/}DiscoveryMaxMessageSize");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable UInteger> readDiscoveryMaxMessageSizeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getDiscoveryMaxMessageSizeNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}DiscoveryMaxMessageSize",
+                            false,
+                            UInteger.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable UInteger) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeDiscoveryMaxMessageSizeAsync(@Nullable UInteger value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getDiscoveryMaxMessageSizeNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}DiscoveryMaxMessageSize",
+                        value,
+                        UInteger.class,
+                        -1,
+                        null)));
   }
 }

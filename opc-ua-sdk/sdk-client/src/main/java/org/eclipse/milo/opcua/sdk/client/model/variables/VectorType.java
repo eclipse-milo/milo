@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.variables;
 
 import java.util.concurrent.CompletableFuture;
@@ -16,89 +6,78 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.structured.EUInformation;
+import org.eclipse.milo.opcua.stack.core.types.structured.Vector;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.21">https://reference.opcfoundation.org/v105/Core/docs/Part5/7.21</a>
+ * Client API for the VectorType VariableType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.21">Model
+ *     documentation</a>
  */
 public interface VectorType extends BaseDataVariableType {
-  QualifiedProperty<EUInformation> VECTOR_UNIT =
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 17714L);
+
+  QualifiedProperty<EUInformation> VectorUnit_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "VectorUnit",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=887"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 887L),
           -1,
           EUInformation.class);
 
   /**
-   * Get the local value of the VectorUnit Node.
+   * Resolves the optional VectorUnit child, a PropertyType with DataType EUInformation.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the VectorUnit Node.
-   * @throws UaException if an error occurs creating or getting the VectorUnit Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  EUInformation getVectorUnit() throws UaException;
+  @Nullable PropertyType getVectorUnitNode() throws UaException;
+
+  /** Asynchronous form of {@link #getVectorUnitNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getVectorUnitNodeAsync();
 
   /**
-   * Set the local value of the VectorUnit Node.
+   * Reads the Value of the VectorUnit child from the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the VectorUnit Node.
-   * @throws UaException if an error occurs creating or getting the VectorUnit Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setVectorUnit(EUInformation value) throws UaException;
+  @Nullable EUInformation readVectorUnit() throws UaException;
 
   /**
-   * Read the value of the VectorUnit Node from the server and update the local value if the
-   * operation succeeds.
+   * Writes the Value of the VectorUnit child to the server.
    *
-   * @return the {@link EUInformation} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  EUInformation readVectorUnit() throws UaException;
+  void writeVectorUnit(@Nullable EUInformation value) throws UaException;
+
+  /** Asynchronous form of {@link #readVectorUnit()}. */
+  CompletableFuture<? extends @Nullable EUInformation> readVectorUnitAsync();
+
+  /** Asynchronous form of {@link #writeVectorUnit}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeVectorUnitAsync(@Nullable EUInformation value);
 
   /**
-   * Write a new value for the VectorUnit Node to the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of this node from the server.
    *
-   * @param value the {@link EUInformation} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeVectorUnit(EUInformation value) throws UaException;
+  @Nullable Vector readTypedValue() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readVectorUnit}.
+   * Writes the Value of this node to the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends EUInformation> readVectorUnitAsync();
+  void writeTypedValue(@Nullable Vector value) throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #writeVectorUnit}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeVectorUnitAsync(EUInformation value);
+  /** Asynchronous form of {@link #readTypedValue()}. */
+  CompletableFuture<? extends @Nullable Vector> readTypedValueAsync();
 
-  /**
-   * Get the VectorUnit {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the VectorUnit {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getVectorUnitNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getVectorUnitNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getVectorUnitNodeAsync();
+  /** Asynchronous form of {@link #writeTypedValue}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeTypedValueAsync(@Nullable Vector value);
 }

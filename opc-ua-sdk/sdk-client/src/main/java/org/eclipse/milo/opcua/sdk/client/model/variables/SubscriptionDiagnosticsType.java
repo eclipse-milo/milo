@@ -1,2320 +1,1129 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.variables;
 
 import java.util.concurrent.CompletableFuture;
+import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.structured.SubscriptionDiagnosticsDataType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.12">https://reference.opcfoundation.org/v105/Core/docs/Part5/7.12</a>
+ * Client API for the SubscriptionDiagnosticsType VariableType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.12">Model
+ *     documentation</a>
  */
 public interface SubscriptionDiagnosticsType extends BaseDataVariableType {
-  /**
-   * Get the local value of the SessionId Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SessionId Node.
-   * @throws UaException if an error occurs creating or getting the SessionId Node.
-   */
-  NodeId getSessionId() throws UaException;
-
-  /**
-   * Set the local value of the SessionId Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SessionId Node.
-   * @throws UaException if an error occurs creating or getting the SessionId Node.
-   */
-  void setSessionId(NodeId value) throws UaException;
-
-  /**
-   * Read the value of the SessionId Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link NodeId} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  NodeId readSessionId() throws UaException;
-
-  /**
-   * Write a new value for the SessionId Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link NodeId} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeSessionId(NodeId value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readSessionId}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends NodeId> readSessionIdAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeSessionId}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeSessionIdAsync(NodeId value);
-
-  /**
-   * Get the SessionId {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SessionId {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getSessionIdNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getSessionIdNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getSessionIdNodeAsync();
-
-  /**
-   * Get the local value of the SubscriptionId Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SubscriptionId Node.
-   * @throws UaException if an error occurs creating or getting the SubscriptionId Node.
-   */
-  UInteger getSubscriptionId() throws UaException;
-
-  /**
-   * Set the local value of the SubscriptionId Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SubscriptionId Node.
-   * @throws UaException if an error occurs creating or getting the SubscriptionId Node.
-   */
-  void setSubscriptionId(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the SubscriptionId Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readSubscriptionId() throws UaException;
-
-  /**
-   * Write a new value for the SubscriptionId Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeSubscriptionId(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readSubscriptionId}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readSubscriptionIdAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeSubscriptionId}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeSubscriptionIdAsync(UInteger value);
-
-  /**
-   * Get the SubscriptionId {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SubscriptionId {@link BaseDataVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getSubscriptionIdNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getSubscriptionIdNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getSubscriptionIdNodeAsync();
-
-  /**
-   * Get the local value of the Priority Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the Priority Node.
-   * @throws UaException if an error occurs creating or getting the Priority Node.
-   */
-  UByte getPriority() throws UaException;
-
-  /**
-   * Set the local value of the Priority Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the Priority Node.
-   * @throws UaException if an error occurs creating or getting the Priority Node.
-   */
-  void setPriority(UByte value) throws UaException;
-
-  /**
-   * Read the value of the Priority Node from the server and update the local value if the operation
-   * succeeds.
-   *
-   * @return the {@link UByte} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UByte readPriority() throws UaException;
-
-  /**
-   * Write a new value for the Priority Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link UByte} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writePriority(UByte value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readPriority}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UByte> readPriorityAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writePriority}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writePriorityAsync(UByte value);
-
-  /**
-   * Get the Priority {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the Priority {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getPriorityNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getPriorityNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getPriorityNodeAsync();
-
-  /**
-   * Get the local value of the PublishingInterval Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the PublishingInterval Node.
-   * @throws UaException if an error occurs creating or getting the PublishingInterval Node.
-   */
-  Double getPublishingInterval() throws UaException;
-
-  /**
-   * Set the local value of the PublishingInterval Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the PublishingInterval Node.
-   * @throws UaException if an error occurs creating or getting the PublishingInterval Node.
-   */
-  void setPublishingInterval(Double value) throws UaException;
-
-  /**
-   * Read the value of the PublishingInterval Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link Double} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Double readPublishingInterval() throws UaException;
-
-  /**
-   * Write a new value for the PublishingInterval Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link Double} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writePublishingInterval(Double value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readPublishingInterval}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Double> readPublishingIntervalAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writePublishingInterval}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writePublishingIntervalAsync(Double value);
-
-  /**
-   * Get the PublishingInterval {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the PublishingInterval {@link BaseDataVariableType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getPublishingIntervalNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getPublishingIntervalNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getPublishingIntervalNodeAsync();
-
-  /**
-   * Get the local value of the MaxKeepAliveCount Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaxKeepAliveCount Node.
-   * @throws UaException if an error occurs creating or getting the MaxKeepAliveCount Node.
-   */
-  UInteger getMaxKeepAliveCount() throws UaException;
-
-  /**
-   * Set the local value of the MaxKeepAliveCount Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaxKeepAliveCount Node.
-   * @throws UaException if an error occurs creating or getting the MaxKeepAliveCount Node.
-   */
-  void setMaxKeepAliveCount(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the MaxKeepAliveCount Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readMaxKeepAliveCount() throws UaException;
-
-  /**
-   * Write a new value for the MaxKeepAliveCount Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMaxKeepAliveCount(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readMaxKeepAliveCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readMaxKeepAliveCountAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeMaxKeepAliveCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMaxKeepAliveCountAsync(UInteger value);
-
-  /**
-   * Get the MaxKeepAliveCount {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaxKeepAliveCount {@link BaseDataVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getMaxKeepAliveCountNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getMaxKeepAliveCountNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getMaxKeepAliveCountNodeAsync();
-
-  /**
-   * Get the local value of the MaxLifetimeCount Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaxLifetimeCount Node.
-   * @throws UaException if an error occurs creating or getting the MaxLifetimeCount Node.
-   */
-  UInteger getMaxLifetimeCount() throws UaException;
-
-  /**
-   * Set the local value of the MaxLifetimeCount Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaxLifetimeCount Node.
-   * @throws UaException if an error occurs creating or getting the MaxLifetimeCount Node.
-   */
-  void setMaxLifetimeCount(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the MaxLifetimeCount Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readMaxLifetimeCount() throws UaException;
-
-  /**
-   * Write a new value for the MaxLifetimeCount Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMaxLifetimeCount(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readMaxLifetimeCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readMaxLifetimeCountAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeMaxLifetimeCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMaxLifetimeCountAsync(UInteger value);
-
-  /**
-   * Get the MaxLifetimeCount {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaxLifetimeCount {@link BaseDataVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getMaxLifetimeCountNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getMaxLifetimeCountNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getMaxLifetimeCountNodeAsync();
-
-  /**
-   * Get the local value of the MaxNotificationsPerPublish Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaxNotificationsPerPublish Node.
-   * @throws UaException if an error occurs creating or getting the MaxNotificationsPerPublish Node.
-   */
-  UInteger getMaxNotificationsPerPublish() throws UaException;
-
-  /**
-   * Set the local value of the MaxNotificationsPerPublish Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaxNotificationsPerPublish Node.
-   * @throws UaException if an error occurs creating or getting the MaxNotificationsPerPublish Node.
-   */
-  void setMaxNotificationsPerPublish(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the MaxNotificationsPerPublish Node from the server and update the local
-   * value if the operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readMaxNotificationsPerPublish() throws UaException;
-
-  /**
-   * Write a new value for the MaxNotificationsPerPublish Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMaxNotificationsPerPublish(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readMaxNotificationsPerPublish}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readMaxNotificationsPerPublishAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeMaxNotificationsPerPublish}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMaxNotificationsPerPublishAsync(UInteger value);
-
-  /**
-   * Get the MaxNotificationsPerPublish {@link BaseDataVariableType} Node, or {@code null} if it
-   * does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaxNotificationsPerPublish {@link BaseDataVariableType} Node, or {@code null} if it
-   *     does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getMaxNotificationsPerPublishNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getMaxNotificationsPerPublishNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getMaxNotificationsPerPublishNodeAsync();
-
-  /**
-   * Get the local value of the PublishingEnabled Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the PublishingEnabled Node.
-   * @throws UaException if an error occurs creating or getting the PublishingEnabled Node.
-   */
-  Boolean getPublishingEnabled() throws UaException;
-
-  /**
-   * Set the local value of the PublishingEnabled Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the PublishingEnabled Node.
-   * @throws UaException if an error occurs creating or getting the PublishingEnabled Node.
-   */
-  void setPublishingEnabled(Boolean value) throws UaException;
-
-  /**
-   * Read the value of the PublishingEnabled Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Boolean readPublishingEnabled() throws UaException;
-
-  /**
-   * Write a new value for the PublishingEnabled Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writePublishingEnabled(Boolean value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readPublishingEnabled}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Boolean> readPublishingEnabledAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writePublishingEnabled}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writePublishingEnabledAsync(Boolean value);
-
-  /**
-   * Get the PublishingEnabled {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the PublishingEnabled {@link BaseDataVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getPublishingEnabledNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getPublishingEnabledNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getPublishingEnabledNodeAsync();
-
-  /**
-   * Get the local value of the ModifyCount Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ModifyCount Node.
-   * @throws UaException if an error occurs creating or getting the ModifyCount Node.
-   */
-  UInteger getModifyCount() throws UaException;
-
-  /**
-   * Set the local value of the ModifyCount Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ModifyCount Node.
-   * @throws UaException if an error occurs creating or getting the ModifyCount Node.
-   */
-  void setModifyCount(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the ModifyCount Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readModifyCount() throws UaException;
-
-  /**
-   * Write a new value for the ModifyCount Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeModifyCount(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readModifyCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readModifyCountAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeModifyCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeModifyCountAsync(UInteger value);
-
-  /**
-   * Get the ModifyCount {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ModifyCount {@link BaseDataVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getModifyCountNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getModifyCountNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getModifyCountNodeAsync();
-
-  /**
-   * Get the local value of the EnableCount Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the EnableCount Node.
-   * @throws UaException if an error occurs creating or getting the EnableCount Node.
-   */
-  UInteger getEnableCount() throws UaException;
-
-  /**
-   * Set the local value of the EnableCount Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the EnableCount Node.
-   * @throws UaException if an error occurs creating or getting the EnableCount Node.
-   */
-  void setEnableCount(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the EnableCount Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readEnableCount() throws UaException;
-
-  /**
-   * Write a new value for the EnableCount Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeEnableCount(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readEnableCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readEnableCountAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeEnableCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeEnableCountAsync(UInteger value);
-
-  /**
-   * Get the EnableCount {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the EnableCount {@link BaseDataVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getEnableCountNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getEnableCountNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getEnableCountNodeAsync();
-
-  /**
-   * Get the local value of the DisableCount Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the DisableCount Node.
-   * @throws UaException if an error occurs creating or getting the DisableCount Node.
-   */
-  UInteger getDisableCount() throws UaException;
-
-  /**
-   * Set the local value of the DisableCount Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the DisableCount Node.
-   * @throws UaException if an error occurs creating or getting the DisableCount Node.
-   */
-  void setDisableCount(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the DisableCount Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readDisableCount() throws UaException;
-
-  /**
-   * Write a new value for the DisableCount Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeDisableCount(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readDisableCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readDisableCountAsync();
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2172L);
 
   /**
-   * An asynchronous implementation of {@link #writeDisableCount}.
+   * Resolves the mandatory EnableCount child, a BaseDataVariableType with DataType UInt32.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  CompletableFuture<StatusCode> writeDisableCountAsync(UInteger value);
+  VariableNode getEnableCountNode() throws UaException;
 
-  /**
-   * Get the DisableCount {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the DisableCount {@link BaseDataVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getDisableCountNode() throws UaException;
+  /** Asynchronous form of {@link #getEnableCountNode()}. */
+  CompletableFuture<? extends VariableNode> getEnableCountNodeAsync();
 
   /**
-   * Asynchronous implementation of {@link #getDisableCountNode()}.
+   * Reads the Value of the EnableCount child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends BaseDataVariableType> getDisableCountNodeAsync();
+  @Nullable UInteger readEnableCount() throws UaException;
 
   /**
-   * Get the local value of the RepublishRequestCount Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
+   * Writes the Value of the EnableCount child to the server.
    *
-   * @return the local value of the RepublishRequestCount Node.
-   * @throws UaException if an error occurs creating or getting the RepublishRequestCount Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UInteger getRepublishRequestCount() throws UaException;
+  void writeEnableCount(@Nullable UInteger value) throws UaException;
 
-  /**
-   * Set the local value of the RepublishRequestCount Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the RepublishRequestCount Node.
-   * @throws UaException if an error occurs creating or getting the RepublishRequestCount Node.
-   */
-  void setRepublishRequestCount(UInteger value) throws UaException;
+  /** Asynchronous form of {@link #readEnableCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readEnableCountAsync();
 
-  /**
-   * Read the value of the RepublishRequestCount Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readRepublishRequestCount() throws UaException;
+  /** Asynchronous form of {@link #writeEnableCount}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeEnableCountAsync(@Nullable UInteger value);
 
   /**
-   * Write a new value for the RepublishRequestCount Node to the server and update the local value
-   * if the operation succeeds.
+   * Resolves the mandatory ModifyCount child, a BaseDataVariableType with DataType UInt32.
    *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  void writeRepublishRequestCount(UInteger value) throws UaException;
+  VariableNode getModifyCountNode() throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #readRepublishRequestCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readRepublishRequestCountAsync();
+  /** Asynchronous form of {@link #getModifyCountNode()}. */
+  CompletableFuture<? extends VariableNode> getModifyCountNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeRepublishRequestCount}.
+   * Reads the Value of the ModifyCount child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeRepublishRequestCountAsync(UInteger value);
+  @Nullable UInteger readModifyCount() throws UaException;
 
   /**
-   * Get the RepublishRequestCount {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
+   * Writes the Value of the ModifyCount child to the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the RepublishRequestCount {@link BaseDataVariableType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  BaseDataVariableType getRepublishRequestCountNode() throws UaException;
+  void writeModifyCount(@Nullable UInteger value) throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getRepublishRequestCountNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getRepublishRequestCountNodeAsync();
+  /** Asynchronous form of {@link #readModifyCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readModifyCountAsync();
 
-  /**
-   * Get the local value of the RepublishMessageRequestCount Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the RepublishMessageRequestCount Node.
-   * @throws UaException if an error occurs creating or getting the RepublishMessageRequestCount
-   *     Node.
-   */
-  UInteger getRepublishMessageRequestCount() throws UaException;
+  /** Asynchronous form of {@link #writeModifyCount}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeModifyCountAsync(@Nullable UInteger value);
 
   /**
-   * Set the local value of the RepublishMessageRequestCount Node.
+   * Resolves the mandatory DisableCount child, a BaseDataVariableType with DataType UInt32.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the RepublishMessageRequestCount Node.
-   * @throws UaException if an error occurs creating or getting the RepublishMessageRequestCount
-   *     Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  void setRepublishMessageRequestCount(UInteger value) throws UaException;
+  VariableNode getDisableCountNode() throws UaException;
 
-  /**
-   * Read the value of the RepublishMessageRequestCount Node from the server and update the local
-   * value if the operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readRepublishMessageRequestCount() throws UaException;
+  /** Asynchronous form of {@link #getDisableCountNode()}. */
+  CompletableFuture<? extends VariableNode> getDisableCountNodeAsync();
 
   /**
-   * Write a new value for the RepublishMessageRequestCount Node to the server and update the local
-   * value if the operation succeeds.
+   * Reads the Value of the DisableCount child from the server.
    *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeRepublishMessageRequestCount(UInteger value) throws UaException;
+  @Nullable UInteger readDisableCount() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readRepublishMessageRequestCount}.
+   * Writes the Value of the DisableCount child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends UInteger> readRepublishMessageRequestCountAsync();
+  void writeDisableCount(@Nullable UInteger value) throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #writeRepublishMessageRequestCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeRepublishMessageRequestCountAsync(UInteger value);
+  /** Asynchronous form of {@link #readDisableCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readDisableCountAsync();
 
-  /**
-   * Get the RepublishMessageRequestCount {@link BaseDataVariableType} Node, or {@code null} if it
-   * does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the RepublishMessageRequestCount {@link BaseDataVariableType} Node, or {@code null} if
-   *     it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getRepublishMessageRequestCountNode() throws UaException;
+  /** Asynchronous form of {@link #writeDisableCount}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeDisableCountAsync(@Nullable UInteger value);
 
   /**
-   * Asynchronous implementation of {@link #getRepublishMessageRequestCountNode()}.
+   * Resolves the mandatory SubscriptionId child, a BaseDataVariableType with DataType UInt32.
    *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  CompletableFuture<? extends BaseDataVariableType> getRepublishMessageRequestCountNodeAsync();
+  VariableNode getSubscriptionIdNode() throws UaException;
 
-  /**
-   * Get the local value of the RepublishMessageCount Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the RepublishMessageCount Node.
-   * @throws UaException if an error occurs creating or getting the RepublishMessageCount Node.
-   */
-  UInteger getRepublishMessageCount() throws UaException;
+  /** Asynchronous form of {@link #getSubscriptionIdNode()}. */
+  CompletableFuture<? extends VariableNode> getSubscriptionIdNodeAsync();
 
   /**
-   * Set the local value of the RepublishMessageCount Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
+   * Reads the Value of the SubscriptionId child from the server.
    *
-   * @param value the local value to set for the RepublishMessageCount Node.
-   * @throws UaException if an error occurs creating or getting the RepublishMessageCount Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setRepublishMessageCount(UInteger value) throws UaException;
+  @Nullable UInteger readSubscriptionId() throws UaException;
 
   /**
-   * Read the value of the RepublishMessageCount Node from the server and update the local value if
-   * the operation succeeds.
+   * Writes the Value of the SubscriptionId child to the server.
    *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UInteger readRepublishMessageCount() throws UaException;
+  void writeSubscriptionId(@Nullable UInteger value) throws UaException;
 
-  /**
-   * Write a new value for the RepublishMessageCount Node to the server and update the local value
-   * if the operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeRepublishMessageCount(UInteger value) throws UaException;
+  /** Asynchronous form of {@link #readSubscriptionId()}. */
+  CompletableFuture<? extends @Nullable UInteger> readSubscriptionIdAsync();
 
-  /**
-   * An asynchronous implementation of {@link #readRepublishMessageCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readRepublishMessageCountAsync();
+  /** Asynchronous form of {@link #writeSubscriptionId}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeSubscriptionIdAsync(@Nullable UInteger value);
 
   /**
-   * An asynchronous implementation of {@link #writeRepublishMessageCount}.
+   * Resolves the mandatory MaxLifetimeCount child, a BaseDataVariableType with DataType UInt32.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  CompletableFuture<StatusCode> writeRepublishMessageCountAsync(UInteger value);
+  VariableNode getMaxLifetimeCountNode() throws UaException;
 
-  /**
-   * Get the RepublishMessageCount {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the RepublishMessageCount {@link BaseDataVariableType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getRepublishMessageCountNode() throws UaException;
+  /** Asynchronous form of {@link #getMaxLifetimeCountNode()}. */
+  CompletableFuture<? extends VariableNode> getMaxLifetimeCountNodeAsync();
 
   /**
-   * Asynchronous implementation of {@link #getRepublishMessageCountNode()}.
+   * Reads the Value of the MaxLifetimeCount child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends BaseDataVariableType> getRepublishMessageCountNodeAsync();
+  @Nullable UInteger readMaxLifetimeCount() throws UaException;
 
   /**
-   * Get the local value of the TransferRequestCount Node.
+   * Writes the Value of the MaxLifetimeCount child to the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the TransferRequestCount Node.
-   * @throws UaException if an error occurs creating or getting the TransferRequestCount Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UInteger getTransferRequestCount() throws UaException;
+  void writeMaxLifetimeCount(@Nullable UInteger value) throws UaException;
 
-  /**
-   * Set the local value of the TransferRequestCount Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the TransferRequestCount Node.
-   * @throws UaException if an error occurs creating or getting the TransferRequestCount Node.
-   */
-  void setTransferRequestCount(UInteger value) throws UaException;
+  /** Asynchronous form of {@link #readMaxLifetimeCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readMaxLifetimeCountAsync();
 
-  /**
-   * Read the value of the TransferRequestCount Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readTransferRequestCount() throws UaException;
+  /** Asynchronous form of {@link #writeMaxLifetimeCount}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeMaxLifetimeCountAsync(@Nullable UInteger value);
 
   /**
-   * Write a new value for the TransferRequestCount Node to the server and update the local value if
-   * the operation succeeds.
+   * Resolves the mandatory MaxKeepAliveCount child, a BaseDataVariableType with DataType UInt32.
    *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  void writeTransferRequestCount(UInteger value) throws UaException;
+  VariableNode getMaxKeepAliveCountNode() throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #readTransferRequestCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readTransferRequestCountAsync();
+  /** Asynchronous form of {@link #getMaxKeepAliveCountNode()}. */
+  CompletableFuture<? extends VariableNode> getMaxKeepAliveCountNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeTransferRequestCount}.
+   * Reads the Value of the MaxKeepAliveCount child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeTransferRequestCountAsync(UInteger value);
+  @Nullable UInteger readMaxKeepAliveCount() throws UaException;
 
   /**
-   * Get the TransferRequestCount {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * Writes the Value of the MaxKeepAliveCount child to the server.
    *
-   * @return the TransferRequestCount {@link BaseDataVariableType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  BaseDataVariableType getTransferRequestCountNode() throws UaException;
+  void writeMaxKeepAliveCount(@Nullable UInteger value) throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getTransferRequestCountNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getTransferRequestCountNodeAsync();
+  /** Asynchronous form of {@link #readMaxKeepAliveCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readMaxKeepAliveCountAsync();
 
-  /**
-   * Get the local value of the TransferredToAltClientCount Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the TransferredToAltClientCount Node.
-   * @throws UaException if an error occurs creating or getting the TransferredToAltClientCount
-   *     Node.
-   */
-  UInteger getTransferredToAltClientCount() throws UaException;
+  /** Asynchronous form of {@link #writeMaxKeepAliveCount}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeMaxKeepAliveCountAsync(@Nullable UInteger value);
 
   /**
-   * Set the local value of the TransferredToAltClientCount Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
+   * Resolves the mandatory PublishingEnabled child, a BaseDataVariableType with DataType Boolean.
    *
-   * @param value the local value to set for the TransferredToAltClientCount Node.
-   * @throws UaException if an error occurs creating or getting the TransferredToAltClientCount
-   *     Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  void setTransferredToAltClientCount(UInteger value) throws UaException;
+  VariableNode getPublishingEnabledNode() throws UaException;
 
-  /**
-   * Read the value of the TransferredToAltClientCount Node from the server and update the local
-   * value if the operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readTransferredToAltClientCount() throws UaException;
+  /** Asynchronous form of {@link #getPublishingEnabledNode()}. */
+  CompletableFuture<? extends VariableNode> getPublishingEnabledNodeAsync();
 
   /**
-   * Write a new value for the TransferredToAltClientCount Node to the server and update the local
-   * value if the operation succeeds.
+   * Reads the Value of the PublishingEnabled child from the server.
    *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeTransferredToAltClientCount(UInteger value) throws UaException;
+  @Nullable Boolean readPublishingEnabled() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readTransferredToAltClientCount}.
+   * Writes the Value of the PublishingEnabled child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends UInteger> readTransferredToAltClientCountAsync();
+  void writePublishingEnabled(@Nullable Boolean value) throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #writeTransferredToAltClientCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeTransferredToAltClientCountAsync(UInteger value);
+  /** Asynchronous form of {@link #readPublishingEnabled()}. */
+  CompletableFuture<? extends @Nullable Boolean> readPublishingEnabledAsync();
 
-  /**
-   * Get the TransferredToAltClientCount {@link BaseDataVariableType} Node, or {@code null} if it
-   * does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the TransferredToAltClientCount {@link BaseDataVariableType} Node, or {@code null} if
-   *     it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getTransferredToAltClientCountNode() throws UaException;
+  /** Asynchronous form of {@link #writePublishingEnabled}; completes with the operation status. */
+  CompletableFuture<StatusCode> writePublishingEnabledAsync(@Nullable Boolean value);
 
   /**
-   * Asynchronous implementation of {@link #getTransferredToAltClientCountNode()}.
+   * Resolves the mandatory MonitoredItemCount child, a BaseDataVariableType with DataType UInt32.
    *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  CompletableFuture<? extends BaseDataVariableType> getTransferredToAltClientCountNodeAsync();
+  VariableNode getMonitoredItemCountNode() throws UaException;
 
-  /**
-   * Get the local value of the TransferredToSameClientCount Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the TransferredToSameClientCount Node.
-   * @throws UaException if an error occurs creating or getting the TransferredToSameClientCount
-   *     Node.
-   */
-  UInteger getTransferredToSameClientCount() throws UaException;
+  /** Asynchronous form of {@link #getMonitoredItemCountNode()}. */
+  CompletableFuture<? extends VariableNode> getMonitoredItemCountNodeAsync();
 
   /**
-   * Set the local value of the TransferredToSameClientCount Node.
+   * Reads the Value of the MonitoredItemCount child from the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the TransferredToSameClientCount Node.
-   * @throws UaException if an error occurs creating or getting the TransferredToSameClientCount
-   *     Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setTransferredToSameClientCount(UInteger value) throws UaException;
+  @Nullable UInteger readMonitoredItemCount() throws UaException;
 
   /**
-   * Read the value of the TransferredToSameClientCount Node from the server and update the local
-   * value if the operation succeeds.
+   * Writes the Value of the MonitoredItemCount child to the server.
    *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UInteger readTransferredToSameClientCount() throws UaException;
+  void writeMonitoredItemCount(@Nullable UInteger value) throws UaException;
 
-  /**
-   * Write a new value for the TransferredToSameClientCount Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeTransferredToSameClientCount(UInteger value) throws UaException;
+  /** Asynchronous form of {@link #readMonitoredItemCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readMonitoredItemCountAsync();
 
-  /**
-   * An asynchronous implementation of {@link #readTransferredToSameClientCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readTransferredToSameClientCountAsync();
+  /** Asynchronous form of {@link #writeMonitoredItemCount}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeMonitoredItemCountAsync(@Nullable UInteger value);
 
   /**
-   * An asynchronous implementation of {@link #writeTransferredToSameClientCount}.
+   * Resolves the mandatory NextSequenceNumber child, a BaseDataVariableType with DataType UInt32.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  CompletableFuture<StatusCode> writeTransferredToSameClientCountAsync(UInteger value);
+  VariableNode getNextSequenceNumberNode() throws UaException;
 
-  /**
-   * Get the TransferredToSameClientCount {@link BaseDataVariableType} Node, or {@code null} if it
-   * does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the TransferredToSameClientCount {@link BaseDataVariableType} Node, or {@code null} if
-   *     it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getTransferredToSameClientCountNode() throws UaException;
+  /** Asynchronous form of {@link #getNextSequenceNumberNode()}. */
+  CompletableFuture<? extends VariableNode> getNextSequenceNumberNodeAsync();
 
   /**
-   * Asynchronous implementation of {@link #getTransferredToSameClientCountNode()}.
+   * Reads the Value of the NextSequenceNumber child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends BaseDataVariableType> getTransferredToSameClientCountNodeAsync();
+  @Nullable UInteger readNextSequenceNumber() throws UaException;
 
   /**
-   * Get the local value of the PublishRequestCount Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
+   * Writes the Value of the NextSequenceNumber child to the server.
    *
-   * @return the local value of the PublishRequestCount Node.
-   * @throws UaException if an error occurs creating or getting the PublishRequestCount Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UInteger getPublishRequestCount() throws UaException;
+  void writeNextSequenceNumber(@Nullable UInteger value) throws UaException;
 
-  /**
-   * Set the local value of the PublishRequestCount Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the PublishRequestCount Node.
-   * @throws UaException if an error occurs creating or getting the PublishRequestCount Node.
-   */
-  void setPublishRequestCount(UInteger value) throws UaException;
+  /** Asynchronous form of {@link #readNextSequenceNumber()}. */
+  CompletableFuture<? extends @Nullable UInteger> readNextSequenceNumberAsync();
 
-  /**
-   * Read the value of the PublishRequestCount Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readPublishRequestCount() throws UaException;
+  /** Asynchronous form of {@link #writeNextSequenceNumber}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeNextSequenceNumberAsync(@Nullable UInteger value);
 
   /**
-   * Write a new value for the PublishRequestCount Node to the server and update the local value if
-   * the operation succeeds.
+   * Resolves the mandatory NotificationsCount child, a BaseDataVariableType with DataType UInt32.
    *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  void writePublishRequestCount(UInteger value) throws UaException;
+  VariableNode getNotificationsCountNode() throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #readPublishRequestCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readPublishRequestCountAsync();
+  /** Asynchronous form of {@link #getNotificationsCountNode()}. */
+  CompletableFuture<? extends VariableNode> getNotificationsCountNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #writePublishRequestCount}.
+   * Reads the Value of the NotificationsCount child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writePublishRequestCountAsync(UInteger value);
+  @Nullable UInteger readNotificationsCount() throws UaException;
 
   /**
-   * Get the PublishRequestCount {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
+   * Writes the Value of the NotificationsCount child to the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the PublishRequestCount {@link BaseDataVariableType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  BaseDataVariableType getPublishRequestCountNode() throws UaException;
+  void writeNotificationsCount(@Nullable UInteger value) throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getPublishRequestCountNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getPublishRequestCountNodeAsync();
+  /** Asynchronous form of {@link #readNotificationsCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readNotificationsCountAsync();
 
-  /**
-   * Get the local value of the DataChangeNotificationsCount Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the DataChangeNotificationsCount Node.
-   * @throws UaException if an error occurs creating or getting the DataChangeNotificationsCount
-   *     Node.
-   */
-  UInteger getDataChangeNotificationsCount() throws UaException;
+  /** Asynchronous form of {@link #writeNotificationsCount}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeNotificationsCountAsync(@Nullable UInteger value);
 
   /**
-   * Set the local value of the DataChangeNotificationsCount Node.
+   * Resolves the mandatory PublishingInterval child, a BaseDataVariableType with DataType Duration.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the DataChangeNotificationsCount Node.
-   * @throws UaException if an error occurs creating or getting the DataChangeNotificationsCount
-   *     Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  void setDataChangeNotificationsCount(UInteger value) throws UaException;
+  VariableNode getPublishingIntervalNode() throws UaException;
 
-  /**
-   * Read the value of the DataChangeNotificationsCount Node from the server and update the local
-   * value if the operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readDataChangeNotificationsCount() throws UaException;
+  /** Asynchronous form of {@link #getPublishingIntervalNode()}. */
+  CompletableFuture<? extends VariableNode> getPublishingIntervalNodeAsync();
 
   /**
-   * Write a new value for the DataChangeNotificationsCount Node to the server and update the local
-   * value if the operation succeeds.
+   * Reads the Value of the PublishingInterval child from the server.
    *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeDataChangeNotificationsCount(UInteger value) throws UaException;
+  @Nullable Double readPublishingInterval() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readDataChangeNotificationsCount}.
+   * Writes the Value of the PublishingInterval child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends UInteger> readDataChangeNotificationsCountAsync();
+  void writePublishingInterval(@Nullable Double value) throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #writeDataChangeNotificationsCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeDataChangeNotificationsCountAsync(UInteger value);
+  /** Asynchronous form of {@link #readPublishingInterval()}. */
+  CompletableFuture<? extends @Nullable Double> readPublishingIntervalAsync();
 
-  /**
-   * Get the DataChangeNotificationsCount {@link BaseDataVariableType} Node, or {@code null} if it
-   * does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the DataChangeNotificationsCount {@link BaseDataVariableType} Node, or {@code null} if
-   *     it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getDataChangeNotificationsCountNode() throws UaException;
+  /** Asynchronous form of {@link #writePublishingInterval}; completes with the operation status. */
+  CompletableFuture<StatusCode> writePublishingIntervalAsync(@Nullable Double value);
 
   /**
-   * Asynchronous implementation of {@link #getDataChangeNotificationsCountNode()}.
+   * Resolves the mandatory PublishRequestCount child, a BaseDataVariableType with DataType UInt32.
    *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  CompletableFuture<? extends BaseDataVariableType> getDataChangeNotificationsCountNodeAsync();
+  VariableNode getPublishRequestCountNode() throws UaException;
 
-  /**
-   * Get the local value of the EventNotificationsCount Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the EventNotificationsCount Node.
-   * @throws UaException if an error occurs creating or getting the EventNotificationsCount Node.
-   */
-  UInteger getEventNotificationsCount() throws UaException;
+  /** Asynchronous form of {@link #getPublishRequestCountNode()}. */
+  CompletableFuture<? extends VariableNode> getPublishRequestCountNodeAsync();
 
   /**
-   * Set the local value of the EventNotificationsCount Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
+   * Reads the Value of the PublishRequestCount child from the server.
    *
-   * @param value the local value to set for the EventNotificationsCount Node.
-   * @throws UaException if an error occurs creating or getting the EventNotificationsCount Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setEventNotificationsCount(UInteger value) throws UaException;
+  @Nullable UInteger readPublishRequestCount() throws UaException;
 
   /**
-   * Read the value of the EventNotificationsCount Node from the server and update the local value
-   * if the operation succeeds.
+   * Writes the Value of the PublishRequestCount child to the server.
    *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UInteger readEventNotificationsCount() throws UaException;
+  void writePublishRequestCount(@Nullable UInteger value) throws UaException;
 
-  /**
-   * Write a new value for the EventNotificationsCount Node to the server and update the local value
-   * if the operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeEventNotificationsCount(UInteger value) throws UaException;
+  /** Asynchronous form of {@link #readPublishRequestCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readPublishRequestCountAsync();
 
   /**
-   * An asynchronous implementation of {@link #readEventNotificationsCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * Asynchronous form of {@link #writePublishRequestCount}; completes with the operation status.
    */
-  CompletableFuture<? extends UInteger> readEventNotificationsCountAsync();
+  CompletableFuture<StatusCode> writePublishRequestCountAsync(@Nullable UInteger value);
 
   /**
-   * An asynchronous implementation of {@link #writeEventNotificationsCount}.
+   * Resolves the mandatory CurrentLifetimeCount child, a BaseDataVariableType with DataType UInt32.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  CompletableFuture<StatusCode> writeEventNotificationsCountAsync(UInteger value);
+  VariableNode getCurrentLifetimeCountNode() throws UaException;
 
-  /**
-   * Get the EventNotificationsCount {@link BaseDataVariableType} Node, or {@code null} if it does
-   * not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the EventNotificationsCount {@link BaseDataVariableType} Node, or {@code null} if it
-   *     does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getEventNotificationsCountNode() throws UaException;
+  /** Asynchronous form of {@link #getCurrentLifetimeCountNode()}. */
+  CompletableFuture<? extends VariableNode> getCurrentLifetimeCountNodeAsync();
 
   /**
-   * Asynchronous implementation of {@link #getEventNotificationsCountNode()}.
+   * Reads the Value of the CurrentLifetimeCount child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends BaseDataVariableType> getEventNotificationsCountNodeAsync();
+  @Nullable UInteger readCurrentLifetimeCount() throws UaException;
 
   /**
-   * Get the local value of the NotificationsCount Node.
+   * Writes the Value of the CurrentLifetimeCount child to the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the NotificationsCount Node.
-   * @throws UaException if an error occurs creating or getting the NotificationsCount Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UInteger getNotificationsCount() throws UaException;
+  void writeCurrentLifetimeCount(@Nullable UInteger value) throws UaException;
 
-  /**
-   * Set the local value of the NotificationsCount Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the NotificationsCount Node.
-   * @throws UaException if an error occurs creating or getting the NotificationsCount Node.
-   */
-  void setNotificationsCount(UInteger value) throws UaException;
+  /** Asynchronous form of {@link #readCurrentLifetimeCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readCurrentLifetimeCountAsync();
 
   /**
-   * Read the value of the NotificationsCount Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * Asynchronous form of {@link #writeCurrentLifetimeCount}; completes with the operation status.
    */
-  UInteger readNotificationsCount() throws UaException;
+  CompletableFuture<StatusCode> writeCurrentLifetimeCountAsync(@Nullable UInteger value);
 
   /**
-   * Write a new value for the NotificationsCount Node to the server and update the local value if
-   * the operation succeeds.
+   * Resolves the mandatory TransferRequestCount child, a BaseDataVariableType with DataType UInt32.
    *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  void writeNotificationsCount(UInteger value) throws UaException;
+  VariableNode getTransferRequestCountNode() throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #readNotificationsCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readNotificationsCountAsync();
+  /** Asynchronous form of {@link #getTransferRequestCountNode()}. */
+  CompletableFuture<? extends VariableNode> getTransferRequestCountNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeNotificationsCount}.
+   * Reads the Value of the TransferRequestCount child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeNotificationsCountAsync(UInteger value);
+  @Nullable UInteger readTransferRequestCount() throws UaException;
 
   /**
-   * Get the NotificationsCount {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * Writes the Value of the TransferRequestCount child to the server.
    *
-   * @return the NotificationsCount {@link BaseDataVariableType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  BaseDataVariableType getNotificationsCountNode() throws UaException;
+  void writeTransferRequestCount(@Nullable UInteger value) throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getNotificationsCountNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getNotificationsCountNodeAsync();
+  /** Asynchronous form of {@link #readTransferRequestCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readTransferRequestCountAsync();
 
   /**
-   * Get the local value of the LatePublishRequestCount Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the LatePublishRequestCount Node.
-   * @throws UaException if an error occurs creating or getting the LatePublishRequestCount Node.
+   * Asynchronous form of {@link #writeTransferRequestCount}; completes with the operation status.
    */
-  UInteger getLatePublishRequestCount() throws UaException;
+  CompletableFuture<StatusCode> writeTransferRequestCountAsync(@Nullable UInteger value);
 
   /**
-   * Set the local value of the LatePublishRequestCount Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
+   * Resolves the mandatory CurrentKeepAliveCount child, a BaseDataVariableType with DataType
+   * UInt32.
    *
-   * @param value the local value to set for the LatePublishRequestCount Node.
-   * @throws UaException if an error occurs creating or getting the LatePublishRequestCount Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  void setLatePublishRequestCount(UInteger value) throws UaException;
+  VariableNode getCurrentKeepAliveCountNode() throws UaException;
 
-  /**
-   * Read the value of the LatePublishRequestCount Node from the server and update the local value
-   * if the operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readLatePublishRequestCount() throws UaException;
+  /** Asynchronous form of {@link #getCurrentKeepAliveCountNode()}. */
+  CompletableFuture<? extends VariableNode> getCurrentKeepAliveCountNodeAsync();
 
   /**
-   * Write a new value for the LatePublishRequestCount Node to the server and update the local value
-   * if the operation succeeds.
+   * Reads the Value of the CurrentKeepAliveCount child from the server.
    *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeLatePublishRequestCount(UInteger value) throws UaException;
+  @Nullable UInteger readCurrentKeepAliveCount() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readLatePublishRequestCount}.
+   * Writes the Value of the CurrentKeepAliveCount child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends UInteger> readLatePublishRequestCountAsync();
+  void writeCurrentKeepAliveCount(@Nullable UInteger value) throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #writeLatePublishRequestCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeLatePublishRequestCountAsync(UInteger value);
+  /** Asynchronous form of {@link #readCurrentKeepAliveCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readCurrentKeepAliveCountAsync();
 
   /**
-   * Get the LatePublishRequestCount {@link BaseDataVariableType} Node, or {@code null} if it does
-   * not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the LatePublishRequestCount {@link BaseDataVariableType} Node, or {@code null} if it
-   *     does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * Asynchronous form of {@link #writeCurrentKeepAliveCount}; completes with the operation status.
    */
-  BaseDataVariableType getLatePublishRequestCountNode() throws UaException;
+  CompletableFuture<StatusCode> writeCurrentKeepAliveCountAsync(@Nullable UInteger value);
 
   /**
-   * Asynchronous implementation of {@link #getLatePublishRequestCountNode()}.
+   * Resolves the mandatory DiscardedMessageCount child, a BaseDataVariableType with DataType
+   * UInt32.
    *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  CompletableFuture<? extends BaseDataVariableType> getLatePublishRequestCountNodeAsync();
+  VariableNode getDiscardedMessageCountNode() throws UaException;
 
-  /**
-   * Get the local value of the CurrentKeepAliveCount Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the CurrentKeepAliveCount Node.
-   * @throws UaException if an error occurs creating or getting the CurrentKeepAliveCount Node.
-   */
-  UInteger getCurrentKeepAliveCount() throws UaException;
+  /** Asynchronous form of {@link #getDiscardedMessageCountNode()}. */
+  CompletableFuture<? extends VariableNode> getDiscardedMessageCountNodeAsync();
 
   /**
-   * Set the local value of the CurrentKeepAliveCount Node.
+   * Reads the Value of the DiscardedMessageCount child from the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the CurrentKeepAliveCount Node.
-   * @throws UaException if an error occurs creating or getting the CurrentKeepAliveCount Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setCurrentKeepAliveCount(UInteger value) throws UaException;
+  @Nullable UInteger readDiscardedMessageCount() throws UaException;
 
   /**
-   * Read the value of the CurrentKeepAliveCount Node from the server and update the local value if
-   * the operation succeeds.
+   * Writes the Value of the DiscardedMessageCount child to the server.
    *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UInteger readCurrentKeepAliveCount() throws UaException;
+  void writeDiscardedMessageCount(@Nullable UInteger value) throws UaException;
 
-  /**
-   * Write a new value for the CurrentKeepAliveCount Node to the server and update the local value
-   * if the operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeCurrentKeepAliveCount(UInteger value) throws UaException;
+  /** Asynchronous form of {@link #readDiscardedMessageCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readDiscardedMessageCountAsync();
 
   /**
-   * An asynchronous implementation of {@link #readCurrentKeepAliveCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * Asynchronous form of {@link #writeDiscardedMessageCount}; completes with the operation status.
    */
-  CompletableFuture<? extends UInteger> readCurrentKeepAliveCountAsync();
+  CompletableFuture<StatusCode> writeDiscardedMessageCountAsync(@Nullable UInteger value);
 
   /**
-   * An asynchronous implementation of {@link #writeCurrentKeepAliveCount}.
+   * Resolves the mandatory RepublishMessageCount child, a BaseDataVariableType with DataType
+   * UInt32.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  CompletableFuture<StatusCode> writeCurrentKeepAliveCountAsync(UInteger value);
+  VariableNode getRepublishMessageCountNode() throws UaException;
 
-  /**
-   * Get the CurrentKeepAliveCount {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the CurrentKeepAliveCount {@link BaseDataVariableType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getCurrentKeepAliveCountNode() throws UaException;
+  /** Asynchronous form of {@link #getRepublishMessageCountNode()}. */
+  CompletableFuture<? extends VariableNode> getRepublishMessageCountNodeAsync();
 
   /**
-   * Asynchronous implementation of {@link #getCurrentKeepAliveCountNode()}.
+   * Reads the Value of the RepublishMessageCount child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends BaseDataVariableType> getCurrentKeepAliveCountNodeAsync();
+  @Nullable UInteger readRepublishMessageCount() throws UaException;
 
   /**
-   * Get the local value of the CurrentLifetimeCount Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
+   * Writes the Value of the RepublishMessageCount child to the server.
    *
-   * @return the local value of the CurrentLifetimeCount Node.
-   * @throws UaException if an error occurs creating or getting the CurrentLifetimeCount Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UInteger getCurrentLifetimeCount() throws UaException;
+  void writeRepublishMessageCount(@Nullable UInteger value) throws UaException;
 
-  /**
-   * Set the local value of the CurrentLifetimeCount Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the CurrentLifetimeCount Node.
-   * @throws UaException if an error occurs creating or getting the CurrentLifetimeCount Node.
-   */
-  void setCurrentLifetimeCount(UInteger value) throws UaException;
+  /** Asynchronous form of {@link #readRepublishMessageCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readRepublishMessageCountAsync();
 
   /**
-   * Read the value of the CurrentLifetimeCount Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * Asynchronous form of {@link #writeRepublishMessageCount}; completes with the operation status.
    */
-  UInteger readCurrentLifetimeCount() throws UaException;
+  CompletableFuture<StatusCode> writeRepublishMessageCountAsync(@Nullable UInteger value);
 
   /**
-   * Write a new value for the CurrentLifetimeCount Node to the server and update the local value if
-   * the operation succeeds.
+   * Resolves the mandatory RepublishRequestCount child, a BaseDataVariableType with DataType
+   * UInt32.
    *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  void writeCurrentLifetimeCount(UInteger value) throws UaException;
+  VariableNode getRepublishRequestCountNode() throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #readCurrentLifetimeCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readCurrentLifetimeCountAsync();
+  /** Asynchronous form of {@link #getRepublishRequestCountNode()}. */
+  CompletableFuture<? extends VariableNode> getRepublishRequestCountNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeCurrentLifetimeCount}.
+   * Reads the Value of the RepublishRequestCount child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeCurrentLifetimeCountAsync(UInteger value);
+  @Nullable UInteger readRepublishRequestCount() throws UaException;
 
   /**
-   * Get the CurrentLifetimeCount {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
+   * Writes the Value of the RepublishRequestCount child to the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the CurrentLifetimeCount {@link BaseDataVariableType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  BaseDataVariableType getCurrentLifetimeCountNode() throws UaException;
+  void writeRepublishRequestCount(@Nullable UInteger value) throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getCurrentLifetimeCountNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getCurrentLifetimeCountNodeAsync();
+  /** Asynchronous form of {@link #readRepublishRequestCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readRepublishRequestCountAsync();
 
   /**
-   * Get the local value of the UnacknowledgedMessageCount Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the UnacknowledgedMessageCount Node.
-   * @throws UaException if an error occurs creating or getting the UnacknowledgedMessageCount Node.
+   * Asynchronous form of {@link #writeRepublishRequestCount}; completes with the operation status.
    */
-  UInteger getUnacknowledgedMessageCount() throws UaException;
+  CompletableFuture<StatusCode> writeRepublishRequestCountAsync(@Nullable UInteger value);
 
   /**
-   * Set the local value of the UnacknowledgedMessageCount Node.
+   * Resolves the mandatory EventNotificationsCount child, a BaseDataVariableType with DataType
+   * UInt32.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the UnacknowledgedMessageCount Node.
-   * @throws UaException if an error occurs creating or getting the UnacknowledgedMessageCount Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  void setUnacknowledgedMessageCount(UInteger value) throws UaException;
+  VariableNode getEventNotificationsCountNode() throws UaException;
 
-  /**
-   * Read the value of the UnacknowledgedMessageCount Node from the server and update the local
-   * value if the operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readUnacknowledgedMessageCount() throws UaException;
+  /** Asynchronous form of {@link #getEventNotificationsCountNode()}. */
+  CompletableFuture<? extends VariableNode> getEventNotificationsCountNodeAsync();
 
   /**
-   * Write a new value for the UnacknowledgedMessageCount Node to the server and update the local
-   * value if the operation succeeds.
+   * Reads the Value of the EventNotificationsCount child from the server.
    *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeUnacknowledgedMessageCount(UInteger value) throws UaException;
+  @Nullable UInteger readEventNotificationsCount() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readUnacknowledgedMessageCount}.
+   * Writes the Value of the EventNotificationsCount child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends UInteger> readUnacknowledgedMessageCountAsync();
+  void writeEventNotificationsCount(@Nullable UInteger value) throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #writeUnacknowledgedMessageCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeUnacknowledgedMessageCountAsync(UInteger value);
+  /** Asynchronous form of {@link #readEventNotificationsCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readEventNotificationsCountAsync();
 
   /**
-   * Get the UnacknowledgedMessageCount {@link BaseDataVariableType} Node, or {@code null} if it
-   * does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the UnacknowledgedMessageCount {@link BaseDataVariableType} Node, or {@code null} if it
-   *     does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * Asynchronous form of {@link #writeEventNotificationsCount}; completes with the operation
+   * status.
    */
-  BaseDataVariableType getUnacknowledgedMessageCountNode() throws UaException;
+  CompletableFuture<StatusCode> writeEventNotificationsCountAsync(@Nullable UInteger value);
 
   /**
-   * Asynchronous implementation of {@link #getUnacknowledgedMessageCountNode()}.
+   * Resolves the mandatory EventQueueOverflowCount child, a BaseDataVariableType with DataType
+   * UInt32.
    *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  CompletableFuture<? extends BaseDataVariableType> getUnacknowledgedMessageCountNodeAsync();
+  VariableNode getEventQueueOverflowCountNode() throws UaException;
 
-  /**
-   * Get the local value of the DiscardedMessageCount Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the DiscardedMessageCount Node.
-   * @throws UaException if an error occurs creating or getting the DiscardedMessageCount Node.
-   */
-  UInteger getDiscardedMessageCount() throws UaException;
+  /** Asynchronous form of {@link #getEventQueueOverflowCountNode()}. */
+  CompletableFuture<? extends VariableNode> getEventQueueOverflowCountNodeAsync();
 
   /**
-   * Set the local value of the DiscardedMessageCount Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
+   * Reads the Value of the EventQueueOverflowCount child from the server.
    *
-   * @param value the local value to set for the DiscardedMessageCount Node.
-   * @throws UaException if an error occurs creating or getting the DiscardedMessageCount Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setDiscardedMessageCount(UInteger value) throws UaException;
+  @Nullable UInteger readEventQueueOverflowCount() throws UaException;
 
   /**
-   * Read the value of the DiscardedMessageCount Node from the server and update the local value if
-   * the operation succeeds.
+   * Writes the Value of the EventQueueOverflowCount child to the server.
    *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UInteger readDiscardedMessageCount() throws UaException;
+  void writeEventQueueOverflowCount(@Nullable UInteger value) throws UaException;
 
+  /** Asynchronous form of {@link #readEventQueueOverflowCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readEventQueueOverflowCountAsync();
+
   /**
-   * Write a new value for the DiscardedMessageCount Node to the server and update the local value
-   * if the operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * Asynchronous form of {@link #writeEventQueueOverflowCount}; completes with the operation
+   * status.
    */
-  void writeDiscardedMessageCount(UInteger value) throws UaException;
+  CompletableFuture<StatusCode> writeEventQueueOverflowCountAsync(@Nullable UInteger value);
 
   /**
-   * An asynchronous implementation of {@link #readDiscardedMessageCount}.
+   * Resolves the mandatory LatePublishRequestCount child, a BaseDataVariableType with DataType
+   * UInt32.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  CompletableFuture<? extends UInteger> readDiscardedMessageCountAsync();
+  VariableNode getLatePublishRequestCountNode() throws UaException;
 
+  /** Asynchronous form of {@link #getLatePublishRequestCountNode()}. */
+  CompletableFuture<? extends VariableNode> getLatePublishRequestCountNodeAsync();
+
   /**
-   * An asynchronous implementation of {@link #writeDiscardedMessageCount}.
+   * Reads the Value of the LatePublishRequestCount child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeDiscardedMessageCountAsync(UInteger value);
+  @Nullable UInteger readLatePublishRequestCount() throws UaException;
 
   /**
-   * Get the DiscardedMessageCount {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * Writes the Value of the LatePublishRequestCount child to the server.
    *
-   * @return the DiscardedMessageCount {@link BaseDataVariableType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  BaseDataVariableType getDiscardedMessageCountNode() throws UaException;
+  void writeLatePublishRequestCount(@Nullable UInteger value) throws UaException;
 
+  /** Asynchronous form of {@link #readLatePublishRequestCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readLatePublishRequestCountAsync();
+
   /**
-   * Asynchronous implementation of {@link #getDiscardedMessageCountNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * Asynchronous form of {@link #writeLatePublishRequestCount}; completes with the operation
+   * status.
    */
-  CompletableFuture<? extends BaseDataVariableType> getDiscardedMessageCountNodeAsync();
+  CompletableFuture<StatusCode> writeLatePublishRequestCountAsync(@Nullable UInteger value);
 
   /**
-   * Get the local value of the MonitoredItemCount Node.
+   * Resolves the mandatory DisabledMonitoredItemCount child, a BaseDataVariableType with DataType
+   * UInt32.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MonitoredItemCount Node.
-   * @throws UaException if an error occurs creating or getting the MonitoredItemCount Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  UInteger getMonitoredItemCount() throws UaException;
+  VariableNode getDisabledMonitoredItemCountNode() throws UaException;
+
+  /** Asynchronous form of {@link #getDisabledMonitoredItemCountNode()}. */
+  CompletableFuture<? extends VariableNode> getDisabledMonitoredItemCountNodeAsync();
 
   /**
-   * Set the local value of the MonitoredItemCount Node.
+   * Reads the Value of the DisabledMonitoredItemCount child from the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MonitoredItemCount Node.
-   * @throws UaException if an error occurs creating or getting the MonitoredItemCount Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setMonitoredItemCount(UInteger value) throws UaException;
+  @Nullable UInteger readDisabledMonitoredItemCount() throws UaException;
 
   /**
-   * Read the value of the MonitoredItemCount Node from the server and update the local value if the
-   * operation succeeds.
+   * Writes the Value of the DisabledMonitoredItemCount child to the server.
    *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UInteger readMonitoredItemCount() throws UaException;
+  void writeDisabledMonitoredItemCount(@Nullable UInteger value) throws UaException;
+
+  /** Asynchronous form of {@link #readDisabledMonitoredItemCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readDisabledMonitoredItemCountAsync();
 
   /**
-   * Write a new value for the MonitoredItemCount Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * Asynchronous form of {@link #writeDisabledMonitoredItemCount}; completes with the operation
+   * status.
    */
-  void writeMonitoredItemCount(UInteger value) throws UaException;
+  CompletableFuture<StatusCode> writeDisabledMonitoredItemCountAsync(@Nullable UInteger value);
 
   /**
-   * An asynchronous implementation of {@link #readMonitoredItemCount}.
+   * Resolves the mandatory MaxNotificationsPerPublish child, a BaseDataVariableType with DataType
+   * UInt32.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  CompletableFuture<? extends UInteger> readMonitoredItemCountAsync();
+  VariableNode getMaxNotificationsPerPublishNode() throws UaException;
+
+  /** Asynchronous form of {@link #getMaxNotificationsPerPublishNode()}. */
+  CompletableFuture<? extends VariableNode> getMaxNotificationsPerPublishNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeMonitoredItemCount}.
+   * Reads the Value of the MaxNotificationsPerPublish child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeMonitoredItemCountAsync(UInteger value);
+  @Nullable UInteger readMaxNotificationsPerPublish() throws UaException;
 
   /**
-   * Get the MonitoredItemCount {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
+   * Writes the Value of the MaxNotificationsPerPublish child to the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MonitoredItemCount {@link BaseDataVariableType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  BaseDataVariableType getMonitoredItemCountNode() throws UaException;
+  void writeMaxNotificationsPerPublish(@Nullable UInteger value) throws UaException;
+
+  /** Asynchronous form of {@link #readMaxNotificationsPerPublish()}. */
+  CompletableFuture<? extends @Nullable UInteger> readMaxNotificationsPerPublishAsync();
 
   /**
-   * Asynchronous implementation of {@link #getMonitoredItemCountNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * Asynchronous form of {@link #writeMaxNotificationsPerPublish}; completes with the operation
+   * status.
    */
-  CompletableFuture<? extends BaseDataVariableType> getMonitoredItemCountNodeAsync();
+  CompletableFuture<StatusCode> writeMaxNotificationsPerPublishAsync(@Nullable UInteger value);
 
   /**
-   * Get the local value of the DisabledMonitoredItemCount Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
+   * Resolves the mandatory UnacknowledgedMessageCount child, a BaseDataVariableType with DataType
+   * UInt32.
    *
-   * @return the local value of the DisabledMonitoredItemCount Node.
-   * @throws UaException if an error occurs creating or getting the DisabledMonitoredItemCount Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  UInteger getDisabledMonitoredItemCount() throws UaException;
+  VariableNode getUnacknowledgedMessageCountNode() throws UaException;
 
+  /** Asynchronous form of {@link #getUnacknowledgedMessageCountNode()}. */
+  CompletableFuture<? extends VariableNode> getUnacknowledgedMessageCountNodeAsync();
+
   /**
-   * Set the local value of the DisabledMonitoredItemCount Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
+   * Reads the Value of the UnacknowledgedMessageCount child from the server.
    *
-   * @param value the local value to set for the DisabledMonitoredItemCount Node.
-   * @throws UaException if an error occurs creating or getting the DisabledMonitoredItemCount Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setDisabledMonitoredItemCount(UInteger value) throws UaException;
+  @Nullable UInteger readUnacknowledgedMessageCount() throws UaException;
 
   /**
-   * Read the value of the DisabledMonitoredItemCount Node from the server and update the local
-   * value if the operation succeeds.
+   * Writes the Value of the UnacknowledgedMessageCount child to the server.
    *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UInteger readDisabledMonitoredItemCount() throws UaException;
+  void writeUnacknowledgedMessageCount(@Nullable UInteger value) throws UaException;
 
+  /** Asynchronous form of {@link #readUnacknowledgedMessageCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readUnacknowledgedMessageCountAsync();
+
   /**
-   * Write a new value for the DisabledMonitoredItemCount Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * Asynchronous form of {@link #writeUnacknowledgedMessageCount}; completes with the operation
+   * status.
    */
-  void writeDisabledMonitoredItemCount(UInteger value) throws UaException;
+  CompletableFuture<StatusCode> writeUnacknowledgedMessageCountAsync(@Nullable UInteger value);
 
   /**
-   * An asynchronous implementation of {@link #readDisabledMonitoredItemCount}.
+   * Resolves the mandatory TransferredToAltClientCount child, a BaseDataVariableType with DataType
+   * UInt32.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  CompletableFuture<? extends UInteger> readDisabledMonitoredItemCountAsync();
+  VariableNode getTransferredToAltClientCountNode() throws UaException;
 
+  /** Asynchronous form of {@link #getTransferredToAltClientCountNode()}. */
+  CompletableFuture<? extends VariableNode> getTransferredToAltClientCountNodeAsync();
+
   /**
-   * An asynchronous implementation of {@link #writeDisabledMonitoredItemCount}.
+   * Reads the Value of the TransferredToAltClientCount child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeDisabledMonitoredItemCountAsync(UInteger value);
+  @Nullable UInteger readTransferredToAltClientCount() throws UaException;
 
   /**
-   * Get the DisabledMonitoredItemCount {@link BaseDataVariableType} Node, or {@code null} if it
-   * does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * Writes the Value of the TransferredToAltClientCount child to the server.
    *
-   * @return the DisabledMonitoredItemCount {@link BaseDataVariableType} Node, or {@code null} if it
-   *     does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  BaseDataVariableType getDisabledMonitoredItemCountNode() throws UaException;
+  void writeTransferredToAltClientCount(@Nullable UInteger value) throws UaException;
 
+  /** Asynchronous form of {@link #readTransferredToAltClientCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readTransferredToAltClientCountAsync();
+
   /**
-   * Asynchronous implementation of {@link #getDisabledMonitoredItemCountNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * Asynchronous form of {@link #writeTransferredToAltClientCount}; completes with the operation
+   * status.
    */
-  CompletableFuture<? extends BaseDataVariableType> getDisabledMonitoredItemCountNodeAsync();
+  CompletableFuture<StatusCode> writeTransferredToAltClientCountAsync(@Nullable UInteger value);
 
   /**
-   * Get the local value of the MonitoringQueueOverflowCount Node.
+   * Resolves the mandatory DataChangeNotificationsCount child, a BaseDataVariableType with DataType
+   * UInt32.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MonitoringQueueOverflowCount Node.
-   * @throws UaException if an error occurs creating or getting the MonitoringQueueOverflowCount
-   *     Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  UInteger getMonitoringQueueOverflowCount() throws UaException;
+  VariableNode getDataChangeNotificationsCountNode() throws UaException;
+
+  /** Asynchronous form of {@link #getDataChangeNotificationsCountNode()}. */
+  CompletableFuture<? extends VariableNode> getDataChangeNotificationsCountNodeAsync();
 
   /**
-   * Set the local value of the MonitoringQueueOverflowCount Node.
+   * Reads the Value of the DataChangeNotificationsCount child from the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MonitoringQueueOverflowCount Node.
-   * @throws UaException if an error occurs creating or getting the MonitoringQueueOverflowCount
-   *     Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setMonitoringQueueOverflowCount(UInteger value) throws UaException;
+  @Nullable UInteger readDataChangeNotificationsCount() throws UaException;
 
   /**
-   * Read the value of the MonitoringQueueOverflowCount Node from the server and update the local
-   * value if the operation succeeds.
+   * Writes the Value of the DataChangeNotificationsCount child to the server.
    *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UInteger readMonitoringQueueOverflowCount() throws UaException;
+  void writeDataChangeNotificationsCount(@Nullable UInteger value) throws UaException;
+
+  /** Asynchronous form of {@link #readDataChangeNotificationsCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readDataChangeNotificationsCountAsync();
 
   /**
-   * Write a new value for the MonitoringQueueOverflowCount Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * Asynchronous form of {@link #writeDataChangeNotificationsCount}; completes with the operation
+   * status.
    */
-  void writeMonitoringQueueOverflowCount(UInteger value) throws UaException;
+  CompletableFuture<StatusCode> writeDataChangeNotificationsCountAsync(@Nullable UInteger value);
 
   /**
-   * An asynchronous implementation of {@link #readMonitoringQueueOverflowCount}.
+   * Resolves the mandatory MonitoringQueueOverflowCount child, a BaseDataVariableType with DataType
+   * UInt32.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  CompletableFuture<? extends UInteger> readMonitoringQueueOverflowCountAsync();
+  VariableNode getMonitoringQueueOverflowCountNode() throws UaException;
+
+  /** Asynchronous form of {@link #getMonitoringQueueOverflowCountNode()}. */
+  CompletableFuture<? extends VariableNode> getMonitoringQueueOverflowCountNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeMonitoringQueueOverflowCount}.
+   * Reads the Value of the MonitoringQueueOverflowCount child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeMonitoringQueueOverflowCountAsync(UInteger value);
+  @Nullable UInteger readMonitoringQueueOverflowCount() throws UaException;
 
   /**
-   * Get the MonitoringQueueOverflowCount {@link BaseDataVariableType} Node, or {@code null} if it
-   * does not exist.
+   * Writes the Value of the MonitoringQueueOverflowCount child to the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MonitoringQueueOverflowCount {@link BaseDataVariableType} Node, or {@code null} if
-   *     it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  BaseDataVariableType getMonitoringQueueOverflowCountNode() throws UaException;
+  void writeMonitoringQueueOverflowCount(@Nullable UInteger value) throws UaException;
+
+  /** Asynchronous form of {@link #readMonitoringQueueOverflowCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readMonitoringQueueOverflowCountAsync();
 
   /**
-   * Asynchronous implementation of {@link #getMonitoringQueueOverflowCountNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * Asynchronous form of {@link #writeMonitoringQueueOverflowCount}; completes with the operation
+   * status.
    */
-  CompletableFuture<? extends BaseDataVariableType> getMonitoringQueueOverflowCountNodeAsync();
+  CompletableFuture<StatusCode> writeMonitoringQueueOverflowCountAsync(@Nullable UInteger value);
 
   /**
-   * Get the local value of the NextSequenceNumber Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
+   * Resolves the mandatory RepublishMessageRequestCount child, a BaseDataVariableType with DataType
+   * UInt32.
    *
-   * @return the local value of the NextSequenceNumber Node.
-   * @throws UaException if an error occurs creating or getting the NextSequenceNumber Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  UInteger getNextSequenceNumber() throws UaException;
+  VariableNode getRepublishMessageRequestCountNode() throws UaException;
 
+  /** Asynchronous form of {@link #getRepublishMessageRequestCountNode()}. */
+  CompletableFuture<? extends VariableNode> getRepublishMessageRequestCountNodeAsync();
+
   /**
-   * Set the local value of the NextSequenceNumber Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
+   * Reads the Value of the RepublishMessageRequestCount child from the server.
    *
-   * @param value the local value to set for the NextSequenceNumber Node.
-   * @throws UaException if an error occurs creating or getting the NextSequenceNumber Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setNextSequenceNumber(UInteger value) throws UaException;
+  @Nullable UInteger readRepublishMessageRequestCount() throws UaException;
 
   /**
-   * Read the value of the NextSequenceNumber Node from the server and update the local value if the
-   * operation succeeds.
+   * Writes the Value of the RepublishMessageRequestCount child to the server.
    *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UInteger readNextSequenceNumber() throws UaException;
+  void writeRepublishMessageRequestCount(@Nullable UInteger value) throws UaException;
 
+  /** Asynchronous form of {@link #readRepublishMessageRequestCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readRepublishMessageRequestCountAsync();
+
   /**
-   * Write a new value for the NextSequenceNumber Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * Asynchronous form of {@link #writeRepublishMessageRequestCount}; completes with the operation
+   * status.
    */
-  void writeNextSequenceNumber(UInteger value) throws UaException;
+  CompletableFuture<StatusCode> writeRepublishMessageRequestCountAsync(@Nullable UInteger value);
 
   /**
-   * An asynchronous implementation of {@link #readNextSequenceNumber}.
+   * Resolves the mandatory TransferredToSameClientCount child, a BaseDataVariableType with DataType
+   * UInt32.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  CompletableFuture<? extends UInteger> readNextSequenceNumberAsync();
+  VariableNode getTransferredToSameClientCountNode() throws UaException;
 
+  /** Asynchronous form of {@link #getTransferredToSameClientCountNode()}. */
+  CompletableFuture<? extends VariableNode> getTransferredToSameClientCountNodeAsync();
+
   /**
-   * An asynchronous implementation of {@link #writeNextSequenceNumber}.
+   * Reads the Value of the TransferredToSameClientCount child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeNextSequenceNumberAsync(UInteger value);
+  @Nullable UInteger readTransferredToSameClientCount() throws UaException;
 
   /**
-   * Get the NextSequenceNumber {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * Writes the Value of the TransferredToSameClientCount child to the server.
    *
-   * @return the NextSequenceNumber {@link BaseDataVariableType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  BaseDataVariableType getNextSequenceNumberNode() throws UaException;
+  void writeTransferredToSameClientCount(@Nullable UInteger value) throws UaException;
 
+  /** Asynchronous form of {@link #readTransferredToSameClientCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readTransferredToSameClientCountAsync();
+
   /**
-   * Asynchronous implementation of {@link #getNextSequenceNumberNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * Asynchronous form of {@link #writeTransferredToSameClientCount}; completes with the operation
+   * status.
    */
-  CompletableFuture<? extends BaseDataVariableType> getNextSequenceNumberNodeAsync();
+  CompletableFuture<StatusCode> writeTransferredToSameClientCountAsync(@Nullable UInteger value);
 
   /**
-   * Get the local value of the EventQueueOverflowCount Node.
+   * Resolves the mandatory Priority child, a BaseDataVariableType with DataType Byte.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the EventQueueOverflowCount Node.
-   * @throws UaException if an error occurs creating or getting the EventQueueOverflowCount Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  UInteger getEventQueueOverflowCount() throws UaException;
+  VariableNode getPriorityNode() throws UaException;
+
+  /** Asynchronous form of {@link #getPriorityNode()}. */
+  CompletableFuture<? extends VariableNode> getPriorityNodeAsync();
 
   /**
-   * Set the local value of the EventQueueOverflowCount Node.
+   * Reads the Value of the Priority child from the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the EventQueueOverflowCount Node.
-   * @throws UaException if an error occurs creating or getting the EventQueueOverflowCount Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setEventQueueOverflowCount(UInteger value) throws UaException;
+  @Nullable UByte readPriority() throws UaException;
 
   /**
-   * Read the value of the EventQueueOverflowCount Node from the server and update the local value
-   * if the operation succeeds.
+   * Writes the Value of the Priority child to the server.
    *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UInteger readEventQueueOverflowCount() throws UaException;
+  void writePriority(@Nullable UByte value) throws UaException;
+
+  /** Asynchronous form of {@link #readPriority()}. */
+  CompletableFuture<? extends @Nullable UByte> readPriorityAsync();
 
+  /** Asynchronous form of {@link #writePriority}; completes with the operation status. */
+  CompletableFuture<StatusCode> writePriorityAsync(@Nullable UByte value);
+
   /**
-   * Write a new value for the EventQueueOverflowCount Node to the server and update the local value
-   * if the operation succeeds.
+   * Resolves the mandatory SessionId child, a BaseDataVariableType with DataType NodeId.
    *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  void writeEventQueueOverflowCount(UInteger value) throws UaException;
+  VariableNode getSessionIdNode() throws UaException;
+
+  /** Asynchronous form of {@link #getSessionIdNode()}. */
+  CompletableFuture<? extends VariableNode> getSessionIdNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #readEventQueueOverflowCount}.
+   * Reads the Value of the SessionId child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends UInteger> readEventQueueOverflowCountAsync();
+  @Nullable NodeId readSessionId() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeEventQueueOverflowCount}.
+   * Writes the Value of the SessionId child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeEventQueueOverflowCountAsync(UInteger value);
+  void writeSessionId(@Nullable NodeId value) throws UaException;
 
+  /** Asynchronous form of {@link #readSessionId()}. */
+  CompletableFuture<? extends @Nullable NodeId> readSessionIdAsync();
+
+  /** Asynchronous form of {@link #writeSessionId}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeSessionIdAsync(@Nullable NodeId value);
+
   /**
-   * Get the EventQueueOverflowCount {@link BaseDataVariableType} Node, or {@code null} if it does
-   * not exist.
+   * Reads the Value of this node from the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the EventQueueOverflowCount {@link BaseDataVariableType} Node, or {@code null} if it
-   *     does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  BaseDataVariableType getEventQueueOverflowCountNode() throws UaException;
+  @Nullable SubscriptionDiagnosticsDataType readTypedValue() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getEventQueueOverflowCountNode()}.
+   * Writes the Value of this node to the server.
    *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends BaseDataVariableType> getEventQueueOverflowCountNodeAsync();
+  void writeTypedValue(@Nullable SubscriptionDiagnosticsDataType value) throws UaException;
+
+  /** Asynchronous form of {@link #readTypedValue()}. */
+  CompletableFuture<? extends @Nullable SubscriptionDiagnosticsDataType> readTypedValueAsync();
+
+  /** Asynchronous form of {@link #writeTypedValue}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeTypedValueAsync(
+      @Nullable SubscriptionDiagnosticsDataType value);
 }

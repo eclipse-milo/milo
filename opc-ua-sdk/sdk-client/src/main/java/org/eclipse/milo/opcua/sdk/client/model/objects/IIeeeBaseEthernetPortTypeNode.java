@@ -1,31 +1,16 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
 import org.eclipse.milo.opcua.sdk.client.model.variables.AnalogUnitTypeNode;
-import org.eclipse.milo.opcua.sdk.client.model.variables.BaseDataVariableTypeNode;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.sdk.client.nodes.UaVariableNode;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
@@ -34,7 +19,15 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.Duplex;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link IIeeeBaseEthernetPortType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.2">Model
+ *     documentation</a>
+ */
 public class IIeeeBaseEthernetPortTypeNode extends BaseInterfaceTypeNode
     implements IIeeeBaseEthernetPortType {
   public IIeeeBaseEthernetPortTypeNode(
@@ -43,12 +36,12 @@ public class IIeeeBaseEthernetPortTypeNode extends BaseInterfaceTypeNode
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         client,
@@ -66,237 +59,216 @@ public class IIeeeBaseEthernetPortTypeNode extends BaseInterfaceTypeNode
   }
 
   @Override
-  public ULong getSpeed() throws UaException {
-    AnalogUnitTypeNode node = getSpeedNode();
-    return (ULong) node.getValue().getValue().getValue();
+  public UaVariableNode getMaxFrameLengthNode() throws UaException {
+    return ClientNodeSupport.await(getMaxFrameLengthNodeAsync());
   }
 
   @Override
-  public void setSpeed(ULong value) throws UaException {
-    AnalogUnitTypeNode node = getSpeedNode();
-    node.setValue(new Variant(value));
+  public CompletableFuture<? extends UaVariableNode> getMaxFrameLengthNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "MaxFrameLength",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
   }
 
   @Override
-  public ULong readSpeed() throws UaException {
-    try {
-      return readSpeedAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable UShort readMaxFrameLength() throws UaException {
+    return ClientNodeSupport.await(readMaxFrameLengthAsync());
   }
 
   @Override
-  public void writeSpeed(ULong value) throws UaException {
-    try {
-      StatusCode statusCode = writeSpeedAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public void writeMaxFrameLength(@Nullable UShort value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeMaxFrameLengthAsync(value)),
+        "http://opcfoundation.org/UA/}MaxFrameLength");
   }
 
   @Override
-  public CompletableFuture<? extends ULong> readSpeedAsync() {
-    return getSpeedNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (ULong) v.getValue().getValue());
+  public CompletableFuture<? extends @Nullable UShort> readMaxFrameLengthAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getMaxFrameLengthNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}MaxFrameLength",
+                            true,
+                            UShort.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable UShort) v)));
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeSpeedAsync(ULong speed) {
-    DataValue value = DataValue.valueOnly(new Variant(speed));
-    return getSpeedNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<StatusCode> writeMaxFrameLengthAsync(@Nullable UShort value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getMaxFrameLengthNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}MaxFrameLength",
+                        value,
+                        UShort.class,
+                        -1,
+                        null)));
   }
 
   @Override
   public AnalogUnitTypeNode getSpeedNode() throws UaException {
-    try {
-      return getSpeedNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getSpeedNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends AnalogUnitTypeNode> getSpeedNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Speed", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (AnalogUnitTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "Speed",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        AnalogUnitTypeNode.class)));
   }
 
   @Override
-  public Duplex getDuplex() throws UaException {
-    BaseDataVariableTypeNode node = getDuplexNode();
-    Object value = node.getValue().getValue().getValue();
-
-    if (value instanceof Integer) {
-      return Duplex.from((Integer) value);
-    } else if (value instanceof Duplex) {
-      return (Duplex) value;
-    } else {
-      return null;
-    }
+  public @Nullable ULong readSpeed() throws UaException {
+    return ClientNodeSupport.await(readSpeedAsync());
   }
 
   @Override
-  public void setDuplex(Duplex value) throws UaException {
-    BaseDataVariableTypeNode node = getDuplexNode();
-    node.setValue(new Variant(value));
+  public void writeSpeed(@Nullable ULong value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeSpeedAsync(value)), "http://opcfoundation.org/UA/}Speed");
   }
 
   @Override
-  public Duplex readDuplex() throws UaException {
-    try {
-      return readDuplexAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable ULong> readSpeedAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getSpeedNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}Speed",
+                            true,
+                            ULong.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable ULong) v)));
   }
 
   @Override
-  public void writeDuplex(Duplex value) throws UaException {
-    try {
-      StatusCode statusCode = writeDuplexAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<StatusCode> writeSpeedAsync(@Nullable ULong value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getSpeedNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}Speed",
+                        value,
+                        ULong.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public CompletableFuture<? extends Duplex> readDuplexAsync() {
-    return getDuplexNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(
-            v -> {
-              Object value = v.getValue().getValue();
-              if (value instanceof Integer) {
-                return Duplex.from((Integer) value);
-              } else {
-                return null;
-              }
-            });
+  public UaVariableNode getDuplexNode() throws UaException {
+    return ClientNodeSupport.await(getDuplexNodeAsync());
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeDuplexAsync(Duplex duplex) {
-    DataValue value = DataValue.valueOnly(new Variant(duplex));
-    return getDuplexNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<? extends UaVariableNode> getDuplexNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "Duplex",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
   }
 
   @Override
-  public BaseDataVariableTypeNode getDuplexNode() throws UaException {
-    try {
-      return getDuplexNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable Duplex readDuplex() throws UaException {
+    return ClientNodeSupport.await(readDuplexAsync());
   }
 
   @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getDuplexNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Duplex", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
+  public void writeDuplex(@Nullable Duplex value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeDuplexAsync(value)), "http://opcfoundation.org/UA/}Duplex");
   }
 
   @Override
-  public UShort getMaxFrameLength() throws UaException {
-    BaseDataVariableTypeNode node = getMaxFrameLengthNode();
-    return (UShort) node.getValue().getValue().getValue();
+  public CompletableFuture<? extends @Nullable Duplex> readDuplexAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getDuplexNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}Duplex",
+                            true,
+                            Duplex.class,
+                            -1,
+                            Duplex::from)),
+                v -> CompletableFuture.completedFuture((@Nullable Duplex) v)));
   }
 
   @Override
-  public void setMaxFrameLength(UShort value) throws UaException {
-    BaseDataVariableTypeNode node = getMaxFrameLengthNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public UShort readMaxFrameLength() throws UaException {
-    try {
-      return readMaxFrameLengthAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeMaxFrameLength(UShort value) throws UaException {
-    try {
-      StatusCode statusCode = writeMaxFrameLengthAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends UShort> readMaxFrameLengthAsync() {
-    return getMaxFrameLengthNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (UShort) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeMaxFrameLengthAsync(UShort maxFrameLength) {
-    DataValue value = DataValue.valueOnly(new Variant(maxFrameLength));
-    return getMaxFrameLengthNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getMaxFrameLengthNode() throws UaException {
-    try {
-      return getMaxFrameLengthNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getMaxFrameLengthNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "MaxFrameLength", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
+  public CompletableFuture<StatusCode> writeDuplexAsync(@Nullable Duplex value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getDuplexNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}Duplex",
+                        value,
+                        Duplex.class,
+                        -1,
+                        Duplex::from)));
   }
 }

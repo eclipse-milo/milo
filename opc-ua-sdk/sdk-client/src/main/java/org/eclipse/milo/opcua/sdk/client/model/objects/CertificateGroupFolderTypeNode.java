@@ -1,20 +1,8 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
@@ -25,7 +13,15 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link CertificateGroupFolderType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.3/#7.8.3.3">Model
+ *     documentation</a>
+ */
 public class CertificateGroupFolderTypeNode extends FolderTypeNode
     implements CertificateGroupFolderType {
   public CertificateGroupFolderTypeNode(
@@ -34,12 +30,12 @@ public class CertificateGroupFolderTypeNode extends FolderTypeNode
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         client,
@@ -57,72 +53,71 @@ public class CertificateGroupFolderTypeNode extends FolderTypeNode
   }
 
   @Override
+  public @Nullable CertificateGroupTypeNode getDefaultHttpsGroupNode() throws UaException {
+    return ClientNodeSupport.await(getDefaultHttpsGroupNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable CertificateGroupTypeNode>
+      getDefaultHttpsGroupNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "DefaultHttpsGroup",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Object,
+                        CertificateGroupTypeNode.class)));
+  }
+
+  @Override
+  public @Nullable CertificateGroupTypeNode getDefaultUserTokenGroupNode() throws UaException {
+    return ClientNodeSupport.await(getDefaultUserTokenGroupNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable CertificateGroupTypeNode>
+      getDefaultUserTokenGroupNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "DefaultUserTokenGroup",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Object,
+                        CertificateGroupTypeNode.class)));
+  }
+
+  @Override
   public CertificateGroupTypeNode getDefaultApplicationGroupNode() throws UaException {
-    try {
-      return getDefaultApplicationGroupNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getDefaultApplicationGroupNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends CertificateGroupTypeNode>
       getDefaultApplicationGroupNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "DefaultApplicationGroup",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (CertificateGroupTypeNode) node);
-  }
-
-  @Override
-  public CertificateGroupTypeNode getDefaultHttpsGroupNode() throws UaException {
-    try {
-      return getDefaultHttpsGroupNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends CertificateGroupTypeNode> getDefaultHttpsGroupNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "DefaultHttpsGroup",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (CertificateGroupTypeNode) node);
-  }
-
-  @Override
-  public CertificateGroupTypeNode getDefaultUserTokenGroupNode() throws UaException {
-    try {
-      return getDefaultUserTokenGroupNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends CertificateGroupTypeNode> getDefaultUserTokenGroupNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "DefaultUserTokenGroup",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (CertificateGroupTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "DefaultApplicationGroup",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Object,
+                        CertificateGroupTypeNode.class)));
   }
 }

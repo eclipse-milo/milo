@@ -1,36 +1,29 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyTypeNode;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link AuditSecurityEventType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.4">Model
+ *     documentation</a>
+ */
 public class AuditSecurityEventTypeNode extends AuditEventTypeNode
     implements AuditSecurityEventType {
   public AuditSecurityEventTypeNode(
@@ -39,12 +32,12 @@ public class AuditSecurityEventTypeNode extends AuditEventTypeNode
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         client,
@@ -62,75 +55,74 @@ public class AuditSecurityEventTypeNode extends AuditEventTypeNode
   }
 
   @Override
-  public StatusCode getStatusCodeId() throws UaException {
-    PropertyTypeNode node = getStatusCodeIdNode();
-    return (StatusCode) node.getValue().getValue().getValue();
+  public @Nullable PropertyTypeNode getStatusCodeIdNode() throws UaException {
+    return ClientNodeSupport.await(getStatusCodeIdNodeAsync());
   }
 
   @Override
-  public void setStatusCodeId(StatusCode value) throws UaException {
-    PropertyTypeNode node = getStatusCodeIdNode();
-    node.setValue(new Variant(value));
+  public CompletableFuture<? extends @Nullable PropertyTypeNode> getStatusCodeIdNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "StatusCodeId",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public StatusCode readStatusCodeId() throws UaException {
-    try {
-      return readStatusCodeIdAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable StatusCode readStatusCodeId() throws UaException {
+    return ClientNodeSupport.await(readStatusCodeIdAsync());
   }
 
   @Override
-  public void writeStatusCodeId(StatusCode value) throws UaException {
-    try {
-      StatusCode statusCode = writeStatusCodeIdAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public void writeStatusCodeId(@Nullable StatusCode value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeStatusCodeIdAsync(value)),
+        "http://opcfoundation.org/UA/}StatusCodeId");
   }
 
   @Override
-  public CompletableFuture<? extends StatusCode> readStatusCodeIdAsync() {
-    return getStatusCodeIdNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (StatusCode) v.getValue().getValue());
+  public CompletableFuture<? extends @Nullable StatusCode> readStatusCodeIdAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getStatusCodeIdNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}StatusCodeId",
+                            false,
+                            StatusCode.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable StatusCode) v)));
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeStatusCodeIdAsync(StatusCode statusCodeId) {
-    DataValue value = DataValue.valueOnly(new Variant(statusCodeId));
-    return getStatusCodeIdNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public PropertyTypeNode getStatusCodeIdNode() throws UaException {
-    try {
-      return getStatusCodeIdNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends PropertyTypeNode> getStatusCodeIdNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "StatusCodeId", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+  public CompletableFuture<StatusCode> writeStatusCodeIdAsync(@Nullable StatusCode value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getStatusCodeIdNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}StatusCodeId",
+                        value,
+                        StatusCode.class,
+                        -1,
+                        null)));
   }
 }

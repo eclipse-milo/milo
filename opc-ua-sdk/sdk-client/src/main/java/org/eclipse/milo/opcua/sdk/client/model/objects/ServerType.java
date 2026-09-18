@@ -1,761 +1,651 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallOptions;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallResult;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyType;
 import org.eclipse.milo.opcua.sdk.client.model.variables.ServerStatusType;
+import org.eclipse.milo.opcua.sdk.client.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
+import org.eclipse.milo.opcua.sdk.core.model.methods.ServerTypeGetMonitoredItems;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.ServerState;
 import org.eclipse.milo.opcua.stack.core.types.structured.ServerStatusDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.TimeZoneDataType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.1">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.1</a>
+ * Client API for the ServerType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.1">Model
+ *     documentation</a>
  */
 public interface ServerType extends BaseObjectType {
-  QualifiedProperty<String[]> SERVER_ARRAY =
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2004L);
+
+  QualifiedProperty<String[]> ServerArray_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "ServerArray",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
           1,
           String[].class);
 
-  QualifiedProperty<String[]> NAMESPACE_ARRAY =
+  QualifiedProperty<UInteger> UrisVersion_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "NamespaceArray",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          1,
-          String[].class);
-
-  QualifiedProperty<UInteger> URIS_VERSION =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "UrisVersion",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=20998"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 20998L),
           -1,
           UInteger.class);
 
-  QualifiedProperty<UByte> SERVICE_LEVEL =
+  QualifiedProperty<UByte> ServiceLevel_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "ServiceLevel",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=3"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 3L),
           -1,
           UByte.class);
 
-  QualifiedProperty<Boolean> AUDITING =
+  QualifiedProperty<String[]> NamespaceArray_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Auditing",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
+          Namespaces.OPC_UA,
+          "NamespaceArray",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+          1,
+          String[].class);
 
-  QualifiedProperty<DateTime> ESTIMATED_RETURN_TIME =
+  QualifiedProperty<DateTime> EstimatedReturnTime_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "EstimatedReturnTime",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=13"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 13L),
           -1,
           DateTime.class);
 
-  QualifiedProperty<TimeZoneDataType> LOCAL_TIME =
+  QualifiedProperty<Boolean> Auditing_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
+          "Auditing",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+          -1,
+          Boolean.class);
+
+  QualifiedProperty<TimeZoneDataType> LocalTime_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
           "LocalTime",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=8912"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 8912L),
           -1,
           TimeZoneDataType.class);
 
   /**
-   * Get the local value of the ServerArray Node.
+   * Resolves the optional Namespaces child, a NamespacesType.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ServerArray Node.
-   * @throws UaException if an error occurs creating or getting the ServerArray Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.14">NamespacesType
+   *     documentation</a>
    */
-  String[] getServerArray() throws UaException;
+  @Nullable NamespacesType getNamespacesNode() throws UaException;
+
+  /** Asynchronous form of {@link #getNamespacesNode()}. */
+  CompletableFuture<? extends @Nullable NamespacesType> getNamespacesNodeAsync();
 
   /**
-   * Set the local value of the ServerArray Node.
+   * Resolves the mandatory ServerArray child, a PropertyType with DataType String.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ServerArray Node.
-   * @throws UaException if an error occurs creating or getting the ServerArray Node.
-   */
-  void setServerArray(String[] value) throws UaException;
-
-  /**
-   * Read the value of the ServerArray Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link String[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String[] readServerArray() throws UaException;
-
-  /**
-   * Write a new value for the ServerArray Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link String[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeServerArray(String[] value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readServerArray}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String[]> readServerArrayAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeServerArray}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeServerArrayAsync(String[] value);
-
-  /**
-   * Get the ServerArray {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ServerArray {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getServerArrayNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getServerArrayNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getServerArrayNode()}. */
   CompletableFuture<? extends PropertyType> getServerArrayNodeAsync();
 
   /**
-   * Get the local value of the NamespaceArray Node.
+   * Reads the Value of the ServerArray child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the NamespaceArray Node.
-   * @throws UaException if an error occurs creating or getting the NamespaceArray Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  String[] getNamespaceArray() throws UaException;
+  @Nullable String @Nullable [] readServerArray() throws UaException;
 
   /**
-   * Set the local value of the NamespaceArray Node.
+   * Writes the Value of the ServerArray child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the NamespaceArray Node.
-   * @throws UaException if an error occurs creating or getting the NamespaceArray Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setNamespaceArray(String[] value) throws UaException;
+  void writeServerArray(@Nullable String @Nullable [] value) throws UaException;
+
+  /** Asynchronous form of {@link #readServerArray()}. */
+  CompletableFuture<? extends @Nullable String @Nullable []> readServerArrayAsync();
+
+  /** Asynchronous form of {@link #writeServerArray}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeServerArrayAsync(@Nullable String @Nullable [] value);
 
   /**
-   * Read the value of the NamespaceArray Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the optional UrisVersion child, a PropertyType with DataType VersionTime.
    *
-   * @return the {@link String[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  String[] readNamespaceArray() throws UaException;
+  @Nullable PropertyType getUrisVersionNode() throws UaException;
+
+  /** Asynchronous form of {@link #getUrisVersionNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getUrisVersionNodeAsync();
 
   /**
-   * Write a new value for the NamespaceArray Node to the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the UrisVersion child from the server.
    *
-   * @param value the {@link String[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeNamespaceArray(String[] value) throws UaException;
+  @Nullable UInteger readUrisVersion() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readNamespaceArray}.
+   * Writes the Value of the UrisVersion child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends String[]> readNamespaceArrayAsync();
+  void writeUrisVersion(@Nullable UInteger value) throws UaException;
+
+  /** Asynchronous form of {@link #readUrisVersion()}. */
+  CompletableFuture<? extends @Nullable UInteger> readUrisVersionAsync();
+
+  /** Asynchronous form of {@link #writeUrisVersion}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeUrisVersionAsync(@Nullable UInteger value);
 
   /**
-   * An asynchronous implementation of {@link #writeNamespaceArray}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeNamespaceArrayAsync(String[] value);
-
-  /**
-   * Get the NamespaceArray {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the NamespaceArray {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getNamespaceArrayNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getNamespaceArrayNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getNamespaceArrayNodeAsync();
-
-  /**
-   * Get the local value of the UrisVersion Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the UrisVersion Node.
-   * @throws UaException if an error occurs creating or getting the UrisVersion Node.
-   */
-  UInteger getUrisVersion() throws UaException;
-
-  /**
-   * Set the local value of the UrisVersion Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the UrisVersion Node.
-   * @throws UaException if an error occurs creating or getting the UrisVersion Node.
-   */
-  void setUrisVersion(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the UrisVersion Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readUrisVersion() throws UaException;
-
-  /**
-   * Write a new value for the UrisVersion Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeUrisVersion(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readUrisVersion}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readUrisVersionAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeUrisVersion}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeUrisVersionAsync(UInteger value);
-
-  /**
-   * Get the UrisVersion {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the UrisVersion {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getUrisVersionNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getUrisVersionNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getUrisVersionNodeAsync();
-
-  /**
-   * Get the local value of the ServiceLevel Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ServiceLevel Node.
-   * @throws UaException if an error occurs creating or getting the ServiceLevel Node.
-   */
-  UByte getServiceLevel() throws UaException;
-
-  /**
-   * Set the local value of the ServiceLevel Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ServiceLevel Node.
-   * @throws UaException if an error occurs creating or getting the ServiceLevel Node.
-   */
-  void setServiceLevel(UByte value) throws UaException;
-
-  /**
-   * Read the value of the ServiceLevel Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link UByte} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UByte readServiceLevel() throws UaException;
-
-  /**
-   * Write a new value for the ServiceLevel Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link UByte} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeServiceLevel(UByte value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readServiceLevel}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UByte> readServiceLevelAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeServiceLevel}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeServiceLevelAsync(UByte value);
-
-  /**
-   * Get the ServiceLevel {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ServiceLevel {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getServiceLevelNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getServiceLevelNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getServiceLevelNodeAsync();
-
-  /**
-   * Get the local value of the Auditing Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the Auditing Node.
-   * @throws UaException if an error occurs creating or getting the Auditing Node.
-   */
-  Boolean getAuditing() throws UaException;
-
-  /**
-   * Set the local value of the Auditing Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the Auditing Node.
-   * @throws UaException if an error occurs creating or getting the Auditing Node.
-   */
-  void setAuditing(Boolean value) throws UaException;
-
-  /**
-   * Read the value of the Auditing Node from the server and update the local value if the operation
-   * succeeds.
-   *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Boolean readAuditing() throws UaException;
-
-  /**
-   * Write a new value for the Auditing Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeAuditing(Boolean value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readAuditing}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Boolean> readAuditingAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeAuditing}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeAuditingAsync(Boolean value);
-
-  /**
-   * Get the Auditing {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the Auditing {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getAuditingNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getAuditingNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getAuditingNodeAsync();
-
-  /**
-   * Get the local value of the EstimatedReturnTime Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the EstimatedReturnTime Node.
-   * @throws UaException if an error occurs creating or getting the EstimatedReturnTime Node.
-   */
-  DateTime getEstimatedReturnTime() throws UaException;
-
-  /**
-   * Set the local value of the EstimatedReturnTime Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the EstimatedReturnTime Node.
-   * @throws UaException if an error occurs creating or getting the EstimatedReturnTime Node.
-   */
-  void setEstimatedReturnTime(DateTime value) throws UaException;
-
-  /**
-   * Read the value of the EstimatedReturnTime Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link DateTime} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  DateTime readEstimatedReturnTime() throws UaException;
-
-  /**
-   * Write a new value for the EstimatedReturnTime Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link DateTime} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeEstimatedReturnTime(DateTime value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readEstimatedReturnTime}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends DateTime> readEstimatedReturnTimeAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeEstimatedReturnTime}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeEstimatedReturnTimeAsync(DateTime value);
-
-  /**
-   * Get the EstimatedReturnTime {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the EstimatedReturnTime {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getEstimatedReturnTimeNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getEstimatedReturnTimeNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getEstimatedReturnTimeNodeAsync();
-
-  /**
-   * Get the local value of the LocalTime Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the LocalTime Node.
-   * @throws UaException if an error occurs creating or getting the LocalTime Node.
-   */
-  TimeZoneDataType getLocalTime() throws UaException;
-
-  /**
-   * Set the local value of the LocalTime Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the LocalTime Node.
-   * @throws UaException if an error occurs creating or getting the LocalTime Node.
-   */
-  void setLocalTime(TimeZoneDataType value) throws UaException;
-
-  /**
-   * Read the value of the LocalTime Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link TimeZoneDataType} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  TimeZoneDataType readLocalTime() throws UaException;
-
-  /**
-   * Write a new value for the LocalTime Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link TimeZoneDataType} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeLocalTime(TimeZoneDataType value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readLocalTime}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends TimeZoneDataType> readLocalTimeAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeLocalTime}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeLocalTimeAsync(TimeZoneDataType value);
-
-  /**
-   * Get the LocalTime {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the LocalTime {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getLocalTimeNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getLocalTimeNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getLocalTimeNodeAsync();
-
-  /**
-   * Get the local value of the ServerStatus Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ServerStatus Node.
-   * @throws UaException if an error occurs creating or getting the ServerStatus Node.
-   */
-  ServerStatusDataType getServerStatus() throws UaException;
-
-  /**
-   * Set the local value of the ServerStatus Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ServerStatus Node.
-   * @throws UaException if an error occurs creating or getting the ServerStatus Node.
-   */
-  void setServerStatus(ServerStatusDataType value) throws UaException;
-
-  /**
-   * Read the value of the ServerStatus Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link ServerStatusDataType} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  ServerStatusDataType readServerStatus() throws UaException;
-
-  /**
-   * Write a new value for the ServerStatus Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link ServerStatusDataType} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeServerStatus(ServerStatusDataType value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readServerStatus}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends ServerStatusDataType> readServerStatusAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeServerStatus}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeServerStatusAsync(ServerStatusDataType value);
-
-  /**
-   * Get the ServerStatus {@link ServerStatusType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ServerStatus {@link ServerStatusType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * Resolves the mandatory ServerStatus child, a ServerStatusType with DataType
+   * ServerStatusDataType.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.6">ServerStatusType
+   *     documentation</a>
    */
   ServerStatusType getServerStatusNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getServerStatusNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the ServerStatusType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getServerStatusNode()}. */
   CompletableFuture<? extends ServerStatusType> getServerStatusNodeAsync();
 
   /**
-   * Get the ServerCapabilities {@link ServerCapabilitiesType} Node, or {@code null} if it does not
-   * exist.
+   * Reads the Value of the ServerStatus child from the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ServerCapabilities {@link ServerCapabilitiesType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  ServerCapabilitiesType getServerCapabilitiesNode() throws UaException;
+  @Nullable ServerStatusDataType readServerStatus() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getServerCapabilitiesNode()}.
+   * Writes the Value of the ServerStatus child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the ServerCapabilitiesType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends ServerCapabilitiesType> getServerCapabilitiesNodeAsync();
+  void writeServerStatus(@Nullable ServerStatusDataType value) throws UaException;
+
+  /** Asynchronous form of {@link #readServerStatus()}. */
+  CompletableFuture<? extends @Nullable ServerStatusDataType> readServerStatusAsync();
+
+  /** Asynchronous form of {@link #writeServerStatus}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeServerStatusAsync(@Nullable ServerStatusDataType value);
 
   /**
-   * Get the ServerDiagnostics {@link ServerDiagnosticsType} Node, or {@code null} if it does not
-   * exist.
+   * Resolves the mandatory ServiceLevel child, a PropertyType with DataType Byte.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ServerDiagnostics {@link ServerDiagnosticsType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  ServerDiagnosticsType getServerDiagnosticsNode() throws UaException;
+  PropertyType getServiceLevelNode() throws UaException;
+
+  /** Asynchronous form of {@link #getServiceLevelNode()}. */
+  CompletableFuture<? extends PropertyType> getServiceLevelNodeAsync();
 
   /**
-   * Asynchronous implementation of {@link #getServerDiagnosticsNode()}.
+   * Reads the Value of the ServiceLevel child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the ServerDiagnosticsType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends ServerDiagnosticsType> getServerDiagnosticsNodeAsync();
+  @Nullable UByte readServiceLevel() throws UaException;
 
   /**
-   * Get the VendorServerInfo {@link VendorServerInfoType} Node, or {@code null} if it does not
-   * exist.
+   * Writes the Value of the ServiceLevel child to the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the VendorServerInfo {@link VendorServerInfoType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  VendorServerInfoType getVendorServerInfoNode() throws UaException;
+  void writeServiceLevel(@Nullable UByte value) throws UaException;
+
+  /** Asynchronous form of {@link #readServiceLevel()}. */
+  CompletableFuture<? extends @Nullable UByte> readServiceLevelAsync();
+
+  /** Asynchronous form of {@link #writeServiceLevel}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeServiceLevelAsync(@Nullable UByte value);
 
   /**
-   * Asynchronous implementation of {@link #getVendorServerInfoNode()}.
+   * Resolves the mandatory NamespaceArray child, a PropertyType with DataType String.
    *
-   * @return a CompletableFuture that completes successfully with the VendorServerInfoType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  CompletableFuture<? extends VendorServerInfoType> getVendorServerInfoNodeAsync();
+  PropertyType getNamespaceArrayNode() throws UaException;
+
+  /** Asynchronous form of {@link #getNamespaceArrayNode()}. */
+  CompletableFuture<? extends PropertyType> getNamespaceArrayNodeAsync();
 
   /**
-   * Get the ServerRedundancy {@link ServerRedundancyType} Node, or {@code null} if it does not
-   * exist.
+   * Reads the Value of the NamespaceArray child from the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable String @Nullable [] readNamespaceArray() throws UaException;
+
+  /**
+   * Writes the Value of the NamespaceArray child to the server.
    *
-   * @return the ServerRedundancy {@link ServerRedundancyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeNamespaceArray(@Nullable String @Nullable [] value) throws UaException;
+
+  /** Asynchronous form of {@link #readNamespaceArray()}. */
+  CompletableFuture<? extends @Nullable String @Nullable []> readNamespaceArrayAsync();
+
+  /** Asynchronous form of {@link #writeNamespaceArray}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeNamespaceArrayAsync(@Nullable String @Nullable [] value);
+
+  /**
+   * Resolves the mandatory ServerRedundancy child, a ServerRedundancyType.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.7">ServerRedundancyType
+   *     documentation</a>
    */
   ServerRedundancyType getServerRedundancyNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getServerRedundancyNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the ServerRedundancyType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getServerRedundancyNode()}. */
   CompletableFuture<? extends ServerRedundancyType> getServerRedundancyNodeAsync();
 
   /**
-   * Get the Namespaces {@link NamespacesType} Node, or {@code null} if it does not exist.
+   * Resolves the mandatory VendorServerInfo child, a VendorServerInfoType.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the Namespaces {@link NamespacesType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.6">VendorServerInfoType
+   *     documentation</a>
    */
-  NamespacesType getNamespacesNode() throws UaException;
+  VendorServerInfoType getVendorServerInfoNode() throws UaException;
+
+  /** Asynchronous form of {@link #getVendorServerInfoNode()}. */
+  CompletableFuture<? extends VendorServerInfoType> getVendorServerInfoNodeAsync();
 
   /**
-   * Asynchronous implementation of {@link #getNamespacesNode()}.
+   * Resolves the mandatory ServerDiagnostics child, a ServerDiagnosticsType.
    *
-   * @return a CompletableFuture that completes successfully with the NamespacesType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.3">ServerDiagnosticsType
+   *     documentation</a>
    */
-  CompletableFuture<? extends NamespacesType> getNamespacesNodeAsync();
+  ServerDiagnosticsType getServerDiagnosticsNode() throws UaException;
+
+  /** Asynchronous form of {@link #getServerDiagnosticsNode()}. */
+  CompletableFuture<? extends ServerDiagnosticsType> getServerDiagnosticsNodeAsync();
+
+  /**
+   * Resolves the mandatory ServerCapabilities child, a ServerCapabilitiesType.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.2">ServerCapabilitiesType
+   *     documentation</a>
+   */
+  ServerCapabilitiesType getServerCapabilitiesNode() throws UaException;
+
+  /** Asynchronous form of {@link #getServerCapabilitiesNode()}. */
+  CompletableFuture<? extends ServerCapabilitiesType> getServerCapabilitiesNodeAsync();
+
+  /**
+   * Resolves the optional EstimatedReturnTime child, a PropertyType with DataType DateTime.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyType getEstimatedReturnTimeNode() throws UaException;
+
+  /** Asynchronous form of {@link #getEstimatedReturnTimeNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getEstimatedReturnTimeNodeAsync();
+
+  /**
+   * Reads the Value of the EstimatedReturnTime child from the server.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable DateTime readEstimatedReturnTime() throws UaException;
+
+  /**
+   * Writes the Value of the EstimatedReturnTime child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeEstimatedReturnTime(@Nullable DateTime value) throws UaException;
+
+  /** Asynchronous form of {@link #readEstimatedReturnTime()}. */
+  CompletableFuture<? extends @Nullable DateTime> readEstimatedReturnTimeAsync();
+
+  /**
+   * Asynchronous form of {@link #writeEstimatedReturnTime}; completes with the operation status.
+   */
+  CompletableFuture<StatusCode> writeEstimatedReturnTimeAsync(@Nullable DateTime value);
+
+  /**
+   * Resolves the mandatory Auditing child, a PropertyType with DataType Boolean.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getAuditingNode() throws UaException;
+
+  /** Asynchronous form of {@link #getAuditingNode()}. */
+  CompletableFuture<? extends PropertyType> getAuditingNodeAsync();
+
+  /**
+   * Reads the Value of the Auditing child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable Boolean readAuditing() throws UaException;
+
+  /**
+   * Writes the Value of the Auditing child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeAuditing(@Nullable Boolean value) throws UaException;
+
+  /** Asynchronous form of {@link #readAuditing()}. */
+  CompletableFuture<? extends @Nullable Boolean> readAuditingAsync();
+
+  /** Asynchronous form of {@link #writeAuditing}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeAuditingAsync(@Nullable Boolean value);
+
+  /**
+   * Resolves the optional LocalTime child, a PropertyType with DataType TimeZoneDataType.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyType getLocalTimeNode() throws UaException;
+
+  /** Asynchronous form of {@link #getLocalTimeNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getLocalTimeNodeAsync();
+
+  /**
+   * Reads the Value of the LocalTime child from the server.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable TimeZoneDataType readLocalTime() throws UaException;
+
+  /**
+   * Writes the Value of the LocalTime child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeLocalTime(@Nullable TimeZoneDataType value) throws UaException;
+
+  /** Asynchronous form of {@link #readLocalTime()}. */
+  CompletableFuture<? extends @Nullable TimeZoneDataType> readLocalTimeAsync();
+
+  /** Asynchronous form of {@link #writeLocalTime}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeLocalTimeAsync(@Nullable TimeZoneDataType value);
+
+  /**
+   * Resolves the optional GetMonitoredItems Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/9.1">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getGetMonitoredItemsMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getGetMonitoredItemsMethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getGetMonitoredItemsMethodNodeAsync();
+
+  /**
+   * Calls the GetMonitoredItems Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/9.1">Model
+   *     documentation</a>
+   */
+  ServerTypeGetMonitoredItems.Outputs getMonitoredItems(@Nullable UInteger subscriptionId)
+      throws UaException;
+
+  /**
+   * Calls the GetMonitoredItems Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<ServerTypeGetMonitoredItems.Outputs> callGetMonitoredItems(
+      @Nullable UInteger subscriptionId) throws UaException;
+
+  /**
+   * Calls the GetMonitoredItems Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<ServerTypeGetMonitoredItems.Outputs> callGetMonitoredItemsWith(
+      MethodCallOptions options, @Nullable UInteger subscriptionId) throws UaException;
+
+  /** Asynchronous form of {@link #getMonitoredItems}. */
+  CompletableFuture<ServerTypeGetMonitoredItems.Outputs> getMonitoredItemsAsync(
+      @Nullable UInteger subscriptionId);
+
+  /** Asynchronous form of {@link #callGetMonitoredItems}. */
+  CompletableFuture<MethodCallResult<ServerTypeGetMonitoredItems.Outputs>>
+      callGetMonitoredItemsAsync(@Nullable UInteger subscriptionId);
+
+  /** Asynchronous form of {@link #callGetMonitoredItemsWith}. */
+  CompletableFuture<MethodCallResult<ServerTypeGetMonitoredItems.Outputs>>
+      callGetMonitoredItemsWithAsync(MethodCallOptions options, @Nullable UInteger subscriptionId);
+
+  /**
+   * Resolves the optional RequestServerStateChange Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/9.4">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getRequestServerStateChangeMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getRequestServerStateChangeMethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getRequestServerStateChangeMethodNodeAsync();
+
+  /**
+   * Calls the RequestServerStateChange Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/9.4">Model
+   *     documentation</a>
+   */
+  void requestServerStateChange(
+      @Nullable ServerState state,
+      @Nullable DateTime estimatedReturnTime,
+      @Nullable UInteger secondsTillShutdown,
+      @Nullable LocalizedText reason,
+      @Nullable Boolean restart)
+      throws UaException;
+
+  /**
+   * Calls the RequestServerStateChange Method and returns the complete result, including a Bad
+   * status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callRequestServerStateChange(
+      @Nullable ServerState state,
+      @Nullable DateTime estimatedReturnTime,
+      @Nullable UInteger secondsTillShutdown,
+      @Nullable LocalizedText reason,
+      @Nullable Boolean restart)
+      throws UaException;
+
+  /**
+   * Calls the RequestServerStateChange Method with explicit options and returns the complete
+   * result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callRequestServerStateChangeWith(
+      MethodCallOptions options,
+      @Nullable ServerState state,
+      @Nullable DateTime estimatedReturnTime,
+      @Nullable UInteger secondsTillShutdown,
+      @Nullable LocalizedText reason,
+      @Nullable Boolean restart)
+      throws UaException;
+
+  /** Asynchronous form of {@link #requestServerStateChange}. */
+  CompletableFuture<Void> requestServerStateChangeAsync(
+      @Nullable ServerState state,
+      @Nullable DateTime estimatedReturnTime,
+      @Nullable UInteger secondsTillShutdown,
+      @Nullable LocalizedText reason,
+      @Nullable Boolean restart);
+
+  /** Asynchronous form of {@link #callRequestServerStateChange}. */
+  CompletableFuture<MethodCallResult<Void>> callRequestServerStateChangeAsync(
+      @Nullable ServerState state,
+      @Nullable DateTime estimatedReturnTime,
+      @Nullable UInteger secondsTillShutdown,
+      @Nullable LocalizedText reason,
+      @Nullable Boolean restart);
+
+  /** Asynchronous form of {@link #callRequestServerStateChangeWith}. */
+  CompletableFuture<MethodCallResult<Void>> callRequestServerStateChangeWithAsync(
+      MethodCallOptions options,
+      @Nullable ServerState state,
+      @Nullable DateTime estimatedReturnTime,
+      @Nullable UInteger secondsTillShutdown,
+      @Nullable LocalizedText reason,
+      @Nullable Boolean restart);
+
+  /**
+   * Resolves the optional ResendData Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/9.2">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getResendDataMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getResendDataMethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getResendDataMethodNodeAsync();
+
+  /**
+   * Calls the ResendData Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/9.2">Model
+   *     documentation</a>
+   */
+  void resendData(@Nullable UInteger subscriptionId) throws UaException;
+
+  /**
+   * Calls the ResendData Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callResendData(@Nullable UInteger subscriptionId) throws UaException;
+
+  /**
+   * Calls the ResendData Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callResendDataWith(
+      MethodCallOptions options, @Nullable UInteger subscriptionId) throws UaException;
+
+  /** Asynchronous form of {@link #resendData}. */
+  CompletableFuture<Void> resendDataAsync(@Nullable UInteger subscriptionId);
+
+  /** Asynchronous form of {@link #callResendData}. */
+  CompletableFuture<MethodCallResult<Void>> callResendDataAsync(@Nullable UInteger subscriptionId);
+
+  /** Asynchronous form of {@link #callResendDataWith}. */
+  CompletableFuture<MethodCallResult<Void>> callResendDataWithAsync(
+      MethodCallOptions options, @Nullable UInteger subscriptionId);
+
+  /**
+   * Resolves the optional SetSubscriptionDurable Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/9.3">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getSetSubscriptionDurableMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getSetSubscriptionDurableMethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getSetSubscriptionDurableMethodNodeAsync();
+
+  /**
+   * Calls the SetSubscriptionDurable Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/9.3">Model
+   *     documentation</a>
+   */
+  @Nullable UInteger setSubscriptionDurable(
+      @Nullable UInteger subscriptionId, @Nullable UInteger lifetimeInHours) throws UaException;
+
+  /**
+   * Calls the SetSubscriptionDurable Method and returns the complete result, including a Bad
+   * status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<@Nullable UInteger> callSetSubscriptionDurable(
+      @Nullable UInteger subscriptionId, @Nullable UInteger lifetimeInHours) throws UaException;
+
+  /**
+   * Calls the SetSubscriptionDurable Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<@Nullable UInteger> callSetSubscriptionDurableWith(
+      MethodCallOptions options,
+      @Nullable UInteger subscriptionId,
+      @Nullable UInteger lifetimeInHours)
+      throws UaException;
+
+  /** Asynchronous form of {@link #setSubscriptionDurable}. */
+  CompletableFuture<@Nullable UInteger> setSubscriptionDurableAsync(
+      @Nullable UInteger subscriptionId, @Nullable UInteger lifetimeInHours);
+
+  /** Asynchronous form of {@link #callSetSubscriptionDurable}. */
+  CompletableFuture<MethodCallResult<@Nullable UInteger>> callSetSubscriptionDurableAsync(
+      @Nullable UInteger subscriptionId, @Nullable UInteger lifetimeInHours);
+
+  /** Asynchronous form of {@link #callSetSubscriptionDurableWith}. */
+  CompletableFuture<MethodCallResult<@Nullable UInteger>> callSetSubscriptionDurableWithAsync(
+      MethodCallOptions options,
+      @Nullable UInteger subscriptionId,
+      @Nullable UInteger lifetimeInHours);
 }

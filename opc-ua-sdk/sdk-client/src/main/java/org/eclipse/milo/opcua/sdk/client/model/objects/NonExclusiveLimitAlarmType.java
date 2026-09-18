@@ -1,386 +1,173 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
 import org.eclipse.milo.opcua.sdk.client.model.variables.TwoStateVariableType;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.20">https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.20</a>
+ * Client API for the NonExclusiveLimitAlarmType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.20">Model
+ *     documentation</a>
  */
 public interface NonExclusiveLimitAlarmType extends LimitAlarmType {
-  /**
-   * Get the local value of the ActiveState Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ActiveState Node.
-   * @throws UaException if an error occurs creating or getting the ActiveState Node.
-   */
-  LocalizedText getActiveState() throws UaException;
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 9906L);
 
   /**
-   * Set the local value of the ActiveState Node.
+   * Resolves the mandatory ActiveState child, a TwoStateVariableType with DataType LocalizedText.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ActiveState Node.
-   * @throws UaException if an error occurs creating or getting the ActiveState Node.
-   */
-  void setActiveState(LocalizedText value) throws UaException;
-
-  /**
-   * Read the value of the ActiveState Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link LocalizedText} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  LocalizedText readActiveState() throws UaException;
-
-  /**
-   * Write a new value for the ActiveState Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link LocalizedText} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeActiveState(LocalizedText value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readActiveState}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends LocalizedText> readActiveStateAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeActiveState}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeActiveStateAsync(LocalizedText value);
-
-  /**
-   * Get the ActiveState {@link TwoStateVariableType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ActiveState {@link TwoStateVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.2">TwoStateVariableType
+   *     documentation</a>
    */
   TwoStateVariableType getActiveStateNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getActiveStateNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the TwoStateVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getActiveStateNode()}. */
   CompletableFuture<? extends TwoStateVariableType> getActiveStateNodeAsync();
 
   /**
-   * Get the local value of the HighHighState Node.
+   * Resolves the optional LowLowState child, a TwoStateVariableType with DataType LocalizedText.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the HighHighState Node.
-   * @throws UaException if an error occurs creating or getting the HighHighState Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.2">TwoStateVariableType
+   *     documentation</a>
    */
-  LocalizedText getHighHighState() throws UaException;
+  @Nullable TwoStateVariableType getLowLowStateNode() throws UaException;
+
+  /** Asynchronous form of {@link #getLowLowStateNode()}. */
+  CompletableFuture<? extends @Nullable TwoStateVariableType> getLowLowStateNodeAsync();
 
   /**
-   * Set the local value of the HighHighState Node.
+   * Reads the Value of the LowLowState child from the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the HighHighState Node.
-   * @throws UaException if an error occurs creating or getting the HighHighState Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setHighHighState(LocalizedText value) throws UaException;
+  @Nullable LocalizedText readLowLowState() throws UaException;
 
   /**
-   * Read the value of the HighHighState Node from the server and update the local value if the
-   * operation succeeds.
+   * Writes the Value of the LowLowState child to the server.
    *
-   * @return the {@link LocalizedText} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  LocalizedText readHighHighState() throws UaException;
+  void writeLowLowState(@Nullable LocalizedText value) throws UaException;
+
+  /** Asynchronous form of {@link #readLowLowState()}. */
+  CompletableFuture<? extends @Nullable LocalizedText> readLowLowStateAsync();
+
+  /** Asynchronous form of {@link #writeLowLowState}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeLowLowStateAsync(@Nullable LocalizedText value);
 
   /**
-   * Write a new value for the HighHighState Node to the server and update the local value if the
-   * operation succeeds.
+   * Resolves the optional HighHighState child, a TwoStateVariableType with DataType LocalizedText.
    *
-   * @param value the {@link LocalizedText} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.2">TwoStateVariableType
+   *     documentation</a>
    */
-  void writeHighHighState(LocalizedText value) throws UaException;
+  @Nullable TwoStateVariableType getHighHighStateNode() throws UaException;
+
+  /** Asynchronous form of {@link #getHighHighStateNode()}. */
+  CompletableFuture<? extends @Nullable TwoStateVariableType> getHighHighStateNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #readHighHighState}.
+   * Reads the Value of the HighHighState child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends LocalizedText> readHighHighStateAsync();
+  @Nullable LocalizedText readHighHighState() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeHighHighState}.
+   * Writes the Value of the HighHighState child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeHighHighStateAsync(LocalizedText value);
+  void writeHighHighState(@Nullable LocalizedText value) throws UaException;
+
+  /** Asynchronous form of {@link #readHighHighState()}. */
+  CompletableFuture<? extends @Nullable LocalizedText> readHighHighStateAsync();
+
+  /** Asynchronous form of {@link #writeHighHighState}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeHighHighStateAsync(@Nullable LocalizedText value);
 
   /**
-   * Get the HighHighState {@link TwoStateVariableType} Node, or {@code null} if it does not exist.
+   * Resolves the optional LowState child, a TwoStateVariableType with DataType LocalizedText.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the HighHighState {@link TwoStateVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.2">TwoStateVariableType
+   *     documentation</a>
    */
-  TwoStateVariableType getHighHighStateNode() throws UaException;
+  @Nullable TwoStateVariableType getLowStateNode() throws UaException;
+
+  /** Asynchronous form of {@link #getLowStateNode()}. */
+  CompletableFuture<? extends @Nullable TwoStateVariableType> getLowStateNodeAsync();
 
   /**
-   * Asynchronous implementation of {@link #getHighHighStateNode()}.
+   * Reads the Value of the LowState child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the TwoStateVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends TwoStateVariableType> getHighHighStateNodeAsync();
+  @Nullable LocalizedText readLowState() throws UaException;
 
   /**
-   * Get the local value of the HighState Node.
+   * Writes the Value of the LowState child to the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the HighState Node.
-   * @throws UaException if an error occurs creating or getting the HighState Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  LocalizedText getHighState() throws UaException;
+  void writeLowState(@Nullable LocalizedText value) throws UaException;
+
+  /** Asynchronous form of {@link #readLowState()}. */
+  CompletableFuture<? extends @Nullable LocalizedText> readLowStateAsync();
+
+  /** Asynchronous form of {@link #writeLowState}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeLowStateAsync(@Nullable LocalizedText value);
 
   /**
-   * Set the local value of the HighState Node.
+   * Resolves the optional HighState child, a TwoStateVariableType with DataType LocalizedText.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the HighState Node.
-   * @throws UaException if an error occurs creating or getting the HighState Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.2">TwoStateVariableType
+   *     documentation</a>
    */
-  void setHighState(LocalizedText value) throws UaException;
+  @Nullable TwoStateVariableType getHighStateNode() throws UaException;
+
+  /** Asynchronous form of {@link #getHighStateNode()}. */
+  CompletableFuture<? extends @Nullable TwoStateVariableType> getHighStateNodeAsync();
 
   /**
-   * Read the value of the HighState Node from the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the HighState child from the server.
    *
-   * @return the {@link LocalizedText} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  LocalizedText readHighState() throws UaException;
+  @Nullable LocalizedText readHighState() throws UaException;
 
   /**
-   * Write a new value for the HighState Node to the server and update the local value if the
-   * operation succeeds.
+   * Writes the Value of the HighState child to the server.
    *
-   * @param value the {@link LocalizedText} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeHighState(LocalizedText value) throws UaException;
+  void writeHighState(@Nullable LocalizedText value) throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #readHighState}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends LocalizedText> readHighStateAsync();
+  /** Asynchronous form of {@link #readHighState()}. */
+  CompletableFuture<? extends @Nullable LocalizedText> readHighStateAsync();
 
-  /**
-   * An asynchronous implementation of {@link #writeHighState}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeHighStateAsync(LocalizedText value);
-
-  /**
-   * Get the HighState {@link TwoStateVariableType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the HighState {@link TwoStateVariableType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  TwoStateVariableType getHighStateNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getHighStateNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the TwoStateVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends TwoStateVariableType> getHighStateNodeAsync();
-
-  /**
-   * Get the local value of the LowState Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the LowState Node.
-   * @throws UaException if an error occurs creating or getting the LowState Node.
-   */
-  LocalizedText getLowState() throws UaException;
-
-  /**
-   * Set the local value of the LowState Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the LowState Node.
-   * @throws UaException if an error occurs creating or getting the LowState Node.
-   */
-  void setLowState(LocalizedText value) throws UaException;
-
-  /**
-   * Read the value of the LowState Node from the server and update the local value if the operation
-   * succeeds.
-   *
-   * @return the {@link LocalizedText} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  LocalizedText readLowState() throws UaException;
-
-  /**
-   * Write a new value for the LowState Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link LocalizedText} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeLowState(LocalizedText value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readLowState}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends LocalizedText> readLowStateAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeLowState}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeLowStateAsync(LocalizedText value);
-
-  /**
-   * Get the LowState {@link TwoStateVariableType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the LowState {@link TwoStateVariableType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  TwoStateVariableType getLowStateNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getLowStateNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the TwoStateVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends TwoStateVariableType> getLowStateNodeAsync();
-
-  /**
-   * Get the local value of the LowLowState Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the LowLowState Node.
-   * @throws UaException if an error occurs creating or getting the LowLowState Node.
-   */
-  LocalizedText getLowLowState() throws UaException;
-
-  /**
-   * Set the local value of the LowLowState Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the LowLowState Node.
-   * @throws UaException if an error occurs creating or getting the LowLowState Node.
-   */
-  void setLowLowState(LocalizedText value) throws UaException;
-
-  /**
-   * Read the value of the LowLowState Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link LocalizedText} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  LocalizedText readLowLowState() throws UaException;
-
-  /**
-   * Write a new value for the LowLowState Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link LocalizedText} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeLowLowState(LocalizedText value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readLowLowState}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends LocalizedText> readLowLowStateAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeLowLowState}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeLowLowStateAsync(LocalizedText value);
-
-  /**
-   * Get the LowLowState {@link TwoStateVariableType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the LowLowState {@link TwoStateVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  TwoStateVariableType getLowLowStateNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getLowLowStateNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the TwoStateVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends TwoStateVariableType> getLowLowStateNodeAsync();
+  /** Asynchronous form of {@link #writeHighState}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeHighStateAsync(@Nullable LocalizedText value);
 }

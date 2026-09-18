@@ -1,38 +1,29 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
+import org.eclipse.milo.opcua.sdk.core.nodes.ObjectNode;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.11/#9.1.11.7">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.11/#9.1.11.7</a>
+ * Client API for the PubSubDiagnosticsRootType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.11/#9.1.11.7">Model
+ *     documentation</a>
  */
 public interface PubSubDiagnosticsRootType extends PubSubDiagnosticsType {
-  /**
-   * Get the LiveValues {@link BaseObjectType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the LiveValues {@link BaseObjectType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseObjectType getLiveValuesNode() throws UaException;
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 19732L);
 
   /**
-   * Asynchronous implementation of {@link #getLiveValuesNode()}.
+   * Resolves the mandatory LiveValues child, a BaseObjectType.
    *
-   * @return a CompletableFuture that completes successfully with the BaseObjectType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.2">BaseObjectType
+   *     documentation</a>
    */
-  CompletableFuture<? extends BaseObjectType> getLiveValuesNodeAsync();
+  ObjectNode getLiveValuesNode() throws UaException;
+
+  /** Asynchronous form of {@link #getLiveValuesNode()}. */
+  CompletableFuture<? extends ObjectNode> getLiveValuesNodeAsync();
 }

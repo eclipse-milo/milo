@@ -1,22 +1,6 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
-import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -25,7 +9,14 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link ExclusiveLimitStateMachineType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.19/#5.8.19.2">Model
+ *     documentation</a>
+ */
 public class ExclusiveLimitStateMachineTypeNode extends FiniteStateMachineTypeNode
     implements ExclusiveLimitStateMachineType {
   public ExclusiveLimitStateMachineTypeNode(
@@ -34,12 +25,12 @@ public class ExclusiveLimitStateMachineTypeNode extends FiniteStateMachineTypeNo
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         client,
@@ -54,165 +45,5 @@ public class ExclusiveLimitStateMachineTypeNode extends FiniteStateMachineTypeNo
         userRolePermissions,
         accessRestrictions,
         eventNotifier);
-  }
-
-  @Override
-  public StateTypeNode getHighHighNode() throws UaException {
-    try {
-      return getHighHighNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends StateTypeNode> getHighHighNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "HighHigh", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (StateTypeNode) node);
-  }
-
-  @Override
-  public StateTypeNode getHighNode() throws UaException {
-    try {
-      return getHighNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends StateTypeNode> getHighNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "High", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (StateTypeNode) node);
-  }
-
-  @Override
-  public StateTypeNode getLowNode() throws UaException {
-    try {
-      return getLowNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends StateTypeNode> getLowNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Low", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (StateTypeNode) node);
-  }
-
-  @Override
-  public StateTypeNode getLowLowNode() throws UaException {
-    try {
-      return getLowLowNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends StateTypeNode> getLowLowNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "LowLow", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (StateTypeNode) node);
-  }
-
-  @Override
-  public TransitionTypeNode getLowLowToLowNode() throws UaException {
-    try {
-      return getLowLowToLowNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends TransitionTypeNode> getLowLowToLowNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "LowLowToLow", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (TransitionTypeNode) node);
-  }
-
-  @Override
-  public TransitionTypeNode getLowToLowLowNode() throws UaException {
-    try {
-      return getLowToLowLowNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends TransitionTypeNode> getLowToLowLowNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "LowToLowLow", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (TransitionTypeNode) node);
-  }
-
-  @Override
-  public TransitionTypeNode getHighHighToHighNode() throws UaException {
-    try {
-      return getHighHighToHighNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends TransitionTypeNode> getHighHighToHighNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "HighHighToHigh", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (TransitionTypeNode) node);
-  }
-
-  @Override
-  public TransitionTypeNode getHighToHighHighNode() throws UaException {
-    try {
-      return getHighToHighHighNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends TransitionTypeNode> getHighToHighHighNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "HighToHighHigh", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (TransitionTypeNode) node);
   }
 }

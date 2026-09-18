@@ -1,96 +1,54 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
-import org.eclipse.milo.opcua.sdk.client.model.variables.BaseDataVariableType;
+import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part10/5.2.5/#5.2.5.2">https://reference.opcfoundation.org/v105/Core/docs/Part10/5.2.5/#5.2.5.2</a>
+ * Client API for the ProgramTransitionEventType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part10/5.2.5/#5.2.5.2">Model
+ *     documentation</a>
  */
 public interface ProgramTransitionEventType extends TransitionEventType {
-  /**
-   * Get the local value of the IntermediateResult Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the IntermediateResult Node.
-   * @throws UaException if an error occurs creating or getting the IntermediateResult Node.
-   */
-  Object getIntermediateResult() throws UaException;
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2378L);
 
   /**
-   * Set the local value of the IntermediateResult Node.
+   * Resolves the mandatory IntermediateResult child, a BaseDataVariableType with DataType
+   * BaseDataType.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the IntermediateResult Node.
-   * @throws UaException if an error occurs creating or getting the IntermediateResult Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  void setIntermediateResult(Object value) throws UaException;
+  VariableNode getIntermediateResultNode() throws UaException;
+
+  /** Asynchronous form of {@link #getIntermediateResultNode()}. */
+  CompletableFuture<? extends VariableNode> getIntermediateResultNodeAsync();
 
   /**
-   * Read the value of the IntermediateResult Node from the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the IntermediateResult child from the server.
    *
-   * @return the {@link Object} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  Object readIntermediateResult() throws UaException;
+  @Nullable Variant readIntermediateResult() throws UaException;
 
   /**
-   * Write a new value for the IntermediateResult Node to the server and update the local value if
-   * the operation succeeds.
+   * Writes the Value of the IntermediateResult child to the server.
    *
-   * @param value the {@link Object} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeIntermediateResult(Object value) throws UaException;
+  void writeIntermediateResult(@Nullable Variant value) throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #readIntermediateResult}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<?> readIntermediateResultAsync();
+  /** Asynchronous form of {@link #readIntermediateResult()}. */
+  CompletableFuture<? extends @Nullable Variant> readIntermediateResultAsync();
 
-  /**
-   * An asynchronous implementation of {@link #writeIntermediateResult}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeIntermediateResultAsync(Object value);
-
-  /**
-   * Get the IntermediateResult {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the IntermediateResult {@link BaseDataVariableType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getIntermediateResultNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getIntermediateResultNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getIntermediateResultNodeAsync();
+  /** Asynchronous form of {@link #writeIntermediateResult}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeIntermediateResultAsync(@Nullable Variant value);
 }

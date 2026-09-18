@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
@@ -19,572 +9,309 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.structured.EventFilter;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.5.2">https://reference.opcfoundation.org/v105/Core/docs/Part11/5.5.2</a>
+ * Client API for the HistoricalExternalEventSourceType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.5.2">Model
+ *     documentation</a>
  */
 public interface HistoricalExternalEventSourceType extends BaseObjectType {
-  QualifiedProperty<String> SERVER =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Server",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 32625L);
 
-  QualifiedProperty<String> ENDPOINT_URL =
+  QualifiedProperty<String> EndpointUrl_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "EndpointUrl",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
           -1,
           String.class);
 
-  QualifiedProperty<MessageSecurityMode> SECURITY_MODE =
+  QualifiedProperty<MessageSecurityMode> SecurityMode_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "SecurityMode",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=302"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 302L),
           -1,
           MessageSecurityMode.class);
 
-  QualifiedProperty<String> SECURITY_POLICY_URI =
+  QualifiedProperty<String> SecurityPolicyUri_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "SecurityPolicyUri",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
           -1,
           String.class);
 
-  QualifiedProperty<UserTokenPolicy> IDENTITY_TOKEN_POLICY =
+  QualifiedProperty<UserTokenPolicy> IdentityTokenPolicy_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "IdentityTokenPolicy",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=304"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 304L),
           -1,
           UserTokenPolicy.class);
 
-  QualifiedProperty<String> TRANSPORT_PROFILE_URI =
+  QualifiedProperty<String> TransportProfileUri_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "TransportProfileUri",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
           -1,
           String.class);
 
-  QualifiedProperty<EventFilter> HISTORICAL_EVENT_FILTER =
+  QualifiedProperty<EventFilter> HistoricalEventFilter_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "HistoricalEventFilter",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=725"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 725L),
           -1,
           EventFilter.class);
 
-  /**
-   * Get the local value of the Server Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the Server Node.
-   * @throws UaException if an error occurs creating or getting the Server Node.
-   */
-  String getServer() throws UaException;
+  QualifiedProperty<String> Server_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA, "Server", ExpandedNodeId.of(Namespaces.OPC_UA, 12L), -1, String.class);
 
   /**
-   * Set the local value of the Server Node.
+   * Resolves the optional EndpointUrl child, a PropertyType with DataType String.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the Server Node.
-   * @throws UaException if an error occurs creating or getting the Server Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  void setServer(String value) throws UaException;
+  @Nullable PropertyType getEndpointUrlNode() throws UaException;
+
+  /** Asynchronous form of {@link #getEndpointUrlNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getEndpointUrlNodeAsync();
 
   /**
-   * Read the value of the Server Node from the server and update the local value if the operation
-   * succeeds.
+   * Reads the Value of the EndpointUrl child from the server.
    *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  String readServer() throws UaException;
+  @Nullable String readEndpointUrl() throws UaException;
 
   /**
-   * Write a new value for the Server Node to the server and update the local value if the operation
-   * succeeds.
+   * Writes the Value of the EndpointUrl child to the server.
    *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeServer(String value) throws UaException;
+  void writeEndpointUrl(@Nullable String value) throws UaException;
+
+  /** Asynchronous form of {@link #readEndpointUrl()}. */
+  CompletableFuture<? extends @Nullable String> readEndpointUrlAsync();
+
+  /** Asynchronous form of {@link #writeEndpointUrl}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeEndpointUrlAsync(@Nullable String value);
 
   /**
-   * An asynchronous implementation of {@link #readServer}.
+   * Resolves the optional SecurityMode child, a PropertyType with DataType MessageSecurityMode.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  CompletableFuture<? extends String> readServerAsync();
+  @Nullable PropertyType getSecurityModeNode() throws UaException;
+
+  /** Asynchronous form of {@link #getSecurityModeNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getSecurityModeNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeServer}.
+   * Reads the Value of the SecurityMode child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeServerAsync(String value);
+  @Nullable MessageSecurityMode readSecurityMode() throws UaException;
 
   /**
-   * Get the Server {@link PropertyType} Node, or {@code null} if it does not exist.
+   * Writes the Value of the SecurityMode child to the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the Server {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  PropertyType getServerNode() throws UaException;
+  void writeSecurityMode(@Nullable MessageSecurityMode value) throws UaException;
+
+  /** Asynchronous form of {@link #readSecurityMode()}. */
+  CompletableFuture<? extends @Nullable MessageSecurityMode> readSecurityModeAsync();
+
+  /** Asynchronous form of {@link #writeSecurityMode}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeSecurityModeAsync(@Nullable MessageSecurityMode value);
 
   /**
-   * Asynchronous implementation of {@link #getServerNode()}.
+   * Resolves the optional SecurityPolicyUri child, a PropertyType with DataType String.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  CompletableFuture<? extends PropertyType> getServerNodeAsync();
+  @Nullable PropertyType getSecurityPolicyUriNode() throws UaException;
+
+  /** Asynchronous form of {@link #getSecurityPolicyUriNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getSecurityPolicyUriNodeAsync();
 
   /**
-   * Get the local value of the EndpointUrl Node.
+   * Reads the Value of the SecurityPolicyUri child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the EndpointUrl Node.
-   * @throws UaException if an error occurs creating or getting the EndpointUrl Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  String getEndpointUrl() throws UaException;
+  @Nullable String readSecurityPolicyUri() throws UaException;
 
   /**
-   * Set the local value of the EndpointUrl Node.
+   * Writes the Value of the SecurityPolicyUri child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the EndpointUrl Node.
-   * @throws UaException if an error occurs creating or getting the EndpointUrl Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setEndpointUrl(String value) throws UaException;
+  void writeSecurityPolicyUri(@Nullable String value) throws UaException;
+
+  /** Asynchronous form of {@link #readSecurityPolicyUri()}. */
+  CompletableFuture<? extends @Nullable String> readSecurityPolicyUriAsync();
+
+  /** Asynchronous form of {@link #writeSecurityPolicyUri}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeSecurityPolicyUriAsync(@Nullable String value);
 
   /**
-   * Read the value of the EndpointUrl Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the optional IdentityTokenPolicy child, a PropertyType with DataType UserTokenPolicy.
    *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  String readEndpointUrl() throws UaException;
+  @Nullable PropertyType getIdentityTokenPolicyNode() throws UaException;
+
+  /** Asynchronous form of {@link #getIdentityTokenPolicyNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getIdentityTokenPolicyNodeAsync();
 
   /**
-   * Write a new value for the EndpointUrl Node to the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the IdentityTokenPolicy child from the server.
    *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeEndpointUrl(String value) throws UaException;
+  @Nullable UserTokenPolicy readIdentityTokenPolicy() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readEndpointUrl}.
+   * Writes the Value of the IdentityTokenPolicy child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends String> readEndpointUrlAsync();
+  void writeIdentityTokenPolicy(@Nullable UserTokenPolicy value) throws UaException;
+
+  /** Asynchronous form of {@link #readIdentityTokenPolicy()}. */
+  CompletableFuture<? extends @Nullable UserTokenPolicy> readIdentityTokenPolicyAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeEndpointUrl}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * Asynchronous form of {@link #writeIdentityTokenPolicy}; completes with the operation status.
    */
-  CompletableFuture<StatusCode> writeEndpointUrlAsync(String value);
+  CompletableFuture<StatusCode> writeIdentityTokenPolicyAsync(@Nullable UserTokenPolicy value);
 
   /**
-   * Get the EndpointUrl {@link PropertyType} Node, or {@code null} if it does not exist.
+   * Resolves the optional TransportProfileUri child, a PropertyType with DataType String.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the EndpointUrl {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  PropertyType getEndpointUrlNode() throws UaException;
+  @Nullable PropertyType getTransportProfileUriNode() throws UaException;
+
+  /** Asynchronous form of {@link #getTransportProfileUriNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getTransportProfileUriNodeAsync();
 
   /**
-   * Asynchronous implementation of {@link #getEndpointUrlNode()}.
+   * Reads the Value of the TransportProfileUri child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends PropertyType> getEndpointUrlNodeAsync();
+  @Nullable String readTransportProfileUri() throws UaException;
 
   /**
-   * Get the local value of the SecurityMode Node.
+   * Writes the Value of the TransportProfileUri child to the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SecurityMode Node.
-   * @throws UaException if an error occurs creating or getting the SecurityMode Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  MessageSecurityMode getSecurityMode() throws UaException;
+  void writeTransportProfileUri(@Nullable String value) throws UaException;
+
+  /** Asynchronous form of {@link #readTransportProfileUri()}. */
+  CompletableFuture<? extends @Nullable String> readTransportProfileUriAsync();
 
   /**
-   * Set the local value of the SecurityMode Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SecurityMode Node.
-   * @throws UaException if an error occurs creating or getting the SecurityMode Node.
+   * Asynchronous form of {@link #writeTransportProfileUri}; completes with the operation status.
    */
-  void setSecurityMode(MessageSecurityMode value) throws UaException;
+  CompletableFuture<StatusCode> writeTransportProfileUriAsync(@Nullable String value);
 
   /**
-   * Read the value of the SecurityMode Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the mandatory HistoricalEventFilter child, a PropertyType with DataType EventFilter.
    *
-   * @return the {@link MessageSecurityMode} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  MessageSecurityMode readSecurityMode() throws UaException;
-
-  /**
-   * Write a new value for the SecurityMode Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link MessageSecurityMode} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeSecurityMode(MessageSecurityMode value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readSecurityMode}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends MessageSecurityMode> readSecurityModeAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeSecurityMode}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeSecurityModeAsync(MessageSecurityMode value);
-
-  /**
-   * Get the SecurityMode {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SecurityMode {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getSecurityModeNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getSecurityModeNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getSecurityModeNodeAsync();
-
-  /**
-   * Get the local value of the SecurityPolicyUri Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SecurityPolicyUri Node.
-   * @throws UaException if an error occurs creating or getting the SecurityPolicyUri Node.
-   */
-  String getSecurityPolicyUri() throws UaException;
-
-  /**
-   * Set the local value of the SecurityPolicyUri Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SecurityPolicyUri Node.
-   * @throws UaException if an error occurs creating or getting the SecurityPolicyUri Node.
-   */
-  void setSecurityPolicyUri(String value) throws UaException;
-
-  /**
-   * Read the value of the SecurityPolicyUri Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String readSecurityPolicyUri() throws UaException;
-
-  /**
-   * Write a new value for the SecurityPolicyUri Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeSecurityPolicyUri(String value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readSecurityPolicyUri}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String> readSecurityPolicyUriAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeSecurityPolicyUri}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeSecurityPolicyUriAsync(String value);
-
-  /**
-   * Get the SecurityPolicyUri {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SecurityPolicyUri {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getSecurityPolicyUriNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getSecurityPolicyUriNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getSecurityPolicyUriNodeAsync();
-
-  /**
-   * Get the local value of the IdentityTokenPolicy Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the IdentityTokenPolicy Node.
-   * @throws UaException if an error occurs creating or getting the IdentityTokenPolicy Node.
-   */
-  UserTokenPolicy getIdentityTokenPolicy() throws UaException;
-
-  /**
-   * Set the local value of the IdentityTokenPolicy Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the IdentityTokenPolicy Node.
-   * @throws UaException if an error occurs creating or getting the IdentityTokenPolicy Node.
-   */
-  void setIdentityTokenPolicy(UserTokenPolicy value) throws UaException;
-
-  /**
-   * Read the value of the IdentityTokenPolicy Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link UserTokenPolicy} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UserTokenPolicy readIdentityTokenPolicy() throws UaException;
-
-  /**
-   * Write a new value for the IdentityTokenPolicy Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link UserTokenPolicy} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeIdentityTokenPolicy(UserTokenPolicy value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readIdentityTokenPolicy}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UserTokenPolicy> readIdentityTokenPolicyAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeIdentityTokenPolicy}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeIdentityTokenPolicyAsync(UserTokenPolicy value);
-
-  /**
-   * Get the IdentityTokenPolicy {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the IdentityTokenPolicy {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getIdentityTokenPolicyNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getIdentityTokenPolicyNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getIdentityTokenPolicyNodeAsync();
-
-  /**
-   * Get the local value of the TransportProfileUri Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the TransportProfileUri Node.
-   * @throws UaException if an error occurs creating or getting the TransportProfileUri Node.
-   */
-  String getTransportProfileUri() throws UaException;
-
-  /**
-   * Set the local value of the TransportProfileUri Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the TransportProfileUri Node.
-   * @throws UaException if an error occurs creating or getting the TransportProfileUri Node.
-   */
-  void setTransportProfileUri(String value) throws UaException;
-
-  /**
-   * Read the value of the TransportProfileUri Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String readTransportProfileUri() throws UaException;
-
-  /**
-   * Write a new value for the TransportProfileUri Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeTransportProfileUri(String value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readTransportProfileUri}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String> readTransportProfileUriAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeTransportProfileUri}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeTransportProfileUriAsync(String value);
-
-  /**
-   * Get the TransportProfileUri {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the TransportProfileUri {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getTransportProfileUriNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getTransportProfileUriNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getTransportProfileUriNodeAsync();
-
-  /**
-   * Get the local value of the HistoricalEventFilter Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the HistoricalEventFilter Node.
-   * @throws UaException if an error occurs creating or getting the HistoricalEventFilter Node.
-   */
-  EventFilter getHistoricalEventFilter() throws UaException;
-
-  /**
-   * Set the local value of the HistoricalEventFilter Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the HistoricalEventFilter Node.
-   * @throws UaException if an error occurs creating or getting the HistoricalEventFilter Node.
-   */
-  void setHistoricalEventFilter(EventFilter value) throws UaException;
-
-  /**
-   * Read the value of the HistoricalEventFilter Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link EventFilter} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  EventFilter readHistoricalEventFilter() throws UaException;
-
-  /**
-   * Write a new value for the HistoricalEventFilter Node to the server and update the local value
-   * if the operation succeeds.
-   *
-   * @param value the {@link EventFilter} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeHistoricalEventFilter(EventFilter value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readHistoricalEventFilter}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends EventFilter> readHistoricalEventFilterAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeHistoricalEventFilter}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeHistoricalEventFilterAsync(EventFilter value);
-
-  /**
-   * Get the HistoricalEventFilter {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the HistoricalEventFilter {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getHistoricalEventFilterNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getHistoricalEventFilterNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getHistoricalEventFilterNode()}. */
   CompletableFuture<? extends PropertyType> getHistoricalEventFilterNodeAsync();
+
+  /**
+   * Reads the Value of the HistoricalEventFilter child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable EventFilter readHistoricalEventFilter() throws UaException;
+
+  /**
+   * Writes the Value of the HistoricalEventFilter child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeHistoricalEventFilter(@Nullable EventFilter value) throws UaException;
+
+  /** Asynchronous form of {@link #readHistoricalEventFilter()}. */
+  CompletableFuture<? extends @Nullable EventFilter> readHistoricalEventFilterAsync();
+
+  /**
+   * Asynchronous form of {@link #writeHistoricalEventFilter}; completes with the operation status.
+   */
+  CompletableFuture<StatusCode> writeHistoricalEventFilterAsync(@Nullable EventFilter value);
+
+  /**
+   * Resolves the optional Server child, a PropertyType with DataType String.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyType getServerNode() throws UaException;
+
+  /** Asynchronous form of {@link #getServerNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getServerNodeAsync();
+
+  /**
+   * Reads the Value of the Server child from the server.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable String readServer() throws UaException;
+
+  /**
+   * Writes the Value of the Server child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeServer(@Nullable String value) throws UaException;
+
+  /** Asynchronous form of {@link #readServer()}. */
+  CompletableFuture<? extends @Nullable String> readServerAsync();
+
+  /** Asynchronous form of {@link #writeServer}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeServerAsync(@Nullable String value);
 }

@@ -1,25 +1,11 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.variables;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -32,7 +18,15 @@ import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelExType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.BitFieldDefinition;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link BitFieldType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.29">Model
+ *     documentation</a>
+ */
 public class BitFieldTypeNode extends BaseDataVariableTypeNode implements BitFieldType {
   public BitFieldTypeNode(
       OpcUaClient client,
@@ -40,21 +34,21 @@ public class BitFieldTypeNode extends BaseDataVariableTypeNode implements BitFie
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       DataValue value,
       NodeId dataType,
       Integer valueRank,
-      UInteger[] arrayDimensions,
+      UInteger @Nullable [] arrayDimensions,
       UByte accessLevel,
       UByte userAccessLevel,
       Double minimumSamplingInterval,
       Boolean historizing,
-      AccessLevelExType accessLevelEx) {
+      @Nullable AccessLevelExType accessLevelEx) {
     super(
         client,
         nodeId,
@@ -79,83 +73,113 @@ public class BitFieldTypeNode extends BaseDataVariableTypeNode implements BitFie
   }
 
   @Override
-  public BitFieldDefinition[] getBitFieldsDefinitions() throws UaException {
-    PropertyTypeNode node = getBitFieldsDefinitionsNode();
-    return cast(node.getValue().getValue().getValue(), BitFieldDefinition[].class);
-  }
-
-  @Override
-  public void setBitFieldsDefinitions(BitFieldDefinition[] value) throws UaException {
-    PropertyTypeNode node = getBitFieldsDefinitionsNode();
-    ExtensionObject[] encoded =
-        ExtensionObject.encodeArray(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
-  }
-
-  @Override
-  public BitFieldDefinition[] readBitFieldsDefinitions() throws UaException {
-    try {
-      return readBitFieldsDefinitionsAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeBitFieldsDefinitions(BitFieldDefinition[] value) throws UaException {
-    try {
-      StatusCode statusCode = writeBitFieldsDefinitionsAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BitFieldDefinition[]> readBitFieldsDefinitionsAsync() {
-    return getBitFieldsDefinitionsNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), BitFieldDefinition[].class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeBitFieldsDefinitionsAsync(
-      BitFieldDefinition[] bitFieldsDefinitions) {
-    ExtensionObject[] encoded =
-        ExtensionObject.encodeArray(client.getStaticEncodingContext(), bitFieldsDefinitions);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getBitFieldsDefinitionsNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
   public PropertyTypeNode getBitFieldsDefinitionsNode() throws UaException {
-    try {
-      return getBitFieldsDefinitionsNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getBitFieldsDefinitionsNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends PropertyTypeNode> getBitFieldsDefinitionsNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "BitFieldsDefinitions",
-            ExpandedNodeId.parse("i=46"),
-            false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "BitFieldsDefinitions",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
+  }
+
+  @Override
+  public @Nullable BitFieldDefinition @Nullable [] readBitFieldsDefinitions() throws UaException {
+    return ClientNodeSupport.await(readBitFieldsDefinitionsAsync());
+  }
+
+  @Override
+  public void writeBitFieldsDefinitions(@Nullable BitFieldDefinition @Nullable [] value)
+      throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeBitFieldsDefinitionsAsync(value)),
+        "http://opcfoundation.org/UA/}BitFieldsDefinitions");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable BitFieldDefinition @Nullable []>
+      readBitFieldsDefinitionsAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getBitFieldsDefinitionsNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}BitFieldsDefinitions",
+                            true,
+                            BitFieldDefinition.class,
+                            1,
+                            null)),
+                v ->
+                    CompletableFuture.completedFuture(
+                        (@Nullable BitFieldDefinition @Nullable []) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeBitFieldsDefinitionsAsync(
+      @Nullable BitFieldDefinition @Nullable [] value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getBitFieldsDefinitionsNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}BitFieldsDefinitions",
+                        value,
+                        BitFieldDefinition.class,
+                        1,
+                        null)));
+  }
+
+  @Override
+  public @Nullable Variant readTypedValue() throws UaException {
+    return ClientNodeSupport.await(readTypedValueAsync());
+  }
+
+  @Override
+  public void writeTypedValue(@Nullable Variant value) throws UaException {
+    ClientNodeSupport.good(ClientNodeSupport.await(writeTypedValueAsync(value)), "Value");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable Variant> readTypedValueAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    CompletableFuture.completedFuture(this),
+                    n ->
+                        ClientNodeSupport.read(
+                            client, n, this, "Value", true, Variant.class, -1, null)),
+                v -> CompletableFuture.completedFuture((@Nullable Variant) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeTypedValueAsync(@Nullable Variant value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                n ->
+                    ClientNodeSupport.write(
+                        client, n, this, "Value", value, Variant.class, -1, null)));
   }
 }

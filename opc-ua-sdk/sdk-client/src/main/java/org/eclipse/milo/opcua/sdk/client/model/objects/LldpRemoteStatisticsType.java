@@ -1,388 +1,185 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
-import org.eclipse.milo.opcua.sdk.client.model.variables.BaseDataVariableType;
+import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.5.4">https://reference.opcfoundation.org/v105/Core/docs/Part22/5.5.4</a>
+ * Client API for the LldpRemoteStatisticsType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.5.4">Model
+ *     documentation</a>
  */
 public interface LldpRemoteStatisticsType extends BaseObjectType {
-  /**
-   * Get the local value of the LastChangeTime Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the LastChangeTime Node.
-   * @throws UaException if an error occurs creating or getting the LastChangeTime Node.
-   */
-  UInteger getLastChangeTime() throws UaException;
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 18996L);
 
   /**
-   * Set the local value of the LastChangeTime Node.
+   * Resolves the mandatory RemoteDrops child, a BaseDataVariableType with DataType UInt32.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the LastChangeTime Node.
-   * @throws UaException if an error occurs creating or getting the LastChangeTime Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  void setLastChangeTime(UInteger value) throws UaException;
+  VariableNode getRemoteDropsNode() throws UaException;
+
+  /** Asynchronous form of {@link #getRemoteDropsNode()}. */
+  CompletableFuture<? extends VariableNode> getRemoteDropsNodeAsync();
 
   /**
-   * Read the value of the LastChangeTime Node from the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the RemoteDrops child from the server.
    *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UInteger readLastChangeTime() throws UaException;
+  @Nullable UInteger readRemoteDrops() throws UaException;
 
   /**
-   * Write a new value for the LastChangeTime Node to the server and update the local value if the
-   * operation succeeds.
+   * Writes the Value of the RemoteDrops child to the server.
    *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeLastChangeTime(UInteger value) throws UaException;
+  void writeRemoteDrops(@Nullable UInteger value) throws UaException;
+
+  /** Asynchronous form of {@link #readRemoteDrops()}. */
+  CompletableFuture<? extends @Nullable UInteger> readRemoteDropsAsync();
+
+  /** Asynchronous form of {@link #writeRemoteDrops}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeRemoteDropsAsync(@Nullable UInteger value);
 
   /**
-   * An asynchronous implementation of {@link #readLastChangeTime}.
+   * Resolves the mandatory RemoteAgeouts child, a BaseDataVariableType with DataType UInt32.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  CompletableFuture<? extends UInteger> readLastChangeTimeAsync();
+  VariableNode getRemoteAgeoutsNode() throws UaException;
+
+  /** Asynchronous form of {@link #getRemoteAgeoutsNode()}. */
+  CompletableFuture<? extends VariableNode> getRemoteAgeoutsNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeLastChangeTime}.
+   * Reads the Value of the RemoteAgeouts child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeLastChangeTimeAsync(UInteger value);
+  @Nullable UInteger readRemoteAgeouts() throws UaException;
 
   /**
-   * Get the LastChangeTime {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
+   * Writes the Value of the RemoteAgeouts child to the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the LastChangeTime {@link BaseDataVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  BaseDataVariableType getLastChangeTimeNode() throws UaException;
+  void writeRemoteAgeouts(@Nullable UInteger value) throws UaException;
+
+  /** Asynchronous form of {@link #readRemoteAgeouts()}. */
+  CompletableFuture<? extends @Nullable UInteger> readRemoteAgeoutsAsync();
+
+  /** Asynchronous form of {@link #writeRemoteAgeouts}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeRemoteAgeoutsAsync(@Nullable UInteger value);
 
   /**
-   * Asynchronous implementation of {@link #getLastChangeTimeNode()}.
+   * Resolves the mandatory RemoteDeletes child, a BaseDataVariableType with DataType UInt32.
    *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  CompletableFuture<? extends BaseDataVariableType> getLastChangeTimeNodeAsync();
+  VariableNode getRemoteDeletesNode() throws UaException;
+
+  /** Asynchronous form of {@link #getRemoteDeletesNode()}. */
+  CompletableFuture<? extends VariableNode> getRemoteDeletesNodeAsync();
 
   /**
-   * Get the local value of the RemoteInserts Node.
+   * Reads the Value of the RemoteDeletes child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the RemoteInserts Node.
-   * @throws UaException if an error occurs creating or getting the RemoteInserts Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UInteger getRemoteInserts() throws UaException;
+  @Nullable UInteger readRemoteDeletes() throws UaException;
 
   /**
-   * Set the local value of the RemoteInserts Node.
+   * Writes the Value of the RemoteDeletes child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the RemoteInserts Node.
-   * @throws UaException if an error occurs creating or getting the RemoteInserts Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setRemoteInserts(UInteger value) throws UaException;
+  void writeRemoteDeletes(@Nullable UInteger value) throws UaException;
+
+  /** Asynchronous form of {@link #readRemoteDeletes()}. */
+  CompletableFuture<? extends @Nullable UInteger> readRemoteDeletesAsync();
+
+  /** Asynchronous form of {@link #writeRemoteDeletes}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeRemoteDeletesAsync(@Nullable UInteger value);
 
   /**
-   * Read the value of the RemoteInserts Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the mandatory RemoteInserts child, a BaseDataVariableType with DataType UInt32.
    *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  UInteger readRemoteInserts() throws UaException;
+  VariableNode getRemoteInsertsNode() throws UaException;
+
+  /** Asynchronous form of {@link #getRemoteInsertsNode()}. */
+  CompletableFuture<? extends VariableNode> getRemoteInsertsNodeAsync();
 
   /**
-   * Write a new value for the RemoteInserts Node to the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the RemoteInserts child from the server.
    *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeRemoteInserts(UInteger value) throws UaException;
+  @Nullable UInteger readRemoteInserts() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readRemoteInserts}.
+   * Writes the Value of the RemoteInserts child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends UInteger> readRemoteInsertsAsync();
+  void writeRemoteInserts(@Nullable UInteger value) throws UaException;
+
+  /** Asynchronous form of {@link #readRemoteInserts()}. */
+  CompletableFuture<? extends @Nullable UInteger> readRemoteInsertsAsync();
+
+  /** Asynchronous form of {@link #writeRemoteInserts}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeRemoteInsertsAsync(@Nullable UInteger value);
 
   /**
-   * An asynchronous implementation of {@link #writeRemoteInserts}.
+   * Resolves the mandatory LastChangeTime child, a BaseDataVariableType with DataType UInt32.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  CompletableFuture<StatusCode> writeRemoteInsertsAsync(UInteger value);
+  VariableNode getLastChangeTimeNode() throws UaException;
+
+  /** Asynchronous form of {@link #getLastChangeTimeNode()}. */
+  CompletableFuture<? extends VariableNode> getLastChangeTimeNodeAsync();
 
   /**
-   * Get the RemoteInserts {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
+   * Reads the Value of the LastChangeTime child from the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the RemoteInserts {@link BaseDataVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  BaseDataVariableType getRemoteInsertsNode() throws UaException;
+  @Nullable UInteger readLastChangeTime() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getRemoteInsertsNode()}.
+   * Writes the Value of the LastChangeTime child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends BaseDataVariableType> getRemoteInsertsNodeAsync();
+  void writeLastChangeTime(@Nullable UInteger value) throws UaException;
 
-  /**
-   * Get the local value of the RemoteDeletes Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the RemoteDeletes Node.
-   * @throws UaException if an error occurs creating or getting the RemoteDeletes Node.
-   */
-  UInteger getRemoteDeletes() throws UaException;
+  /** Asynchronous form of {@link #readLastChangeTime()}. */
+  CompletableFuture<? extends @Nullable UInteger> readLastChangeTimeAsync();
 
-  /**
-   * Set the local value of the RemoteDeletes Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the RemoteDeletes Node.
-   * @throws UaException if an error occurs creating or getting the RemoteDeletes Node.
-   */
-  void setRemoteDeletes(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the RemoteDeletes Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readRemoteDeletes() throws UaException;
-
-  /**
-   * Write a new value for the RemoteDeletes Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeRemoteDeletes(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readRemoteDeletes}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readRemoteDeletesAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeRemoteDeletes}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeRemoteDeletesAsync(UInteger value);
-
-  /**
-   * Get the RemoteDeletes {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the RemoteDeletes {@link BaseDataVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getRemoteDeletesNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getRemoteDeletesNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getRemoteDeletesNodeAsync();
-
-  /**
-   * Get the local value of the RemoteDrops Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the RemoteDrops Node.
-   * @throws UaException if an error occurs creating or getting the RemoteDrops Node.
-   */
-  UInteger getRemoteDrops() throws UaException;
-
-  /**
-   * Set the local value of the RemoteDrops Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the RemoteDrops Node.
-   * @throws UaException if an error occurs creating or getting the RemoteDrops Node.
-   */
-  void setRemoteDrops(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the RemoteDrops Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readRemoteDrops() throws UaException;
-
-  /**
-   * Write a new value for the RemoteDrops Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeRemoteDrops(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readRemoteDrops}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readRemoteDropsAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeRemoteDrops}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeRemoteDropsAsync(UInteger value);
-
-  /**
-   * Get the RemoteDrops {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the RemoteDrops {@link BaseDataVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getRemoteDropsNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getRemoteDropsNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getRemoteDropsNodeAsync();
-
-  /**
-   * Get the local value of the RemoteAgeouts Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the RemoteAgeouts Node.
-   * @throws UaException if an error occurs creating or getting the RemoteAgeouts Node.
-   */
-  UInteger getRemoteAgeouts() throws UaException;
-
-  /**
-   * Set the local value of the RemoteAgeouts Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the RemoteAgeouts Node.
-   * @throws UaException if an error occurs creating or getting the RemoteAgeouts Node.
-   */
-  void setRemoteAgeouts(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the RemoteAgeouts Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readRemoteAgeouts() throws UaException;
-
-  /**
-   * Write a new value for the RemoteAgeouts Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeRemoteAgeouts(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readRemoteAgeouts}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readRemoteAgeoutsAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeRemoteAgeouts}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeRemoteAgeoutsAsync(UInteger value);
-
-  /**
-   * Get the RemoteAgeouts {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the RemoteAgeouts {@link BaseDataVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getRemoteAgeoutsNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getRemoteAgeoutsNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getRemoteAgeoutsNodeAsync();
+  /** Asynchronous form of {@link #writeLastChangeTime}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeLastChangeTimeAsync(@Nullable UInteger value);
 }

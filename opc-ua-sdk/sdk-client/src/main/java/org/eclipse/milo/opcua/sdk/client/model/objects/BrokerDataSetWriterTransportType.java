@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
@@ -17,495 +7,265 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.BrokerTransportQualityOfService;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.3.2/#9.3.2.3">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.3.2/#9.3.2.3</a>
+ * Client API for the BrokerDataSetWriterTransportType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.3.2/#9.3.2.3">Model
+ *     documentation</a>
  */
 public interface BrokerDataSetWriterTransportType extends DataSetWriterTransportType {
-  QualifiedProperty<String> QUEUE_NAME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "QueueName",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 21138L);
 
-  QualifiedProperty<String> META_DATA_QUEUE_NAME =
+  QualifiedProperty<String> ResourceUri_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MetaDataQueueName",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
-
-  QualifiedProperty<String> RESOURCE_URI =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "ResourceUri",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
           -1,
           String.class);
 
-  QualifiedProperty<String> AUTHENTICATION_PROFILE_URI =
+  QualifiedProperty<String> MetaDataQueueName_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "AuthenticationProfileUri",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          Namespaces.OPC_UA,
+          "MetaDataQueueName",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
           -1,
           String.class);
 
-  QualifiedProperty<BrokerTransportQualityOfService> REQUESTED_DELIVERY_GUARANTEE =
+  QualifiedProperty<Double> MetaDataUpdateTime_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "RequestedDeliveryGuarantee",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15008"),
-          -1,
-          BrokerTransportQualityOfService.class);
-
-  QualifiedProperty<Double> META_DATA_UPDATE_TIME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "MetaDataUpdateTime",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 290L),
           -1,
           Double.class);
 
-  /**
-   * Get the local value of the QueueName Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the QueueName Node.
-   * @throws UaException if an error occurs creating or getting the QueueName Node.
-   */
-  String getQueueName() throws UaException;
+  QualifiedProperty<String> AuthenticationProfileUri_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "AuthenticationProfileUri",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+          -1,
+          String.class);
+
+  QualifiedProperty<BrokerTransportQualityOfService> RequestedDeliveryGuarantee_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "RequestedDeliveryGuarantee",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 15008L),
+          -1,
+          BrokerTransportQualityOfService.class);
+
+  QualifiedProperty<String> QueueName_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "QueueName",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+          -1,
+          String.class);
 
   /**
-   * Set the local value of the QueueName Node.
+   * Resolves the mandatory ResourceUri child, a PropertyType with DataType String.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the QueueName Node.
-   * @throws UaException if an error occurs creating or getting the QueueName Node.
-   */
-  void setQueueName(String value) throws UaException;
-
-  /**
-   * Read the value of the QueueName Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String readQueueName() throws UaException;
-
-  /**
-   * Write a new value for the QueueName Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeQueueName(String value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readQueueName}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String> readQueueNameAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeQueueName}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeQueueNameAsync(String value);
-
-  /**
-   * Get the QueueName {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the QueueName {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getQueueNameNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getQueueNameNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getQueueNameNodeAsync();
-
-  /**
-   * Get the local value of the MetaDataQueueName Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MetaDataQueueName Node.
-   * @throws UaException if an error occurs creating or getting the MetaDataQueueName Node.
-   */
-  String getMetaDataQueueName() throws UaException;
-
-  /**
-   * Set the local value of the MetaDataQueueName Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MetaDataQueueName Node.
-   * @throws UaException if an error occurs creating or getting the MetaDataQueueName Node.
-   */
-  void setMetaDataQueueName(String value) throws UaException;
-
-  /**
-   * Read the value of the MetaDataQueueName Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String readMetaDataQueueName() throws UaException;
-
-  /**
-   * Write a new value for the MetaDataQueueName Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMetaDataQueueName(String value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readMetaDataQueueName}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String> readMetaDataQueueNameAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeMetaDataQueueName}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMetaDataQueueNameAsync(String value);
-
-  /**
-   * Get the MetaDataQueueName {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MetaDataQueueName {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getMetaDataQueueNameNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getMetaDataQueueNameNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getMetaDataQueueNameNodeAsync();
-
-  /**
-   * Get the local value of the ResourceUri Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ResourceUri Node.
-   * @throws UaException if an error occurs creating or getting the ResourceUri Node.
-   */
-  String getResourceUri() throws UaException;
-
-  /**
-   * Set the local value of the ResourceUri Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ResourceUri Node.
-   * @throws UaException if an error occurs creating or getting the ResourceUri Node.
-   */
-  void setResourceUri(String value) throws UaException;
-
-  /**
-   * Read the value of the ResourceUri Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String readResourceUri() throws UaException;
-
-  /**
-   * Write a new value for the ResourceUri Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeResourceUri(String value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readResourceUri}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String> readResourceUriAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeResourceUri}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeResourceUriAsync(String value);
-
-  /**
-   * Get the ResourceUri {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ResourceUri {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getResourceUriNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getResourceUriNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getResourceUriNode()}. */
   CompletableFuture<? extends PropertyType> getResourceUriNodeAsync();
 
   /**
-   * Get the local value of the AuthenticationProfileUri Node.
+   * Reads the Value of the ResourceUri child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the AuthenticationProfileUri Node.
-   * @throws UaException if an error occurs creating or getting the AuthenticationProfileUri Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  String getAuthenticationProfileUri() throws UaException;
+  @Nullable String readResourceUri() throws UaException;
 
   /**
-   * Set the local value of the AuthenticationProfileUri Node.
+   * Writes the Value of the ResourceUri child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the AuthenticationProfileUri Node.
-   * @throws UaException if an error occurs creating or getting the AuthenticationProfileUri Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setAuthenticationProfileUri(String value) throws UaException;
+  void writeResourceUri(@Nullable String value) throws UaException;
+
+  /** Asynchronous form of {@link #readResourceUri()}. */
+  CompletableFuture<? extends @Nullable String> readResourceUriAsync();
+
+  /** Asynchronous form of {@link #writeResourceUri}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeResourceUriAsync(@Nullable String value);
 
   /**
-   * Read the value of the AuthenticationProfileUri Node from the server and update the local value
-   * if the operation succeeds.
+   * Resolves the mandatory MetaDataQueueName child, a PropertyType with DataType String.
    *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  String readAuthenticationProfileUri() throws UaException;
+  PropertyType getMetaDataQueueNameNode() throws UaException;
+
+  /** Asynchronous form of {@link #getMetaDataQueueNameNode()}. */
+  CompletableFuture<? extends PropertyType> getMetaDataQueueNameNodeAsync();
 
   /**
-   * Write a new value for the AuthenticationProfileUri Node to the server and update the local
-   * value if the operation succeeds.
+   * Reads the Value of the MetaDataQueueName child from the server.
    *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeAuthenticationProfileUri(String value) throws UaException;
+  @Nullable String readMetaDataQueueName() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readAuthenticationProfileUri}.
+   * Writes the Value of the MetaDataQueueName child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends String> readAuthenticationProfileUriAsync();
+  void writeMetaDataQueueName(@Nullable String value) throws UaException;
+
+  /** Asynchronous form of {@link #readMetaDataQueueName()}. */
+  CompletableFuture<? extends @Nullable String> readMetaDataQueueNameAsync();
+
+  /** Asynchronous form of {@link #writeMetaDataQueueName}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeMetaDataQueueNameAsync(@Nullable String value);
 
   /**
-   * An asynchronous implementation of {@link #writeAuthenticationProfileUri}.
+   * Resolves the mandatory MetaDataUpdateTime child, a PropertyType with DataType Duration.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeAuthenticationProfileUriAsync(String value);
-
-  /**
-   * Get the AuthenticationProfileUri {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the AuthenticationProfileUri {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getAuthenticationProfileUriNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getAuthenticationProfileUriNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getAuthenticationProfileUriNodeAsync();
-
-  /**
-   * Get the local value of the RequestedDeliveryGuarantee Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the RequestedDeliveryGuarantee Node.
-   * @throws UaException if an error occurs creating or getting the RequestedDeliveryGuarantee Node.
-   */
-  BrokerTransportQualityOfService getRequestedDeliveryGuarantee() throws UaException;
-
-  /**
-   * Set the local value of the RequestedDeliveryGuarantee Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the RequestedDeliveryGuarantee Node.
-   * @throws UaException if an error occurs creating or getting the RequestedDeliveryGuarantee Node.
-   */
-  void setRequestedDeliveryGuarantee(BrokerTransportQualityOfService value) throws UaException;
-
-  /**
-   * Read the value of the RequestedDeliveryGuarantee Node from the server and update the local
-   * value if the operation succeeds.
-   *
-   * @return the {@link BrokerTransportQualityOfService} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  BrokerTransportQualityOfService readRequestedDeliveryGuarantee() throws UaException;
-
-  /**
-   * Write a new value for the RequestedDeliveryGuarantee Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link BrokerTransportQualityOfService} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeRequestedDeliveryGuarantee(BrokerTransportQualityOfService value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readRequestedDeliveryGuarantee}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends BrokerTransportQualityOfService>
-      readRequestedDeliveryGuaranteeAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeRequestedDeliveryGuarantee}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeRequestedDeliveryGuaranteeAsync(
-      BrokerTransportQualityOfService value);
-
-  /**
-   * Get the RequestedDeliveryGuarantee {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the RequestedDeliveryGuarantee {@link PropertyType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getRequestedDeliveryGuaranteeNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getRequestedDeliveryGuaranteeNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getRequestedDeliveryGuaranteeNodeAsync();
-
-  /**
-   * Get the local value of the MetaDataUpdateTime Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MetaDataUpdateTime Node.
-   * @throws UaException if an error occurs creating or getting the MetaDataUpdateTime Node.
-   */
-  Double getMetaDataUpdateTime() throws UaException;
-
-  /**
-   * Set the local value of the MetaDataUpdateTime Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MetaDataUpdateTime Node.
-   * @throws UaException if an error occurs creating or getting the MetaDataUpdateTime Node.
-   */
-  void setMetaDataUpdateTime(Double value) throws UaException;
-
-  /**
-   * Read the value of the MetaDataUpdateTime Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link Double} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Double readMetaDataUpdateTime() throws UaException;
-
-  /**
-   * Write a new value for the MetaDataUpdateTime Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link Double} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMetaDataUpdateTime(Double value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readMetaDataUpdateTime}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Double> readMetaDataUpdateTimeAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeMetaDataUpdateTime}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMetaDataUpdateTimeAsync(Double value);
-
-  /**
-   * Get the MetaDataUpdateTime {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MetaDataUpdateTime {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getMetaDataUpdateTimeNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getMetaDataUpdateTimeNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getMetaDataUpdateTimeNode()}. */
   CompletableFuture<? extends PropertyType> getMetaDataUpdateTimeNodeAsync();
+
+  /**
+   * Reads the Value of the MetaDataUpdateTime child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable Double readMetaDataUpdateTime() throws UaException;
+
+  /**
+   * Writes the Value of the MetaDataUpdateTime child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeMetaDataUpdateTime(@Nullable Double value) throws UaException;
+
+  /** Asynchronous form of {@link #readMetaDataUpdateTime()}. */
+  CompletableFuture<? extends @Nullable Double> readMetaDataUpdateTimeAsync();
+
+  /** Asynchronous form of {@link #writeMetaDataUpdateTime}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeMetaDataUpdateTimeAsync(@Nullable Double value);
+
+  /**
+   * Resolves the mandatory AuthenticationProfileUri child, a PropertyType with DataType String.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getAuthenticationProfileUriNode() throws UaException;
+
+  /** Asynchronous form of {@link #getAuthenticationProfileUriNode()}. */
+  CompletableFuture<? extends PropertyType> getAuthenticationProfileUriNodeAsync();
+
+  /**
+   * Reads the Value of the AuthenticationProfileUri child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable String readAuthenticationProfileUri() throws UaException;
+
+  /**
+   * Writes the Value of the AuthenticationProfileUri child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeAuthenticationProfileUri(@Nullable String value) throws UaException;
+
+  /** Asynchronous form of {@link #readAuthenticationProfileUri()}. */
+  CompletableFuture<? extends @Nullable String> readAuthenticationProfileUriAsync();
+
+  /**
+   * Asynchronous form of {@link #writeAuthenticationProfileUri}; completes with the operation
+   * status.
+   */
+  CompletableFuture<StatusCode> writeAuthenticationProfileUriAsync(@Nullable String value);
+
+  /**
+   * Resolves the mandatory RequestedDeliveryGuarantee child, a PropertyType with DataType
+   * BrokerTransportQualityOfService.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getRequestedDeliveryGuaranteeNode() throws UaException;
+
+  /** Asynchronous form of {@link #getRequestedDeliveryGuaranteeNode()}. */
+  CompletableFuture<? extends PropertyType> getRequestedDeliveryGuaranteeNodeAsync();
+
+  /**
+   * Reads the Value of the RequestedDeliveryGuarantee child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable BrokerTransportQualityOfService readRequestedDeliveryGuarantee() throws UaException;
+
+  /**
+   * Writes the Value of the RequestedDeliveryGuarantee child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeRequestedDeliveryGuarantee(@Nullable BrokerTransportQualityOfService value)
+      throws UaException;
+
+  /** Asynchronous form of {@link #readRequestedDeliveryGuarantee()}. */
+  CompletableFuture<? extends @Nullable BrokerTransportQualityOfService>
+      readRequestedDeliveryGuaranteeAsync();
+
+  /**
+   * Asynchronous form of {@link #writeRequestedDeliveryGuarantee}; completes with the operation
+   * status.
+   */
+  CompletableFuture<StatusCode> writeRequestedDeliveryGuaranteeAsync(
+      @Nullable BrokerTransportQualityOfService value);
+
+  /**
+   * Resolves the mandatory QueueName child, a PropertyType with DataType String.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getQueueNameNode() throws UaException;
+
+  /** Asynchronous form of {@link #getQueueNameNode()}. */
+  CompletableFuture<? extends PropertyType> getQueueNameNodeAsync();
+
+  /**
+   * Reads the Value of the QueueName child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable String readQueueName() throws UaException;
+
+  /**
+   * Writes the Value of the QueueName child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeQueueName(@Nullable String value) throws UaException;
+
+  /** Asynchronous form of {@link #readQueueName()}. */
+  CompletableFuture<? extends @Nullable String> readQueueNameAsync();
+
+  /** Asynchronous form of {@link #writeQueueName}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeQueueNameAsync(@Nullable String value);
 }

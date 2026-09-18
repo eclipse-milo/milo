@@ -1,21 +1,8 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.variables;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
@@ -30,7 +17,15 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelExType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link MultiStateDiscreteType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.3/#5.3.3.3">Model
+ *     documentation</a>
+ */
 public class MultiStateDiscreteTypeNode extends DiscreteItemTypeNode
     implements MultiStateDiscreteType {
   public MultiStateDiscreteTypeNode(
@@ -39,21 +34,21 @@ public class MultiStateDiscreteTypeNode extends DiscreteItemTypeNode
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       DataValue value,
       NodeId dataType,
       Integer valueRank,
-      UInteger[] arrayDimensions,
+      UInteger @Nullable [] arrayDimensions,
       UByte accessLevel,
       UByte userAccessLevel,
       Double minimumSamplingInterval,
       Boolean historizing,
-      AccessLevelExType accessLevelEx) {
+      @Nullable AccessLevelExType accessLevelEx) {
     super(
         client,
         nodeId,
@@ -78,75 +73,108 @@ public class MultiStateDiscreteTypeNode extends DiscreteItemTypeNode
   }
 
   @Override
-  public LocalizedText[] getEnumStrings() throws UaException {
-    PropertyTypeNode node = getEnumStringsNode();
-    return (LocalizedText[]) node.getValue().getValue().getValue();
-  }
-
-  @Override
-  public void setEnumStrings(LocalizedText[] value) throws UaException {
-    PropertyTypeNode node = getEnumStringsNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public LocalizedText[] readEnumStrings() throws UaException {
-    try {
-      return readEnumStringsAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeEnumStrings(LocalizedText[] value) throws UaException {
-    try {
-      StatusCode statusCode = writeEnumStringsAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends LocalizedText[]> readEnumStringsAsync() {
-    return getEnumStringsNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (LocalizedText[]) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeEnumStringsAsync(LocalizedText[] enumStrings) {
-    DataValue value = DataValue.valueOnly(new Variant(enumStrings));
-    return getEnumStringsNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
   public PropertyTypeNode getEnumStringsNode() throws UaException {
-    try {
-      return getEnumStringsNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getEnumStringsNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends PropertyTypeNode> getEnumStringsNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "EnumStrings", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "EnumStrings",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
+  }
+
+  @Override
+  public LocalizedText @Nullable [] readEnumStrings() throws UaException {
+    return ClientNodeSupport.await(readEnumStringsAsync());
+  }
+
+  @Override
+  public void writeEnumStrings(LocalizedText @Nullable [] value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeEnumStringsAsync(value)),
+        "http://opcfoundation.org/UA/}EnumStrings");
+  }
+
+  @Override
+  public CompletableFuture<? extends LocalizedText @Nullable []> readEnumStringsAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getEnumStringsNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}EnumStrings",
+                            true,
+                            LocalizedText.class,
+                            1,
+                            null)),
+                v -> CompletableFuture.completedFuture((LocalizedText @Nullable []) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeEnumStringsAsync(LocalizedText @Nullable [] value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getEnumStringsNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}EnumStrings",
+                        value,
+                        LocalizedText.class,
+                        1,
+                        null)));
+  }
+
+  @Override
+  public @Nullable Variant readTypedValue() throws UaException {
+    return ClientNodeSupport.await(readTypedValueAsync());
+  }
+
+  @Override
+  public void writeTypedValue(@Nullable Variant value) throws UaException {
+    ClientNodeSupport.good(ClientNodeSupport.await(writeTypedValueAsync(value)), "Value");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable Variant> readTypedValueAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    CompletableFuture.completedFuture(this),
+                    n ->
+                        ClientNodeSupport.read(
+                            client, n, this, "Value", true, Variant.class, -2, null)),
+                v -> CompletableFuture.completedFuture((@Nullable Variant) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeTypedValueAsync(@Nullable Variant value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                n ->
+                    ClientNodeSupport.write(
+                        client, n, this, "Value", value, Variant.class, -2, null)));
   }
 }

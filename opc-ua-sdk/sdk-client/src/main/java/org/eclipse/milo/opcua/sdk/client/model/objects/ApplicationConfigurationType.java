@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
@@ -16,453 +6,167 @@ import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.14">https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.14</a>
+ * Client API for the ApplicationConfigurationType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.14">Model
+ *     documentation</a>
  */
 public interface ApplicationConfigurationType extends ServerConfigurationType {
-  QualifiedProperty<String> APPLICATION_URI =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ApplicationUri",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=23751"),
-          -1,
-          String.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 25731L);
 
-  QualifiedProperty<String> PRODUCT_URI =
+  QualifiedProperty<Boolean> IsNonUaApplication_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ProductUri",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=23751"),
-          -1,
-          String.class);
-
-  QualifiedProperty<ApplicationType> APPLICATION_TYPE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ApplicationType",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=307"),
-          -1,
-          ApplicationType.class);
-
-  QualifiedProperty<Boolean> ENABLED =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Enabled",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
-
-  QualifiedProperty<Boolean> IS_NON_UA_APPLICATION =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "IsNonUaApplication",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+          -1,
+          Boolean.class);
+
+  QualifiedProperty<Boolean> Enabled_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "Enabled",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
           -1,
           Boolean.class);
 
   /**
-   * Get the local value of the ApplicationUri Node.
+   * Resolves the mandatory ProductUri child, a PropertyType with DataType UriString.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ApplicationUri Node.
-   * @throws UaException if an error occurs creating or getting the ApplicationUri Node.
-   */
-  String getApplicationUri() throws UaException;
-
-  /**
-   * Set the local value of the ApplicationUri Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ApplicationUri Node.
-   * @throws UaException if an error occurs creating or getting the ApplicationUri Node.
-   */
-  void setApplicationUri(String value) throws UaException;
-
-  /**
-   * Read the value of the ApplicationUri Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String readApplicationUri() throws UaException;
-
-  /**
-   * Write a new value for the ApplicationUri Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeApplicationUri(String value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readApplicationUri}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String> readApplicationUriAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeApplicationUri}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeApplicationUriAsync(String value);
-
-  /**
-   * Get the ApplicationUri {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ApplicationUri {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getApplicationUriNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getApplicationUriNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getApplicationUriNodeAsync();
-
-  /**
-   * Get the local value of the ProductUri Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ProductUri Node.
-   * @throws UaException if an error occurs creating or getting the ProductUri Node.
-   */
-  String getProductUri() throws UaException;
-
-  /**
-   * Set the local value of the ProductUri Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ProductUri Node.
-   * @throws UaException if an error occurs creating or getting the ProductUri Node.
-   */
-  void setProductUri(String value) throws UaException;
-
-  /**
-   * Read the value of the ProductUri Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String readProductUri() throws UaException;
-
-  /**
-   * Write a new value for the ProductUri Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeProductUri(String value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readProductUri}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String> readProductUriAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeProductUri}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeProductUriAsync(String value);
-
-  /**
-   * Get the ProductUri {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ProductUri {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getProductUriNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getProductUriNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getProductUriNode()}. */
   CompletableFuture<? extends PropertyType> getProductUriNodeAsync();
 
   /**
-   * Get the local value of the ApplicationType Node.
+   * Resolves the mandatory ApplicationUri child, a PropertyType with DataType UriString.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ApplicationType Node.
-   * @throws UaException if an error occurs creating or getting the ApplicationType Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  ApplicationType getApplicationType() throws UaException;
+  PropertyType getApplicationUriNode() throws UaException;
+
+  /** Asynchronous form of {@link #getApplicationUriNode()}. */
+  CompletableFuture<? extends PropertyType> getApplicationUriNodeAsync();
 
   /**
-   * Set the local value of the ApplicationType Node.
+   * Resolves the optional KeyCredentials child, a KeyCredentialConfigurationFolderType.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ApplicationType Node.
-   * @throws UaException if an error occurs creating or getting the ApplicationType Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/8.6.2">KeyCredentialConfigurationFolderType
+   *     documentation</a>
    */
-  void setApplicationType(ApplicationType value) throws UaException;
+  @Nullable KeyCredentialConfigurationFolderType getKeyCredentialsNode() throws UaException;
+
+  /** Asynchronous form of {@link #getKeyCredentialsNode()}. */
+  CompletableFuture<? extends @Nullable KeyCredentialConfigurationFolderType>
+      getKeyCredentialsNodeAsync();
 
   /**
-   * Read the value of the ApplicationType Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the mandatory ApplicationType child, a PropertyType with DataType ApplicationType.
    *
-   * @return the {@link ApplicationType} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  ApplicationType readApplicationType() throws UaException;
-
-  /**
-   * Write a new value for the ApplicationType Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link ApplicationType} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeApplicationType(ApplicationType value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readApplicationType}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends ApplicationType> readApplicationTypeAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeApplicationType}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeApplicationTypeAsync(ApplicationType value);
-
-  /**
-   * Get the ApplicationType {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ApplicationType {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getApplicationTypeNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getApplicationTypeNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getApplicationTypeNode()}. */
   CompletableFuture<? extends PropertyType> getApplicationTypeNodeAsync();
 
   /**
-   * Get the local value of the Enabled Node.
+   * Resolves the optional IsNonUaApplication child, a PropertyType with DataType Boolean.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the Enabled Node.
-   * @throws UaException if an error occurs creating or getting the Enabled Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  Boolean getEnabled() throws UaException;
+  @Nullable PropertyType getIsNonUaApplicationNode() throws UaException;
+
+  /** Asynchronous form of {@link #getIsNonUaApplicationNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getIsNonUaApplicationNodeAsync();
 
   /**
-   * Set the local value of the Enabled Node.
+   * Reads the Value of the IsNonUaApplication child from the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the Enabled Node.
-   * @throws UaException if an error occurs creating or getting the Enabled Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setEnabled(Boolean value) throws UaException;
+  @Nullable Boolean readIsNonUaApplication() throws UaException;
 
   /**
-   * Read the value of the Enabled Node from the server and update the local value if the operation
-   * succeeds.
+   * Writes the Value of the IsNonUaApplication child to the server.
    *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  Boolean readEnabled() throws UaException;
+  void writeIsNonUaApplication(@Nullable Boolean value) throws UaException;
+
+  /** Asynchronous form of {@link #readIsNonUaApplication()}. */
+  CompletableFuture<? extends @Nullable Boolean> readIsNonUaApplicationAsync();
+
+  /** Asynchronous form of {@link #writeIsNonUaApplication}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeIsNonUaApplicationAsync(@Nullable Boolean value);
 
   /**
-   * Write a new value for the Enabled Node to the server and update the local value if the
-   * operation succeeds.
+   * Resolves the optional AuthorizationServices child, a
+   * AuthorizationServicesConfigurationFolderType.
    *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/9.7.3">Model
+   *     documentation</a>
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/9.7.2">AuthorizationServicesConfigurationFolderType
+   *     documentation</a>
    */
-  void writeEnabled(Boolean value) throws UaException;
+  @Nullable AuthorizationServicesConfigurationFolderType getAuthorizationServicesNode()
+      throws UaException;
+
+  /** Asynchronous form of {@link #getAuthorizationServicesNode()}. */
+  CompletableFuture<? extends @Nullable AuthorizationServicesConfigurationFolderType>
+      getAuthorizationServicesNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #readEnabled}.
+   * Resolves the mandatory Enabled child, a PropertyType with DataType Boolean.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Boolean> readEnabledAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeEnabled}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeEnabledAsync(Boolean value);
-
-  /**
-   * Get the Enabled {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the Enabled {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getEnabledNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getEnabledNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getEnabledNode()}. */
   CompletableFuture<? extends PropertyType> getEnabledNodeAsync();
 
   /**
-   * Get the local value of the IsNonUaApplication Node.
+   * Reads the Value of the Enabled child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the IsNonUaApplication Node.
-   * @throws UaException if an error occurs creating or getting the IsNonUaApplication Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  Boolean getIsNonUaApplication() throws UaException;
+  @Nullable Boolean readEnabled() throws UaException;
 
   /**
-   * Set the local value of the IsNonUaApplication Node.
+   * Writes the Value of the Enabled child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the IsNonUaApplication Node.
-   * @throws UaException if an error occurs creating or getting the IsNonUaApplication Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setIsNonUaApplication(Boolean value) throws UaException;
+  void writeEnabled(@Nullable Boolean value) throws UaException;
 
-  /**
-   * Read the value of the IsNonUaApplication Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Boolean readIsNonUaApplication() throws UaException;
+  /** Asynchronous form of {@link #readEnabled()}. */
+  CompletableFuture<? extends @Nullable Boolean> readEnabledAsync();
 
-  /**
-   * Write a new value for the IsNonUaApplication Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeIsNonUaApplication(Boolean value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readIsNonUaApplication}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Boolean> readIsNonUaApplicationAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeIsNonUaApplication}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeIsNonUaApplicationAsync(Boolean value);
-
-  /**
-   * Get the IsNonUaApplication {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the IsNonUaApplication {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getIsNonUaApplicationNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getIsNonUaApplicationNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getIsNonUaApplicationNodeAsync();
-
-  /**
-   * Get the KeyCredentials {@link KeyCredentialConfigurationFolderType} Node, or {@code null} if it
-   * does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the KeyCredentials {@link KeyCredentialConfigurationFolderType} Node, or {@code null}
-   *     if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  KeyCredentialConfigurationFolderType getKeyCredentialsNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getKeyCredentialsNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the
-   *     KeyCredentialConfigurationFolderType Node or completes exceptionally if an error occurs
-   *     creating or getting the Node.
-   */
-  CompletableFuture<? extends KeyCredentialConfigurationFolderType> getKeyCredentialsNodeAsync();
-
-  /**
-   * Get the AuthorizationServices {@link AuthorizationServicesConfigurationFolderType} Node, or
-   * {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the AuthorizationServices {@link AuthorizationServicesConfigurationFolderType} Node, or
-   *     {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  AuthorizationServicesConfigurationFolderType getAuthorizationServicesNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getAuthorizationServicesNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the
-   *     AuthorizationServicesConfigurationFolderType Node or completes exceptionally if an error
-   *     occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends AuthorizationServicesConfigurationFolderType>
-      getAuthorizationServicesNodeAsync();
+  /** Asynchronous form of {@link #writeEnabled}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeEnabledAsync(@Nullable Boolean value);
 }

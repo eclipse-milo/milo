@@ -1,36 +1,29 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyTypeNode;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link AggregateConfigurationType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part13/4.2.1/#4.2.1.2">Model
+ *     documentation</a>
+ */
 public class AggregateConfigurationTypeNode extends BaseObjectTypeNode
     implements AggregateConfigurationType {
   public AggregateConfigurationTypeNode(
@@ -39,12 +32,12 @@ public class AggregateConfigurationTypeNode extends BaseObjectTypeNode
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         client,
@@ -62,301 +55,290 @@ public class AggregateConfigurationTypeNode extends BaseObjectTypeNode
   }
 
   @Override
-  public Boolean getTreatUncertainAsBad() throws UaException {
-    PropertyTypeNode node = getTreatUncertainAsBadNode();
-    return (Boolean) node.getValue().getValue().getValue();
-  }
-
-  @Override
-  public void setTreatUncertainAsBad(Boolean value) throws UaException {
-    PropertyTypeNode node = getTreatUncertainAsBadNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public Boolean readTreatUncertainAsBad() throws UaException {
-    try {
-      return readTreatUncertainAsBadAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeTreatUncertainAsBad(Boolean value) throws UaException {
-    try {
-      StatusCode statusCode = writeTreatUncertainAsBadAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends Boolean> readTreatUncertainAsBadAsync() {
-    return getTreatUncertainAsBadNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (Boolean) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeTreatUncertainAsBadAsync(Boolean treatUncertainAsBad) {
-    DataValue value = DataValue.valueOnly(new Variant(treatUncertainAsBad));
-    return getTreatUncertainAsBadNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public PropertyTypeNode getTreatUncertainAsBadNode() throws UaException {
-    try {
-      return getTreatUncertainAsBadNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends PropertyTypeNode> getTreatUncertainAsBadNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "TreatUncertainAsBad",
-            ExpandedNodeId.parse("i=46"),
-            false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
-  }
-
-  @Override
-  public UByte getPercentDataBad() throws UaException {
-    PropertyTypeNode node = getPercentDataBadNode();
-    return (UByte) node.getValue().getValue().getValue();
-  }
-
-  @Override
-  public void setPercentDataBad(UByte value) throws UaException {
-    PropertyTypeNode node = getPercentDataBadNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public UByte readPercentDataBad() throws UaException {
-    try {
-      return readPercentDataBadAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writePercentDataBad(UByte value) throws UaException {
-    try {
-      StatusCode statusCode = writePercentDataBadAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends UByte> readPercentDataBadAsync() {
-    return getPercentDataBadNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (UByte) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writePercentDataBadAsync(UByte percentDataBad) {
-    DataValue value = DataValue.valueOnly(new Variant(percentDataBad));
-    return getPercentDataBadNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
   public PropertyTypeNode getPercentDataBadNode() throws UaException {
-    try {
-      return getPercentDataBadNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getPercentDataBadNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends PropertyTypeNode> getPercentDataBadNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "PercentDataBad", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "PercentDataBad",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public UByte getPercentDataGood() throws UaException {
-    PropertyTypeNode node = getPercentDataGoodNode();
-    return (UByte) node.getValue().getValue().getValue();
+  public @Nullable UByte readPercentDataBad() throws UaException {
+    return ClientNodeSupport.await(readPercentDataBadAsync());
   }
 
   @Override
-  public void setPercentDataGood(UByte value) throws UaException {
-    PropertyTypeNode node = getPercentDataGoodNode();
-    node.setValue(new Variant(value));
+  public void writePercentDataBad(@Nullable UByte value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writePercentDataBadAsync(value)),
+        "http://opcfoundation.org/UA/}PercentDataBad");
   }
 
   @Override
-  public UByte readPercentDataGood() throws UaException {
-    try {
-      return readPercentDataGoodAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable UByte> readPercentDataBadAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getPercentDataBadNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}PercentDataBad",
+                            true,
+                            UByte.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable UByte) v)));
   }
 
   @Override
-  public void writePercentDataGood(UByte value) throws UaException {
-    try {
-      StatusCode statusCode = writePercentDataGoodAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends UByte> readPercentDataGoodAsync() {
-    return getPercentDataGoodNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (UByte) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writePercentDataGoodAsync(UByte percentDataGood) {
-    DataValue value = DataValue.valueOnly(new Variant(percentDataGood));
-    return getPercentDataGoodNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<StatusCode> writePercentDataBadAsync(@Nullable UByte value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getPercentDataBadNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}PercentDataBad",
+                        value,
+                        UByte.class,
+                        -1,
+                        null)));
   }
 
   @Override
   public PropertyTypeNode getPercentDataGoodNode() throws UaException {
-    try {
-      return getPercentDataGoodNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getPercentDataGoodNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends PropertyTypeNode> getPercentDataGoodNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "PercentDataGood", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "PercentDataGood",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public Boolean getUseSlopedExtrapolation() throws UaException {
-    PropertyTypeNode node = getUseSlopedExtrapolationNode();
-    return (Boolean) node.getValue().getValue().getValue();
+  public @Nullable UByte readPercentDataGood() throws UaException {
+    return ClientNodeSupport.await(readPercentDataGoodAsync());
   }
 
   @Override
-  public void setUseSlopedExtrapolation(Boolean value) throws UaException {
-    PropertyTypeNode node = getUseSlopedExtrapolationNode();
-    node.setValue(new Variant(value));
+  public void writePercentDataGood(@Nullable UByte value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writePercentDataGoodAsync(value)),
+        "http://opcfoundation.org/UA/}PercentDataGood");
   }
 
   @Override
-  public Boolean readUseSlopedExtrapolation() throws UaException {
-    try {
-      return readUseSlopedExtrapolationAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable UByte> readPercentDataGoodAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getPercentDataGoodNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}PercentDataGood",
+                            true,
+                            UByte.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable UByte) v)));
   }
 
   @Override
-  public void writeUseSlopedExtrapolation(Boolean value) throws UaException {
-    try {
-      StatusCode statusCode = writeUseSlopedExtrapolationAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<StatusCode> writePercentDataGoodAsync(@Nullable UByte value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getPercentDataGoodNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}PercentDataGood",
+                        value,
+                        UByte.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public CompletableFuture<? extends Boolean> readUseSlopedExtrapolationAsync() {
-    return getUseSlopedExtrapolationNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (Boolean) v.getValue().getValue());
+  public PropertyTypeNode getTreatUncertainAsBadNode() throws UaException {
+    return ClientNodeSupport.await(getTreatUncertainAsBadNodeAsync());
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeUseSlopedExtrapolationAsync(
-      Boolean useSlopedExtrapolation) {
-    DataValue value = DataValue.valueOnly(new Variant(useSlopedExtrapolation));
-    return getUseSlopedExtrapolationNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<? extends PropertyTypeNode> getTreatUncertainAsBadNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "TreatUncertainAsBad",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
+  }
+
+  @Override
+  public @Nullable Boolean readTreatUncertainAsBad() throws UaException {
+    return ClientNodeSupport.await(readTreatUncertainAsBadAsync());
+  }
+
+  @Override
+  public void writeTreatUncertainAsBad(@Nullable Boolean value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeTreatUncertainAsBadAsync(value)),
+        "http://opcfoundation.org/UA/}TreatUncertainAsBad");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable Boolean> readTreatUncertainAsBadAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getTreatUncertainAsBadNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}TreatUncertainAsBad",
+                            true,
+                            Boolean.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable Boolean) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeTreatUncertainAsBadAsync(@Nullable Boolean value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getTreatUncertainAsBadNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}TreatUncertainAsBad",
+                        value,
+                        Boolean.class,
+                        -1,
+                        null)));
   }
 
   @Override
   public PropertyTypeNode getUseSlopedExtrapolationNode() throws UaException {
-    try {
-      return getUseSlopedExtrapolationNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getUseSlopedExtrapolationNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends PropertyTypeNode> getUseSlopedExtrapolationNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "UseSlopedExtrapolation",
-            ExpandedNodeId.parse("i=46"),
-            false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "UseSlopedExtrapolation",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
+  }
+
+  @Override
+  public @Nullable Boolean readUseSlopedExtrapolation() throws UaException {
+    return ClientNodeSupport.await(readUseSlopedExtrapolationAsync());
+  }
+
+  @Override
+  public void writeUseSlopedExtrapolation(@Nullable Boolean value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeUseSlopedExtrapolationAsync(value)),
+        "http://opcfoundation.org/UA/}UseSlopedExtrapolation");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable Boolean> readUseSlopedExtrapolationAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getUseSlopedExtrapolationNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}UseSlopedExtrapolation",
+                            true,
+                            Boolean.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable Boolean) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeUseSlopedExtrapolationAsync(@Nullable Boolean value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getUseSlopedExtrapolationNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}UseSlopedExtrapolation",
+                        value,
+                        Boolean.class,
+                        -1,
+                        null)));
   }
 }

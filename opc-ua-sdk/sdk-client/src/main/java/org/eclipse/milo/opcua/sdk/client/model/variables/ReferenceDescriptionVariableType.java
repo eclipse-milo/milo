@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.variables;
 
 import java.util.concurrent.CompletableFuture;
@@ -15,87 +5,80 @@ import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescriptionDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceListEntryDataType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/** Client API for the ReferenceDescriptionVariableType VariableType. */
 public interface ReferenceDescriptionVariableType extends BaseDataVariableType {
-  QualifiedProperty<ReferenceListEntryDataType[]> REFERENCE_REFINEMENT =
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 32657L);
+
+  QualifiedProperty<ReferenceListEntryDataType[]> ReferenceRefinement_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "ReferenceRefinement",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=32660"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 32660L),
           1,
           ReferenceListEntryDataType[].class);
 
   /**
-   * Get the local value of the ReferenceRefinement Node.
+   * Resolves the optional ReferenceRefinement child, a PropertyType with DataType
+   * ReferenceListEntryDataType.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ReferenceRefinement Node.
-   * @throws UaException if an error occurs creating or getting the ReferenceRefinement Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  ReferenceListEntryDataType[] getReferenceRefinement() throws UaException;
+  @Nullable PropertyType getReferenceRefinementNode() throws UaException;
+
+  /** Asynchronous form of {@link #getReferenceRefinementNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getReferenceRefinementNodeAsync();
 
   /**
-   * Set the local value of the ReferenceRefinement Node.
+   * Reads the Value of the ReferenceRefinement child from the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ReferenceRefinement Node.
-   * @throws UaException if an error occurs creating or getting the ReferenceRefinement Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setReferenceRefinement(ReferenceListEntryDataType[] value) throws UaException;
+  @Nullable ReferenceListEntryDataType @Nullable [] readReferenceRefinement() throws UaException;
 
   /**
-   * Read the value of the ReferenceRefinement Node from the server and update the local value if
-   * the operation succeeds.
+   * Writes the Value of the ReferenceRefinement child to the server.
    *
-   * @return the {@link ReferenceListEntryDataType[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  ReferenceListEntryDataType[] readReferenceRefinement() throws UaException;
+  void writeReferenceRefinement(@Nullable ReferenceListEntryDataType @Nullable [] value)
+      throws UaException;
+
+  /** Asynchronous form of {@link #readReferenceRefinement()}. */
+  CompletableFuture<? extends @Nullable ReferenceListEntryDataType @Nullable []>
+      readReferenceRefinementAsync();
 
   /**
-   * Write a new value for the ReferenceRefinement Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link ReferenceListEntryDataType[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * Asynchronous form of {@link #writeReferenceRefinement}; completes with the operation status.
    */
-  void writeReferenceRefinement(ReferenceListEntryDataType[] value) throws UaException;
+  CompletableFuture<StatusCode> writeReferenceRefinementAsync(
+      @Nullable ReferenceListEntryDataType @Nullable [] value);
 
   /**
-   * An asynchronous implementation of {@link #readReferenceRefinement}.
+   * Reads the Value of this node from the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends ReferenceListEntryDataType[]> readReferenceRefinementAsync();
+  @Nullable ReferenceDescriptionDataType readTypedValue() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeReferenceRefinement}.
+   * Writes the Value of this node to the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeReferenceRefinementAsync(ReferenceListEntryDataType[] value);
+  void writeTypedValue(@Nullable ReferenceDescriptionDataType value) throws UaException;
 
-  /**
-   * Get the ReferenceRefinement {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ReferenceRefinement {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getReferenceRefinementNode() throws UaException;
+  /** Asynchronous form of {@link #readTypedValue()}. */
+  CompletableFuture<? extends @Nullable ReferenceDescriptionDataType> readTypedValueAsync();
 
-  /**
-   * Asynchronous implementation of {@link #getReferenceRefinementNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getReferenceRefinementNodeAsync();
+  /** Asynchronous form of {@link #writeTypedValue}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeTypedValueAsync(@Nullable ReferenceDescriptionDataType value);
 }

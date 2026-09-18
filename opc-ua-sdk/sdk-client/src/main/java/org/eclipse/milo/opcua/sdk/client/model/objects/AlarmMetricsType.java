@@ -1,612 +1,335 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallOptions;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallResult;
 import org.eclipse.milo.opcua.sdk.client.model.variables.AlarmRateVariableType;
-import org.eclipse.milo.opcua.sdk.client.model.variables.BaseDataVariableType;
+import org.eclipse.milo.opcua.sdk.client.nodes.UaMethodNode;
+import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/9.2">https://reference.opcfoundation.org/v105/Core/docs/Part9/9.2</a>
+ * Client API for the AlarmMetricsType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/9.2">Model
+ *     documentation</a>
  */
 public interface AlarmMetricsType extends BaseObjectType {
-  /**
-   * Get the local value of the AlarmCount Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the AlarmCount Node.
-   * @throws UaException if an error occurs creating or getting the AlarmCount Node.
-   */
-  UInteger getAlarmCount() throws UaException;
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 17279L);
 
   /**
-   * Set the local value of the AlarmCount Node.
+   * Resolves the mandatory AlarmCount child, a BaseDataVariableType with DataType UInt32.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the AlarmCount Node.
-   * @throws UaException if an error occurs creating or getting the AlarmCount Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  void setAlarmCount(UInteger value) throws UaException;
+  VariableNode getAlarmCountNode() throws UaException;
+
+  /** Asynchronous form of {@link #getAlarmCountNode()}. */
+  CompletableFuture<? extends VariableNode> getAlarmCountNodeAsync();
 
   /**
-   * Read the value of the AlarmCount Node from the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the AlarmCount child from the server.
    *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UInteger readAlarmCount() throws UaException;
+  @Nullable UInteger readAlarmCount() throws UaException;
 
   /**
-   * Write a new value for the AlarmCount Node to the server and update the local value if the
-   * operation succeeds.
+   * Writes the Value of the AlarmCount child to the server.
    *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeAlarmCount(UInteger value) throws UaException;
+  void writeAlarmCount(@Nullable UInteger value) throws UaException;
+
+  /** Asynchronous form of {@link #readAlarmCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readAlarmCountAsync();
+
+  /** Asynchronous form of {@link #writeAlarmCount}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeAlarmCountAsync(@Nullable UInteger value);
 
   /**
-   * An asynchronous implementation of {@link #readAlarmCount}.
+   * Resolves the mandatory MaximumUnAck child, a BaseDataVariableType with DataType Duration.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  CompletableFuture<? extends UInteger> readAlarmCountAsync();
+  VariableNode getMaximumUnAckNode() throws UaException;
+
+  /** Asynchronous form of {@link #getMaximumUnAckNode()}. */
+  CompletableFuture<? extends VariableNode> getMaximumUnAckNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeAlarmCount}.
+   * Reads the Value of the MaximumUnAck child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeAlarmCountAsync(UInteger value);
+  @Nullable Double readMaximumUnAck() throws UaException;
 
   /**
-   * Get the AlarmCount {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
+   * Writes the Value of the MaximumUnAck child to the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the AlarmCount {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  BaseDataVariableType getAlarmCountNode() throws UaException;
+  void writeMaximumUnAck(@Nullable Double value) throws UaException;
+
+  /** Asynchronous form of {@link #readMaximumUnAck()}. */
+  CompletableFuture<? extends @Nullable Double> readMaximumUnAckAsync();
+
+  /** Asynchronous form of {@link #writeMaximumUnAck}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeMaximumUnAckAsync(@Nullable Double value);
 
   /**
-   * Asynchronous implementation of {@link #getAlarmCountNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getAlarmCountNodeAsync();
-
-  /**
-   * Get the local value of the StartTime Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the StartTime Node.
-   * @throws UaException if an error occurs creating or getting the StartTime Node.
-   */
-  DateTime getStartTime() throws UaException;
-
-  /**
-   * Set the local value of the StartTime Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the StartTime Node.
-   * @throws UaException if an error occurs creating or getting the StartTime Node.
-   */
-  void setStartTime(DateTime value) throws UaException;
-
-  /**
-   * Read the value of the StartTime Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link DateTime} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  DateTime readStartTime() throws UaException;
-
-  /**
-   * Write a new value for the StartTime Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link DateTime} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeStartTime(DateTime value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readStartTime}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends DateTime> readStartTimeAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeStartTime}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeStartTimeAsync(DateTime value);
-
-  /**
-   * Get the StartTime {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the StartTime {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getStartTimeNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getStartTimeNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getStartTimeNodeAsync();
-
-  /**
-   * Get the local value of the MaximumActiveState Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaximumActiveState Node.
-   * @throws UaException if an error occurs creating or getting the MaximumActiveState Node.
-   */
-  Double getMaximumActiveState() throws UaException;
-
-  /**
-   * Set the local value of the MaximumActiveState Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaximumActiveState Node.
-   * @throws UaException if an error occurs creating or getting the MaximumActiveState Node.
-   */
-  void setMaximumActiveState(Double value) throws UaException;
-
-  /**
-   * Read the value of the MaximumActiveState Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link Double} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Double readMaximumActiveState() throws UaException;
-
-  /**
-   * Write a new value for the MaximumActiveState Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link Double} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMaximumActiveState(Double value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readMaximumActiveState}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Double> readMaximumActiveStateAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeMaximumActiveState}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMaximumActiveStateAsync(Double value);
-
-  /**
-   * Get the MaximumActiveState {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaximumActiveState {@link BaseDataVariableType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getMaximumActiveStateNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getMaximumActiveStateNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getMaximumActiveStateNodeAsync();
-
-  /**
-   * Get the local value of the MaximumUnAck Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaximumUnAck Node.
-   * @throws UaException if an error occurs creating or getting the MaximumUnAck Node.
-   */
-  Double getMaximumUnAck() throws UaException;
-
-  /**
-   * Set the local value of the MaximumUnAck Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaximumUnAck Node.
-   * @throws UaException if an error occurs creating or getting the MaximumUnAck Node.
-   */
-  void setMaximumUnAck(Double value) throws UaException;
-
-  /**
-   * Read the value of the MaximumUnAck Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link Double} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Double readMaximumUnAck() throws UaException;
-
-  /**
-   * Write a new value for the MaximumUnAck Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Double} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMaximumUnAck(Double value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readMaximumUnAck}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Double> readMaximumUnAckAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeMaximumUnAck}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMaximumUnAckAsync(Double value);
-
-  /**
-   * Get the MaximumUnAck {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaximumUnAck {@link BaseDataVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getMaximumUnAckNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getMaximumUnAckNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getMaximumUnAckNodeAsync();
-
-  /**
-   * Get the local value of the CurrentAlarmRate Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the CurrentAlarmRate Node.
-   * @throws UaException if an error occurs creating or getting the CurrentAlarmRate Node.
-   */
-  Double getCurrentAlarmRate() throws UaException;
-
-  /**
-   * Set the local value of the CurrentAlarmRate Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the CurrentAlarmRate Node.
-   * @throws UaException if an error occurs creating or getting the CurrentAlarmRate Node.
-   */
-  void setCurrentAlarmRate(Double value) throws UaException;
-
-  /**
-   * Read the value of the CurrentAlarmRate Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link Double} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Double readCurrentAlarmRate() throws UaException;
-
-  /**
-   * Write a new value for the CurrentAlarmRate Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Double} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeCurrentAlarmRate(Double value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readCurrentAlarmRate}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Double> readCurrentAlarmRateAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeCurrentAlarmRate}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeCurrentAlarmRateAsync(Double value);
-
-  /**
-   * Get the CurrentAlarmRate {@link AlarmRateVariableType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the CurrentAlarmRate {@link AlarmRateVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  AlarmRateVariableType getCurrentAlarmRateNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getCurrentAlarmRateNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the AlarmRateVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends AlarmRateVariableType> getCurrentAlarmRateNodeAsync();
-
-  /**
-   * Get the local value of the MaximumAlarmRate Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaximumAlarmRate Node.
-   * @throws UaException if an error occurs creating or getting the MaximumAlarmRate Node.
-   */
-  Double getMaximumAlarmRate() throws UaException;
-
-  /**
-   * Set the local value of the MaximumAlarmRate Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaximumAlarmRate Node.
-   * @throws UaException if an error occurs creating or getting the MaximumAlarmRate Node.
-   */
-  void setMaximumAlarmRate(Double value) throws UaException;
-
-  /**
-   * Read the value of the MaximumAlarmRate Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link Double} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Double readMaximumAlarmRate() throws UaException;
-
-  /**
-   * Write a new value for the MaximumAlarmRate Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Double} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMaximumAlarmRate(Double value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readMaximumAlarmRate}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Double> readMaximumAlarmRateAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeMaximumAlarmRate}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMaximumAlarmRateAsync(Double value);
-
-  /**
-   * Get the MaximumAlarmRate {@link AlarmRateVariableType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaximumAlarmRate {@link AlarmRateVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  AlarmRateVariableType getMaximumAlarmRateNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getMaximumAlarmRateNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the AlarmRateVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends AlarmRateVariableType> getMaximumAlarmRateNodeAsync();
-
-  /**
-   * Get the local value of the MaximumReAlarmCount Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaximumReAlarmCount Node.
-   * @throws UaException if an error occurs creating or getting the MaximumReAlarmCount Node.
-   */
-  UInteger getMaximumReAlarmCount() throws UaException;
-
-  /**
-   * Set the local value of the MaximumReAlarmCount Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaximumReAlarmCount Node.
-   * @throws UaException if an error occurs creating or getting the MaximumReAlarmCount Node.
-   */
-  void setMaximumReAlarmCount(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the MaximumReAlarmCount Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readMaximumReAlarmCount() throws UaException;
-
-  /**
-   * Write a new value for the MaximumReAlarmCount Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMaximumReAlarmCount(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readMaximumReAlarmCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readMaximumReAlarmCountAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeMaximumReAlarmCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMaximumReAlarmCountAsync(UInteger value);
-
-  /**
-   * Get the MaximumReAlarmCount {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaximumReAlarmCount {@link BaseDataVariableType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getMaximumReAlarmCountNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getMaximumReAlarmCountNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getMaximumReAlarmCountNodeAsync();
-
-  /**
-   * Get the local value of the AverageAlarmRate Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the AverageAlarmRate Node.
-   * @throws UaException if an error occurs creating or getting the AverageAlarmRate Node.
-   */
-  Double getAverageAlarmRate() throws UaException;
-
-  /**
-   * Set the local value of the AverageAlarmRate Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the AverageAlarmRate Node.
-   * @throws UaException if an error occurs creating or getting the AverageAlarmRate Node.
-   */
-  void setAverageAlarmRate(Double value) throws UaException;
-
-  /**
-   * Read the value of the AverageAlarmRate Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link Double} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Double readAverageAlarmRate() throws UaException;
-
-  /**
-   * Write a new value for the AverageAlarmRate Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Double} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeAverageAlarmRate(Double value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readAverageAlarmRate}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Double> readAverageAlarmRateAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeAverageAlarmRate}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeAverageAlarmRateAsync(Double value);
-
-  /**
-   * Get the AverageAlarmRate {@link AlarmRateVariableType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the AverageAlarmRate {@link AlarmRateVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * Resolves the mandatory AverageAlarmRate child, a AlarmRateVariableType with DataType Double.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/9.3">AlarmRateVariableType
+   *     documentation</a>
    */
   AlarmRateVariableType getAverageAlarmRateNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getAverageAlarmRateNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the AlarmRateVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getAverageAlarmRateNode()}. */
   CompletableFuture<? extends AlarmRateVariableType> getAverageAlarmRateNodeAsync();
+
+  /**
+   * Reads the Value of the AverageAlarmRate child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable Double readAverageAlarmRate() throws UaException;
+
+  /**
+   * Writes the Value of the AverageAlarmRate child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeAverageAlarmRate(@Nullable Double value) throws UaException;
+
+  /** Asynchronous form of {@link #readAverageAlarmRate()}. */
+  CompletableFuture<? extends @Nullable Double> readAverageAlarmRateAsync();
+
+  /** Asynchronous form of {@link #writeAverageAlarmRate}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeAverageAlarmRateAsync(@Nullable Double value);
+
+  /**
+   * Resolves the mandatory CurrentAlarmRate child, a AlarmRateVariableType with DataType Double.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/9.3">AlarmRateVariableType
+   *     documentation</a>
+   */
+  AlarmRateVariableType getCurrentAlarmRateNode() throws UaException;
+
+  /** Asynchronous form of {@link #getCurrentAlarmRateNode()}. */
+  CompletableFuture<? extends AlarmRateVariableType> getCurrentAlarmRateNodeAsync();
+
+  /**
+   * Reads the Value of the CurrentAlarmRate child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable Double readCurrentAlarmRate() throws UaException;
+
+  /**
+   * Writes the Value of the CurrentAlarmRate child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeCurrentAlarmRate(@Nullable Double value) throws UaException;
+
+  /** Asynchronous form of {@link #readCurrentAlarmRate()}. */
+  CompletableFuture<? extends @Nullable Double> readCurrentAlarmRateAsync();
+
+  /** Asynchronous form of {@link #writeCurrentAlarmRate}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeCurrentAlarmRateAsync(@Nullable Double value);
+
+  /**
+   * Resolves the mandatory MaximumAlarmRate child, a AlarmRateVariableType with DataType Double.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/9.3">AlarmRateVariableType
+   *     documentation</a>
+   */
+  AlarmRateVariableType getMaximumAlarmRateNode() throws UaException;
+
+  /** Asynchronous form of {@link #getMaximumAlarmRateNode()}. */
+  CompletableFuture<? extends AlarmRateVariableType> getMaximumAlarmRateNodeAsync();
+
+  /**
+   * Reads the Value of the MaximumAlarmRate child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable Double readMaximumAlarmRate() throws UaException;
+
+  /**
+   * Writes the Value of the MaximumAlarmRate child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeMaximumAlarmRate(@Nullable Double value) throws UaException;
+
+  /** Asynchronous form of {@link #readMaximumAlarmRate()}. */
+  CompletableFuture<? extends @Nullable Double> readMaximumAlarmRateAsync();
+
+  /** Asynchronous form of {@link #writeMaximumAlarmRate}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeMaximumAlarmRateAsync(@Nullable Double value);
+
+  /**
+   * Resolves the mandatory MaximumActiveState child, a BaseDataVariableType with DataType Duration.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  VariableNode getMaximumActiveStateNode() throws UaException;
+
+  /** Asynchronous form of {@link #getMaximumActiveStateNode()}. */
+  CompletableFuture<? extends VariableNode> getMaximumActiveStateNodeAsync();
+
+  /**
+   * Reads the Value of the MaximumActiveState child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable Double readMaximumActiveState() throws UaException;
+
+  /**
+   * Writes the Value of the MaximumActiveState child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeMaximumActiveState(@Nullable Double value) throws UaException;
+
+  /** Asynchronous form of {@link #readMaximumActiveState()}. */
+  CompletableFuture<? extends @Nullable Double> readMaximumActiveStateAsync();
+
+  /** Asynchronous form of {@link #writeMaximumActiveState}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeMaximumActiveStateAsync(@Nullable Double value);
+
+  /**
+   * Resolves the mandatory MaximumReAlarmCount child, a BaseDataVariableType with DataType UInt32.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  VariableNode getMaximumReAlarmCountNode() throws UaException;
+
+  /** Asynchronous form of {@link #getMaximumReAlarmCountNode()}. */
+  CompletableFuture<? extends VariableNode> getMaximumReAlarmCountNodeAsync();
+
+  /**
+   * Reads the Value of the MaximumReAlarmCount child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable UInteger readMaximumReAlarmCount() throws UaException;
+
+  /**
+   * Writes the Value of the MaximumReAlarmCount child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeMaximumReAlarmCount(@Nullable UInteger value) throws UaException;
+
+  /** Asynchronous form of {@link #readMaximumReAlarmCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readMaximumReAlarmCountAsync();
+
+  /**
+   * Asynchronous form of {@link #writeMaximumReAlarmCount}; completes with the operation status.
+   */
+  CompletableFuture<StatusCode> writeMaximumReAlarmCountAsync(@Nullable UInteger value);
+
+  /**
+   * Resolves the mandatory StartTime child, a BaseDataVariableType with DataType UtcTime.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  VariableNode getStartTimeNode() throws UaException;
+
+  /** Asynchronous form of {@link #getStartTimeNode()}. */
+  CompletableFuture<? extends VariableNode> getStartTimeNodeAsync();
+
+  /**
+   * Reads the Value of the StartTime child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable DateTime readStartTime() throws UaException;
+
+  /**
+   * Writes the Value of the StartTime child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeStartTime(@Nullable DateTime value) throws UaException;
+
+  /** Asynchronous form of {@link #readStartTime()}. */
+  CompletableFuture<? extends @Nullable DateTime> readStartTimeAsync();
+
+  /** Asynchronous form of {@link #writeStartTime}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeStartTimeAsync(@Nullable DateTime value);
+
+  /**
+   * Resolves the mandatory Reset Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/9.4">Model
+   *     documentation</a>
+   */
+  UaMethodNode getResetMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getResetMethodNode()}. */
+  CompletableFuture<UaMethodNode> getResetMethodNodeAsync();
+
+  /**
+   * Calls the Reset Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/9.4">Model
+   *     documentation</a>
+   */
+  void reset() throws UaException;
+
+  /**
+   * Calls the Reset Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callReset() throws UaException;
+
+  /**
+   * Calls the Reset Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callResetWith(MethodCallOptions options) throws UaException;
+
+  /** Asynchronous form of {@link #reset}. */
+  CompletableFuture<Void> resetAsync();
+
+  /** Asynchronous form of {@link #callReset}. */
+  CompletableFuture<MethodCallResult<Void>> callResetAsync();
+
+  /** Asynchronous form of {@link #callResetWith}. */
+  CompletableFuture<MethodCallResult<Void>> callResetWithAsync(MethodCallOptions options);
 }

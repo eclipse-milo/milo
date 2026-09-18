@@ -1,259 +1,161 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.variables;
 
 import java.util.concurrent.CompletableFuture;
 import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/** Client API for the DataTypeDictionaryType VariableType. */
 public interface DataTypeDictionaryType extends BaseDataVariableType {
-  QualifiedProperty<String> DATA_TYPE_VERSION =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "DataTypeVersion",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 72L);
 
-  QualifiedProperty<String> NAMESPACE_URI =
+  QualifiedProperty<Boolean> Deprecated_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "NamespaceUri",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
-
-  QualifiedProperty<Boolean> DEPRECATED =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "Deprecated",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
           -1,
           Boolean.class);
 
-  /**
-   * Get the local value of the DataTypeVersion Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the DataTypeVersion Node.
-   * @throws UaException if an error occurs creating or getting the DataTypeVersion Node.
-   */
-  String getDataTypeVersion() throws UaException;
+  QualifiedProperty<String> NamespaceUri_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "NamespaceUri",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+          -1,
+          String.class);
+
+  QualifiedProperty<String> DataTypeVersion__PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "DataTypeVersion",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+          -1,
+          String.class);
 
   /**
-   * Set the local value of the DataTypeVersion Node.
+   * Resolves the optional Deprecated child, a PropertyType with DataType Boolean.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the DataTypeVersion Node.
-   * @throws UaException if an error occurs creating or getting the DataTypeVersion Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  void setDataTypeVersion(String value) throws UaException;
+  @Nullable PropertyType getDeprecatedNode() throws UaException;
+
+  /** Asynchronous form of {@link #getDeprecatedNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getDeprecatedNodeAsync();
 
   /**
-   * Read the value of the DataTypeVersion Node from the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the Deprecated child from the server.
    *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  String readDataTypeVersion() throws UaException;
+  @Nullable Boolean readDeprecated() throws UaException;
 
   /**
-   * Write a new value for the DataTypeVersion Node to the server and update the local value if the
-   * operation succeeds.
+   * Writes the Value of the Deprecated child to the server.
    *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeDataTypeVersion(String value) throws UaException;
+  void writeDeprecated(@Nullable Boolean value) throws UaException;
+
+  /** Asynchronous form of {@link #readDeprecated()}. */
+  CompletableFuture<? extends @Nullable Boolean> readDeprecatedAsync();
+
+  /** Asynchronous form of {@link #writeDeprecated}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeDeprecatedAsync(@Nullable Boolean value);
 
   /**
-   * An asynchronous implementation of {@link #readDataTypeVersion}.
+   * Resolves the optional NamespaceUri child, a PropertyType with DataType String.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  CompletableFuture<? extends String> readDataTypeVersionAsync();
+  @Nullable PropertyType getNamespaceUriNode() throws UaException;
+
+  /** Asynchronous form of {@link #getNamespaceUriNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getNamespaceUriNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeDataTypeVersion}.
+   * Reads the Value of the NamespaceUri child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeDataTypeVersionAsync(String value);
+  @Nullable String readNamespaceUri() throws UaException;
 
   /**
-   * Get the DataTypeVersion {@link PropertyType} Node, or {@code null} if it does not exist.
+   * Writes the Value of the NamespaceUri child to the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the DataTypeVersion {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  PropertyType getDataTypeVersionNode() throws UaException;
+  void writeNamespaceUri(@Nullable String value) throws UaException;
+
+  /** Asynchronous form of {@link #readNamespaceUri()}. */
+  CompletableFuture<? extends @Nullable String> readNamespaceUriAsync();
+
+  /** Asynchronous form of {@link #writeNamespaceUri}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeNamespaceUriAsync(@Nullable String value);
 
   /**
-   * Asynchronous implementation of {@link #getDataTypeVersionNode()}.
+   * Resolves the optional DataTypeVersion child, a PropertyType with DataType String.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  CompletableFuture<? extends PropertyType> getDataTypeVersionNodeAsync();
+  @Nullable PropertyType getDataTypeVersion_Node() throws UaException;
+
+  /** Asynchronous form of {@link #getDataTypeVersion_Node()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getDataTypeVersion_NodeAsync();
 
   /**
-   * Get the local value of the NamespaceUri Node.
+   * Reads the Value of the DataTypeVersion child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the NamespaceUri Node.
-   * @throws UaException if an error occurs creating or getting the NamespaceUri Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  String getNamespaceUri() throws UaException;
+  @Nullable String readDataTypeVersion_() throws UaException;
 
   /**
-   * Set the local value of the NamespaceUri Node.
+   * Writes the Value of the DataTypeVersion child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the NamespaceUri Node.
-   * @throws UaException if an error occurs creating or getting the NamespaceUri Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setNamespaceUri(String value) throws UaException;
+  void writeDataTypeVersion_(@Nullable String value) throws UaException;
+
+  /** Asynchronous form of {@link #readDataTypeVersion_()}. */
+  CompletableFuture<? extends @Nullable String> readDataTypeVersion_Async();
+
+  /** Asynchronous form of {@link #writeDataTypeVersion_}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeDataTypeVersion_Async(@Nullable String value);
 
   /**
-   * Read the value of the NamespaceUri Node from the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of this node from the server.
    *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  String readNamespaceUri() throws UaException;
+  @Nullable ByteString readTypedValue() throws UaException;
 
   /**
-   * Write a new value for the NamespaceUri Node to the server and update the local value if the
-   * operation succeeds.
+   * Writes the Value of this node to the server.
    *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeNamespaceUri(String value) throws UaException;
+  void writeTypedValue(@Nullable ByteString value) throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #readNamespaceUri}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String> readNamespaceUriAsync();
+  /** Asynchronous form of {@link #readTypedValue()}. */
+  CompletableFuture<? extends @Nullable ByteString> readTypedValueAsync();
 
-  /**
-   * An asynchronous implementation of {@link #writeNamespaceUri}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeNamespaceUriAsync(String value);
-
-  /**
-   * Get the NamespaceUri {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the NamespaceUri {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getNamespaceUriNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getNamespaceUriNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getNamespaceUriNodeAsync();
-
-  /**
-   * Get the local value of the Deprecated Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the Deprecated Node.
-   * @throws UaException if an error occurs creating or getting the Deprecated Node.
-   */
-  Boolean getDeprecated() throws UaException;
-
-  /**
-   * Set the local value of the Deprecated Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the Deprecated Node.
-   * @throws UaException if an error occurs creating or getting the Deprecated Node.
-   */
-  void setDeprecated(Boolean value) throws UaException;
-
-  /**
-   * Read the value of the Deprecated Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Boolean readDeprecated() throws UaException;
-
-  /**
-   * Write a new value for the Deprecated Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeDeprecated(Boolean value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readDeprecated}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Boolean> readDeprecatedAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeDeprecated}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeDeprecatedAsync(Boolean value);
-
-  /**
-   * Get the Deprecated {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the Deprecated {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getDeprecatedNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getDeprecatedNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getDeprecatedNodeAsync();
+  /** Asynchronous form of {@link #writeTypedValue}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeTypedValueAsync(@Nullable ByteString value);
 }

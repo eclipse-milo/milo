@@ -1,38 +1,30 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyTypeNode;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReceiveQosDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link DatagramDataSetReaderTransportType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.3.1/#9.3.1.4">Model
+ *     documentation</a>
+ */
 public class DatagramDataSetReaderTransportTypeNode extends DataSetReaderTransportTypeNode
     implements DatagramDataSetReaderTransportType {
   public DatagramDataSetReaderTransportTypeNode(
@@ -41,12 +33,12 @@ public class DatagramDataSetReaderTransportTypeNode extends DataSetReaderTranspo
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         client,
@@ -64,245 +56,243 @@ public class DatagramDataSetReaderTransportTypeNode extends DataSetReaderTranspo
   }
 
   @Override
-  public String getQosCategory() throws UaException {
-    PropertyTypeNode node = getQosCategoryNode();
-    return (String) node.getValue().getValue().getValue();
+  public @Nullable PropertyTypeNode getDatagramQosNode() throws UaException {
+    return ClientNodeSupport.await(getDatagramQosNodeAsync());
   }
 
   @Override
-  public void setQosCategory(String value) throws UaException {
-    PropertyTypeNode node = getQosCategoryNode();
-    node.setValue(new Variant(value));
+  public CompletableFuture<? extends @Nullable PropertyTypeNode> getDatagramQosNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "DatagramQos",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public String readQosCategory() throws UaException {
-    try {
-      return readQosCategoryAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable ReceiveQosDataType @Nullable [] readDatagramQos() throws UaException {
+    return ClientNodeSupport.await(readDatagramQosAsync());
   }
 
   @Override
-  public void writeQosCategory(String value) throws UaException {
-    try {
-      StatusCode statusCode = writeQosCategoryAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public void writeDatagramQos(@Nullable ReceiveQosDataType @Nullable [] value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeDatagramQosAsync(value)),
+        "http://opcfoundation.org/UA/}DatagramQos");
   }
 
   @Override
-  public CompletableFuture<? extends String> readQosCategoryAsync() {
-    return getQosCategoryNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (String) v.getValue().getValue());
+  public CompletableFuture<? extends @Nullable ReceiveQosDataType @Nullable []>
+      readDatagramQosAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getDatagramQosNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}DatagramQos",
+                            false,
+                            ReceiveQosDataType.class,
+                            1,
+                            null)),
+                v ->
+                    CompletableFuture.completedFuture(
+                        (@Nullable ReceiveQosDataType @Nullable []) v)));
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeQosCategoryAsync(String qosCategory) {
-    DataValue value = DataValue.valueOnly(new Variant(qosCategory));
-    return getQosCategoryNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<StatusCode> writeDatagramQosAsync(
+      @Nullable ReceiveQosDataType @Nullable [] value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getDatagramQosNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}DatagramQos",
+                        value,
+                        ReceiveQosDataType.class,
+                        1,
+                        null)));
   }
 
   @Override
-  public PropertyTypeNode getQosCategoryNode() throws UaException {
-    try {
-      return getQosCategoryNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable PropertyTypeNode getQosCategoryNode() throws UaException {
+    return ClientNodeSupport.await(getQosCategoryNodeAsync());
   }
 
   @Override
-  public CompletableFuture<? extends PropertyTypeNode> getQosCategoryNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "QosCategory", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+  public CompletableFuture<? extends @Nullable PropertyTypeNode> getQosCategoryNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "QosCategory",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public ReceiveQosDataType[] getDatagramQos() throws UaException {
-    PropertyTypeNode node = getDatagramQosNode();
-    return cast(node.getValue().getValue().getValue(), ReceiveQosDataType[].class);
+  public @Nullable String readQosCategory() throws UaException {
+    return ClientNodeSupport.await(readQosCategoryAsync());
   }
 
   @Override
-  public void setDatagramQos(ReceiveQosDataType[] value) throws UaException {
-    PropertyTypeNode node = getDatagramQosNode();
-    ExtensionObject[] encoded =
-        ExtensionObject.encodeArray(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
+  public void writeQosCategory(@Nullable String value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeQosCategoryAsync(value)),
+        "http://opcfoundation.org/UA/}QosCategory");
   }
 
   @Override
-  public ReceiveQosDataType[] readDatagramQos() throws UaException {
-    try {
-      return readDatagramQosAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable String> readQosCategoryAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getQosCategoryNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}QosCategory",
+                            false,
+                            String.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable String) v)));
   }
 
   @Override
-  public void writeDatagramQos(ReceiveQosDataType[] value) throws UaException {
-    try {
-      StatusCode statusCode = writeDatagramQosAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<StatusCode> writeQosCategoryAsync(@Nullable String value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getQosCategoryNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}QosCategory",
+                        value,
+                        String.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public CompletableFuture<? extends ReceiveQosDataType[]> readDatagramQosAsync() {
-    return getDatagramQosNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), ReceiveQosDataType[].class));
+  public @Nullable PropertyTypeNode getTopicNode() throws UaException {
+    return ClientNodeSupport.await(getTopicNodeAsync());
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeDatagramQosAsync(ReceiveQosDataType[] datagramQos) {
-    ExtensionObject[] encoded =
-        ExtensionObject.encodeArray(client.getStaticEncodingContext(), datagramQos);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getDatagramQosNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<? extends @Nullable PropertyTypeNode> getTopicNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "Topic",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public PropertyTypeNode getDatagramQosNode() throws UaException {
-    try {
-      return getDatagramQosNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable String readTopic() throws UaException {
+    return ClientNodeSupport.await(readTopicAsync());
   }
 
   @Override
-  public CompletableFuture<? extends PropertyTypeNode> getDatagramQosNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "DatagramQos", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+  public void writeTopic(@Nullable String value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeTopicAsync(value)), "http://opcfoundation.org/UA/}Topic");
   }
 
   @Override
-  public String getTopic() throws UaException {
-    PropertyTypeNode node = getTopicNode();
-    return (String) node.getValue().getValue().getValue();
+  public CompletableFuture<? extends @Nullable String> readTopicAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getTopicNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}Topic",
+                            false,
+                            String.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable String) v)));
   }
 
   @Override
-  public void setTopic(String value) throws UaException {
-    PropertyTypeNode node = getTopicNode();
-    node.setValue(new Variant(value));
+  public CompletableFuture<StatusCode> writeTopicAsync(@Nullable String value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getTopicNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}Topic",
+                        value,
+                        String.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public String readTopic() throws UaException {
-    try {
-      return readTopicAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable NetworkAddressTypeNode getAddressNode() throws UaException {
+    return ClientNodeSupport.await(getAddressNodeAsync());
   }
 
   @Override
-  public void writeTopic(String value) throws UaException {
-    try {
-      StatusCode statusCode = writeTopicAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends String> readTopicAsync() {
-    return getTopicNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (String) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeTopicAsync(String topic) {
-    DataValue value = DataValue.valueOnly(new Variant(topic));
-    return getTopicNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public PropertyTypeNode getTopicNode() throws UaException {
-    try {
-      return getTopicNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends PropertyTypeNode> getTopicNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Topic", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
-  }
-
-  @Override
-  public NetworkAddressTypeNode getAddressNode() throws UaException {
-    try {
-      return getAddressNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends NetworkAddressTypeNode> getAddressNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Address", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (NetworkAddressTypeNode) node);
+  public CompletableFuture<? extends @Nullable NetworkAddressTypeNode> getAddressNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "Address",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Object,
+                        NetworkAddressTypeNode.class)));
   }
 }

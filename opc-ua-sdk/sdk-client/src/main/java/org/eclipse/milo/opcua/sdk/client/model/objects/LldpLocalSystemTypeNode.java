@@ -1,30 +1,15 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyTypeNode;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ChassisIdSubtype;
@@ -32,7 +17,15 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.LldpSystemCapabilitiesMap;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link LldpLocalSystemType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.5.4">Model
+ *     documentation</a>
+ */
 public class LldpLocalSystemTypeNode extends BaseObjectTypeNode implements LldpLocalSystemType {
   public LldpLocalSystemTypeNode(
       OpcUaClient client,
@@ -40,12 +33,12 @@ public class LldpLocalSystemTypeNode extends BaseObjectTypeNode implements LldpL
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         client,
@@ -63,473 +56,443 @@ public class LldpLocalSystemTypeNode extends BaseObjectTypeNode implements LldpL
   }
 
   @Override
-  public ChassisIdSubtype getChassisIdSubtype() throws UaException {
-    PropertyTypeNode node = getChassisIdSubtypeNode();
-    Object value = node.getValue().getValue().getValue();
-
-    if (value instanceof Integer) {
-      return ChassisIdSubtype.from((Integer) value);
-    } else if (value instanceof ChassisIdSubtype) {
-      return (ChassisIdSubtype) value;
-    } else {
-      return null;
-    }
-  }
-
-  @Override
-  public void setChassisIdSubtype(ChassisIdSubtype value) throws UaException {
-    PropertyTypeNode node = getChassisIdSubtypeNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public ChassisIdSubtype readChassisIdSubtype() throws UaException {
-    try {
-      return readChassisIdSubtypeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeChassisIdSubtype(ChassisIdSubtype value) throws UaException {
-    try {
-      StatusCode statusCode = writeChassisIdSubtypeAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends ChassisIdSubtype> readChassisIdSubtypeAsync() {
-    return getChassisIdSubtypeNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(
-            v -> {
-              Object value = v.getValue().getValue();
-              if (value instanceof Integer) {
-                return ChassisIdSubtype.from((Integer) value);
-              } else {
-                return null;
-              }
-            });
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeChassisIdSubtypeAsync(
-      ChassisIdSubtype chassisIdSubtype) {
-    DataValue value = DataValue.valueOnly(new Variant(chassisIdSubtype));
-    return getChassisIdSubtypeNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public PropertyTypeNode getChassisIdSubtypeNode() throws UaException {
-    try {
-      return getChassisIdSubtypeNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends PropertyTypeNode> getChassisIdSubtypeNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "ChassisIdSubtype",
-            ExpandedNodeId.parse("i=46"),
-            false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
-  }
-
-  @Override
-  public String getChassisId() throws UaException {
-    PropertyTypeNode node = getChassisIdNode();
-    return (String) node.getValue().getValue().getValue();
-  }
-
-  @Override
-  public void setChassisId(String value) throws UaException {
-    PropertyTypeNode node = getChassisIdNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public String readChassisId() throws UaException {
-    try {
-      return readChassisIdAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeChassisId(String value) throws UaException {
-    try {
-      StatusCode statusCode = writeChassisIdAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends String> readChassisIdAsync() {
-    return getChassisIdNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (String) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeChassisIdAsync(String chassisId) {
-    DataValue value = DataValue.valueOnly(new Variant(chassisId));
-    return getChassisIdNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public PropertyTypeNode getChassisIdNode() throws UaException {
-    try {
-      return getChassisIdNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends PropertyTypeNode> getChassisIdNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "ChassisId", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
-  }
-
-  @Override
-  public String getSystemName() throws UaException {
-    PropertyTypeNode node = getSystemNameNode();
-    return (String) node.getValue().getValue().getValue();
-  }
-
-  @Override
-  public void setSystemName(String value) throws UaException {
-    PropertyTypeNode node = getSystemNameNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public String readSystemName() throws UaException {
-    try {
-      return readSystemNameAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeSystemName(String value) throws UaException {
-    try {
-      StatusCode statusCode = writeSystemNameAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends String> readSystemNameAsync() {
-    return getSystemNameNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (String) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeSystemNameAsync(String systemName) {
-    DataValue value = DataValue.valueOnly(new Variant(systemName));
-    return getSystemNameNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
   public PropertyTypeNode getSystemNameNode() throws UaException {
-    try {
-      return getSystemNameNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getSystemNameNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends PropertyTypeNode> getSystemNameNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "SystemName", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "SystemName",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public String getSystemDescription() throws UaException {
-    PropertyTypeNode node = getSystemDescriptionNode();
-    return (String) node.getValue().getValue().getValue();
+  public @Nullable String readSystemName() throws UaException {
+    return ClientNodeSupport.await(readSystemNameAsync());
   }
 
   @Override
-  public void setSystemDescription(String value) throws UaException {
-    PropertyTypeNode node = getSystemDescriptionNode();
-    node.setValue(new Variant(value));
+  public void writeSystemName(@Nullable String value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeSystemNameAsync(value)),
+        "http://opcfoundation.org/UA/}SystemName");
   }
 
   @Override
-  public String readSystemDescription() throws UaException {
-    try {
-      return readSystemDescriptionAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable String> readSystemNameAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getSystemNameNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}SystemName",
+                            true,
+                            String.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable String) v)));
   }
 
   @Override
-  public void writeSystemDescription(String value) throws UaException {
-    try {
-      StatusCode statusCode = writeSystemDescriptionAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<StatusCode> writeSystemNameAsync(@Nullable String value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getSystemNameNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}SystemName",
+                        value,
+                        String.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public CompletableFuture<? extends String> readSystemDescriptionAsync() {
-    return getSystemDescriptionNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (String) v.getValue().getValue());
+  public PropertyTypeNode getChassisIdSubtypeNode() throws UaException {
+    return ClientNodeSupport.await(getChassisIdSubtypeNodeAsync());
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeSystemDescriptionAsync(String systemDescription) {
-    DataValue value = DataValue.valueOnly(new Variant(systemDescription));
-    return getSystemDescriptionNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<? extends PropertyTypeNode> getChassisIdSubtypeNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "ChassisIdSubtype",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
+  }
+
+  @Override
+  public @Nullable ChassisIdSubtype readChassisIdSubtype() throws UaException {
+    return ClientNodeSupport.await(readChassisIdSubtypeAsync());
+  }
+
+  @Override
+  public void writeChassisIdSubtype(@Nullable ChassisIdSubtype value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeChassisIdSubtypeAsync(value)),
+        "http://opcfoundation.org/UA/}ChassisIdSubtype");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable ChassisIdSubtype> readChassisIdSubtypeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getChassisIdSubtypeNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}ChassisIdSubtype",
+                            true,
+                            ChassisIdSubtype.class,
+                            -1,
+                            ChassisIdSubtype::from)),
+                v -> CompletableFuture.completedFuture((@Nullable ChassisIdSubtype) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeChassisIdSubtypeAsync(
+      @Nullable ChassisIdSubtype value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getChassisIdSubtypeNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}ChassisIdSubtype",
+                        value,
+                        ChassisIdSubtype.class,
+                        -1,
+                        ChassisIdSubtype::from)));
   }
 
   @Override
   public PropertyTypeNode getSystemDescriptionNode() throws UaException {
-    try {
-      return getSystemDescriptionNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getSystemDescriptionNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends PropertyTypeNode> getSystemDescriptionNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "SystemDescription",
-            ExpandedNodeId.parse("i=46"),
-            false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "SystemDescription",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public LldpSystemCapabilitiesMap getSystemCapabilitiesSupported() throws UaException {
-    PropertyTypeNode node = getSystemCapabilitiesSupportedNode();
-    return (LldpSystemCapabilitiesMap) node.getValue().getValue().getValue();
+  public @Nullable String readSystemDescription() throws UaException {
+    return ClientNodeSupport.await(readSystemDescriptionAsync());
   }
 
   @Override
-  public void setSystemCapabilitiesSupported(LldpSystemCapabilitiesMap value) throws UaException {
-    PropertyTypeNode node = getSystemCapabilitiesSupportedNode();
-    node.setValue(new Variant(value));
+  public void writeSystemDescription(@Nullable String value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeSystemDescriptionAsync(value)),
+        "http://opcfoundation.org/UA/}SystemDescription");
   }
 
   @Override
-  public LldpSystemCapabilitiesMap readSystemCapabilitiesSupported() throws UaException {
-    try {
-      return readSystemCapabilitiesSupportedAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable String> readSystemDescriptionAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getSystemDescriptionNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}SystemDescription",
+                            true,
+                            String.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable String) v)));
   }
 
   @Override
-  public void writeSystemCapabilitiesSupported(LldpSystemCapabilitiesMap value) throws UaException {
-    try {
-      StatusCode statusCode = writeSystemCapabilitiesSupportedAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<StatusCode> writeSystemDescriptionAsync(@Nullable String value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getSystemDescriptionNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}SystemDescription",
+                        value,
+                        String.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public CompletableFuture<? extends LldpSystemCapabilitiesMap>
-      readSystemCapabilitiesSupportedAsync() {
-    return getSystemCapabilitiesSupportedNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (LldpSystemCapabilitiesMap) v.getValue().getValue());
+  public @Nullable PropertyTypeNode getSystemCapabilitiesEnabledNode() throws UaException {
+    return ClientNodeSupport.await(getSystemCapabilitiesEnabledNodeAsync());
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeSystemCapabilitiesSupportedAsync(
-      LldpSystemCapabilitiesMap systemCapabilitiesSupported) {
-    DataValue value = DataValue.valueOnly(new Variant(systemCapabilitiesSupported));
-    return getSystemCapabilitiesSupportedNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<? extends @Nullable PropertyTypeNode>
+      getSystemCapabilitiesEnabledNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "SystemCapabilitiesEnabled",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public PropertyTypeNode getSystemCapabilitiesSupportedNode() throws UaException {
-    try {
-      return getSystemCapabilitiesSupportedNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable LldpSystemCapabilitiesMap readSystemCapabilitiesEnabled() throws UaException {
+    return ClientNodeSupport.await(readSystemCapabilitiesEnabledAsync());
   }
 
   @Override
-  public CompletableFuture<? extends PropertyTypeNode> getSystemCapabilitiesSupportedNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "SystemCapabilitiesSupported",
-            ExpandedNodeId.parse("i=46"),
-            false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+  public void writeSystemCapabilitiesEnabled(@Nullable LldpSystemCapabilitiesMap value)
+      throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeSystemCapabilitiesEnabledAsync(value)),
+        "http://opcfoundation.org/UA/}SystemCapabilitiesEnabled");
   }
 
   @Override
-  public LldpSystemCapabilitiesMap getSystemCapabilitiesEnabled() throws UaException {
-    PropertyTypeNode node = getSystemCapabilitiesEnabledNode();
-    return (LldpSystemCapabilitiesMap) node.getValue().getValue().getValue();
-  }
-
-  @Override
-  public void setSystemCapabilitiesEnabled(LldpSystemCapabilitiesMap value) throws UaException {
-    PropertyTypeNode node = getSystemCapabilitiesEnabledNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public LldpSystemCapabilitiesMap readSystemCapabilitiesEnabled() throws UaException {
-    try {
-      return readSystemCapabilitiesEnabledAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeSystemCapabilitiesEnabled(LldpSystemCapabilitiesMap value) throws UaException {
-    try {
-      StatusCode statusCode = writeSystemCapabilitiesEnabledAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends LldpSystemCapabilitiesMap>
+  public CompletableFuture<? extends @Nullable LldpSystemCapabilitiesMap>
       readSystemCapabilitiesEnabledAsync() {
-    return getSystemCapabilitiesEnabledNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (LldpSystemCapabilitiesMap) v.getValue().getValue());
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getSystemCapabilitiesEnabledNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}SystemCapabilitiesEnabled",
+                            false,
+                            LldpSystemCapabilitiesMap.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable LldpSystemCapabilitiesMap) v)));
   }
 
   @Override
   public CompletableFuture<StatusCode> writeSystemCapabilitiesEnabledAsync(
-      LldpSystemCapabilitiesMap systemCapabilitiesEnabled) {
-    DataValue value = DataValue.valueOnly(new Variant(systemCapabilitiesEnabled));
-    return getSystemCapabilitiesEnabledNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+      @Nullable LldpSystemCapabilitiesMap value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getSystemCapabilitiesEnabledNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}SystemCapabilitiesEnabled",
+                        value,
+                        LldpSystemCapabilitiesMap.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public PropertyTypeNode getSystemCapabilitiesEnabledNode() throws UaException {
-    try {
-      return getSystemCapabilitiesEnabledNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable PropertyTypeNode getSystemCapabilitiesSupportedNode() throws UaException {
+    return ClientNodeSupport.await(getSystemCapabilitiesSupportedNodeAsync());
   }
 
   @Override
-  public CompletableFuture<? extends PropertyTypeNode> getSystemCapabilitiesEnabledNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "SystemCapabilitiesEnabled",
-            ExpandedNodeId.parse("i=46"),
-            false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+  public CompletableFuture<? extends @Nullable PropertyTypeNode>
+      getSystemCapabilitiesSupportedNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "SystemCapabilitiesSupported",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
+  }
+
+  @Override
+  public @Nullable LldpSystemCapabilitiesMap readSystemCapabilitiesSupported() throws UaException {
+    return ClientNodeSupport.await(readSystemCapabilitiesSupportedAsync());
+  }
+
+  @Override
+  public void writeSystemCapabilitiesSupported(@Nullable LldpSystemCapabilitiesMap value)
+      throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeSystemCapabilitiesSupportedAsync(value)),
+        "http://opcfoundation.org/UA/}SystemCapabilitiesSupported");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable LldpSystemCapabilitiesMap>
+      readSystemCapabilitiesSupportedAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getSystemCapabilitiesSupportedNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}SystemCapabilitiesSupported",
+                            false,
+                            LldpSystemCapabilitiesMap.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable LldpSystemCapabilitiesMap) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeSystemCapabilitiesSupportedAsync(
+      @Nullable LldpSystemCapabilitiesMap value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getSystemCapabilitiesSupportedNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}SystemCapabilitiesSupported",
+                        value,
+                        LldpSystemCapabilitiesMap.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public PropertyTypeNode getChassisIdNode() throws UaException {
+    return ClientNodeSupport.await(getChassisIdNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends PropertyTypeNode> getChassisIdNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "ChassisId",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
+  }
+
+  @Override
+  public @Nullable String readChassisId() throws UaException {
+    return ClientNodeSupport.await(readChassisIdAsync());
+  }
+
+  @Override
+  public void writeChassisId(@Nullable String value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeChassisIdAsync(value)),
+        "http://opcfoundation.org/UA/}ChassisId");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable String> readChassisIdAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getChassisIdNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}ChassisId",
+                            true,
+                            String.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable String) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeChassisIdAsync(@Nullable String value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getChassisIdNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}ChassisId",
+                        value,
+                        String.class,
+                        -1,
+                        null)));
   }
 }

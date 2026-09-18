@@ -1,37 +1,30 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
-import org.eclipse.milo.opcua.sdk.client.model.variables.BaseDataVariableTypeNode;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
+import org.eclipse.milo.opcua.sdk.client.nodes.UaVariableNode;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NegotiationStatus;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link IIeeeAutoNegotiationStatusType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.3">Model
+ *     documentation</a>
+ */
 public class IIeeeAutoNegotiationStatusTypeNode extends BaseInterfaceTypeNode
     implements IIeeeAutoNegotiationStatusType {
   public IIeeeAutoNegotiationStatusTypeNode(
@@ -40,12 +33,12 @@ public class IIeeeAutoNegotiationStatusTypeNode extends BaseInterfaceTypeNode
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         client,
@@ -63,95 +56,75 @@ public class IIeeeAutoNegotiationStatusTypeNode extends BaseInterfaceTypeNode
   }
 
   @Override
-  public NegotiationStatus getNegotiationStatus() throws UaException {
-    BaseDataVariableTypeNode node = getNegotiationStatusNode();
-    Object value = node.getValue().getValue().getValue();
-
-    if (value instanceof Integer) {
-      return NegotiationStatus.from((Integer) value);
-    } else if (value instanceof NegotiationStatus) {
-      return (NegotiationStatus) value;
-    } else {
-      return null;
-    }
+  public UaVariableNode getNegotiationStatusNode() throws UaException {
+    return ClientNodeSupport.await(getNegotiationStatusNodeAsync());
   }
 
   @Override
-  public void setNegotiationStatus(NegotiationStatus value) throws UaException {
-    BaseDataVariableTypeNode node = getNegotiationStatusNode();
-    node.setValue(new Variant(value));
+  public CompletableFuture<? extends UaVariableNode> getNegotiationStatusNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "NegotiationStatus",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
   }
 
   @Override
-  public NegotiationStatus readNegotiationStatus() throws UaException {
-    try {
-      return readNegotiationStatusAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable NegotiationStatus readNegotiationStatus() throws UaException {
+    return ClientNodeSupport.await(readNegotiationStatusAsync());
   }
 
   @Override
-  public void writeNegotiationStatus(NegotiationStatus value) throws UaException {
-    try {
-      StatusCode statusCode = writeNegotiationStatusAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public void writeNegotiationStatus(@Nullable NegotiationStatus value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeNegotiationStatusAsync(value)),
+        "http://opcfoundation.org/UA/}NegotiationStatus");
   }
 
   @Override
-  public CompletableFuture<? extends NegotiationStatus> readNegotiationStatusAsync() {
-    return getNegotiationStatusNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(
-            v -> {
-              Object value = v.getValue().getValue();
-              if (value instanceof Integer) {
-                return NegotiationStatus.from((Integer) value);
-              } else {
-                return null;
-              }
-            });
+  public CompletableFuture<? extends @Nullable NegotiationStatus> readNegotiationStatusAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getNegotiationStatusNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}NegotiationStatus",
+                            true,
+                            NegotiationStatus.class,
+                            -1,
+                            NegotiationStatus::from)),
+                v -> CompletableFuture.completedFuture((@Nullable NegotiationStatus) v)));
   }
 
   @Override
   public CompletableFuture<StatusCode> writeNegotiationStatusAsync(
-      NegotiationStatus negotiationStatus) {
-    DataValue value = DataValue.valueOnly(new Variant(negotiationStatus));
-    return getNegotiationStatusNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getNegotiationStatusNode() throws UaException {
-    try {
-      return getNegotiationStatusNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getNegotiationStatusNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "NegotiationStatus",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
+      @Nullable NegotiationStatus value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getNegotiationStatusNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}NegotiationStatus",
+                        value,
+                        NegotiationStatus.class,
+                        -1,
+                        NegotiationStatus::from)));
   }
 }

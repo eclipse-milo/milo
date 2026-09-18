@@ -1,241 +1,210 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallOptions;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallResult;
 import org.eclipse.milo.opcua.sdk.client.model.variables.TwoStateVariableType;
+import org.eclipse.milo.opcua.sdk.client.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.7.2">https://reference.opcfoundation.org/v105/Core/docs/Part9/5.7.2</a>
+ * Client API for the AcknowledgeableConditionType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.7.2">Model
+ *     documentation</a>
  */
 public interface AcknowledgeableConditionType extends ConditionType {
-  /**
-   * Get the local value of the EnabledState Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the EnabledState Node.
-   * @throws UaException if an error occurs creating or getting the EnabledState Node.
-   */
-  LocalizedText getEnabledState() throws UaException;
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2881L);
 
   /**
-   * Set the local value of the EnabledState Node.
+   * Resolves the mandatory AckedState child, a TwoStateVariableType with DataType LocalizedText.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the EnabledState Node.
-   * @throws UaException if an error occurs creating or getting the EnabledState Node.
-   */
-  void setEnabledState(LocalizedText value) throws UaException;
-
-  /**
-   * Read the value of the EnabledState Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link LocalizedText} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  LocalizedText readEnabledState() throws UaException;
-
-  /**
-   * Write a new value for the EnabledState Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link LocalizedText} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeEnabledState(LocalizedText value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readEnabledState}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends LocalizedText> readEnabledStateAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeEnabledState}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeEnabledStateAsync(LocalizedText value);
-
-  /**
-   * Get the EnabledState {@link TwoStateVariableType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the EnabledState {@link TwoStateVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  TwoStateVariableType getEnabledStateNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getEnabledStateNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the TwoStateVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends TwoStateVariableType> getEnabledStateNodeAsync();
-
-  /**
-   * Get the local value of the AckedState Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the AckedState Node.
-   * @throws UaException if an error occurs creating or getting the AckedState Node.
-   */
-  LocalizedText getAckedState() throws UaException;
-
-  /**
-   * Set the local value of the AckedState Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the AckedState Node.
-   * @throws UaException if an error occurs creating or getting the AckedState Node.
-   */
-  void setAckedState(LocalizedText value) throws UaException;
-
-  /**
-   * Read the value of the AckedState Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link LocalizedText} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  LocalizedText readAckedState() throws UaException;
-
-  /**
-   * Write a new value for the AckedState Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link LocalizedText} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeAckedState(LocalizedText value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readAckedState}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends LocalizedText> readAckedStateAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeAckedState}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeAckedStateAsync(LocalizedText value);
-
-  /**
-   * Get the AckedState {@link TwoStateVariableType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the AckedState {@link TwoStateVariableType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.2">TwoStateVariableType
+   *     documentation</a>
    */
   TwoStateVariableType getAckedStateNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getAckedStateNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the TwoStateVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getAckedStateNode()}. */
   CompletableFuture<? extends TwoStateVariableType> getAckedStateNodeAsync();
 
   /**
-   * Get the local value of the ConfirmedState Node.
+   * Reads the Value of the AckedState child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ConfirmedState Node.
-   * @throws UaException if an error occurs creating or getting the ConfirmedState Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  LocalizedText getConfirmedState() throws UaException;
+  @Nullable LocalizedText readAckedState() throws UaException;
 
   /**
-   * Set the local value of the ConfirmedState Node.
+   * Writes the Value of the AckedState child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ConfirmedState Node.
-   * @throws UaException if an error occurs creating or getting the ConfirmedState Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setConfirmedState(LocalizedText value) throws UaException;
+  void writeAckedState(@Nullable LocalizedText value) throws UaException;
+
+  /** Asynchronous form of {@link #readAckedState()}. */
+  CompletableFuture<? extends @Nullable LocalizedText> readAckedStateAsync();
+
+  /** Asynchronous form of {@link #writeAckedState}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeAckedStateAsync(@Nullable LocalizedText value);
 
   /**
-   * Read the value of the ConfirmedState Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the mandatory EnabledState child, a TwoStateVariableType with DataType LocalizedText.
    *
-   * @return the {@link LocalizedText} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.2">TwoStateVariableType
+   *     documentation</a>
    */
-  LocalizedText readConfirmedState() throws UaException;
+  TwoStateVariableType getEnabledStateNode() throws UaException;
+
+  /** Asynchronous form of {@link #getEnabledStateNode()}. */
+  CompletableFuture<? extends TwoStateVariableType> getEnabledStateNodeAsync();
 
   /**
-   * Write a new value for the ConfirmedState Node to the server and update the local value if the
-   * operation succeeds.
+   * Resolves the optional ConfirmedState child, a TwoStateVariableType with DataType LocalizedText.
    *
-   * @param value the {@link LocalizedText} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.2">TwoStateVariableType
+   *     documentation</a>
    */
-  void writeConfirmedState(LocalizedText value) throws UaException;
+  @Nullable TwoStateVariableType getConfirmedStateNode() throws UaException;
+
+  /** Asynchronous form of {@link #getConfirmedStateNode()}. */
+  CompletableFuture<? extends @Nullable TwoStateVariableType> getConfirmedStateNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #readConfirmedState}.
+   * Reads the Value of the ConfirmedState child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends LocalizedText> readConfirmedStateAsync();
+  @Nullable LocalizedText readConfirmedState() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeConfirmedState}.
+   * Writes the Value of the ConfirmedState child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeConfirmedStateAsync(LocalizedText value);
+  void writeConfirmedState(@Nullable LocalizedText value) throws UaException;
+
+  /** Asynchronous form of {@link #readConfirmedState()}. */
+  CompletableFuture<? extends @Nullable LocalizedText> readConfirmedStateAsync();
+
+  /** Asynchronous form of {@link #writeConfirmedState}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeConfirmedStateAsync(@Nullable LocalizedText value);
 
   /**
-   * Get the ConfirmedState {@link TwoStateVariableType} Node, or {@code null} if it does not exist.
+   * Resolves the mandatory Acknowledge Method node.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ConfirmedState {@link TwoStateVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.7.3">Model
+   *     documentation</a>
    */
-  TwoStateVariableType getConfirmedStateNode() throws UaException;
+  UaMethodNode getAcknowledgeMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getAcknowledgeMethodNode()}. */
+  CompletableFuture<UaMethodNode> getAcknowledgeMethodNodeAsync();
 
   /**
-   * Asynchronous implementation of {@link #getConfirmedStateNode()}.
+   * Calls the Acknowledge Method and returns its outputs; requires a Good result.
    *
-   * @return a CompletableFuture that completes successfully with the TwoStateVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @param eventId the identifier for the event to comment.
+   * @param comment the comment to add to the condition.
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.7.3">Model
+   *     documentation</a>
    */
-  CompletableFuture<? extends TwoStateVariableType> getConfirmedStateNodeAsync();
+  void acknowledge(@Nullable ByteString eventId, @Nullable LocalizedText comment)
+      throws UaException;
+
+  /**
+   * Calls the Acknowledge Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callAcknowledge(
+      @Nullable ByteString eventId, @Nullable LocalizedText comment) throws UaException;
+
+  /**
+   * Calls the Acknowledge Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callAcknowledgeWith(
+      MethodCallOptions options, @Nullable ByteString eventId, @Nullable LocalizedText comment)
+      throws UaException;
+
+  /** Asynchronous form of {@link #acknowledge}. */
+  CompletableFuture<Void> acknowledgeAsync(
+      @Nullable ByteString eventId, @Nullable LocalizedText comment);
+
+  /** Asynchronous form of {@link #callAcknowledge}. */
+  CompletableFuture<MethodCallResult<Void>> callAcknowledgeAsync(
+      @Nullable ByteString eventId, @Nullable LocalizedText comment);
+
+  /** Asynchronous form of {@link #callAcknowledgeWith}. */
+  CompletableFuture<MethodCallResult<Void>> callAcknowledgeWithAsync(
+      MethodCallOptions options, @Nullable ByteString eventId, @Nullable LocalizedText comment);
+
+  /**
+   * Resolves the optional Confirm Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.7.4">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getConfirmMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getConfirmMethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getConfirmMethodNodeAsync();
+
+  /**
+   * Calls the Confirm Method and returns its outputs; requires a Good result.
+   *
+   * @param eventId the identifier for the event to comment.
+   * @param comment the comment to add to the condition.
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.7.4">Model
+   *     documentation</a>
+   */
+  void confirm(@Nullable ByteString eventId, @Nullable LocalizedText comment) throws UaException;
+
+  /**
+   * Calls the Confirm Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callConfirm(@Nullable ByteString eventId, @Nullable LocalizedText comment)
+      throws UaException;
+
+  /**
+   * Calls the Confirm Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callConfirmWith(
+      MethodCallOptions options, @Nullable ByteString eventId, @Nullable LocalizedText comment)
+      throws UaException;
+
+  /** Asynchronous form of {@link #confirm}. */
+  CompletableFuture<Void> confirmAsync(
+      @Nullable ByteString eventId, @Nullable LocalizedText comment);
+
+  /** Asynchronous form of {@link #callConfirm}. */
+  CompletableFuture<MethodCallResult<Void>> callConfirmAsync(
+      @Nullable ByteString eventId, @Nullable LocalizedText comment);
+
+  /** Asynchronous form of {@link #callConfirmWith}. */
+  CompletableFuture<MethodCallResult<Void>> callConfirmWithAsync(
+      MethodCallOptions options, @Nullable ByteString eventId, @Nullable LocalizedText comment);
 }

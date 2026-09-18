@@ -1,26 +1,19 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallOptions;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallResult;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyTypeNode;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
+import org.eclipse.milo.opcua.sdk.client.nodes.UaMethodNode;
+import org.eclipse.milo.opcua.sdk.core.model.methods.UserManagementTypeAddUser;
+import org.eclipse.milo.opcua.sdk.core.model.methods.UserManagementTypeChangePassword;
+import org.eclipse.milo.opcua.sdk.core.model.methods.UserManagementTypeModifyUser;
+import org.eclipse.milo.opcua.sdk.core.model.methods.UserManagementTypeRemoveUser;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -33,8 +26,17 @@ import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PasswordOptionsMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.Range;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.types.structured.UserConfigurationMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserManagementDataType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link UserManagementType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.1">Model
+ *     documentation</a>
+ */
 public class UserManagementTypeNode extends BaseObjectTypeNode implements UserManagementType {
   public UserManagementTypeNode(
       OpcUaClient client,
@@ -42,12 +44,12 @@ public class UserManagementTypeNode extends BaseObjectTypeNode implements UserMa
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         client,
@@ -65,306 +67,724 @@ public class UserManagementTypeNode extends BaseObjectTypeNode implements UserMa
   }
 
   @Override
-  public UserManagementDataType[] getUsers() throws UaException {
-    PropertyTypeNode node = getUsersNode();
-    return cast(node.getValue().getValue().getValue(), UserManagementDataType[].class);
-  }
-
-  @Override
-  public void setUsers(UserManagementDataType[] value) throws UaException {
-    PropertyTypeNode node = getUsersNode();
-    ExtensionObject[] encoded =
-        ExtensionObject.encodeArray(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
-  }
-
-  @Override
-  public UserManagementDataType[] readUsers() throws UaException {
-    try {
-      return readUsersAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeUsers(UserManagementDataType[] value) throws UaException {
-    try {
-      StatusCode statusCode = writeUsersAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends UserManagementDataType[]> readUsersAsync() {
-    return getUsersNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), UserManagementDataType[].class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeUsersAsync(UserManagementDataType[] users) {
-    ExtensionObject[] encoded =
-        ExtensionObject.encodeArray(client.getStaticEncodingContext(), users);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getUsersNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public PropertyTypeNode getUsersNode() throws UaException {
-    try {
-      return getUsersNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends PropertyTypeNode> getUsersNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Users", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
-  }
-
-  @Override
-  public Range getPasswordLength() throws UaException {
-    PropertyTypeNode node = getPasswordLengthNode();
-    return cast(node.getValue().getValue().getValue(), Range.class);
-  }
-
-  @Override
-  public void setPasswordLength(Range value) throws UaException {
-    PropertyTypeNode node = getPasswordLengthNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
-  }
-
-  @Override
-  public Range readPasswordLength() throws UaException {
-    try {
-      return readPasswordLengthAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writePasswordLength(Range value) throws UaException {
-    try {
-      StatusCode statusCode = writePasswordLengthAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends Range> readPasswordLengthAsync() {
-    return getPasswordLengthNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), Range.class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writePasswordLengthAsync(Range passwordLength) {
-    ExtensionObject encoded =
-        ExtensionObject.encode(client.getStaticEncodingContext(), passwordLength);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getPasswordLengthNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
   public PropertyTypeNode getPasswordLengthNode() throws UaException {
-    try {
-      return getPasswordLengthNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getPasswordLengthNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends PropertyTypeNode> getPasswordLengthNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "PasswordLength", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "PasswordLength",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public PasswordOptionsMask getPasswordOptions() throws UaException {
-    PropertyTypeNode node = getPasswordOptionsNode();
-    return (PasswordOptionsMask) node.getValue().getValue().getValue();
+  public @Nullable Range readPasswordLength() throws UaException {
+    return ClientNodeSupport.await(readPasswordLengthAsync());
   }
 
   @Override
-  public void setPasswordOptions(PasswordOptionsMask value) throws UaException {
-    PropertyTypeNode node = getPasswordOptionsNode();
-    node.setValue(new Variant(value));
+  public void writePasswordLength(@Nullable Range value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writePasswordLengthAsync(value)),
+        "http://opcfoundation.org/UA/}PasswordLength");
   }
 
   @Override
-  public PasswordOptionsMask readPasswordOptions() throws UaException {
-    try {
-      return readPasswordOptionsAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable Range> readPasswordLengthAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getPasswordLengthNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}PasswordLength",
+                            true,
+                            Range.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable Range) v)));
   }
 
   @Override
-  public void writePasswordOptions(PasswordOptionsMask value) throws UaException {
-    try {
-      StatusCode statusCode = writePasswordOptionsAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends PasswordOptionsMask> readPasswordOptionsAsync() {
-    return getPasswordOptionsNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (PasswordOptionsMask) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writePasswordOptionsAsync(
-      PasswordOptionsMask passwordOptions) {
-    DataValue value = DataValue.valueOnly(new Variant(passwordOptions));
-    return getPasswordOptionsNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<StatusCode> writePasswordLengthAsync(@Nullable Range value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getPasswordLengthNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}PasswordLength",
+                        value,
+                        Range.class,
+                        -1,
+                        null)));
   }
 
   @Override
   public PropertyTypeNode getPasswordOptionsNode() throws UaException {
-    try {
-      return getPasswordOptionsNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getPasswordOptionsNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends PropertyTypeNode> getPasswordOptionsNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "PasswordOptions", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "PasswordOptions",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public LocalizedText getPasswordRestrictions() throws UaException {
-    PropertyTypeNode node = getPasswordRestrictionsNode();
-    return (LocalizedText) node.getValue().getValue().getValue();
+  public @Nullable PasswordOptionsMask readPasswordOptions() throws UaException {
+    return ClientNodeSupport.await(readPasswordOptionsAsync());
   }
 
   @Override
-  public void setPasswordRestrictions(LocalizedText value) throws UaException {
-    PropertyTypeNode node = getPasswordRestrictionsNode();
-    node.setValue(new Variant(value));
+  public void writePasswordOptions(@Nullable PasswordOptionsMask value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writePasswordOptionsAsync(value)),
+        "http://opcfoundation.org/UA/}PasswordOptions");
   }
 
   @Override
-  public LocalizedText readPasswordRestrictions() throws UaException {
-    try {
-      return readPasswordRestrictionsAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable PasswordOptionsMask> readPasswordOptionsAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getPasswordOptionsNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}PasswordOptions",
+                            true,
+                            PasswordOptionsMask.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable PasswordOptionsMask) v)));
   }
 
   @Override
-  public void writePasswordRestrictions(LocalizedText value) throws UaException {
-    try {
-      StatusCode statusCode = writePasswordRestrictionsAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<StatusCode> writePasswordOptionsAsync(
+      @Nullable PasswordOptionsMask value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getPasswordOptionsNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}PasswordOptions",
+                        value,
+                        PasswordOptionsMask.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public CompletableFuture<? extends LocalizedText> readPasswordRestrictionsAsync() {
-    return getPasswordRestrictionsNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (LocalizedText) v.getValue().getValue());
+  public @Nullable PropertyTypeNode getPasswordRestrictionsNode() throws UaException {
+    return ClientNodeSupport.await(getPasswordRestrictionsNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable PropertyTypeNode>
+      getPasswordRestrictionsNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "PasswordRestrictions",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
+  }
+
+  @Override
+  public @Nullable LocalizedText readPasswordRestrictions() throws UaException {
+    return ClientNodeSupport.await(readPasswordRestrictionsAsync());
+  }
+
+  @Override
+  public void writePasswordRestrictions(@Nullable LocalizedText value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writePasswordRestrictionsAsync(value)),
+        "http://opcfoundation.org/UA/}PasswordRestrictions");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable LocalizedText> readPasswordRestrictionsAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getPasswordRestrictionsNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}PasswordRestrictions",
+                            false,
+                            LocalizedText.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable LocalizedText) v)));
   }
 
   @Override
   public CompletableFuture<StatusCode> writePasswordRestrictionsAsync(
-      LocalizedText passwordRestrictions) {
-    DataValue value = DataValue.valueOnly(new Variant(passwordRestrictions));
-    return getPasswordRestrictionsNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+      @Nullable LocalizedText value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getPasswordRestrictionsNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}PasswordRestrictions",
+                        value,
+                        LocalizedText.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public PropertyTypeNode getPasswordRestrictionsNode() throws UaException {
-    try {
-      return getPasswordRestrictionsNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public PropertyTypeNode getUsersNode() throws UaException {
+    return ClientNodeSupport.await(getUsersNodeAsync());
   }
 
   @Override
-  public CompletableFuture<? extends PropertyTypeNode> getPasswordRestrictionsNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "PasswordRestrictions",
-            ExpandedNodeId.parse("i=46"),
-            false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+  public CompletableFuture<? extends PropertyTypeNode> getUsersNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "Users",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
+  }
+
+  @Override
+  public @Nullable UserManagementDataType @Nullable [] readUsers() throws UaException {
+    return ClientNodeSupport.await(readUsersAsync());
+  }
+
+  @Override
+  public void writeUsers(@Nullable UserManagementDataType @Nullable [] value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeUsersAsync(value)), "http://opcfoundation.org/UA/}Users");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable UserManagementDataType @Nullable []>
+      readUsersAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getUsersNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}Users",
+                            true,
+                            UserManagementDataType.class,
+                            1,
+                            null)),
+                v ->
+                    CompletableFuture.completedFuture(
+                        (@Nullable UserManagementDataType @Nullable []) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeUsersAsync(
+      @Nullable UserManagementDataType @Nullable [] value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getUsersNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}Users",
+                        value,
+                        UserManagementDataType.class,
+                        1,
+                        null)));
+  }
+
+  @Override
+  public UaMethodNode getAddUserMethodNode() throws UaException {
+    return ClientNodeSupport.await(getAddUserMethodNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<UaMethodNode> getAddUserMethodNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.mandatoryChild(
+                client,
+                this,
+                "http://opcfoundation.org/UA/",
+                "AddUser",
+                ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                NodeClass.Method,
+                UaMethodNode.class));
+  }
+
+  @Override
+  public void addUser(
+      @Nullable String userName,
+      @Nullable String password,
+      @Nullable UserConfigurationMask userConfiguration,
+      @Nullable String description)
+      throws UaException {
+    ClientNodeSupport.await(addUserAsync(userName, password, userConfiguration, description));
+  }
+
+  @Override
+  public MethodCallResult<Void> callAddUser(
+      @Nullable String userName,
+      @Nullable String password,
+      @Nullable UserConfigurationMask userConfiguration,
+      @Nullable String description)
+      throws UaException {
+    return ClientNodeSupport.await(
+        callAddUserAsync(userName, password, userConfiguration, description));
+  }
+
+  @Override
+  public MethodCallResult<Void> callAddUserWith(
+      MethodCallOptions options,
+      @Nullable String userName,
+      @Nullable String password,
+      @Nullable UserConfigurationMask userConfiguration,
+      @Nullable String description)
+      throws UaException {
+    return ClientNodeSupport.await(
+        callAddUserWithAsync(options, userName, password, userConfiguration, description));
+  }
+
+  @Override
+  public CompletableFuture<Void> addUserAsync(
+      @Nullable String userName,
+      @Nullable String password,
+      @Nullable UserConfigurationMask userConfiguration,
+      @Nullable String description) {
+    return ClientNodeSupport.compose(
+        callAddUserAsync(userName, password, userConfiguration, description),
+        result ->
+            ClientNodeSupport.defer(() -> CompletableFuture.completedFuture(result.requireGood())));
+  }
+
+  @Override
+  public CompletableFuture<MethodCallResult<Void>> callAddUserAsync(
+      @Nullable String userName,
+      @Nullable String password,
+      @Nullable UserConfigurationMask userConfiguration,
+      @Nullable String description) {
+    return callAddUserWithAsync(
+        MethodCallOptions.DEFAULT, userName, password, userConfiguration, description);
+  }
+
+  @Override
+  public CompletableFuture<MethodCallResult<Void>> callAddUserWithAsync(
+      MethodCallOptions options,
+      @Nullable String userName,
+      @Nullable String password,
+      @Nullable UserConfigurationMask userConfiguration,
+      @Nullable String description) {
+    return ClientNodeSupport.defer(
+        () -> {
+          Variant[] inputs =
+              new UserManagementTypeAddUser.Inputs(
+                      userName, password, userConfiguration, description)
+                  .toVariants(client.getStaticEncodingContext());
+          Variant[] suppliedInputs = inputs;
+          return ClientNodeSupport.compose(
+              getAddUserMethodNodeAsync(),
+              node ->
+                  ClientNodeSupport.compose(
+                      ClientNodeSupport.call(client, this, node, suppliedInputs, options),
+                      result ->
+                          CompletableFuture.completedFuture(
+                              result.map(
+                                  values -> {
+                                    if (values == null || values.length != 0)
+                                      throw new UaException(
+                                          StatusCodes.Bad_DecodingError,
+                                          "expected no Method outputs");
+                                    return null;
+                                  }))));
+        });
+  }
+
+  @Override
+  public UaMethodNode getChangePasswordMethodNode() throws UaException {
+    return ClientNodeSupport.await(getChangePasswordMethodNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<UaMethodNode> getChangePasswordMethodNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.mandatoryChild(
+                client,
+                this,
+                "http://opcfoundation.org/UA/",
+                "ChangePassword",
+                ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                NodeClass.Method,
+                UaMethodNode.class));
+  }
+
+  @Override
+  public void changePassword(@Nullable String oldPassword, @Nullable String newPassword)
+      throws UaException {
+    ClientNodeSupport.await(changePasswordAsync(oldPassword, newPassword));
+  }
+
+  @Override
+  public MethodCallResult<Void> callChangePassword(
+      @Nullable String oldPassword, @Nullable String newPassword) throws UaException {
+    return ClientNodeSupport.await(callChangePasswordAsync(oldPassword, newPassword));
+  }
+
+  @Override
+  public MethodCallResult<Void> callChangePasswordWith(
+      MethodCallOptions options, @Nullable String oldPassword, @Nullable String newPassword)
+      throws UaException {
+    return ClientNodeSupport.await(callChangePasswordWithAsync(options, oldPassword, newPassword));
+  }
+
+  @Override
+  public CompletableFuture<Void> changePasswordAsync(
+      @Nullable String oldPassword, @Nullable String newPassword) {
+    return ClientNodeSupport.compose(
+        callChangePasswordAsync(oldPassword, newPassword),
+        result ->
+            ClientNodeSupport.defer(() -> CompletableFuture.completedFuture(result.requireGood())));
+  }
+
+  @Override
+  public CompletableFuture<MethodCallResult<Void>> callChangePasswordAsync(
+      @Nullable String oldPassword, @Nullable String newPassword) {
+    return callChangePasswordWithAsync(MethodCallOptions.DEFAULT, oldPassword, newPassword);
+  }
+
+  @Override
+  public CompletableFuture<MethodCallResult<Void>> callChangePasswordWithAsync(
+      MethodCallOptions options, @Nullable String oldPassword, @Nullable String newPassword) {
+    return ClientNodeSupport.defer(
+        () -> {
+          Variant[] inputs =
+              new UserManagementTypeChangePassword.Inputs(oldPassword, newPassword)
+                  .toVariants(client.getStaticEncodingContext());
+          Variant[] suppliedInputs = inputs;
+          return ClientNodeSupport.compose(
+              getChangePasswordMethodNodeAsync(),
+              node ->
+                  ClientNodeSupport.compose(
+                      ClientNodeSupport.call(client, this, node, suppliedInputs, options),
+                      result ->
+                          CompletableFuture.completedFuture(
+                              result.map(
+                                  values -> {
+                                    if (values == null || values.length != 0)
+                                      throw new UaException(
+                                          StatusCodes.Bad_DecodingError,
+                                          "expected no Method outputs");
+                                    return null;
+                                  }))));
+        });
+  }
+
+  @Override
+  public UaMethodNode getModifyUserMethodNode() throws UaException {
+    return ClientNodeSupport.await(getModifyUserMethodNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<UaMethodNode> getModifyUserMethodNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.mandatoryChild(
+                client,
+                this,
+                "http://opcfoundation.org/UA/",
+                "ModifyUser",
+                ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                NodeClass.Method,
+                UaMethodNode.class));
+  }
+
+  @Override
+  public void modifyUser(
+      @Nullable String userName,
+      @Nullable Boolean modifyPassword,
+      @Nullable String password,
+      @Nullable Boolean modifyUserConfiguration,
+      @Nullable UserConfigurationMask userConfiguration,
+      @Nullable Boolean modifyDescription,
+      @Nullable String description)
+      throws UaException {
+    ClientNodeSupport.await(
+        modifyUserAsync(
+            userName,
+            modifyPassword,
+            password,
+            modifyUserConfiguration,
+            userConfiguration,
+            modifyDescription,
+            description));
+  }
+
+  @Override
+  public MethodCallResult<Void> callModifyUser(
+      @Nullable String userName,
+      @Nullable Boolean modifyPassword,
+      @Nullable String password,
+      @Nullable Boolean modifyUserConfiguration,
+      @Nullable UserConfigurationMask userConfiguration,
+      @Nullable Boolean modifyDescription,
+      @Nullable String description)
+      throws UaException {
+    return ClientNodeSupport.await(
+        callModifyUserAsync(
+            userName,
+            modifyPassword,
+            password,
+            modifyUserConfiguration,
+            userConfiguration,
+            modifyDescription,
+            description));
+  }
+
+  @Override
+  public MethodCallResult<Void> callModifyUserWith(
+      MethodCallOptions options,
+      @Nullable String userName,
+      @Nullable Boolean modifyPassword,
+      @Nullable String password,
+      @Nullable Boolean modifyUserConfiguration,
+      @Nullable UserConfigurationMask userConfiguration,
+      @Nullable Boolean modifyDescription,
+      @Nullable String description)
+      throws UaException {
+    return ClientNodeSupport.await(
+        callModifyUserWithAsync(
+            options,
+            userName,
+            modifyPassword,
+            password,
+            modifyUserConfiguration,
+            userConfiguration,
+            modifyDescription,
+            description));
+  }
+
+  @Override
+  public CompletableFuture<Void> modifyUserAsync(
+      @Nullable String userName,
+      @Nullable Boolean modifyPassword,
+      @Nullable String password,
+      @Nullable Boolean modifyUserConfiguration,
+      @Nullable UserConfigurationMask userConfiguration,
+      @Nullable Boolean modifyDescription,
+      @Nullable String description) {
+    return ClientNodeSupport.compose(
+        callModifyUserAsync(
+            userName,
+            modifyPassword,
+            password,
+            modifyUserConfiguration,
+            userConfiguration,
+            modifyDescription,
+            description),
+        result ->
+            ClientNodeSupport.defer(() -> CompletableFuture.completedFuture(result.requireGood())));
+  }
+
+  @Override
+  public CompletableFuture<MethodCallResult<Void>> callModifyUserAsync(
+      @Nullable String userName,
+      @Nullable Boolean modifyPassword,
+      @Nullable String password,
+      @Nullable Boolean modifyUserConfiguration,
+      @Nullable UserConfigurationMask userConfiguration,
+      @Nullable Boolean modifyDescription,
+      @Nullable String description) {
+    return callModifyUserWithAsync(
+        MethodCallOptions.DEFAULT,
+        userName,
+        modifyPassword,
+        password,
+        modifyUserConfiguration,
+        userConfiguration,
+        modifyDescription,
+        description);
+  }
+
+  @Override
+  public CompletableFuture<MethodCallResult<Void>> callModifyUserWithAsync(
+      MethodCallOptions options,
+      @Nullable String userName,
+      @Nullable Boolean modifyPassword,
+      @Nullable String password,
+      @Nullable Boolean modifyUserConfiguration,
+      @Nullable UserConfigurationMask userConfiguration,
+      @Nullable Boolean modifyDescription,
+      @Nullable String description) {
+    return ClientNodeSupport.defer(
+        () -> {
+          Variant[] inputs =
+              new UserManagementTypeModifyUser.Inputs(
+                      userName,
+                      modifyPassword,
+                      password,
+                      modifyUserConfiguration,
+                      userConfiguration,
+                      modifyDescription,
+                      description)
+                  .toVariants(client.getStaticEncodingContext());
+          Variant[] suppliedInputs = inputs;
+          return ClientNodeSupport.compose(
+              getModifyUserMethodNodeAsync(),
+              node ->
+                  ClientNodeSupport.compose(
+                      ClientNodeSupport.call(client, this, node, suppliedInputs, options),
+                      result ->
+                          CompletableFuture.completedFuture(
+                              result.map(
+                                  values -> {
+                                    if (values == null || values.length != 0)
+                                      throw new UaException(
+                                          StatusCodes.Bad_DecodingError,
+                                          "expected no Method outputs");
+                                    return null;
+                                  }))));
+        });
+  }
+
+  @Override
+  public UaMethodNode getRemoveUserMethodNode() throws UaException {
+    return ClientNodeSupport.await(getRemoveUserMethodNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<UaMethodNode> getRemoveUserMethodNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.mandatoryChild(
+                client,
+                this,
+                "http://opcfoundation.org/UA/",
+                "RemoveUser",
+                ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                NodeClass.Method,
+                UaMethodNode.class));
+  }
+
+  @Override
+  public void removeUser(@Nullable String userName) throws UaException {
+    ClientNodeSupport.await(removeUserAsync(userName));
+  }
+
+  @Override
+  public MethodCallResult<Void> callRemoveUser(@Nullable String userName) throws UaException {
+    return ClientNodeSupport.await(callRemoveUserAsync(userName));
+  }
+
+  @Override
+  public MethodCallResult<Void> callRemoveUserWith(
+      MethodCallOptions options, @Nullable String userName) throws UaException {
+    return ClientNodeSupport.await(callRemoveUserWithAsync(options, userName));
+  }
+
+  @Override
+  public CompletableFuture<Void> removeUserAsync(@Nullable String userName) {
+    return ClientNodeSupport.compose(
+        callRemoveUserAsync(userName),
+        result ->
+            ClientNodeSupport.defer(() -> CompletableFuture.completedFuture(result.requireGood())));
+  }
+
+  @Override
+  public CompletableFuture<MethodCallResult<Void>> callRemoveUserAsync(@Nullable String userName) {
+    return callRemoveUserWithAsync(MethodCallOptions.DEFAULT, userName);
+  }
+
+  @Override
+  public CompletableFuture<MethodCallResult<Void>> callRemoveUserWithAsync(
+      MethodCallOptions options, @Nullable String userName) {
+    return ClientNodeSupport.defer(
+        () -> {
+          Variant[] inputs =
+              new UserManagementTypeRemoveUser.Inputs(userName)
+                  .toVariants(client.getStaticEncodingContext());
+          Variant[] suppliedInputs = inputs;
+          return ClientNodeSupport.compose(
+              getRemoveUserMethodNodeAsync(),
+              node ->
+                  ClientNodeSupport.compose(
+                      ClientNodeSupport.call(client, this, node, suppliedInputs, options),
+                      result ->
+                          CompletableFuture.completedFuture(
+                              result.map(
+                                  values -> {
+                                    if (values == null || values.length != 0)
+                                      throw new UaException(
+                                          StatusCodes.Bad_DecodingError,
+                                          "expected no Method outputs");
+                                    return null;
+                                  }))));
+        });
   }
 }

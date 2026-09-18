@@ -1,972 +1,1080 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallOptions;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallResult;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.client.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
+import org.eclipse.milo.opcua.sdk.core.model.methods.ServerConfigurationTypeGetCertificates;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.3">https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.3</a>
+ * Client API for the ServerConfigurationType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.3">Model
+ *     documentation</a>
  */
 public interface ServerConfigurationType extends BaseObjectType {
-  QualifiedProperty<String> APPLICATION_URI =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ApplicationUri",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=23751"),
-          -1,
-          String.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 12581L);
 
-  QualifiedProperty<String> PRODUCT_URI =
+  QualifiedProperty<String> ProductUri_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "ProductUri",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=23751"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 23751L),
           -1,
           String.class);
 
-  QualifiedProperty<ApplicationType> APPLICATION_TYPE =
+  QualifiedProperty<String> ApplicationUri_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
+          "ApplicationUri",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 23751L),
+          -1,
+          String.class);
+
+  QualifiedProperty<ApplicationType> ApplicationType_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
           "ApplicationType",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=307"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 307L),
           -1,
           ApplicationType.class);
 
-  QualifiedProperty<LocalizedText[]> APPLICATION_NAMES =
+  QualifiedProperty<LocalizedText[]> ApplicationNames_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "ApplicationNames",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 21L),
           1,
           LocalizedText[].class);
 
-  QualifiedProperty<String[]> SERVER_CAPABILITIES =
+  QualifiedProperty<Boolean> HasSecureElement_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ServerCapabilities",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          1,
-          String[].class);
+          Namespaces.OPC_UA,
+          "HasSecureElement",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+          -1,
+          Boolean.class);
 
-  QualifiedProperty<String[]> SUPPORTED_PRIVATE_KEY_FORMATS =
+  QualifiedProperty<UInteger> MaxTrustListSize_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "SupportedPrivateKeyFormats",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          1,
-          String[].class);
-
-  QualifiedProperty<UInteger> MAX_TRUST_LIST_SIZE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "MaxTrustListSize",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
           -1,
           UInteger.class);
 
-  QualifiedProperty<Boolean> MULTICAST_DNS_ENABLED =
+  QualifiedProperty<Boolean> InApplicationSetup_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MulticastDnsEnabled",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
-
-  QualifiedProperty<Boolean> HAS_SECURE_ELEMENT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "HasSecureElement",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
-
-  QualifiedProperty<Boolean> SUPPORTS_TRANSACTIONS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "SupportsTransactions",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
-
-  QualifiedProperty<Boolean> IN_APPLICATION_SETUP =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "InApplicationSetup",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
           -1,
           Boolean.class);
 
-  /**
-   * Get the local value of the ApplicationUri Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ApplicationUri Node.
-   * @throws UaException if an error occurs creating or getting the ApplicationUri Node.
-   */
-  String getApplicationUri() throws UaException;
+  QualifiedProperty<String[]> ServerCapabilities_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "ServerCapabilities",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+          1,
+          String[].class);
+
+  QualifiedProperty<Boolean> MulticastDnsEnabled_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "MulticastDnsEnabled",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+          -1,
+          Boolean.class);
+
+  QualifiedProperty<Boolean> SupportsTransactions_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "SupportsTransactions",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+          -1,
+          Boolean.class);
+
+  QualifiedProperty<String[]> SupportedPrivateKeyFormats_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "SupportedPrivateKeyFormats",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+          1,
+          String[].class);
 
   /**
-   * Set the local value of the ApplicationUri Node.
+   * Resolves the optional ProductUri child, a PropertyType with DataType UriString.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ApplicationUri Node.
-   * @throws UaException if an error occurs creating or getting the ApplicationUri Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  void setApplicationUri(String value) throws UaException;
+  @Nullable PropertyType getProductUriNode() throws UaException;
+
+  /** Asynchronous form of {@link #getProductUriNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getProductUriNodeAsync();
 
   /**
-   * Read the value of the ApplicationUri Node from the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the ProductUri child from the server.
    *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  String readApplicationUri() throws UaException;
+  @Nullable String readProductUri() throws UaException;
 
   /**
-   * Write a new value for the ApplicationUri Node to the server and update the local value if the
-   * operation succeeds.
+   * Writes the Value of the ProductUri child to the server.
    *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeApplicationUri(String value) throws UaException;
+  void writeProductUri(@Nullable String value) throws UaException;
+
+  /** Asynchronous form of {@link #readProductUri()}. */
+  CompletableFuture<? extends @Nullable String> readProductUriAsync();
+
+  /** Asynchronous form of {@link #writeProductUri}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeProductUriAsync(@Nullable String value);
 
   /**
-   * An asynchronous implementation of {@link #readApplicationUri}.
+   * Resolves the optional ApplicationUri child, a PropertyType with DataType UriString.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  CompletableFuture<? extends String> readApplicationUriAsync();
+  @Nullable PropertyType getApplicationUriNode() throws UaException;
+
+  /** Asynchronous form of {@link #getApplicationUriNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getApplicationUriNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeApplicationUri}.
+   * Reads the Value of the ApplicationUri child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeApplicationUriAsync(String value);
+  @Nullable String readApplicationUri() throws UaException;
 
   /**
-   * Get the ApplicationUri {@link PropertyType} Node, or {@code null} if it does not exist.
+   * Writes the Value of the ApplicationUri child to the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ApplicationUri {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  PropertyType getApplicationUriNode() throws UaException;
+  void writeApplicationUri(@Nullable String value) throws UaException;
+
+  /** Asynchronous form of {@link #readApplicationUri()}. */
+  CompletableFuture<? extends @Nullable String> readApplicationUriAsync();
+
+  /** Asynchronous form of {@link #writeApplicationUri}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeApplicationUriAsync(@Nullable String value);
 
   /**
-   * Asynchronous implementation of {@link #getApplicationUriNode()}.
+   * Resolves the optional ApplicationType child, a PropertyType with DataType ApplicationType.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  CompletableFuture<? extends PropertyType> getApplicationUriNodeAsync();
+  @Nullable PropertyType getApplicationTypeNode() throws UaException;
+
+  /** Asynchronous form of {@link #getApplicationTypeNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getApplicationTypeNodeAsync();
 
   /**
-   * Get the local value of the ProductUri Node.
+   * Reads the Value of the ApplicationType child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ProductUri Node.
-   * @throws UaException if an error occurs creating or getting the ProductUri Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  String getProductUri() throws UaException;
+  @Nullable ApplicationType readApplicationType() throws UaException;
 
   /**
-   * Set the local value of the ProductUri Node.
+   * Writes the Value of the ApplicationType child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ProductUri Node.
-   * @throws UaException if an error occurs creating or getting the ProductUri Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setProductUri(String value) throws UaException;
+  void writeApplicationType(@Nullable ApplicationType value) throws UaException;
+
+  /** Asynchronous form of {@link #readApplicationType()}. */
+  CompletableFuture<? extends @Nullable ApplicationType> readApplicationTypeAsync();
+
+  /** Asynchronous form of {@link #writeApplicationType}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeApplicationTypeAsync(@Nullable ApplicationType value);
 
   /**
-   * Read the value of the ProductUri Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the optional ApplicationNames child, a PropertyType with DataType LocalizedText.
    *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  String readProductUri() throws UaException;
+  @Nullable PropertyType getApplicationNamesNode() throws UaException;
+
+  /** Asynchronous form of {@link #getApplicationNamesNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getApplicationNamesNodeAsync();
 
   /**
-   * Write a new value for the ProductUri Node to the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the ApplicationNames child from the server.
    *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeProductUri(String value) throws UaException;
+  LocalizedText @Nullable [] readApplicationNames() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readProductUri}.
+   * Writes the Value of the ApplicationNames child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends String> readProductUriAsync();
+  void writeApplicationNames(LocalizedText @Nullable [] value) throws UaException;
+
+  /** Asynchronous form of {@link #readApplicationNames()}. */
+  CompletableFuture<? extends LocalizedText @Nullable []> readApplicationNamesAsync();
+
+  /** Asynchronous form of {@link #writeApplicationNames}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeApplicationNamesAsync(LocalizedText @Nullable [] value);
 
   /**
-   * An asynchronous implementation of {@link #writeProductUri}.
+   * Resolves the optional HasSecureElement child, a PropertyType with DataType Boolean.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  CompletableFuture<StatusCode> writeProductUriAsync(String value);
+  @Nullable PropertyType getHasSecureElementNode() throws UaException;
+
+  /** Asynchronous form of {@link #getHasSecureElementNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getHasSecureElementNodeAsync();
 
   /**
-   * Get the ProductUri {@link PropertyType} Node, or {@code null} if it does not exist.
+   * Reads the Value of the HasSecureElement child from the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ProductUri {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  PropertyType getProductUriNode() throws UaException;
+  @Nullable Boolean readHasSecureElement() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getProductUriNode()}.
+   * Writes the Value of the HasSecureElement child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends PropertyType> getProductUriNodeAsync();
+  void writeHasSecureElement(@Nullable Boolean value) throws UaException;
+
+  /** Asynchronous form of {@link #readHasSecureElement()}. */
+  CompletableFuture<? extends @Nullable Boolean> readHasSecureElementAsync();
+
+  /** Asynchronous form of {@link #writeHasSecureElement}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeHasSecureElementAsync(@Nullable Boolean value);
 
   /**
-   * Get the local value of the ApplicationType Node.
+   * Resolves the mandatory MaxTrustListSize child, a PropertyType with DataType UInt32.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ApplicationType Node.
-   * @throws UaException if an error occurs creating or getting the ApplicationType Node.
-   */
-  ApplicationType getApplicationType() throws UaException;
-
-  /**
-   * Set the local value of the ApplicationType Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ApplicationType Node.
-   * @throws UaException if an error occurs creating or getting the ApplicationType Node.
-   */
-  void setApplicationType(ApplicationType value) throws UaException;
-
-  /**
-   * Read the value of the ApplicationType Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link ApplicationType} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  ApplicationType readApplicationType() throws UaException;
-
-  /**
-   * Write a new value for the ApplicationType Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link ApplicationType} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeApplicationType(ApplicationType value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readApplicationType}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends ApplicationType> readApplicationTypeAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeApplicationType}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeApplicationTypeAsync(ApplicationType value);
-
-  /**
-   * Get the ApplicationType {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ApplicationType {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getApplicationTypeNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getApplicationTypeNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getApplicationTypeNodeAsync();
-
-  /**
-   * Get the local value of the ApplicationNames Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ApplicationNames Node.
-   * @throws UaException if an error occurs creating or getting the ApplicationNames Node.
-   */
-  LocalizedText[] getApplicationNames() throws UaException;
-
-  /**
-   * Set the local value of the ApplicationNames Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ApplicationNames Node.
-   * @throws UaException if an error occurs creating or getting the ApplicationNames Node.
-   */
-  void setApplicationNames(LocalizedText[] value) throws UaException;
-
-  /**
-   * Read the value of the ApplicationNames Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link LocalizedText[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  LocalizedText[] readApplicationNames() throws UaException;
-
-  /**
-   * Write a new value for the ApplicationNames Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link LocalizedText[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeApplicationNames(LocalizedText[] value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readApplicationNames}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends LocalizedText[]> readApplicationNamesAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeApplicationNames}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeApplicationNamesAsync(LocalizedText[] value);
-
-  /**
-   * Get the ApplicationNames {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ApplicationNames {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getApplicationNamesNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getApplicationNamesNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getApplicationNamesNodeAsync();
-
-  /**
-   * Get the local value of the ServerCapabilities Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ServerCapabilities Node.
-   * @throws UaException if an error occurs creating or getting the ServerCapabilities Node.
-   */
-  String[] getServerCapabilities() throws UaException;
-
-  /**
-   * Set the local value of the ServerCapabilities Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ServerCapabilities Node.
-   * @throws UaException if an error occurs creating or getting the ServerCapabilities Node.
-   */
-  void setServerCapabilities(String[] value) throws UaException;
-
-  /**
-   * Read the value of the ServerCapabilities Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link String[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String[] readServerCapabilities() throws UaException;
-
-  /**
-   * Write a new value for the ServerCapabilities Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link String[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeServerCapabilities(String[] value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readServerCapabilities}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String[]> readServerCapabilitiesAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeServerCapabilities}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeServerCapabilitiesAsync(String[] value);
-
-  /**
-   * Get the ServerCapabilities {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ServerCapabilities {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getServerCapabilitiesNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getServerCapabilitiesNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getServerCapabilitiesNodeAsync();
-
-  /**
-   * Get the local value of the SupportedPrivateKeyFormats Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SupportedPrivateKeyFormats Node.
-   * @throws UaException if an error occurs creating or getting the SupportedPrivateKeyFormats Node.
-   */
-  String[] getSupportedPrivateKeyFormats() throws UaException;
-
-  /**
-   * Set the local value of the SupportedPrivateKeyFormats Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SupportedPrivateKeyFormats Node.
-   * @throws UaException if an error occurs creating or getting the SupportedPrivateKeyFormats Node.
-   */
-  void setSupportedPrivateKeyFormats(String[] value) throws UaException;
-
-  /**
-   * Read the value of the SupportedPrivateKeyFormats Node from the server and update the local
-   * value if the operation succeeds.
-   *
-   * @return the {@link String[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String[] readSupportedPrivateKeyFormats() throws UaException;
-
-  /**
-   * Write a new value for the SupportedPrivateKeyFormats Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link String[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeSupportedPrivateKeyFormats(String[] value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readSupportedPrivateKeyFormats}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String[]> readSupportedPrivateKeyFormatsAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeSupportedPrivateKeyFormats}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeSupportedPrivateKeyFormatsAsync(String[] value);
-
-  /**
-   * Get the SupportedPrivateKeyFormats {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SupportedPrivateKeyFormats {@link PropertyType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getSupportedPrivateKeyFormatsNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getSupportedPrivateKeyFormatsNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getSupportedPrivateKeyFormatsNodeAsync();
-
-  /**
-   * Get the local value of the MaxTrustListSize Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaxTrustListSize Node.
-   * @throws UaException if an error occurs creating or getting the MaxTrustListSize Node.
-   */
-  UInteger getMaxTrustListSize() throws UaException;
-
-  /**
-   * Set the local value of the MaxTrustListSize Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaxTrustListSize Node.
-   * @throws UaException if an error occurs creating or getting the MaxTrustListSize Node.
-   */
-  void setMaxTrustListSize(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the MaxTrustListSize Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readMaxTrustListSize() throws UaException;
-
-  /**
-   * Write a new value for the MaxTrustListSize Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMaxTrustListSize(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readMaxTrustListSize}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readMaxTrustListSizeAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeMaxTrustListSize}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMaxTrustListSizeAsync(UInteger value);
-
-  /**
-   * Get the MaxTrustListSize {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaxTrustListSize {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getMaxTrustListSizeNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getMaxTrustListSizeNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getMaxTrustListSizeNode()}. */
   CompletableFuture<? extends PropertyType> getMaxTrustListSizeNodeAsync();
 
   /**
-   * Get the local value of the MulticastDnsEnabled Node.
+   * Reads the Value of the MaxTrustListSize child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MulticastDnsEnabled Node.
-   * @throws UaException if an error occurs creating or getting the MulticastDnsEnabled Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  Boolean getMulticastDnsEnabled() throws UaException;
+  @Nullable UInteger readMaxTrustListSize() throws UaException;
 
   /**
-   * Set the local value of the MulticastDnsEnabled Node.
+   * Writes the Value of the MaxTrustListSize child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MulticastDnsEnabled Node.
-   * @throws UaException if an error occurs creating or getting the MulticastDnsEnabled Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setMulticastDnsEnabled(Boolean value) throws UaException;
+  void writeMaxTrustListSize(@Nullable UInteger value) throws UaException;
+
+  /** Asynchronous form of {@link #readMaxTrustListSize()}. */
+  CompletableFuture<? extends @Nullable UInteger> readMaxTrustListSizeAsync();
+
+  /** Asynchronous form of {@link #writeMaxTrustListSize}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeMaxTrustListSizeAsync(@Nullable UInteger value);
 
   /**
-   * Read the value of the MulticastDnsEnabled Node from the server and update the local value if
-   * the operation succeeds.
+   * Resolves the mandatory CertificateGroups child, a CertificateGroupFolderType.
    *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Boolean readMulticastDnsEnabled() throws UaException;
-
-  /**
-   * Write a new value for the MulticastDnsEnabled Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMulticastDnsEnabled(Boolean value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readMulticastDnsEnabled}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Boolean> readMulticastDnsEnabledAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeMulticastDnsEnabled}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMulticastDnsEnabledAsync(Boolean value);
-
-  /**
-   * Get the MulticastDnsEnabled {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MulticastDnsEnabled {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getMulticastDnsEnabledNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getMulticastDnsEnabledNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getMulticastDnsEnabledNodeAsync();
-
-  /**
-   * Get the local value of the HasSecureElement Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the HasSecureElement Node.
-   * @throws UaException if an error occurs creating or getting the HasSecureElement Node.
-   */
-  Boolean getHasSecureElement() throws UaException;
-
-  /**
-   * Set the local value of the HasSecureElement Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the HasSecureElement Node.
-   * @throws UaException if an error occurs creating or getting the HasSecureElement Node.
-   */
-  void setHasSecureElement(Boolean value) throws UaException;
-
-  /**
-   * Read the value of the HasSecureElement Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Boolean readHasSecureElement() throws UaException;
-
-  /**
-   * Write a new value for the HasSecureElement Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeHasSecureElement(Boolean value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readHasSecureElement}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Boolean> readHasSecureElementAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeHasSecureElement}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeHasSecureElementAsync(Boolean value);
-
-  /**
-   * Get the HasSecureElement {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the HasSecureElement {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getHasSecureElementNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getHasSecureElementNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getHasSecureElementNodeAsync();
-
-  /**
-   * Get the local value of the SupportsTransactions Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SupportsTransactions Node.
-   * @throws UaException if an error occurs creating or getting the SupportsTransactions Node.
-   */
-  Boolean getSupportsTransactions() throws UaException;
-
-  /**
-   * Set the local value of the SupportsTransactions Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SupportsTransactions Node.
-   * @throws UaException if an error occurs creating or getting the SupportsTransactions Node.
-   */
-  void setSupportsTransactions(Boolean value) throws UaException;
-
-  /**
-   * Read the value of the SupportsTransactions Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Boolean readSupportsTransactions() throws UaException;
-
-  /**
-   * Write a new value for the SupportsTransactions Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeSupportsTransactions(Boolean value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readSupportsTransactions}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Boolean> readSupportsTransactionsAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeSupportsTransactions}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeSupportsTransactionsAsync(Boolean value);
-
-  /**
-   * Get the SupportsTransactions {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SupportsTransactions {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getSupportsTransactionsNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getSupportsTransactionsNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getSupportsTransactionsNodeAsync();
-
-  /**
-   * Get the local value of the InApplicationSetup Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the InApplicationSetup Node.
-   * @throws UaException if an error occurs creating or getting the InApplicationSetup Node.
-   */
-  Boolean getInApplicationSetup() throws UaException;
-
-  /**
-   * Set the local value of the InApplicationSetup Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the InApplicationSetup Node.
-   * @throws UaException if an error occurs creating or getting the InApplicationSetup Node.
-   */
-  void setInApplicationSetup(Boolean value) throws UaException;
-
-  /**
-   * Read the value of the InApplicationSetup Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Boolean readInApplicationSetup() throws UaException;
-
-  /**
-   * Write a new value for the InApplicationSetup Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeInApplicationSetup(Boolean value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readInApplicationSetup}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Boolean> readInApplicationSetupAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeInApplicationSetup}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeInApplicationSetupAsync(Boolean value);
-
-  /**
-   * Get the InApplicationSetup {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the InApplicationSetup {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getInApplicationSetupNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getInApplicationSetupNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getInApplicationSetupNodeAsync();
-
-  /**
-   * Get the CertificateGroups {@link CertificateGroupFolderType} Node, or {@code null} if it does
-   * not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the CertificateGroups {@link CertificateGroupFolderType} Node, or {@code null} if it
-   *     does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.3/#7.8.3.3">CertificateGroupFolderType
+   *     documentation</a>
    */
   CertificateGroupFolderType getCertificateGroupsNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getCertificateGroupsNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the CertificateGroupFolderType
-   *     Node or completes exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getCertificateGroupsNode()}. */
   CompletableFuture<? extends CertificateGroupFolderType> getCertificateGroupsNodeAsync();
 
   /**
-   * Get the TransactionDiagnostics {@link TransactionDiagnosticsType} Node, or {@code null} if it
-   * does not exist.
+   * Resolves the optional ConfigurationFile child, a ApplicationConfigurationFileType.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the TransactionDiagnostics {@link TransactionDiagnosticsType} Node, or {@code null} if
-   *     it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part26/5.4">Model
+   *     documentation</a>
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.20">ApplicationConfigurationFileType
+   *     documentation</a>
    */
-  TransactionDiagnosticsType getTransactionDiagnosticsNode() throws UaException;
+  @Nullable ApplicationConfigurationFileType getConfigurationFileNode() throws UaException;
+
+  /** Asynchronous form of {@link #getConfigurationFileNode()}. */
+  CompletableFuture<? extends @Nullable ApplicationConfigurationFileType>
+      getConfigurationFileNodeAsync();
 
   /**
-   * Asynchronous implementation of {@link #getTransactionDiagnosticsNode()}.
+   * Resolves the optional InApplicationSetup child, a PropertyType with DataType Boolean.
    *
-   * @return a CompletableFuture that completes successfully with the TransactionDiagnosticsType
-   *     Node or completes exceptionally if an error occurs creating or getting the Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  CompletableFuture<? extends TransactionDiagnosticsType> getTransactionDiagnosticsNodeAsync();
+  @Nullable PropertyType getInApplicationSetupNode() throws UaException;
+
+  /** Asynchronous form of {@link #getInApplicationSetupNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getInApplicationSetupNodeAsync();
 
   /**
-   * Get the ConfigurationFile {@link ApplicationConfigurationFileType} Node, or {@code null} if it
-   * does not exist.
+   * Reads the Value of the InApplicationSetup child from the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ConfigurationFile {@link ApplicationConfigurationFileType} Node, or {@code null} if
-   *     it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  ApplicationConfigurationFileType getConfigurationFileNode() throws UaException;
+  @Nullable Boolean readInApplicationSetup() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getConfigurationFileNode()}.
+   * Writes the Value of the InApplicationSetup child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the
-   *     ApplicationConfigurationFileType Node or completes exceptionally if an error occurs
-   *     creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends ApplicationConfigurationFileType> getConfigurationFileNodeAsync();
+  void writeInApplicationSetup(@Nullable Boolean value) throws UaException;
+
+  /** Asynchronous form of {@link #readInApplicationSetup()}. */
+  CompletableFuture<? extends @Nullable Boolean> readInApplicationSetupAsync();
+
+  /** Asynchronous form of {@link #writeInApplicationSetup}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeInApplicationSetupAsync(@Nullable Boolean value);
+
+  /**
+   * Resolves the mandatory ServerCapabilities child, a PropertyType with DataType String.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getServerCapabilitiesNode() throws UaException;
+
+  /** Asynchronous form of {@link #getServerCapabilitiesNode()}. */
+  CompletableFuture<? extends PropertyType> getServerCapabilitiesNodeAsync();
+
+  /**
+   * Reads the Value of the ServerCapabilities child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable String @Nullable [] readServerCapabilities() throws UaException;
+
+  /**
+   * Writes the Value of the ServerCapabilities child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeServerCapabilities(@Nullable String @Nullable [] value) throws UaException;
+
+  /** Asynchronous form of {@link #readServerCapabilities()}. */
+  CompletableFuture<? extends @Nullable String @Nullable []> readServerCapabilitiesAsync();
+
+  /** Asynchronous form of {@link #writeServerCapabilities}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeServerCapabilitiesAsync(@Nullable String @Nullable [] value);
+
+  /**
+   * Resolves the mandatory MulticastDnsEnabled child, a PropertyType with DataType Boolean.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getMulticastDnsEnabledNode() throws UaException;
+
+  /** Asynchronous form of {@link #getMulticastDnsEnabledNode()}. */
+  CompletableFuture<? extends PropertyType> getMulticastDnsEnabledNodeAsync();
+
+  /**
+   * Reads the Value of the MulticastDnsEnabled child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable Boolean readMulticastDnsEnabled() throws UaException;
+
+  /**
+   * Writes the Value of the MulticastDnsEnabled child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeMulticastDnsEnabled(@Nullable Boolean value) throws UaException;
+
+  /** Asynchronous form of {@link #readMulticastDnsEnabled()}. */
+  CompletableFuture<? extends @Nullable Boolean> readMulticastDnsEnabledAsync();
+
+  /**
+   * Asynchronous form of {@link #writeMulticastDnsEnabled}; completes with the operation status.
+   */
+  CompletableFuture<StatusCode> writeMulticastDnsEnabledAsync(@Nullable Boolean value);
+
+  /**
+   * Resolves the optional SupportsTransactions child, a PropertyType with DataType Boolean.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyType getSupportsTransactionsNode() throws UaException;
+
+  /** Asynchronous form of {@link #getSupportsTransactionsNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getSupportsTransactionsNodeAsync();
+
+  /**
+   * Reads the Value of the SupportsTransactions child from the server.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable Boolean readSupportsTransactions() throws UaException;
+
+  /**
+   * Writes the Value of the SupportsTransactions child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeSupportsTransactions(@Nullable Boolean value) throws UaException;
+
+  /** Asynchronous form of {@link #readSupportsTransactions()}. */
+  CompletableFuture<? extends @Nullable Boolean> readSupportsTransactionsAsync();
+
+  /**
+   * Asynchronous form of {@link #writeSupportsTransactions}; completes with the operation status.
+   */
+  CompletableFuture<StatusCode> writeSupportsTransactionsAsync(@Nullable Boolean value);
+
+  /**
+   * Resolves the optional TransactionDiagnostics child, a TransactionDiagnosticsType.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.17">TransactionDiagnosticsType
+   *     documentation</a>
+   */
+  @Nullable TransactionDiagnosticsType getTransactionDiagnosticsNode() throws UaException;
+
+  /** Asynchronous form of {@link #getTransactionDiagnosticsNode()}. */
+  CompletableFuture<? extends @Nullable TransactionDiagnosticsType>
+      getTransactionDiagnosticsNodeAsync();
+
+  /**
+   * Resolves the mandatory SupportedPrivateKeyFormats child, a PropertyType with DataType String.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getSupportedPrivateKeyFormatsNode() throws UaException;
+
+  /** Asynchronous form of {@link #getSupportedPrivateKeyFormatsNode()}. */
+  CompletableFuture<? extends PropertyType> getSupportedPrivateKeyFormatsNodeAsync();
+
+  /**
+   * Reads the Value of the SupportedPrivateKeyFormats child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable String @Nullable [] readSupportedPrivateKeyFormats() throws UaException;
+
+  /**
+   * Writes the Value of the SupportedPrivateKeyFormats child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeSupportedPrivateKeyFormats(@Nullable String @Nullable [] value) throws UaException;
+
+  /** Asynchronous form of {@link #readSupportedPrivateKeyFormats()}. */
+  CompletableFuture<? extends @Nullable String @Nullable []> readSupportedPrivateKeyFormatsAsync();
+
+  /**
+   * Asynchronous form of {@link #writeSupportedPrivateKeyFormats}; completes with the operation
+   * status.
+   */
+  CompletableFuture<StatusCode> writeSupportedPrivateKeyFormatsAsync(
+      @Nullable String @Nullable [] value);
+
+  /**
+   * Resolves the mandatory ApplyChanges Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.9">Model
+   *     documentation</a>
+   */
+  UaMethodNode getApplyChangesMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getApplyChangesMethodNode()}. */
+  CompletableFuture<UaMethodNode> getApplyChangesMethodNodeAsync();
+
+  /**
+   * Calls the ApplyChanges Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.9">Model
+   *     documentation</a>
+   */
+  void applyChanges() throws UaException;
+
+  /**
+   * Calls the ApplyChanges Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callApplyChanges() throws UaException;
+
+  /**
+   * Calls the ApplyChanges Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callApplyChangesWith(MethodCallOptions options) throws UaException;
+
+  /** Asynchronous form of {@link #applyChanges}. */
+  CompletableFuture<Void> applyChangesAsync();
+
+  /** Asynchronous form of {@link #callApplyChanges}. */
+  CompletableFuture<MethodCallResult<Void>> callApplyChangesAsync();
+
+  /** Asynchronous form of {@link #callApplyChangesWith}. */
+  CompletableFuture<MethodCallResult<Void>> callApplyChangesWithAsync(MethodCallOptions options);
+
+  /**
+   * Resolves the optional CancelChanges Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.11">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getCancelChangesMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getCancelChangesMethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getCancelChangesMethodNodeAsync();
+
+  /**
+   * Calls the CancelChanges Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.11">Model
+   *     documentation</a>
+   */
+  void cancelChanges() throws UaException;
+
+  /**
+   * Calls the CancelChanges Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callCancelChanges() throws UaException;
+
+  /**
+   * Calls the CancelChanges Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callCancelChangesWith(MethodCallOptions options) throws UaException;
+
+  /** Asynchronous form of {@link #cancelChanges}. */
+  CompletableFuture<Void> cancelChangesAsync();
+
+  /** Asynchronous form of {@link #callCancelChanges}. */
+  CompletableFuture<MethodCallResult<Void>> callCancelChangesAsync();
+
+  /** Asynchronous form of {@link #callCancelChangesWith}. */
+  CompletableFuture<MethodCallResult<Void>> callCancelChangesWithAsync(MethodCallOptions options);
+
+  /**
+   * Resolves the optional CreateSelfSignedCertificate Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.6">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getCreateSelfSignedCertificateMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getCreateSelfSignedCertificateMethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getCreateSelfSignedCertificateMethodNodeAsync();
+
+  /**
+   * Calls the CreateSelfSignedCertificate Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.6">Model
+   *     documentation</a>
+   */
+  @Nullable ByteString createSelfSignedCertificate(
+      @Nullable NodeId certificateGroupId,
+      @Nullable NodeId certificateTypeId,
+      @Nullable String subjectName,
+      @Nullable String @Nullable [] dnsNames,
+      @Nullable String @Nullable [] ipAddresses,
+      @Nullable UShort lifetimeInDays,
+      @Nullable UShort keySizeInBits)
+      throws UaException;
+
+  /**
+   * Calls the CreateSelfSignedCertificate Method and returns the complete result, including a Bad
+   * status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<@Nullable ByteString> callCreateSelfSignedCertificate(
+      @Nullable NodeId certificateGroupId,
+      @Nullable NodeId certificateTypeId,
+      @Nullable String subjectName,
+      @Nullable String @Nullable [] dnsNames,
+      @Nullable String @Nullable [] ipAddresses,
+      @Nullable UShort lifetimeInDays,
+      @Nullable UShort keySizeInBits)
+      throws UaException;
+
+  /**
+   * Calls the CreateSelfSignedCertificate Method with explicit options and returns the complete
+   * result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<@Nullable ByteString> callCreateSelfSignedCertificateWith(
+      MethodCallOptions options,
+      @Nullable NodeId certificateGroupId,
+      @Nullable NodeId certificateTypeId,
+      @Nullable String subjectName,
+      @Nullable String @Nullable [] dnsNames,
+      @Nullable String @Nullable [] ipAddresses,
+      @Nullable UShort lifetimeInDays,
+      @Nullable UShort keySizeInBits)
+      throws UaException;
+
+  /** Asynchronous form of {@link #createSelfSignedCertificate}. */
+  CompletableFuture<@Nullable ByteString> createSelfSignedCertificateAsync(
+      @Nullable NodeId certificateGroupId,
+      @Nullable NodeId certificateTypeId,
+      @Nullable String subjectName,
+      @Nullable String @Nullable [] dnsNames,
+      @Nullable String @Nullable [] ipAddresses,
+      @Nullable UShort lifetimeInDays,
+      @Nullable UShort keySizeInBits);
+
+  /** Asynchronous form of {@link #callCreateSelfSignedCertificate}. */
+  CompletableFuture<MethodCallResult<@Nullable ByteString>> callCreateSelfSignedCertificateAsync(
+      @Nullable NodeId certificateGroupId,
+      @Nullable NodeId certificateTypeId,
+      @Nullable String subjectName,
+      @Nullable String @Nullable [] dnsNames,
+      @Nullable String @Nullable [] ipAddresses,
+      @Nullable UShort lifetimeInDays,
+      @Nullable UShort keySizeInBits);
+
+  /** Asynchronous form of {@link #callCreateSelfSignedCertificateWith}. */
+  CompletableFuture<MethodCallResult<@Nullable ByteString>>
+      callCreateSelfSignedCertificateWithAsync(
+          MethodCallOptions options,
+          @Nullable NodeId certificateGroupId,
+          @Nullable NodeId certificateTypeId,
+          @Nullable String subjectName,
+          @Nullable String @Nullable [] dnsNames,
+          @Nullable String @Nullable [] ipAddresses,
+          @Nullable UShort lifetimeInDays,
+          @Nullable UShort keySizeInBits);
+
+  /**
+   * Resolves the mandatory CreateSigningRequest Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.10">Model
+   *     documentation</a>
+   */
+  UaMethodNode getCreateSigningRequestMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getCreateSigningRequestMethodNode()}. */
+  CompletableFuture<UaMethodNode> getCreateSigningRequestMethodNodeAsync();
+
+  /**
+   * Calls the CreateSigningRequest Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.10">Model
+   *     documentation</a>
+   */
+  @Nullable ByteString createSigningRequest(
+      @Nullable NodeId certificateGroupId,
+      @Nullable NodeId certificateTypeId,
+      @Nullable String subjectName,
+      @Nullable Boolean regeneratePrivateKey,
+      @Nullable ByteString nonce)
+      throws UaException;
+
+  /**
+   * Calls the CreateSigningRequest Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<@Nullable ByteString> callCreateSigningRequest(
+      @Nullable NodeId certificateGroupId,
+      @Nullable NodeId certificateTypeId,
+      @Nullable String subjectName,
+      @Nullable Boolean regeneratePrivateKey,
+      @Nullable ByteString nonce)
+      throws UaException;
+
+  /**
+   * Calls the CreateSigningRequest Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<@Nullable ByteString> callCreateSigningRequestWith(
+      MethodCallOptions options,
+      @Nullable NodeId certificateGroupId,
+      @Nullable NodeId certificateTypeId,
+      @Nullable String subjectName,
+      @Nullable Boolean regeneratePrivateKey,
+      @Nullable ByteString nonce)
+      throws UaException;
+
+  /** Asynchronous form of {@link #createSigningRequest}. */
+  CompletableFuture<@Nullable ByteString> createSigningRequestAsync(
+      @Nullable NodeId certificateGroupId,
+      @Nullable NodeId certificateTypeId,
+      @Nullable String subjectName,
+      @Nullable Boolean regeneratePrivateKey,
+      @Nullable ByteString nonce);
+
+  /** Asynchronous form of {@link #callCreateSigningRequest}. */
+  CompletableFuture<MethodCallResult<@Nullable ByteString>> callCreateSigningRequestAsync(
+      @Nullable NodeId certificateGroupId,
+      @Nullable NodeId certificateTypeId,
+      @Nullable String subjectName,
+      @Nullable Boolean regeneratePrivateKey,
+      @Nullable ByteString nonce);
+
+  /** Asynchronous form of {@link #callCreateSigningRequestWith}. */
+  CompletableFuture<MethodCallResult<@Nullable ByteString>> callCreateSigningRequestWithAsync(
+      MethodCallOptions options,
+      @Nullable NodeId certificateGroupId,
+      @Nullable NodeId certificateTypeId,
+      @Nullable String subjectName,
+      @Nullable Boolean regeneratePrivateKey,
+      @Nullable ByteString nonce);
+
+  /**
+   * Resolves the optional DeleteCertificate Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.7">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getDeleteCertificateMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getDeleteCertificateMethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getDeleteCertificateMethodNodeAsync();
+
+  /**
+   * Calls the DeleteCertificate Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.7">Model
+   *     documentation</a>
+   */
+  void deleteCertificate(@Nullable NodeId certificateGroupId, @Nullable NodeId certificateTypeId)
+      throws UaException;
+
+  /**
+   * Calls the DeleteCertificate Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callDeleteCertificate(
+      @Nullable NodeId certificateGroupId, @Nullable NodeId certificateTypeId) throws UaException;
+
+  /**
+   * Calls the DeleteCertificate Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callDeleteCertificateWith(
+      MethodCallOptions options,
+      @Nullable NodeId certificateGroupId,
+      @Nullable NodeId certificateTypeId)
+      throws UaException;
+
+  /** Asynchronous form of {@link #deleteCertificate}. */
+  CompletableFuture<Void> deleteCertificateAsync(
+      @Nullable NodeId certificateGroupId, @Nullable NodeId certificateTypeId);
+
+  /** Asynchronous form of {@link #callDeleteCertificate}. */
+  CompletableFuture<MethodCallResult<Void>> callDeleteCertificateAsync(
+      @Nullable NodeId certificateGroupId, @Nullable NodeId certificateTypeId);
+
+  /** Asynchronous form of {@link #callDeleteCertificateWith}. */
+  CompletableFuture<MethodCallResult<Void>> callDeleteCertificateWithAsync(
+      MethodCallOptions options,
+      @Nullable NodeId certificateGroupId,
+      @Nullable NodeId certificateTypeId);
+
+  /**
+   * Resolves the optional GetCertificates Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.8">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getGetCertificatesMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getGetCertificatesMethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getGetCertificatesMethodNodeAsync();
+
+  /**
+   * Calls the GetCertificates Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.8">Model
+   *     documentation</a>
+   */
+  ServerConfigurationTypeGetCertificates.Outputs getCertificates(
+      @Nullable NodeId certificateGroupId) throws UaException;
+
+  /**
+   * Calls the GetCertificates Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<ServerConfigurationTypeGetCertificates.Outputs> callGetCertificates(
+      @Nullable NodeId certificateGroupId) throws UaException;
+
+  /**
+   * Calls the GetCertificates Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<ServerConfigurationTypeGetCertificates.Outputs> callGetCertificatesWith(
+      MethodCallOptions options, @Nullable NodeId certificateGroupId) throws UaException;
+
+  /** Asynchronous form of {@link #getCertificates}. */
+  CompletableFuture<ServerConfigurationTypeGetCertificates.Outputs> getCertificatesAsync(
+      @Nullable NodeId certificateGroupId);
+
+  /** Asynchronous form of {@link #callGetCertificates}. */
+  CompletableFuture<MethodCallResult<ServerConfigurationTypeGetCertificates.Outputs>>
+      callGetCertificatesAsync(@Nullable NodeId certificateGroupId);
+
+  /** Asynchronous form of {@link #callGetCertificatesWith}. */
+  CompletableFuture<MethodCallResult<ServerConfigurationTypeGetCertificates.Outputs>>
+      callGetCertificatesWithAsync(MethodCallOptions options, @Nullable NodeId certificateGroupId);
+
+  /**
+   * Resolves the mandatory GetRejectedList Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.12">Model
+   *     documentation</a>
+   */
+  UaMethodNode getGetRejectedListMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getGetRejectedListMethodNode()}. */
+  CompletableFuture<UaMethodNode> getGetRejectedListMethodNodeAsync();
+
+  /**
+   * Calls the GetRejectedList Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.12">Model
+   *     documentation</a>
+   */
+  ByteString @Nullable [] getRejectedList() throws UaException;
+
+  /**
+   * Calls the GetRejectedList Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<ByteString @Nullable []> callGetRejectedList() throws UaException;
+
+  /**
+   * Calls the GetRejectedList Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<ByteString @Nullable []> callGetRejectedListWith(MethodCallOptions options)
+      throws UaException;
+
+  /** Asynchronous form of {@link #getRejectedList}. */
+  CompletableFuture<ByteString @Nullable []> getRejectedListAsync();
+
+  /** Asynchronous form of {@link #callGetRejectedList}. */
+  CompletableFuture<MethodCallResult<ByteString @Nullable []>> callGetRejectedListAsync();
+
+  /** Asynchronous form of {@link #callGetRejectedListWith}. */
+  CompletableFuture<MethodCallResult<ByteString @Nullable []>> callGetRejectedListWithAsync(
+      MethodCallOptions options);
+
+  /**
+   * Resolves the optional ResetToServerDefaults Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.13">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getResetToServerDefaultsMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getResetToServerDefaultsMethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getResetToServerDefaultsMethodNodeAsync();
+
+  /**
+   * Calls the ResetToServerDefaults Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.13">Model
+   *     documentation</a>
+   */
+  void resetToServerDefaults() throws UaException;
+
+  /**
+   * Calls the ResetToServerDefaults Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callResetToServerDefaults() throws UaException;
+
+  /**
+   * Calls the ResetToServerDefaults Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callResetToServerDefaultsWith(MethodCallOptions options)
+      throws UaException;
+
+  /** Asynchronous form of {@link #resetToServerDefaults}. */
+  CompletableFuture<Void> resetToServerDefaultsAsync();
+
+  /** Asynchronous form of {@link #callResetToServerDefaults}. */
+  CompletableFuture<MethodCallResult<Void>> callResetToServerDefaultsAsync();
+
+  /** Asynchronous form of {@link #callResetToServerDefaultsWith}. */
+  CompletableFuture<MethodCallResult<Void>> callResetToServerDefaultsWithAsync(
+      MethodCallOptions options);
+
+  /**
+   * Resolves the mandatory UpdateCertificate Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.5">Model
+   *     documentation</a>
+   */
+  UaMethodNode getUpdateCertificateMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getUpdateCertificateMethodNode()}. */
+  CompletableFuture<UaMethodNode> getUpdateCertificateMethodNodeAsync();
+
+  /**
+   * Calls the UpdateCertificate Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.5">Model
+   *     documentation</a>
+   */
+  @Nullable Boolean updateCertificate(
+      @Nullable NodeId certificateGroupId,
+      @Nullable NodeId certificateTypeId,
+      @Nullable ByteString certificate,
+      ByteString @Nullable [] issuerCertificates,
+      @Nullable String privateKeyFormat,
+      @Nullable ByteString privateKey)
+      throws UaException;
+
+  /**
+   * Calls the UpdateCertificate Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<@Nullable Boolean> callUpdateCertificate(
+      @Nullable NodeId certificateGroupId,
+      @Nullable NodeId certificateTypeId,
+      @Nullable ByteString certificate,
+      ByteString @Nullable [] issuerCertificates,
+      @Nullable String privateKeyFormat,
+      @Nullable ByteString privateKey)
+      throws UaException;
+
+  /**
+   * Calls the UpdateCertificate Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<@Nullable Boolean> callUpdateCertificateWith(
+      MethodCallOptions options,
+      @Nullable NodeId certificateGroupId,
+      @Nullable NodeId certificateTypeId,
+      @Nullable ByteString certificate,
+      ByteString @Nullable [] issuerCertificates,
+      @Nullable String privateKeyFormat,
+      @Nullable ByteString privateKey)
+      throws UaException;
+
+  /** Asynchronous form of {@link #updateCertificate}. */
+  CompletableFuture<@Nullable Boolean> updateCertificateAsync(
+      @Nullable NodeId certificateGroupId,
+      @Nullable NodeId certificateTypeId,
+      @Nullable ByteString certificate,
+      ByteString @Nullable [] issuerCertificates,
+      @Nullable String privateKeyFormat,
+      @Nullable ByteString privateKey);
+
+  /** Asynchronous form of {@link #callUpdateCertificate}. */
+  CompletableFuture<MethodCallResult<@Nullable Boolean>> callUpdateCertificateAsync(
+      @Nullable NodeId certificateGroupId,
+      @Nullable NodeId certificateTypeId,
+      @Nullable ByteString certificate,
+      ByteString @Nullable [] issuerCertificates,
+      @Nullable String privateKeyFormat,
+      @Nullable ByteString privateKey);
+
+  /** Asynchronous form of {@link #callUpdateCertificateWith}. */
+  CompletableFuture<MethodCallResult<@Nullable Boolean>> callUpdateCertificateWithAsync(
+      MethodCallOptions options,
+      @Nullable NodeId certificateGroupId,
+      @Nullable NodeId certificateTypeId,
+      @Nullable ByteString certificate,
+      ByteString @Nullable [] issuerCertificates,
+      @Nullable String privateKeyFormat,
+      @Nullable ByteString privateKey);
 }

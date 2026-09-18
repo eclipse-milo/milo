@@ -1,462 +1,245 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.variables;
 
 import java.util.concurrent.CompletableFuture;
+import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ServerState;
 import org.eclipse.milo.opcua.stack.core.types.structured.BuildInfo;
+import org.eclipse.milo.opcua.stack.core.types.structured.ServerStatusDataType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.6">https://reference.opcfoundation.org/v105/Core/docs/Part5/7.6</a>
+ * Client API for the ServerStatusType VariableType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.6">Model
+ *     documentation</a>
  */
 public interface ServerStatusType extends BaseDataVariableType {
-  /**
-   * Get the local value of the StartTime Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the StartTime Node.
-   * @throws UaException if an error occurs creating or getting the StartTime Node.
-   */
-  DateTime getStartTime() throws UaException;
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2138L);
 
   /**
-   * Set the local value of the StartTime Node.
+   * Resolves the mandatory CurrentTime child, a BaseDataVariableType with DataType UtcTime.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the StartTime Node.
-   * @throws UaException if an error occurs creating or getting the StartTime Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  void setStartTime(DateTime value) throws UaException;
+  VariableNode getCurrentTimeNode() throws UaException;
+
+  /** Asynchronous form of {@link #getCurrentTimeNode()}. */
+  CompletableFuture<? extends VariableNode> getCurrentTimeNodeAsync();
 
   /**
-   * Read the value of the StartTime Node from the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the CurrentTime child from the server.
    *
-   * @return the {@link DateTime} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  DateTime readStartTime() throws UaException;
+  @Nullable DateTime readCurrentTime() throws UaException;
 
   /**
-   * Write a new value for the StartTime Node to the server and update the local value if the
-   * operation succeeds.
+   * Writes the Value of the CurrentTime child to the server.
    *
-   * @param value the {@link DateTime} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeStartTime(DateTime value) throws UaException;
+  void writeCurrentTime(@Nullable DateTime value) throws UaException;
+
+  /** Asynchronous form of {@link #readCurrentTime()}. */
+  CompletableFuture<? extends @Nullable DateTime> readCurrentTimeAsync();
+
+  /** Asynchronous form of {@link #writeCurrentTime}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeCurrentTimeAsync(@Nullable DateTime value);
 
   /**
-   * An asynchronous implementation of {@link #readStartTime}.
+   * Resolves the mandatory ShutdownReason child, a BaseDataVariableType with DataType
+   * LocalizedText.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  CompletableFuture<? extends DateTime> readStartTimeAsync();
+  VariableNode getShutdownReasonNode() throws UaException;
+
+  /** Asynchronous form of {@link #getShutdownReasonNode()}. */
+  CompletableFuture<? extends VariableNode> getShutdownReasonNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeStartTime}.
+   * Reads the Value of the ShutdownReason child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeStartTimeAsync(DateTime value);
+  @Nullable LocalizedText readShutdownReason() throws UaException;
 
   /**
-   * Get the StartTime {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
+   * Writes the Value of the ShutdownReason child to the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the StartTime {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  BaseDataVariableType getStartTimeNode() throws UaException;
+  void writeShutdownReason(@Nullable LocalizedText value) throws UaException;
+
+  /** Asynchronous form of {@link #readShutdownReason()}. */
+  CompletableFuture<? extends @Nullable LocalizedText> readShutdownReasonAsync();
+
+  /** Asynchronous form of {@link #writeShutdownReason}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeShutdownReasonAsync(@Nullable LocalizedText value);
 
   /**
-   * Asynchronous implementation of {@link #getStartTimeNode()}.
+   * Resolves the mandatory SecondsTillShutdown child, a BaseDataVariableType with DataType UInt32.
    *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  CompletableFuture<? extends BaseDataVariableType> getStartTimeNodeAsync();
+  VariableNode getSecondsTillShutdownNode() throws UaException;
+
+  /** Asynchronous form of {@link #getSecondsTillShutdownNode()}. */
+  CompletableFuture<? extends VariableNode> getSecondsTillShutdownNodeAsync();
 
   /**
-   * Get the local value of the CurrentTime Node.
+   * Reads the Value of the SecondsTillShutdown child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the CurrentTime Node.
-   * @throws UaException if an error occurs creating or getting the CurrentTime Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  DateTime getCurrentTime() throws UaException;
+  @Nullable UInteger readSecondsTillShutdown() throws UaException;
 
   /**
-   * Set the local value of the CurrentTime Node.
+   * Writes the Value of the SecondsTillShutdown child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the CurrentTime Node.
-   * @throws UaException if an error occurs creating or getting the CurrentTime Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setCurrentTime(DateTime value) throws UaException;
+  void writeSecondsTillShutdown(@Nullable UInteger value) throws UaException;
+
+  /** Asynchronous form of {@link #readSecondsTillShutdown()}. */
+  CompletableFuture<? extends @Nullable UInteger> readSecondsTillShutdownAsync();
 
   /**
-   * Read the value of the CurrentTime Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link DateTime} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * Asynchronous form of {@link #writeSecondsTillShutdown}; completes with the operation status.
    */
-  DateTime readCurrentTime() throws UaException;
+  CompletableFuture<StatusCode> writeSecondsTillShutdownAsync(@Nullable UInteger value);
 
   /**
-   * Write a new value for the CurrentTime Node to the server and update the local value if the
-   * operation succeeds.
+   * Resolves the mandatory State child, a BaseDataVariableType with DataType ServerState.
    *
-   * @param value the {@link DateTime} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  void writeCurrentTime(DateTime value) throws UaException;
+  VariableNode getStateNode() throws UaException;
+
+  /** Asynchronous form of {@link #getStateNode()}. */
+  CompletableFuture<? extends VariableNode> getStateNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #readCurrentTime}.
+   * Reads the Value of the State child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends DateTime> readCurrentTimeAsync();
+  @Nullable ServerState readState() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeCurrentTime}.
+   * Writes the Value of the State child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeCurrentTimeAsync(DateTime value);
+  void writeState(@Nullable ServerState value) throws UaException;
+
+  /** Asynchronous form of {@link #readState()}. */
+  CompletableFuture<? extends @Nullable ServerState> readStateAsync();
+
+  /** Asynchronous form of {@link #writeState}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeStateAsync(@Nullable ServerState value);
 
   /**
-   * Get the CurrentTime {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
+   * Resolves the mandatory BuildInfo child, a BuildInfoType with DataType BuildInfo.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the CurrentTime {@link BaseDataVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getCurrentTimeNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getCurrentTimeNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getCurrentTimeNodeAsync();
-
-  /**
-   * Get the local value of the State Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the State Node.
-   * @throws UaException if an error occurs creating or getting the State Node.
-   */
-  ServerState getState() throws UaException;
-
-  /**
-   * Set the local value of the State Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the State Node.
-   * @throws UaException if an error occurs creating or getting the State Node.
-   */
-  void setState(ServerState value) throws UaException;
-
-  /**
-   * Read the value of the State Node from the server and update the local value if the operation
-   * succeeds.
-   *
-   * @return the {@link ServerState} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  ServerState readState() throws UaException;
-
-  /**
-   * Write a new value for the State Node to the server and update the local value if the operation
-   * succeeds.
-   *
-   * @param value the {@link ServerState} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeState(ServerState value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readState}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends ServerState> readStateAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeState}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeStateAsync(ServerState value);
-
-  /**
-   * Get the State {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the State {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getStateNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getStateNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getStateNodeAsync();
-
-  /**
-   * Get the local value of the BuildInfo Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the BuildInfo Node.
-   * @throws UaException if an error occurs creating or getting the BuildInfo Node.
-   */
-  BuildInfo getBuildInfo() throws UaException;
-
-  /**
-   * Set the local value of the BuildInfo Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the BuildInfo Node.
-   * @throws UaException if an error occurs creating or getting the BuildInfo Node.
-   */
-  void setBuildInfo(BuildInfo value) throws UaException;
-
-  /**
-   * Read the value of the BuildInfo Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link BuildInfo} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  BuildInfo readBuildInfo() throws UaException;
-
-  /**
-   * Write a new value for the BuildInfo Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link BuildInfo} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeBuildInfo(BuildInfo value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readBuildInfo}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends BuildInfo> readBuildInfoAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeBuildInfo}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeBuildInfoAsync(BuildInfo value);
-
-  /**
-   * Get the BuildInfo {@link BuildInfoType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the BuildInfo {@link BuildInfoType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.7">BuildInfoType
+   *     documentation</a>
    */
   BuildInfoType getBuildInfoNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getBuildInfoNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BuildInfoType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getBuildInfoNode()}. */
   CompletableFuture<? extends BuildInfoType> getBuildInfoNodeAsync();
 
   /**
-   * Get the local value of the SecondsTillShutdown Node.
+   * Reads the Value of the BuildInfo child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SecondsTillShutdown Node.
-   * @throws UaException if an error occurs creating or getting the SecondsTillShutdown Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UInteger getSecondsTillShutdown() throws UaException;
+  @Nullable BuildInfo readBuildInfo() throws UaException;
 
   /**
-   * Set the local value of the SecondsTillShutdown Node.
+   * Writes the Value of the BuildInfo child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SecondsTillShutdown Node.
-   * @throws UaException if an error occurs creating or getting the SecondsTillShutdown Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setSecondsTillShutdown(UInteger value) throws UaException;
+  void writeBuildInfo(@Nullable BuildInfo value) throws UaException;
+
+  /** Asynchronous form of {@link #readBuildInfo()}. */
+  CompletableFuture<? extends @Nullable BuildInfo> readBuildInfoAsync();
+
+  /** Asynchronous form of {@link #writeBuildInfo}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeBuildInfoAsync(@Nullable BuildInfo value);
 
   /**
-   * Read the value of the SecondsTillShutdown Node from the server and update the local value if
-   * the operation succeeds.
+   * Resolves the mandatory StartTime child, a BaseDataVariableType with DataType UtcTime.
    *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  UInteger readSecondsTillShutdown() throws UaException;
+  VariableNode getStartTimeNode() throws UaException;
+
+  /** Asynchronous form of {@link #getStartTimeNode()}. */
+  CompletableFuture<? extends VariableNode> getStartTimeNodeAsync();
 
   /**
-   * Write a new value for the SecondsTillShutdown Node to the server and update the local value if
-   * the operation succeeds.
+   * Reads the Value of the StartTime child from the server.
    *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeSecondsTillShutdown(UInteger value) throws UaException;
+  @Nullable DateTime readStartTime() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readSecondsTillShutdown}.
+   * Writes the Value of the StartTime child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends UInteger> readSecondsTillShutdownAsync();
+  void writeStartTime(@Nullable DateTime value) throws UaException;
+
+  /** Asynchronous form of {@link #readStartTime()}. */
+  CompletableFuture<? extends @Nullable DateTime> readStartTimeAsync();
+
+  /** Asynchronous form of {@link #writeStartTime}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeStartTimeAsync(@Nullable DateTime value);
 
   /**
-   * An asynchronous implementation of {@link #writeSecondsTillShutdown}.
+   * Reads the Value of this node from the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeSecondsTillShutdownAsync(UInteger value);
+  @Nullable ServerStatusDataType readTypedValue() throws UaException;
 
   /**
-   * Get the SecondsTillShutdown {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
+   * Writes the Value of this node to the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SecondsTillShutdown {@link BaseDataVariableType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  BaseDataVariableType getSecondsTillShutdownNode() throws UaException;
+  void writeTypedValue(@Nullable ServerStatusDataType value) throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getSecondsTillShutdownNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getSecondsTillShutdownNodeAsync();
+  /** Asynchronous form of {@link #readTypedValue()}. */
+  CompletableFuture<? extends @Nullable ServerStatusDataType> readTypedValueAsync();
 
-  /**
-   * Get the local value of the ShutdownReason Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ShutdownReason Node.
-   * @throws UaException if an error occurs creating or getting the ShutdownReason Node.
-   */
-  LocalizedText getShutdownReason() throws UaException;
-
-  /**
-   * Set the local value of the ShutdownReason Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ShutdownReason Node.
-   * @throws UaException if an error occurs creating or getting the ShutdownReason Node.
-   */
-  void setShutdownReason(LocalizedText value) throws UaException;
-
-  /**
-   * Read the value of the ShutdownReason Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link LocalizedText} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  LocalizedText readShutdownReason() throws UaException;
-
-  /**
-   * Write a new value for the ShutdownReason Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link LocalizedText} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeShutdownReason(LocalizedText value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readShutdownReason}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends LocalizedText> readShutdownReasonAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeShutdownReason}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeShutdownReasonAsync(LocalizedText value);
-
-  /**
-   * Get the ShutdownReason {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ShutdownReason {@link BaseDataVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getShutdownReasonNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getShutdownReasonNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getShutdownReasonNodeAsync();
+  /** Asynchronous form of {@link #writeTypedValue}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeTypedValueAsync(@Nullable ServerStatusDataType value);
 }

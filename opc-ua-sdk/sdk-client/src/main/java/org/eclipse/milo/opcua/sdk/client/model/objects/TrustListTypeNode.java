@@ -1,24 +1,19 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallOptions;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallResult;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyTypeNode;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
+import org.eclipse.milo.opcua.sdk.client.nodes.UaMethodNode;
+import org.eclipse.milo.opcua.sdk.core.model.methods.TrustListTypeAddCertificate;
+import org.eclipse.milo.opcua.sdk.core.model.methods.TrustListTypeCloseAndUpdate;
+import org.eclipse.milo.opcua.sdk.core.model.methods.TrustListTypeOpenWithMasks;
+import org.eclipse.milo.opcua.sdk.core.model.methods.TrustListTypeRemoveCertificate;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
@@ -32,7 +27,15 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.TrustListValidationOptions;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link TrustListType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.2/#7.8.2.1">Model
+ *     documentation</a>
+ */
 public class TrustListTypeNode extends FileTypeNode implements TrustListType {
   public TrustListTypeNode(
       OpcUaClient client,
@@ -40,12 +43,12 @@ public class TrustListTypeNode extends FileTypeNode implements TrustListType {
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         client,
@@ -63,299 +66,616 @@ public class TrustListTypeNode extends FileTypeNode implements TrustListType {
   }
 
   @Override
-  public DateTime getLastUpdateTime() throws UaException {
-    PropertyTypeNode node = getLastUpdateTimeNode();
-    return (DateTime) node.getValue().getValue().getValue();
-  }
-
-  @Override
-  public void setLastUpdateTime(DateTime value) throws UaException {
-    PropertyTypeNode node = getLastUpdateTimeNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public DateTime readLastUpdateTime() throws UaException {
-    try {
-      return readLastUpdateTimeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeLastUpdateTime(DateTime value) throws UaException {
-    try {
-      StatusCode statusCode = writeLastUpdateTimeAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends DateTime> readLastUpdateTimeAsync() {
-    return getLastUpdateTimeNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (DateTime) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeLastUpdateTimeAsync(DateTime lastUpdateTime) {
-    DataValue value = DataValue.valueOnly(new Variant(lastUpdateTime));
-    return getLastUpdateTimeNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
   public PropertyTypeNode getLastUpdateTimeNode() throws UaException {
-    try {
-      return getLastUpdateTimeNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getLastUpdateTimeNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends PropertyTypeNode> getLastUpdateTimeNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "LastUpdateTime", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "LastUpdateTime",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public Double getUpdateFrequency() throws UaException {
-    PropertyTypeNode node = getUpdateFrequencyNode();
-    return (Double) node.getValue().getValue().getValue();
+  public @Nullable DateTime readLastUpdateTime() throws UaException {
+    return ClientNodeSupport.await(readLastUpdateTimeAsync());
   }
 
   @Override
-  public void setUpdateFrequency(Double value) throws UaException {
-    PropertyTypeNode node = getUpdateFrequencyNode();
-    node.setValue(new Variant(value));
+  public void writeLastUpdateTime(@Nullable DateTime value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeLastUpdateTimeAsync(value)),
+        "http://opcfoundation.org/UA/}LastUpdateTime");
   }
 
   @Override
-  public Double readUpdateFrequency() throws UaException {
-    try {
-      return readUpdateFrequencyAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable DateTime> readLastUpdateTimeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getLastUpdateTimeNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}LastUpdateTime",
+                            true,
+                            DateTime.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable DateTime) v)));
   }
 
   @Override
-  public void writeUpdateFrequency(Double value) throws UaException {
-    try {
-      StatusCode statusCode = writeUpdateFrequencyAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<StatusCode> writeLastUpdateTimeAsync(@Nullable DateTime value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getLastUpdateTimeNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}LastUpdateTime",
+                        value,
+                        DateTime.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public CompletableFuture<? extends Double> readUpdateFrequencyAsync() {
-    return getUpdateFrequencyNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (Double) v.getValue().getValue());
+  public @Nullable PropertyTypeNode getActivityTimeoutNode() throws UaException {
+    return ClientNodeSupport.await(getActivityTimeoutNodeAsync());
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeUpdateFrequencyAsync(Double updateFrequency) {
-    DataValue value = DataValue.valueOnly(new Variant(updateFrequency));
-    return getUpdateFrequencyNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<? extends @Nullable PropertyTypeNode> getActivityTimeoutNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "ActivityTimeout",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public PropertyTypeNode getUpdateFrequencyNode() throws UaException {
-    try {
-      return getUpdateFrequencyNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable Double readActivityTimeout() throws UaException {
+    return ClientNodeSupport.await(readActivityTimeoutAsync());
   }
 
   @Override
-  public CompletableFuture<? extends PropertyTypeNode> getUpdateFrequencyNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "UpdateFrequency", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+  public void writeActivityTimeout(@Nullable Double value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeActivityTimeoutAsync(value)),
+        "http://opcfoundation.org/UA/}ActivityTimeout");
   }
 
   @Override
-  public Double getActivityTimeout() throws UaException {
-    PropertyTypeNode node = getActivityTimeoutNode();
-    return (Double) node.getValue().getValue().getValue();
+  public CompletableFuture<? extends @Nullable Double> readActivityTimeoutAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getActivityTimeoutNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}ActivityTimeout",
+                            false,
+                            Double.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable Double) v)));
   }
 
   @Override
-  public void setActivityTimeout(Double value) throws UaException {
-    PropertyTypeNode node = getActivityTimeoutNode();
-    node.setValue(new Variant(value));
+  public CompletableFuture<StatusCode> writeActivityTimeoutAsync(@Nullable Double value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getActivityTimeoutNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}ActivityTimeout",
+                        value,
+                        Double.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public Double readActivityTimeout() throws UaException {
-    try {
-      return readActivityTimeoutAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable PropertyTypeNode getUpdateFrequencyNode() throws UaException {
+    return ClientNodeSupport.await(getUpdateFrequencyNodeAsync());
   }
 
   @Override
-  public void writeActivityTimeout(Double value) throws UaException {
-    try {
-      StatusCode statusCode = writeActivityTimeoutAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable PropertyTypeNode> getUpdateFrequencyNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "UpdateFrequency",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public CompletableFuture<? extends Double> readActivityTimeoutAsync() {
-    return getActivityTimeoutNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (Double) v.getValue().getValue());
+  public @Nullable Double readUpdateFrequency() throws UaException {
+    return ClientNodeSupport.await(readUpdateFrequencyAsync());
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeActivityTimeoutAsync(Double activityTimeout) {
-    DataValue value = DataValue.valueOnly(new Variant(activityTimeout));
-    return getActivityTimeoutNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public void writeUpdateFrequency(@Nullable Double value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeUpdateFrequencyAsync(value)),
+        "http://opcfoundation.org/UA/}UpdateFrequency");
   }
 
   @Override
-  public PropertyTypeNode getActivityTimeoutNode() throws UaException {
-    try {
-      return getActivityTimeoutNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable Double> readUpdateFrequencyAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getUpdateFrequencyNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}UpdateFrequency",
+                            false,
+                            Double.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable Double) v)));
   }
 
   @Override
-  public CompletableFuture<? extends PropertyTypeNode> getActivityTimeoutNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "ActivityTimeout", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+  public CompletableFuture<StatusCode> writeUpdateFrequencyAsync(@Nullable Double value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getUpdateFrequencyNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}UpdateFrequency",
+                        value,
+                        Double.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public TrustListValidationOptions getDefaultValidationOptions() throws UaException {
-    PropertyTypeNode node = getDefaultValidationOptionsNode();
-    return (TrustListValidationOptions) node.getValue().getValue().getValue();
+  public @Nullable PropertyTypeNode getDefaultValidationOptionsNode() throws UaException {
+    return ClientNodeSupport.await(getDefaultValidationOptionsNodeAsync());
   }
 
   @Override
-  public void setDefaultValidationOptions(TrustListValidationOptions value) throws UaException {
-    PropertyTypeNode node = getDefaultValidationOptionsNode();
-    node.setValue(new Variant(value));
+  public CompletableFuture<? extends @Nullable PropertyTypeNode>
+      getDefaultValidationOptionsNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "DefaultValidationOptions",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public TrustListValidationOptions readDefaultValidationOptions() throws UaException {
-    try {
-      return readDefaultValidationOptionsAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable TrustListValidationOptions readDefaultValidationOptions() throws UaException {
+    return ClientNodeSupport.await(readDefaultValidationOptionsAsync());
   }
 
   @Override
-  public void writeDefaultValidationOptions(TrustListValidationOptions value) throws UaException {
-    try {
-      StatusCode statusCode = writeDefaultValidationOptionsAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public void writeDefaultValidationOptions(@Nullable TrustListValidationOptions value)
+      throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeDefaultValidationOptionsAsync(value)),
+        "http://opcfoundation.org/UA/}DefaultValidationOptions");
   }
 
   @Override
-  public CompletableFuture<? extends TrustListValidationOptions>
+  public CompletableFuture<? extends @Nullable TrustListValidationOptions>
       readDefaultValidationOptionsAsync() {
-    return getDefaultValidationOptionsNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (TrustListValidationOptions) v.getValue().getValue());
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getDefaultValidationOptionsNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}DefaultValidationOptions",
+                            false,
+                            TrustListValidationOptions.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable TrustListValidationOptions) v)));
   }
 
   @Override
   public CompletableFuture<StatusCode> writeDefaultValidationOptionsAsync(
-      TrustListValidationOptions defaultValidationOptions) {
-    DataValue value = DataValue.valueOnly(new Variant(defaultValidationOptions));
-    return getDefaultValidationOptionsNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+      @Nullable TrustListValidationOptions value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getDefaultValidationOptionsNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}DefaultValidationOptions",
+                        value,
+                        TrustListValidationOptions.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public PropertyTypeNode getDefaultValidationOptionsNode() throws UaException {
-    try {
-      return getDefaultValidationOptionsNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public UaMethodNode getAddCertificateMethodNode() throws UaException {
+    return ClientNodeSupport.await(getAddCertificateMethodNodeAsync());
   }
 
   @Override
-  public CompletableFuture<? extends PropertyTypeNode> getDefaultValidationOptionsNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "DefaultValidationOptions",
-            ExpandedNodeId.parse("i=46"),
-            false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+  public CompletableFuture<UaMethodNode> getAddCertificateMethodNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.mandatoryChild(
+                client,
+                this,
+                "http://opcfoundation.org/UA/",
+                "AddCertificate",
+                ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                NodeClass.Method,
+                UaMethodNode.class));
+  }
+
+  @Override
+  public void addCertificate(
+      @Nullable ByteString certificate, @Nullable Boolean isTrustedCertificate) throws UaException {
+    ClientNodeSupport.await(addCertificateAsync(certificate, isTrustedCertificate));
+  }
+
+  @Override
+  public MethodCallResult<Void> callAddCertificate(
+      @Nullable ByteString certificate, @Nullable Boolean isTrustedCertificate) throws UaException {
+    return ClientNodeSupport.await(callAddCertificateAsync(certificate, isTrustedCertificate));
+  }
+
+  @Override
+  public MethodCallResult<Void> callAddCertificateWith(
+      MethodCallOptions options,
+      @Nullable ByteString certificate,
+      @Nullable Boolean isTrustedCertificate)
+      throws UaException {
+    return ClientNodeSupport.await(
+        callAddCertificateWithAsync(options, certificate, isTrustedCertificate));
+  }
+
+  @Override
+  public CompletableFuture<Void> addCertificateAsync(
+      @Nullable ByteString certificate, @Nullable Boolean isTrustedCertificate) {
+    return ClientNodeSupport.compose(
+        callAddCertificateAsync(certificate, isTrustedCertificate),
+        result ->
+            ClientNodeSupport.defer(() -> CompletableFuture.completedFuture(result.requireGood())));
+  }
+
+  @Override
+  public CompletableFuture<MethodCallResult<Void>> callAddCertificateAsync(
+      @Nullable ByteString certificate, @Nullable Boolean isTrustedCertificate) {
+    return callAddCertificateWithAsync(
+        MethodCallOptions.DEFAULT, certificate, isTrustedCertificate);
+  }
+
+  @Override
+  public CompletableFuture<MethodCallResult<Void>> callAddCertificateWithAsync(
+      MethodCallOptions options,
+      @Nullable ByteString certificate,
+      @Nullable Boolean isTrustedCertificate) {
+    return ClientNodeSupport.defer(
+        () -> {
+          Variant[] inputs =
+              new TrustListTypeAddCertificate.Inputs(certificate, isTrustedCertificate)
+                  .toVariants(client.getStaticEncodingContext());
+          Variant[] suppliedInputs = inputs;
+          return ClientNodeSupport.compose(
+              getAddCertificateMethodNodeAsync(),
+              node ->
+                  ClientNodeSupport.compose(
+                      ClientNodeSupport.call(client, this, node, suppliedInputs, options),
+                      result ->
+                          CompletableFuture.completedFuture(
+                              result.map(
+                                  values -> {
+                                    if (values == null || values.length != 0)
+                                      throw new UaException(
+                                          StatusCodes.Bad_DecodingError,
+                                          "expected no Method outputs");
+                                    return null;
+                                  }))));
+        });
+  }
+
+  @Override
+  public UaMethodNode getCloseAndUpdateMethodNode() throws UaException {
+    return ClientNodeSupport.await(getCloseAndUpdateMethodNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<UaMethodNode> getCloseAndUpdateMethodNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.mandatoryChild(
+                client,
+                this,
+                "http://opcfoundation.org/UA/",
+                "CloseAndUpdate",
+                ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                NodeClass.Method,
+                UaMethodNode.class));
+  }
+
+  @Override
+  public @Nullable Boolean closeAndUpdate(@Nullable UInteger fileHandle) throws UaException {
+    return ClientNodeSupport.await(closeAndUpdateAsync(fileHandle));
+  }
+
+  @Override
+  public MethodCallResult<@Nullable Boolean> callCloseAndUpdate(@Nullable UInteger fileHandle)
+      throws UaException {
+    return ClientNodeSupport.await(callCloseAndUpdateAsync(fileHandle));
+  }
+
+  @Override
+  public MethodCallResult<@Nullable Boolean> callCloseAndUpdateWith(
+      MethodCallOptions options, @Nullable UInteger fileHandle) throws UaException {
+    return ClientNodeSupport.await(callCloseAndUpdateWithAsync(options, fileHandle));
+  }
+
+  @Override
+  public CompletableFuture<@Nullable Boolean> closeAndUpdateAsync(@Nullable UInteger fileHandle) {
+    return ClientNodeSupport.compose(
+        callCloseAndUpdateAsync(fileHandle),
+        result ->
+            ClientNodeSupport.defer(() -> CompletableFuture.completedFuture(result.requireGood())));
+  }
+
+  @Override
+  public CompletableFuture<MethodCallResult<@Nullable Boolean>> callCloseAndUpdateAsync(
+      @Nullable UInteger fileHandle) {
+    return callCloseAndUpdateWithAsync(MethodCallOptions.DEFAULT, fileHandle);
+  }
+
+  @Override
+  public CompletableFuture<MethodCallResult<@Nullable Boolean>> callCloseAndUpdateWithAsync(
+      MethodCallOptions options, @Nullable UInteger fileHandle) {
+    return ClientNodeSupport.defer(
+        () -> {
+          Variant[] inputs =
+              new TrustListTypeCloseAndUpdate.Inputs(fileHandle)
+                  .toVariants(client.getStaticEncodingContext());
+          Variant[] suppliedInputs = inputs;
+          return ClientNodeSupport.compose(
+              getCloseAndUpdateMethodNodeAsync(),
+              node ->
+                  ClientNodeSupport.compose(
+                      ClientNodeSupport.call(client, this, node, suppliedInputs, options),
+                      result ->
+                          CompletableFuture.completedFuture(
+                              result.map(
+                                  values -> {
+                                    return TrustListTypeCloseAndUpdate.Outputs.fromVariants(
+                                            client.getStaticEncodingContext(), values)
+                                        .applyChangesRequired();
+                                  }))));
+        });
+  }
+
+  @Override
+  public UaMethodNode getOpenWithMasksMethodNode() throws UaException {
+    return ClientNodeSupport.await(getOpenWithMasksMethodNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<UaMethodNode> getOpenWithMasksMethodNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.mandatoryChild(
+                client,
+                this,
+                "http://opcfoundation.org/UA/",
+                "OpenWithMasks",
+                ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                NodeClass.Method,
+                UaMethodNode.class));
+  }
+
+  @Override
+  public @Nullable UInteger openWithMasks(@Nullable UInteger masks) throws UaException {
+    return ClientNodeSupport.await(openWithMasksAsync(masks));
+  }
+
+  @Override
+  public MethodCallResult<@Nullable UInteger> callOpenWithMasks(@Nullable UInteger masks)
+      throws UaException {
+    return ClientNodeSupport.await(callOpenWithMasksAsync(masks));
+  }
+
+  @Override
+  public MethodCallResult<@Nullable UInteger> callOpenWithMasksWith(
+      MethodCallOptions options, @Nullable UInteger masks) throws UaException {
+    return ClientNodeSupport.await(callOpenWithMasksWithAsync(options, masks));
+  }
+
+  @Override
+  public CompletableFuture<@Nullable UInteger> openWithMasksAsync(@Nullable UInteger masks) {
+    return ClientNodeSupport.compose(
+        callOpenWithMasksAsync(masks),
+        result ->
+            ClientNodeSupport.defer(() -> CompletableFuture.completedFuture(result.requireGood())));
+  }
+
+  @Override
+  public CompletableFuture<MethodCallResult<@Nullable UInteger>> callOpenWithMasksAsync(
+      @Nullable UInteger masks) {
+    return callOpenWithMasksWithAsync(MethodCallOptions.DEFAULT, masks);
+  }
+
+  @Override
+  public CompletableFuture<MethodCallResult<@Nullable UInteger>> callOpenWithMasksWithAsync(
+      MethodCallOptions options, @Nullable UInteger masks) {
+    return ClientNodeSupport.defer(
+        () -> {
+          Variant[] inputs =
+              new TrustListTypeOpenWithMasks.Inputs(masks)
+                  .toVariants(client.getStaticEncodingContext());
+          Variant[] suppliedInputs = inputs;
+          return ClientNodeSupport.compose(
+              getOpenWithMasksMethodNodeAsync(),
+              node ->
+                  ClientNodeSupport.compose(
+                      ClientNodeSupport.call(client, this, node, suppliedInputs, options),
+                      result ->
+                          CompletableFuture.completedFuture(
+                              result.map(
+                                  values -> {
+                                    return TrustListTypeOpenWithMasks.Outputs.fromVariants(
+                                            client.getStaticEncodingContext(), values)
+                                        .fileHandle();
+                                  }))));
+        });
+  }
+
+  @Override
+  public UaMethodNode getRemoveCertificateMethodNode() throws UaException {
+    return ClientNodeSupport.await(getRemoveCertificateMethodNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<UaMethodNode> getRemoveCertificateMethodNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.mandatoryChild(
+                client,
+                this,
+                "http://opcfoundation.org/UA/",
+                "RemoveCertificate",
+                ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                NodeClass.Method,
+                UaMethodNode.class));
+  }
+
+  @Override
+  public void removeCertificate(@Nullable String thumbprint, @Nullable Boolean isTrustedCertificate)
+      throws UaException {
+    ClientNodeSupport.await(removeCertificateAsync(thumbprint, isTrustedCertificate));
+  }
+
+  @Override
+  public MethodCallResult<Void> callRemoveCertificate(
+      @Nullable String thumbprint, @Nullable Boolean isTrustedCertificate) throws UaException {
+    return ClientNodeSupport.await(callRemoveCertificateAsync(thumbprint, isTrustedCertificate));
+  }
+
+  @Override
+  public MethodCallResult<Void> callRemoveCertificateWith(
+      MethodCallOptions options,
+      @Nullable String thumbprint,
+      @Nullable Boolean isTrustedCertificate)
+      throws UaException {
+    return ClientNodeSupport.await(
+        callRemoveCertificateWithAsync(options, thumbprint, isTrustedCertificate));
+  }
+
+  @Override
+  public CompletableFuture<Void> removeCertificateAsync(
+      @Nullable String thumbprint, @Nullable Boolean isTrustedCertificate) {
+    return ClientNodeSupport.compose(
+        callRemoveCertificateAsync(thumbprint, isTrustedCertificate),
+        result ->
+            ClientNodeSupport.defer(() -> CompletableFuture.completedFuture(result.requireGood())));
+  }
+
+  @Override
+  public CompletableFuture<MethodCallResult<Void>> callRemoveCertificateAsync(
+      @Nullable String thumbprint, @Nullable Boolean isTrustedCertificate) {
+    return callRemoveCertificateWithAsync(
+        MethodCallOptions.DEFAULT, thumbprint, isTrustedCertificate);
+  }
+
+  @Override
+  public CompletableFuture<MethodCallResult<Void>> callRemoveCertificateWithAsync(
+      MethodCallOptions options,
+      @Nullable String thumbprint,
+      @Nullable Boolean isTrustedCertificate) {
+    return ClientNodeSupport.defer(
+        () -> {
+          Variant[] inputs =
+              new TrustListTypeRemoveCertificate.Inputs(thumbprint, isTrustedCertificate)
+                  .toVariants(client.getStaticEncodingContext());
+          Variant[] suppliedInputs = inputs;
+          return ClientNodeSupport.compose(
+              getRemoveCertificateMethodNodeAsync(),
+              node ->
+                  ClientNodeSupport.compose(
+                      ClientNodeSupport.call(client, this, node, suppliedInputs, options),
+                      result ->
+                          CompletableFuture.completedFuture(
+                              result.map(
+                                  values -> {
+                                    if (values == null || values.length != 0)
+                                      throw new UaException(
+                                          StatusCodes.Bad_DecodingError,
+                                          "expected no Method outputs");
+                                    return null;
+                                  }))));
+        });
   }
 }

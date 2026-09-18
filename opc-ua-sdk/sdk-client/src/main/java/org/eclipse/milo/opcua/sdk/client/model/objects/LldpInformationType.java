@@ -1,77 +1,56 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.5.3">https://reference.opcfoundation.org/v105/Core/docs/Part22/5.5.3</a>
+ * Client API for the LldpInformationType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.5.3">Model
+ *     documentation</a>
  */
 public interface LldpInformationType extends BaseObjectType {
-  /**
-   * Get the RemoteStatistics {@link LldpRemoteStatisticsType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the RemoteStatistics {@link LldpRemoteStatisticsType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  LldpRemoteStatisticsType getRemoteStatisticsNode() throws UaException;
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 18973L);
 
   /**
-   * Asynchronous implementation of {@link #getRemoteStatisticsNode()}.
+   * Resolves the mandatory LocalSystemData child, a LldpLocalSystemType.
    *
-   * @return a CompletableFuture that completes successfully with the LldpRemoteStatisticsType Node
-   *     or completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends LldpRemoteStatisticsType> getRemoteStatisticsNodeAsync();
-
-  /**
-   * Get the LocalSystemData {@link LldpLocalSystemType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the LocalSystemData {@link LldpLocalSystemType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.5.4">LldpLocalSystemType
+   *     documentation</a>
    */
   LldpLocalSystemType getLocalSystemDataNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getLocalSystemDataNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the LldpLocalSystemType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getLocalSystemDataNode()}. */
   CompletableFuture<? extends LldpLocalSystemType> getLocalSystemDataNodeAsync();
 
   /**
-   * Get the Ports {@link FolderType} Node, or {@code null} if it does not exist.
+   * Resolves the optional RemoteStatistics child, a LldpRemoteStatisticsType.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.5.4">LldpRemoteStatisticsType
+   *     documentation</a>
+   */
+  @Nullable LldpRemoteStatisticsType getRemoteStatisticsNode() throws UaException;
+
+  /** Asynchronous form of {@link #getRemoteStatisticsNode()}. */
+  CompletableFuture<? extends @Nullable LldpRemoteStatisticsType> getRemoteStatisticsNodeAsync();
+
+  /**
+   * Resolves the mandatory Ports child, a FolderType.
    *
-   * @return the Ports {@link FolderType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.6">FolderType
+   *     documentation</a>
    */
   FolderType getPortsNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getPortsNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the FolderType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getPortsNode()}. */
   CompletableFuture<? extends FolderType> getPortsNodeAsync();
 }

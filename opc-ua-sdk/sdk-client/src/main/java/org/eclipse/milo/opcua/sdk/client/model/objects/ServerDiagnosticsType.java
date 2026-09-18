@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
@@ -22,348 +12,196 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.structured.SamplingIntervalDiagnosticsDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ServerDiagnosticsSummaryDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SubscriptionDiagnosticsDataType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.3">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.3</a>
+ * Client API for the ServerDiagnosticsType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.3">Model
+ *     documentation</a>
  */
 public interface ServerDiagnosticsType extends BaseObjectType {
-  QualifiedProperty<Boolean> ENABLED_FLAG =
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2020L);
+
+  QualifiedProperty<Boolean> EnabledFlag_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "EnabledFlag",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
           -1,
           Boolean.class);
 
   /**
-   * Get the local value of the EnabledFlag Node.
+   * Resolves the mandatory EnabledFlag child, a PropertyType with DataType Boolean.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the EnabledFlag Node.
-   * @throws UaException if an error occurs creating or getting the EnabledFlag Node.
-   */
-  Boolean getEnabledFlag() throws UaException;
-
-  /**
-   * Set the local value of the EnabledFlag Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the EnabledFlag Node.
-   * @throws UaException if an error occurs creating or getting the EnabledFlag Node.
-   */
-  void setEnabledFlag(Boolean value) throws UaException;
-
-  /**
-   * Read the value of the EnabledFlag Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Boolean readEnabledFlag() throws UaException;
-
-  /**
-   * Write a new value for the EnabledFlag Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeEnabledFlag(Boolean value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readEnabledFlag}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Boolean> readEnabledFlagAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeEnabledFlag}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeEnabledFlagAsync(Boolean value);
-
-  /**
-   * Get the EnabledFlag {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the EnabledFlag {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getEnabledFlagNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getEnabledFlagNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getEnabledFlagNode()}. */
   CompletableFuture<? extends PropertyType> getEnabledFlagNodeAsync();
 
   /**
-   * Get the local value of the ServerDiagnosticsSummary Node.
+   * Reads the Value of the EnabledFlag child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ServerDiagnosticsSummary Node.
-   * @throws UaException if an error occurs creating or getting the ServerDiagnosticsSummary Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  ServerDiagnosticsSummaryDataType getServerDiagnosticsSummary() throws UaException;
+  @Nullable Boolean readEnabledFlag() throws UaException;
 
   /**
-   * Set the local value of the ServerDiagnosticsSummary Node.
+   * Writes the Value of the EnabledFlag child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ServerDiagnosticsSummary Node.
-   * @throws UaException if an error occurs creating or getting the ServerDiagnosticsSummary Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setServerDiagnosticsSummary(ServerDiagnosticsSummaryDataType value) throws UaException;
+  void writeEnabledFlag(@Nullable Boolean value) throws UaException;
+
+  /** Asynchronous form of {@link #readEnabledFlag()}. */
+  CompletableFuture<? extends @Nullable Boolean> readEnabledFlagAsync();
+
+  /** Asynchronous form of {@link #writeEnabledFlag}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeEnabledFlagAsync(@Nullable Boolean value);
 
   /**
-   * Read the value of the ServerDiagnosticsSummary Node from the server and update the local value
-   * if the operation succeeds.
+   * Resolves the mandatory ServerDiagnosticsSummary child, a ServerDiagnosticsSummaryType with
+   * DataType ServerDiagnosticsSummaryDataType.
    *
-   * @return the {@link ServerDiagnosticsSummaryDataType} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  ServerDiagnosticsSummaryDataType readServerDiagnosticsSummary() throws UaException;
-
-  /**
-   * Write a new value for the ServerDiagnosticsSummary Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link ServerDiagnosticsSummaryDataType} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeServerDiagnosticsSummary(ServerDiagnosticsSummaryDataType value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readServerDiagnosticsSummary}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends ServerDiagnosticsSummaryDataType> readServerDiagnosticsSummaryAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeServerDiagnosticsSummary}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeServerDiagnosticsSummaryAsync(
-      ServerDiagnosticsSummaryDataType value);
-
-  /**
-   * Get the ServerDiagnosticsSummary {@link ServerDiagnosticsSummaryType} Node, or {@code null} if
-   * it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ServerDiagnosticsSummary {@link ServerDiagnosticsSummaryType} Node, or {@code null}
-   *     if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.8">ServerDiagnosticsSummaryType
+   *     documentation</a>
    */
   ServerDiagnosticsSummaryType getServerDiagnosticsSummaryNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getServerDiagnosticsSummaryNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the ServerDiagnosticsSummaryType
-   *     Node or completes exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getServerDiagnosticsSummaryNode()}. */
   CompletableFuture<? extends ServerDiagnosticsSummaryType> getServerDiagnosticsSummaryNodeAsync();
 
   /**
-   * Get the local value of the SamplingIntervalDiagnosticsArray Node.
+   * Reads the Value of the ServerDiagnosticsSummary child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SamplingIntervalDiagnosticsArray Node.
-   * @throws UaException if an error occurs creating or getting the SamplingIntervalDiagnosticsArray
-   *     Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  SamplingIntervalDiagnosticsDataType[] getSamplingIntervalDiagnosticsArray() throws UaException;
+  @Nullable ServerDiagnosticsSummaryDataType readServerDiagnosticsSummary() throws UaException;
 
   /**
-   * Set the local value of the SamplingIntervalDiagnosticsArray Node.
+   * Writes the Value of the ServerDiagnosticsSummary child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SamplingIntervalDiagnosticsArray Node.
-   * @throws UaException if an error occurs creating or getting the SamplingIntervalDiagnosticsArray
-   *     Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setSamplingIntervalDiagnosticsArray(SamplingIntervalDiagnosticsDataType[] value)
+  void writeServerDiagnosticsSummary(@Nullable ServerDiagnosticsSummaryDataType value)
       throws UaException;
 
-  /**
-   * Read the value of the SamplingIntervalDiagnosticsArray Node from the server and update the
-   * local value if the operation succeeds.
-   *
-   * @return the {@link SamplingIntervalDiagnosticsDataType[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  SamplingIntervalDiagnosticsDataType[] readSamplingIntervalDiagnosticsArray() throws UaException;
+  /** Asynchronous form of {@link #readServerDiagnosticsSummary()}. */
+  CompletableFuture<? extends @Nullable ServerDiagnosticsSummaryDataType>
+      readServerDiagnosticsSummaryAsync();
 
   /**
-   * Write a new value for the SamplingIntervalDiagnosticsArray Node to the server and update the
-   * local value if the operation succeeds.
-   *
-   * @param value the {@link SamplingIntervalDiagnosticsDataType[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * Asynchronous form of {@link #writeServerDiagnosticsSummary}; completes with the operation
+   * status.
    */
-  void writeSamplingIntervalDiagnosticsArray(SamplingIntervalDiagnosticsDataType[] value)
-      throws UaException;
+  CompletableFuture<StatusCode> writeServerDiagnosticsSummaryAsync(
+      @Nullable ServerDiagnosticsSummaryDataType value);
 
   /**
-   * An asynchronous implementation of {@link #readSamplingIntervalDiagnosticsArray}.
+   * Resolves the mandatory SessionsDiagnosticsSummary child, a SessionsDiagnosticsSummaryType.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.4">SessionsDiagnosticsSummaryType
+   *     documentation</a>
    */
-  CompletableFuture<? extends SamplingIntervalDiagnosticsDataType[]>
-      readSamplingIntervalDiagnosticsArrayAsync();
+  SessionsDiagnosticsSummaryType getSessionsDiagnosticsSummaryNode() throws UaException;
+
+  /** Asynchronous form of {@link #getSessionsDiagnosticsSummaryNode()}. */
+  CompletableFuture<? extends SessionsDiagnosticsSummaryType>
+      getSessionsDiagnosticsSummaryNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeSamplingIntervalDiagnosticsArray}.
+   * Resolves the mandatory SubscriptionDiagnosticsArray child, a SubscriptionDiagnosticsArrayType
+   * with DataType SubscriptionDiagnosticsDataType.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeSamplingIntervalDiagnosticsArrayAsync(
-      SamplingIntervalDiagnosticsDataType[] value);
-
-  /**
-   * Get the SamplingIntervalDiagnosticsArray {@link SamplingIntervalDiagnosticsArrayType} Node, or
-   * {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SamplingIntervalDiagnosticsArray {@link SamplingIntervalDiagnosticsArrayType} Node,
-   *     or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  SamplingIntervalDiagnosticsArrayType getSamplingIntervalDiagnosticsArrayNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getSamplingIntervalDiagnosticsArrayNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the
-   *     SamplingIntervalDiagnosticsArrayType Node or completes exceptionally if an error occurs
-   *     creating or getting the Node.
-   */
-  CompletableFuture<? extends SamplingIntervalDiagnosticsArrayType>
-      getSamplingIntervalDiagnosticsArrayNodeAsync();
-
-  /**
-   * Get the local value of the SubscriptionDiagnosticsArray Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SubscriptionDiagnosticsArray Node.
-   * @throws UaException if an error occurs creating or getting the SubscriptionDiagnosticsArray
-   *     Node.
-   */
-  SubscriptionDiagnosticsDataType[] getSubscriptionDiagnosticsArray() throws UaException;
-
-  /**
-   * Set the local value of the SubscriptionDiagnosticsArray Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SubscriptionDiagnosticsArray Node.
-   * @throws UaException if an error occurs creating or getting the SubscriptionDiagnosticsArray
-   *     Node.
-   */
-  void setSubscriptionDiagnosticsArray(SubscriptionDiagnosticsDataType[] value) throws UaException;
-
-  /**
-   * Read the value of the SubscriptionDiagnosticsArray Node from the server and update the local
-   * value if the operation succeeds.
-   *
-   * @return the {@link SubscriptionDiagnosticsDataType[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  SubscriptionDiagnosticsDataType[] readSubscriptionDiagnosticsArray() throws UaException;
-
-  /**
-   * Write a new value for the SubscriptionDiagnosticsArray Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link SubscriptionDiagnosticsDataType[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeSubscriptionDiagnosticsArray(SubscriptionDiagnosticsDataType[] value)
-      throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readSubscriptionDiagnosticsArray}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends SubscriptionDiagnosticsDataType[]>
-      readSubscriptionDiagnosticsArrayAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeSubscriptionDiagnosticsArray}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeSubscriptionDiagnosticsArrayAsync(
-      SubscriptionDiagnosticsDataType[] value);
-
-  /**
-   * Get the SubscriptionDiagnosticsArray {@link SubscriptionDiagnosticsArrayType} Node, or {@code
-   * null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SubscriptionDiagnosticsArray {@link SubscriptionDiagnosticsArrayType} Node, or
-   *     {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.11">SubscriptionDiagnosticsArrayType
+   *     documentation</a>
    */
   SubscriptionDiagnosticsArrayType getSubscriptionDiagnosticsArrayNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getSubscriptionDiagnosticsArrayNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the
-   *     SubscriptionDiagnosticsArrayType Node or completes exceptionally if an error occurs
-   *     creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getSubscriptionDiagnosticsArrayNode()}. */
   CompletableFuture<? extends SubscriptionDiagnosticsArrayType>
       getSubscriptionDiagnosticsArrayNodeAsync();
 
   /**
-   * Get the SessionsDiagnosticsSummary {@link SessionsDiagnosticsSummaryType} Node, or {@code null}
-   * if it does not exist.
+   * Reads the Value of the SubscriptionDiagnosticsArray child from the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SessionsDiagnosticsSummary {@link SessionsDiagnosticsSummaryType} Node, or {@code
-   *     null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  SessionsDiagnosticsSummaryType getSessionsDiagnosticsSummaryNode() throws UaException;
+  @Nullable SubscriptionDiagnosticsDataType @Nullable [] readSubscriptionDiagnosticsArray()
+      throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getSessionsDiagnosticsSummaryNode()}.
+   * Writes the Value of the SubscriptionDiagnosticsArray child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the SessionsDiagnosticsSummaryType
-   *     Node or completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends SessionsDiagnosticsSummaryType>
-      getSessionsDiagnosticsSummaryNodeAsync();
+  void writeSubscriptionDiagnosticsArray(
+      @Nullable SubscriptionDiagnosticsDataType @Nullable [] value) throws UaException;
+
+  /** Asynchronous form of {@link #readSubscriptionDiagnosticsArray()}. */
+  CompletableFuture<? extends @Nullable SubscriptionDiagnosticsDataType @Nullable []>
+      readSubscriptionDiagnosticsArrayAsync();
+
+  /**
+   * Asynchronous form of {@link #writeSubscriptionDiagnosticsArray}; completes with the operation
+   * status.
+   */
+  CompletableFuture<StatusCode> writeSubscriptionDiagnosticsArrayAsync(
+      @Nullable SubscriptionDiagnosticsDataType @Nullable [] value);
+
+  /**
+   * Resolves the optional SamplingIntervalDiagnosticsArray child, a
+   * SamplingIntervalDiagnosticsArrayType with DataType SamplingIntervalDiagnosticsDataType.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.9">SamplingIntervalDiagnosticsArrayType
+   *     documentation</a>
+   */
+  @Nullable SamplingIntervalDiagnosticsArrayType getSamplingIntervalDiagnosticsArrayNode()
+      throws UaException;
+
+  /** Asynchronous form of {@link #getSamplingIntervalDiagnosticsArrayNode()}. */
+  CompletableFuture<? extends @Nullable SamplingIntervalDiagnosticsArrayType>
+      getSamplingIntervalDiagnosticsArrayNodeAsync();
+
+  /**
+   * Reads the Value of the SamplingIntervalDiagnosticsArray child from the server.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable SamplingIntervalDiagnosticsDataType @Nullable [] readSamplingIntervalDiagnosticsArray()
+      throws UaException;
+
+  /**
+   * Writes the Value of the SamplingIntervalDiagnosticsArray child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeSamplingIntervalDiagnosticsArray(
+      @Nullable SamplingIntervalDiagnosticsDataType @Nullable [] value) throws UaException;
+
+  /** Asynchronous form of {@link #readSamplingIntervalDiagnosticsArray()}. */
+  CompletableFuture<? extends @Nullable SamplingIntervalDiagnosticsDataType @Nullable []>
+      readSamplingIntervalDiagnosticsArrayAsync();
+
+  /**
+   * Asynchronous form of {@link #writeSamplingIntervalDiagnosticsArray}; completes with the
+   * operation status.
+   */
+  CompletableFuture<StatusCode> writeSamplingIntervalDiagnosticsArrayAsync(
+      @Nullable SamplingIntervalDiagnosticsDataType @Nullable [] value);
 }

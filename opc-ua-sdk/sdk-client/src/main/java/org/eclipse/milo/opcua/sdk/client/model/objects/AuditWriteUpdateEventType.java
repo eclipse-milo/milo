@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
@@ -16,330 +6,177 @@ import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.25">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.25</a>
+ * Client API for the AuditWriteUpdateEventType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.25">Model
+ *     documentation</a>
  */
 public interface AuditWriteUpdateEventType extends AuditUpdateEventType {
-  QualifiedProperty<UInteger> ATTRIBUTE_ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "AttributeId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2100L);
 
-  QualifiedProperty<String> INDEX_RANGE =
+  QualifiedProperty<String> IndexRange_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "IndexRange",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=291"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 291L),
           -1,
           String.class);
 
-  QualifiedProperty<Object> OLD_VALUE =
+  QualifiedProperty<UInteger> AttributeId_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "OldValue",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24"),
+          Namespaces.OPC_UA,
+          "AttributeId",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
           -1,
-          Object.class);
+          UInteger.class);
 
-  QualifiedProperty<Object> NEW_VALUE =
+  QualifiedProperty<Variant> NewValue_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "NewValue",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 24L),
           -1,
-          Object.class);
+          Variant.class);
+
+  QualifiedProperty<Variant> OldValue_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "OldValue",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 24L),
+          -1,
+          Variant.class);
 
   /**
-   * Get the local value of the AttributeId Node.
+   * Resolves the mandatory IndexRange child, a PropertyType with DataType NumericRange.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the AttributeId Node.
-   * @throws UaException if an error occurs creating or getting the AttributeId Node.
-   */
-  UInteger getAttributeId() throws UaException;
-
-  /**
-   * Set the local value of the AttributeId Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the AttributeId Node.
-   * @throws UaException if an error occurs creating or getting the AttributeId Node.
-   */
-  void setAttributeId(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the AttributeId Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readAttributeId() throws UaException;
-
-  /**
-   * Write a new value for the AttributeId Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeAttributeId(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readAttributeId}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readAttributeIdAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeAttributeId}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeAttributeIdAsync(UInteger value);
-
-  /**
-   * Get the AttributeId {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the AttributeId {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getAttributeIdNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getAttributeIdNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getAttributeIdNodeAsync();
-
-  /**
-   * Get the local value of the IndexRange Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the IndexRange Node.
-   * @throws UaException if an error occurs creating or getting the IndexRange Node.
-   */
-  String getIndexRange() throws UaException;
-
-  /**
-   * Set the local value of the IndexRange Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the IndexRange Node.
-   * @throws UaException if an error occurs creating or getting the IndexRange Node.
-   */
-  void setIndexRange(String value) throws UaException;
-
-  /**
-   * Read the value of the IndexRange Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String readIndexRange() throws UaException;
-
-  /**
-   * Write a new value for the IndexRange Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeIndexRange(String value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readIndexRange}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String> readIndexRangeAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeIndexRange}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeIndexRangeAsync(String value);
-
-  /**
-   * Get the IndexRange {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the IndexRange {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getIndexRangeNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getIndexRangeNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getIndexRangeNode()}. */
   CompletableFuture<? extends PropertyType> getIndexRangeNodeAsync();
 
   /**
-   * Get the local value of the OldValue Node.
+   * Reads the Value of the IndexRange child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the OldValue Node.
-   * @throws UaException if an error occurs creating or getting the OldValue Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  Object getOldValue() throws UaException;
+  @Nullable String readIndexRange() throws UaException;
 
   /**
-   * Set the local value of the OldValue Node.
+   * Writes the Value of the IndexRange child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the OldValue Node.
-   * @throws UaException if an error occurs creating or getting the OldValue Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setOldValue(Object value) throws UaException;
+  void writeIndexRange(@Nullable String value) throws UaException;
+
+  /** Asynchronous form of {@link #readIndexRange()}. */
+  CompletableFuture<? extends @Nullable String> readIndexRangeAsync();
+
+  /** Asynchronous form of {@link #writeIndexRange}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeIndexRangeAsync(@Nullable String value);
 
   /**
-   * Read the value of the OldValue Node from the server and update the local value if the operation
-   * succeeds.
+   * Resolves the mandatory AttributeId child, a PropertyType with DataType UInt32.
    *
-   * @return the {@link Object} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  Object readOldValue() throws UaException;
+  PropertyType getAttributeIdNode() throws UaException;
+
+  /** Asynchronous form of {@link #getAttributeIdNode()}. */
+  CompletableFuture<? extends PropertyType> getAttributeIdNodeAsync();
 
   /**
-   * Write a new value for the OldValue Node to the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the AttributeId child from the server.
    *
-   * @param value the {@link Object} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeOldValue(Object value) throws UaException;
+  @Nullable UInteger readAttributeId() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readOldValue}.
+   * Writes the Value of the AttributeId child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<?> readOldValueAsync();
+  void writeAttributeId(@Nullable UInteger value) throws UaException;
+
+  /** Asynchronous form of {@link #readAttributeId()}. */
+  CompletableFuture<? extends @Nullable UInteger> readAttributeIdAsync();
+
+  /** Asynchronous form of {@link #writeAttributeId}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeAttributeIdAsync(@Nullable UInteger value);
 
   /**
-   * An asynchronous implementation of {@link #writeOldValue}.
+   * Resolves the mandatory NewValue child, a PropertyType with DataType BaseDataType.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeOldValueAsync(Object value);
-
-  /**
-   * Get the OldValue {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the OldValue {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getOldValueNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getOldValueNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getOldValueNodeAsync();
-
-  /**
-   * Get the local value of the NewValue Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the NewValue Node.
-   * @throws UaException if an error occurs creating or getting the NewValue Node.
-   */
-  Object getNewValue() throws UaException;
-
-  /**
-   * Set the local value of the NewValue Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the NewValue Node.
-   * @throws UaException if an error occurs creating or getting the NewValue Node.
-   */
-  void setNewValue(Object value) throws UaException;
-
-  /**
-   * Read the value of the NewValue Node from the server and update the local value if the operation
-   * succeeds.
-   *
-   * @return the {@link Object} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Object readNewValue() throws UaException;
-
-  /**
-   * Write a new value for the NewValue Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Object} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeNewValue(Object value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readNewValue}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<?> readNewValueAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeNewValue}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeNewValueAsync(Object value);
-
-  /**
-   * Get the NewValue {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the NewValue {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getNewValueNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getNewValueNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getNewValueNode()}. */
   CompletableFuture<? extends PropertyType> getNewValueNodeAsync();
+
+  /**
+   * Reads the Value of the NewValue child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable Variant readNewValue() throws UaException;
+
+  /**
+   * Writes the Value of the NewValue child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeNewValue(@Nullable Variant value) throws UaException;
+
+  /** Asynchronous form of {@link #readNewValue()}. */
+  CompletableFuture<? extends @Nullable Variant> readNewValueAsync();
+
+  /** Asynchronous form of {@link #writeNewValue}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeNewValueAsync(@Nullable Variant value);
+
+  /**
+   * Resolves the mandatory OldValue child, a PropertyType with DataType BaseDataType.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getOldValueNode() throws UaException;
+
+  /** Asynchronous form of {@link #getOldValueNode()}. */
+  CompletableFuture<? extends PropertyType> getOldValueNodeAsync();
+
+  /**
+   * Reads the Value of the OldValue child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable Variant readOldValue() throws UaException;
+
+  /**
+   * Writes the Value of the OldValue child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeOldValue(@Nullable Variant value) throws UaException;
+
+  /** Asynchronous form of {@link #readOldValue()}. */
+  CompletableFuture<? extends @Nullable Variant> readOldValueAsync();
+
+  /** Asynchronous form of {@link #writeOldValue}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeOldValueAsync(@Nullable Variant value);
 }

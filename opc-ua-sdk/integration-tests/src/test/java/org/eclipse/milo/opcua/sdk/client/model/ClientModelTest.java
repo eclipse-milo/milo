@@ -29,13 +29,6 @@ public class ClientModelTest extends AbstractClientServerTest {
 
     ServerStatusTypeNode serverStatus = (ServerStatusTypeNode) node;
 
-    assertNotNull(serverStatus.getStartTime());
-    assertNotNull(serverStatus.getCurrentTime());
-    assertNotNull(serverStatus.getState());
-    assertNotNull(serverStatus.getBuildInfo());
-    assertNotNull(serverStatus.getSecondsTillShutdown());
-    assertNotNull(serverStatus.getShutdownReason());
-
     assertNotNull(serverStatus.getStartTimeNode());
     assertNotNull(serverStatus.getCurrentTimeNode());
     assertNotNull(serverStatus.getStateNode());

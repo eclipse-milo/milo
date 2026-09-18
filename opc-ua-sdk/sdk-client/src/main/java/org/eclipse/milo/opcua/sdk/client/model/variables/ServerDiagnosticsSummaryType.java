@@ -1,914 +1,470 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.variables;
 
 import java.util.concurrent.CompletableFuture;
+import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.structured.ServerDiagnosticsSummaryDataType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.8">https://reference.opcfoundation.org/v105/Core/docs/Part5/7.8</a>
+ * Client API for the ServerDiagnosticsSummaryType VariableType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.8">Model
+ *     documentation</a>
  */
 public interface ServerDiagnosticsSummaryType extends BaseDataVariableType {
-  /**
-   * Get the local value of the ServerViewCount Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ServerViewCount Node.
-   * @throws UaException if an error occurs creating or getting the ServerViewCount Node.
-   */
-  UInteger getServerViewCount() throws UaException;
-
-  /**
-   * Set the local value of the ServerViewCount Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ServerViewCount Node.
-   * @throws UaException if an error occurs creating or getting the ServerViewCount Node.
-   */
-  void setServerViewCount(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the ServerViewCount Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readServerViewCount() throws UaException;
-
-  /**
-   * Write a new value for the ServerViewCount Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeServerViewCount(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readServerViewCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readServerViewCountAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeServerViewCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeServerViewCountAsync(UInteger value);
-
-  /**
-   * Get the ServerViewCount {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ServerViewCount {@link BaseDataVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getServerViewCountNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getServerViewCountNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getServerViewCountNodeAsync();
-
-  /**
-   * Get the local value of the CurrentSessionCount Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the CurrentSessionCount Node.
-   * @throws UaException if an error occurs creating or getting the CurrentSessionCount Node.
-   */
-  UInteger getCurrentSessionCount() throws UaException;
-
-  /**
-   * Set the local value of the CurrentSessionCount Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the CurrentSessionCount Node.
-   * @throws UaException if an error occurs creating or getting the CurrentSessionCount Node.
-   */
-  void setCurrentSessionCount(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the CurrentSessionCount Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readCurrentSessionCount() throws UaException;
-
-  /**
-   * Write a new value for the CurrentSessionCount Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeCurrentSessionCount(UInteger value) throws UaException;
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2150L);
 
   /**
-   * An asynchronous implementation of {@link #readCurrentSessionCount}.
+   * Resolves the mandatory ServerViewCount child, a BaseDataVariableType with DataType UInt32.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  CompletableFuture<? extends UInteger> readCurrentSessionCountAsync();
+  VariableNode getServerViewCountNode() throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #writeCurrentSessionCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeCurrentSessionCountAsync(UInteger value);
-
-  /**
-   * Get the CurrentSessionCount {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the CurrentSessionCount {@link BaseDataVariableType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getCurrentSessionCountNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getCurrentSessionCountNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getCurrentSessionCountNodeAsync();
-
-  /**
-   * Get the local value of the CumulatedSessionCount Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the CumulatedSessionCount Node.
-   * @throws UaException if an error occurs creating or getting the CumulatedSessionCount Node.
-   */
-  UInteger getCumulatedSessionCount() throws UaException;
-
-  /**
-   * Set the local value of the CumulatedSessionCount Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the CumulatedSessionCount Node.
-   * @throws UaException if an error occurs creating or getting the CumulatedSessionCount Node.
-   */
-  void setCumulatedSessionCount(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the CumulatedSessionCount Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readCumulatedSessionCount() throws UaException;
+  /** Asynchronous form of {@link #getServerViewCountNode()}. */
+  CompletableFuture<? extends VariableNode> getServerViewCountNodeAsync();
 
   /**
-   * Write a new value for the CumulatedSessionCount Node to the server and update the local value
-   * if the operation succeeds.
+   * Reads the Value of the ServerViewCount child from the server.
    *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeCumulatedSessionCount(UInteger value) throws UaException;
+  @Nullable UInteger readServerViewCount() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readCumulatedSessionCount}.
+   * Writes the Value of the ServerViewCount child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends UInteger> readCumulatedSessionCountAsync();
+  void writeServerViewCount(@Nullable UInteger value) throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #writeCumulatedSessionCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeCumulatedSessionCountAsync(UInteger value);
-
-  /**
-   * Get the CumulatedSessionCount {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the CumulatedSessionCount {@link BaseDataVariableType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getCumulatedSessionCountNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getCumulatedSessionCountNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getCumulatedSessionCountNodeAsync();
-
-  /**
-   * Get the local value of the SecurityRejectedSessionCount Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SecurityRejectedSessionCount Node.
-   * @throws UaException if an error occurs creating or getting the SecurityRejectedSessionCount
-   *     Node.
-   */
-  UInteger getSecurityRejectedSessionCount() throws UaException;
+  /** Asynchronous form of {@link #readServerViewCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readServerViewCountAsync();
 
-  /**
-   * Set the local value of the SecurityRejectedSessionCount Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SecurityRejectedSessionCount Node.
-   * @throws UaException if an error occurs creating or getting the SecurityRejectedSessionCount
-   *     Node.
-   */
-  void setSecurityRejectedSessionCount(UInteger value) throws UaException;
+  /** Asynchronous form of {@link #writeServerViewCount}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeServerViewCountAsync(@Nullable UInteger value);
 
   /**
-   * Read the value of the SecurityRejectedSessionCount Node from the server and update the local
-   * value if the operation succeeds.
+   * Resolves the mandatory SessionAbortCount child, a BaseDataVariableType with DataType UInt32.
    *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  UInteger readSecurityRejectedSessionCount() throws UaException;
+  VariableNode getSessionAbortCountNode() throws UaException;
 
-  /**
-   * Write a new value for the SecurityRejectedSessionCount Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeSecurityRejectedSessionCount(UInteger value) throws UaException;
+  /** Asynchronous form of {@link #getSessionAbortCountNode()}. */
+  CompletableFuture<? extends VariableNode> getSessionAbortCountNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #readSecurityRejectedSessionCount}.
+   * Reads the Value of the SessionAbortCount child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends UInteger> readSecurityRejectedSessionCountAsync();
+  @Nullable UInteger readSessionAbortCount() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeSecurityRejectedSessionCount}.
+   * Writes the Value of the SessionAbortCount child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeSecurityRejectedSessionCountAsync(UInteger value);
+  void writeSessionAbortCount(@Nullable UInteger value) throws UaException;
 
-  /**
-   * Get the SecurityRejectedSessionCount {@link BaseDataVariableType} Node, or {@code null} if it
-   * does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SecurityRejectedSessionCount {@link BaseDataVariableType} Node, or {@code null} if
-   *     it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getSecurityRejectedSessionCountNode() throws UaException;
+  /** Asynchronous form of {@link #readSessionAbortCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readSessionAbortCountAsync();
 
-  /**
-   * Asynchronous implementation of {@link #getSecurityRejectedSessionCountNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getSecurityRejectedSessionCountNodeAsync();
+  /** Asynchronous form of {@link #writeSessionAbortCount}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeSessionAbortCountAsync(@Nullable UInteger value);
 
   /**
-   * Get the local value of the RejectedSessionCount Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
+   * Resolves the mandatory CurrentSessionCount child, a BaseDataVariableType with DataType UInt32.
    *
-   * @return the local value of the RejectedSessionCount Node.
-   * @throws UaException if an error occurs creating or getting the RejectedSessionCount Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  UInteger getRejectedSessionCount() throws UaException;
+  VariableNode getCurrentSessionCountNode() throws UaException;
 
-  /**
-   * Set the local value of the RejectedSessionCount Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the RejectedSessionCount Node.
-   * @throws UaException if an error occurs creating or getting the RejectedSessionCount Node.
-   */
-  void setRejectedSessionCount(UInteger value) throws UaException;
+  /** Asynchronous form of {@link #getCurrentSessionCountNode()}. */
+  CompletableFuture<? extends VariableNode> getCurrentSessionCountNodeAsync();
 
   /**
-   * Read the value of the RejectedSessionCount Node from the server and update the local value if
-   * the operation succeeds.
+   * Reads the Value of the CurrentSessionCount child from the server.
    *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UInteger readRejectedSessionCount() throws UaException;
+  @Nullable UInteger readCurrentSessionCount() throws UaException;
 
   /**
-   * Write a new value for the RejectedSessionCount Node to the server and update the local value if
-   * the operation succeeds.
+   * Writes the Value of the CurrentSessionCount child to the server.
    *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeRejectedSessionCount(UInteger value) throws UaException;
+  void writeCurrentSessionCount(@Nullable UInteger value) throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #readRejectedSessionCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readRejectedSessionCountAsync();
+  /** Asynchronous form of {@link #readCurrentSessionCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readCurrentSessionCountAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeRejectedSessionCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * Asynchronous form of {@link #writeCurrentSessionCount}; completes with the operation status.
    */
-  CompletableFuture<StatusCode> writeRejectedSessionCountAsync(UInteger value);
+  CompletableFuture<StatusCode> writeCurrentSessionCountAsync(@Nullable UInteger value);
 
   /**
-   * Get the RejectedSessionCount {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
+   * Resolves the mandatory SessionTimeoutCount child, a BaseDataVariableType with DataType UInt32.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the RejectedSessionCount {@link BaseDataVariableType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  BaseDataVariableType getRejectedSessionCountNode() throws UaException;
+  VariableNode getSessionTimeoutCountNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getRejectedSessionCountNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getRejectedSessionCountNodeAsync();
+  /** Asynchronous form of {@link #getSessionTimeoutCountNode()}. */
+  CompletableFuture<? extends VariableNode> getSessionTimeoutCountNodeAsync();
 
   /**
-   * Get the local value of the SessionTimeoutCount Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
+   * Reads the Value of the SessionTimeoutCount child from the server.
    *
-   * @return the local value of the SessionTimeoutCount Node.
-   * @throws UaException if an error occurs creating or getting the SessionTimeoutCount Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UInteger getSessionTimeoutCount() throws UaException;
+  @Nullable UInteger readSessionTimeoutCount() throws UaException;
 
   /**
-   * Set the local value of the SessionTimeoutCount Node.
+   * Writes the Value of the SessionTimeoutCount child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SessionTimeoutCount Node.
-   * @throws UaException if an error occurs creating or getting the SessionTimeoutCount Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setSessionTimeoutCount(UInteger value) throws UaException;
+  void writeSessionTimeoutCount(@Nullable UInteger value) throws UaException;
 
-  /**
-   * Read the value of the SessionTimeoutCount Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readSessionTimeoutCount() throws UaException;
+  /** Asynchronous form of {@link #readSessionTimeoutCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readSessionTimeoutCountAsync();
 
   /**
-   * Write a new value for the SessionTimeoutCount Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * Asynchronous form of {@link #writeSessionTimeoutCount}; completes with the operation status.
    */
-  void writeSessionTimeoutCount(UInteger value) throws UaException;
+  CompletableFuture<StatusCode> writeSessionTimeoutCountAsync(@Nullable UInteger value);
 
   /**
-   * An asynchronous implementation of {@link #readSessionTimeoutCount}.
+   * Resolves the mandatory RejectedSessionCount child, a BaseDataVariableType with DataType UInt32.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  CompletableFuture<? extends UInteger> readSessionTimeoutCountAsync();
+  VariableNode getRejectedSessionCountNode() throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #writeSessionTimeoutCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeSessionTimeoutCountAsync(UInteger value);
+  /** Asynchronous form of {@link #getRejectedSessionCountNode()}. */
+  CompletableFuture<? extends VariableNode> getRejectedSessionCountNodeAsync();
 
   /**
-   * Get the SessionTimeoutCount {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
+   * Reads the Value of the RejectedSessionCount child from the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SessionTimeoutCount {@link BaseDataVariableType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  BaseDataVariableType getSessionTimeoutCountNode() throws UaException;
+  @Nullable UInteger readRejectedSessionCount() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getSessionTimeoutCountNode()}.
+   * Writes the Value of the RejectedSessionCount child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends BaseDataVariableType> getSessionTimeoutCountNodeAsync();
+  void writeRejectedSessionCount(@Nullable UInteger value) throws UaException;
 
-  /**
-   * Get the local value of the SessionAbortCount Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SessionAbortCount Node.
-   * @throws UaException if an error occurs creating or getting the SessionAbortCount Node.
-   */
-  UInteger getSessionAbortCount() throws UaException;
+  /** Asynchronous form of {@link #readRejectedSessionCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readRejectedSessionCountAsync();
 
   /**
-   * Set the local value of the SessionAbortCount Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SessionAbortCount Node.
-   * @throws UaException if an error occurs creating or getting the SessionAbortCount Node.
+   * Asynchronous form of {@link #writeRejectedSessionCount}; completes with the operation status.
    */
-  void setSessionAbortCount(UInteger value) throws UaException;
+  CompletableFuture<StatusCode> writeRejectedSessionCountAsync(@Nullable UInteger value);
 
   /**
-   * Read the value of the SessionAbortCount Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the mandatory CumulatedSessionCount child, a BaseDataVariableType with DataType
+   * UInt32.
    *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  UInteger readSessionAbortCount() throws UaException;
+  VariableNode getCumulatedSessionCountNode() throws UaException;
 
-  /**
-   * Write a new value for the SessionAbortCount Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeSessionAbortCount(UInteger value) throws UaException;
+  /** Asynchronous form of {@link #getCumulatedSessionCountNode()}. */
+  CompletableFuture<? extends VariableNode> getCumulatedSessionCountNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #readSessionAbortCount}.
+   * Reads the Value of the CumulatedSessionCount child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends UInteger> readSessionAbortCountAsync();
+  @Nullable UInteger readCumulatedSessionCount() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeSessionAbortCount}.
+   * Writes the Value of the CumulatedSessionCount child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeSessionAbortCountAsync(UInteger value);
+  void writeCumulatedSessionCount(@Nullable UInteger value) throws UaException;
 
-  /**
-   * Get the SessionAbortCount {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SessionAbortCount {@link BaseDataVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getSessionAbortCountNode() throws UaException;
+  /** Asynchronous form of {@link #readCumulatedSessionCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readCumulatedSessionCountAsync();
 
   /**
-   * Asynchronous implementation of {@link #getSessionAbortCountNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * Asynchronous form of {@link #writeCumulatedSessionCount}; completes with the operation status.
    */
-  CompletableFuture<? extends BaseDataVariableType> getSessionAbortCountNodeAsync();
+  CompletableFuture<StatusCode> writeCumulatedSessionCountAsync(@Nullable UInteger value);
 
   /**
-   * Get the local value of the PublishingIntervalCount Node.
+   * Resolves the mandatory RejectedRequestsCount child, a BaseDataVariableType with DataType
+   * UInt32.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the PublishingIntervalCount Node.
-   * @throws UaException if an error occurs creating or getting the PublishingIntervalCount Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  UInteger getPublishingIntervalCount() throws UaException;
+  VariableNode getRejectedRequestsCountNode() throws UaException;
 
-  /**
-   * Set the local value of the PublishingIntervalCount Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the PublishingIntervalCount Node.
-   * @throws UaException if an error occurs creating or getting the PublishingIntervalCount Node.
-   */
-  void setPublishingIntervalCount(UInteger value) throws UaException;
+  /** Asynchronous form of {@link #getRejectedRequestsCountNode()}. */
+  CompletableFuture<? extends VariableNode> getRejectedRequestsCountNodeAsync();
 
   /**
-   * Read the value of the PublishingIntervalCount Node from the server and update the local value
-   * if the operation succeeds.
+   * Reads the Value of the RejectedRequestsCount child from the server.
    *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UInteger readPublishingIntervalCount() throws UaException;
+  @Nullable UInteger readRejectedRequestsCount() throws UaException;
 
   /**
-   * Write a new value for the PublishingIntervalCount Node to the server and update the local value
-   * if the operation succeeds.
+   * Writes the Value of the RejectedRequestsCount child to the server.
    *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writePublishingIntervalCount(UInteger value) throws UaException;
+  void writeRejectedRequestsCount(@Nullable UInteger value) throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #readPublishingIntervalCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readPublishingIntervalCountAsync();
+  /** Asynchronous form of {@link #readRejectedRequestsCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readRejectedRequestsCountAsync();
 
   /**
-   * An asynchronous implementation of {@link #writePublishingIntervalCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * Asynchronous form of {@link #writeRejectedRequestsCount}; completes with the operation status.
    */
-  CompletableFuture<StatusCode> writePublishingIntervalCountAsync(UInteger value);
+  CompletableFuture<StatusCode> writeRejectedRequestsCountAsync(@Nullable UInteger value);
 
   /**
-   * Get the PublishingIntervalCount {@link BaseDataVariableType} Node, or {@code null} if it does
-   * not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * Resolves the mandatory PublishingIntervalCount child, a BaseDataVariableType with DataType
+   * UInt32.
    *
-   * @return the PublishingIntervalCount {@link BaseDataVariableType} Node, or {@code null} if it
-   *     does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  BaseDataVariableType getPublishingIntervalCountNode() throws UaException;
+  VariableNode getPublishingIntervalCountNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getPublishingIntervalCountNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getPublishingIntervalCountNodeAsync();
+  /** Asynchronous form of {@link #getPublishingIntervalCountNode()}. */
+  CompletableFuture<? extends VariableNode> getPublishingIntervalCountNodeAsync();
 
   /**
-   * Get the local value of the CurrentSubscriptionCount Node.
+   * Reads the Value of the PublishingIntervalCount child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the CurrentSubscriptionCount Node.
-   * @throws UaException if an error occurs creating or getting the CurrentSubscriptionCount Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UInteger getCurrentSubscriptionCount() throws UaException;
+  @Nullable UInteger readPublishingIntervalCount() throws UaException;
 
   /**
-   * Set the local value of the CurrentSubscriptionCount Node.
+   * Writes the Value of the PublishingIntervalCount child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the CurrentSubscriptionCount Node.
-   * @throws UaException if an error occurs creating or getting the CurrentSubscriptionCount Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setCurrentSubscriptionCount(UInteger value) throws UaException;
+  void writePublishingIntervalCount(@Nullable UInteger value) throws UaException;
 
-  /**
-   * Read the value of the CurrentSubscriptionCount Node from the server and update the local value
-   * if the operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readCurrentSubscriptionCount() throws UaException;
+  /** Asynchronous form of {@link #readPublishingIntervalCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readPublishingIntervalCountAsync();
 
   /**
-   * Write a new value for the CurrentSubscriptionCount Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * Asynchronous form of {@link #writePublishingIntervalCount}; completes with the operation
+   * status.
    */
-  void writeCurrentSubscriptionCount(UInteger value) throws UaException;
+  CompletableFuture<StatusCode> writePublishingIntervalCountAsync(@Nullable UInteger value);
 
   /**
-   * An asynchronous implementation of {@link #readCurrentSubscriptionCount}.
+   * Resolves the mandatory CurrentSubscriptionCount child, a BaseDataVariableType with DataType
+   * UInt32.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  CompletableFuture<? extends UInteger> readCurrentSubscriptionCountAsync();
+  VariableNode getCurrentSubscriptionCountNode() throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #writeCurrentSubscriptionCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeCurrentSubscriptionCountAsync(UInteger value);
+  /** Asynchronous form of {@link #getCurrentSubscriptionCountNode()}. */
+  CompletableFuture<? extends VariableNode> getCurrentSubscriptionCountNodeAsync();
 
   /**
-   * Get the CurrentSubscriptionCount {@link BaseDataVariableType} Node, or {@code null} if it does
-   * not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * Reads the Value of the CurrentSubscriptionCount child from the server.
    *
-   * @return the CurrentSubscriptionCount {@link BaseDataVariableType} Node, or {@code null} if it
-   *     does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  BaseDataVariableType getCurrentSubscriptionCountNode() throws UaException;
+  @Nullable UInteger readCurrentSubscriptionCount() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getCurrentSubscriptionCountNode()}.
+   * Writes the Value of the CurrentSubscriptionCount child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends BaseDataVariableType> getCurrentSubscriptionCountNodeAsync();
+  void writeCurrentSubscriptionCount(@Nullable UInteger value) throws UaException;
 
-  /**
-   * Get the local value of the CumulatedSubscriptionCount Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the CumulatedSubscriptionCount Node.
-   * @throws UaException if an error occurs creating or getting the CumulatedSubscriptionCount Node.
-   */
-  UInteger getCumulatedSubscriptionCount() throws UaException;
+  /** Asynchronous form of {@link #readCurrentSubscriptionCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readCurrentSubscriptionCountAsync();
 
   /**
-   * Set the local value of the CumulatedSubscriptionCount Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the CumulatedSubscriptionCount Node.
-   * @throws UaException if an error occurs creating or getting the CumulatedSubscriptionCount Node.
+   * Asynchronous form of {@link #writeCurrentSubscriptionCount}; completes with the operation
+   * status.
    */
-  void setCumulatedSubscriptionCount(UInteger value) throws UaException;
+  CompletableFuture<StatusCode> writeCurrentSubscriptionCountAsync(@Nullable UInteger value);
 
   /**
-   * Read the value of the CumulatedSubscriptionCount Node from the server and update the local
-   * value if the operation succeeds.
+   * Resolves the mandatory CumulatedSubscriptionCount child, a BaseDataVariableType with DataType
+   * UInt32.
    *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  UInteger readCumulatedSubscriptionCount() throws UaException;
+  VariableNode getCumulatedSubscriptionCountNode() throws UaException;
 
-  /**
-   * Write a new value for the CumulatedSubscriptionCount Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeCumulatedSubscriptionCount(UInteger value) throws UaException;
+  /** Asynchronous form of {@link #getCumulatedSubscriptionCountNode()}. */
+  CompletableFuture<? extends VariableNode> getCumulatedSubscriptionCountNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #readCumulatedSubscriptionCount}.
+   * Reads the Value of the CumulatedSubscriptionCount child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends UInteger> readCumulatedSubscriptionCountAsync();
+  @Nullable UInteger readCumulatedSubscriptionCount() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeCumulatedSubscriptionCount}.
+   * Writes the Value of the CumulatedSubscriptionCount child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeCumulatedSubscriptionCountAsync(UInteger value);
+  void writeCumulatedSubscriptionCount(@Nullable UInteger value) throws UaException;
 
-  /**
-   * Get the CumulatedSubscriptionCount {@link BaseDataVariableType} Node, or {@code null} if it
-   * does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the CumulatedSubscriptionCount {@link BaseDataVariableType} Node, or {@code null} if it
-   *     does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getCumulatedSubscriptionCountNode() throws UaException;
+  /** Asynchronous form of {@link #readCumulatedSubscriptionCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readCumulatedSubscriptionCountAsync();
 
   /**
-   * Asynchronous implementation of {@link #getCumulatedSubscriptionCountNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * Asynchronous form of {@link #writeCumulatedSubscriptionCount}; completes with the operation
+   * status.
    */
-  CompletableFuture<? extends BaseDataVariableType> getCumulatedSubscriptionCountNodeAsync();
+  CompletableFuture<StatusCode> writeCumulatedSubscriptionCountAsync(@Nullable UInteger value);
 
   /**
-   * Get the local value of the SecurityRejectedRequestsCount Node.
+   * Resolves the mandatory SecurityRejectedSessionCount child, a BaseDataVariableType with DataType
+   * UInt32.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SecurityRejectedRequestsCount Node.
-   * @throws UaException if an error occurs creating or getting the SecurityRejectedRequestsCount
-   *     Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  UInteger getSecurityRejectedRequestsCount() throws UaException;
+  VariableNode getSecurityRejectedSessionCountNode() throws UaException;
 
-  /**
-   * Set the local value of the SecurityRejectedRequestsCount Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SecurityRejectedRequestsCount Node.
-   * @throws UaException if an error occurs creating or getting the SecurityRejectedRequestsCount
-   *     Node.
-   */
-  void setSecurityRejectedRequestsCount(UInteger value) throws UaException;
+  /** Asynchronous form of {@link #getSecurityRejectedSessionCountNode()}. */
+  CompletableFuture<? extends VariableNode> getSecurityRejectedSessionCountNodeAsync();
 
   /**
-   * Read the value of the SecurityRejectedRequestsCount Node from the server and update the local
-   * value if the operation succeeds.
+   * Reads the Value of the SecurityRejectedSessionCount child from the server.
    *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UInteger readSecurityRejectedRequestsCount() throws UaException;
+  @Nullable UInteger readSecurityRejectedSessionCount() throws UaException;
 
   /**
-   * Write a new value for the SecurityRejectedRequestsCount Node to the server and update the local
-   * value if the operation succeeds.
+   * Writes the Value of the SecurityRejectedSessionCount child to the server.
    *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeSecurityRejectedRequestsCount(UInteger value) throws UaException;
+  void writeSecurityRejectedSessionCount(@Nullable UInteger value) throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #readSecurityRejectedRequestsCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readSecurityRejectedRequestsCountAsync();
+  /** Asynchronous form of {@link #readSecurityRejectedSessionCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readSecurityRejectedSessionCountAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeSecurityRejectedRequestsCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * Asynchronous form of {@link #writeSecurityRejectedSessionCount}; completes with the operation
+   * status.
    */
-  CompletableFuture<StatusCode> writeSecurityRejectedRequestsCountAsync(UInteger value);
+  CompletableFuture<StatusCode> writeSecurityRejectedSessionCountAsync(@Nullable UInteger value);
 
   /**
-   * Get the SecurityRejectedRequestsCount {@link BaseDataVariableType} Node, or {@code null} if it
-   * does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * Resolves the mandatory SecurityRejectedRequestsCount child, a BaseDataVariableType with
+   * DataType UInt32.
    *
-   * @return the SecurityRejectedRequestsCount {@link BaseDataVariableType} Node, or {@code null} if
-   *     it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  BaseDataVariableType getSecurityRejectedRequestsCountNode() throws UaException;
+  VariableNode getSecurityRejectedRequestsCountNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getSecurityRejectedRequestsCountNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getSecurityRejectedRequestsCountNodeAsync();
+  /** Asynchronous form of {@link #getSecurityRejectedRequestsCountNode()}. */
+  CompletableFuture<? extends VariableNode> getSecurityRejectedRequestsCountNodeAsync();
 
   /**
-   * Get the local value of the RejectedRequestsCount Node.
+   * Reads the Value of the SecurityRejectedRequestsCount child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the RejectedRequestsCount Node.
-   * @throws UaException if an error occurs creating or getting the RejectedRequestsCount Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UInteger getRejectedRequestsCount() throws UaException;
+  @Nullable UInteger readSecurityRejectedRequestsCount() throws UaException;
 
   /**
-   * Set the local value of the RejectedRequestsCount Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
+   * Writes the Value of the SecurityRejectedRequestsCount child to the server.
    *
-   * @param value the local value to set for the RejectedRequestsCount Node.
-   * @throws UaException if an error occurs creating or getting the RejectedRequestsCount Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setRejectedRequestsCount(UInteger value) throws UaException;
+  void writeSecurityRejectedRequestsCount(@Nullable UInteger value) throws UaException;
 
-  /**
-   * Read the value of the RejectedRequestsCount Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readRejectedRequestsCount() throws UaException;
+  /** Asynchronous form of {@link #readSecurityRejectedRequestsCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readSecurityRejectedRequestsCountAsync();
 
   /**
-   * Write a new value for the RejectedRequestsCount Node to the server and update the local value
-   * if the operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * Asynchronous form of {@link #writeSecurityRejectedRequestsCount}; completes with the operation
+   * status.
    */
-  void writeRejectedRequestsCount(UInteger value) throws UaException;
+  CompletableFuture<StatusCode> writeSecurityRejectedRequestsCountAsync(@Nullable UInteger value);
 
   /**
-   * An asynchronous implementation of {@link #readRejectedRequestsCount}.
+   * Reads the Value of this node from the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends UInteger> readRejectedRequestsCountAsync();
+  @Nullable ServerDiagnosticsSummaryDataType readTypedValue() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeRejectedRequestsCount}.
+   * Writes the Value of this node to the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeRejectedRequestsCountAsync(UInteger value);
+  void writeTypedValue(@Nullable ServerDiagnosticsSummaryDataType value) throws UaException;
 
-  /**
-   * Get the RejectedRequestsCount {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the RejectedRequestsCount {@link BaseDataVariableType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getRejectedRequestsCountNode() throws UaException;
+  /** Asynchronous form of {@link #readTypedValue()}. */
+  CompletableFuture<? extends @Nullable ServerDiagnosticsSummaryDataType> readTypedValueAsync();
 
-  /**
-   * Asynchronous implementation of {@link #getRejectedRequestsCountNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getRejectedRequestsCountNodeAsync();
+  /** Asynchronous form of {@link #writeTypedValue}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeTypedValueAsync(
+      @Nullable ServerDiagnosticsSummaryDataType value);
 }

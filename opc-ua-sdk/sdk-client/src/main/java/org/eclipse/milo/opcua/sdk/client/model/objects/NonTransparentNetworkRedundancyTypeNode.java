@@ -1,38 +1,30 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyTypeNode;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.NetworkGroupDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link NonTransparentNetworkRedundancyType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.10">Model
+ *     documentation</a>
+ */
 public class NonTransparentNetworkRedundancyTypeNode extends NonTransparentRedundancyTypeNode
     implements NonTransparentNetworkRedundancyType {
   public NonTransparentNetworkRedundancyTypeNode(
@@ -41,12 +33,12 @@ public class NonTransparentNetworkRedundancyTypeNode extends NonTransparentRedun
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         client,
@@ -64,83 +56,79 @@ public class NonTransparentNetworkRedundancyTypeNode extends NonTransparentRedun
   }
 
   @Override
-  public NetworkGroupDataType[] getServerNetworkGroups() throws UaException {
-    PropertyTypeNode node = getServerNetworkGroupsNode();
-    return cast(node.getValue().getValue().getValue(), NetworkGroupDataType[].class);
-  }
-
-  @Override
-  public void setServerNetworkGroups(NetworkGroupDataType[] value) throws UaException {
-    PropertyTypeNode node = getServerNetworkGroupsNode();
-    ExtensionObject[] encoded =
-        ExtensionObject.encodeArray(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
-  }
-
-  @Override
-  public NetworkGroupDataType[] readServerNetworkGroups() throws UaException {
-    try {
-      return readServerNetworkGroupsAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeServerNetworkGroups(NetworkGroupDataType[] value) throws UaException {
-    try {
-      StatusCode statusCode = writeServerNetworkGroupsAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends NetworkGroupDataType[]> readServerNetworkGroupsAsync() {
-    return getServerNetworkGroupsNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), NetworkGroupDataType[].class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeServerNetworkGroupsAsync(
-      NetworkGroupDataType[] serverNetworkGroups) {
-    ExtensionObject[] encoded =
-        ExtensionObject.encodeArray(client.getStaticEncodingContext(), serverNetworkGroups);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getServerNetworkGroupsNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
   public PropertyTypeNode getServerNetworkGroupsNode() throws UaException {
-    try {
-      return getServerNetworkGroupsNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getServerNetworkGroupsNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends PropertyTypeNode> getServerNetworkGroupsNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "ServerNetworkGroups",
-            ExpandedNodeId.parse("i=46"),
-            false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "ServerNetworkGroups",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
+  }
+
+  @Override
+  public @Nullable NetworkGroupDataType @Nullable [] readServerNetworkGroups() throws UaException {
+    return ClientNodeSupport.await(readServerNetworkGroupsAsync());
+  }
+
+  @Override
+  public void writeServerNetworkGroups(@Nullable NetworkGroupDataType @Nullable [] value)
+      throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeServerNetworkGroupsAsync(value)),
+        "http://opcfoundation.org/UA/}ServerNetworkGroups");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable NetworkGroupDataType @Nullable []>
+      readServerNetworkGroupsAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getServerNetworkGroupsNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}ServerNetworkGroups",
+                            true,
+                            NetworkGroupDataType.class,
+                            1,
+                            null)),
+                v ->
+                    CompletableFuture.completedFuture(
+                        (@Nullable NetworkGroupDataType @Nullable []) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeServerNetworkGroupsAsync(
+      @Nullable NetworkGroupDataType @Nullable [] value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getServerNetworkGroupsNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}ServerNetworkGroups",
+                        value,
+                        NetworkGroupDataType.class,
+                        1,
+                        null)));
   }
 }

@@ -42,24 +42,24 @@ public class ReadNodeExample implements ClientExample {
         (ServerTypeNode) client.getAddressSpace().getObjectNode(NodeIds.Server, NodeIds.ServerType);
 
     // Read properties of the Server object...
-    String[] serverArray = serverNode.getServerArray();
-    String[] namespaceArray = serverNode.getNamespaceArray();
+    String[] serverArray = serverNode.readServerArray();
+    String[] namespaceArray = serverNode.readNamespaceArray();
 
     logger.info("ServerArray={}", Arrays.toString(serverArray));
     logger.info("NamespaceArray={}", Arrays.toString(namespaceArray));
 
     // Read the value of attribute the ServerStatus variable component
-    ServerStatusDataType serverStatus = serverNode.getServerStatus();
+    ServerStatusDataType serverStatus = serverNode.readServerStatus();
 
     logger.info("ServerStatus={}", serverStatus);
 
     // Get a typed reference to the ServerStatus variable
     // component and read value attributes individually
     ServerStatusTypeNode serverStatusNode = serverNode.getServerStatusNode();
-    BuildInfo buildInfo = serverStatusNode.getBuildInfo();
-    DateTime startTime = serverStatusNode.getStartTime();
-    DateTime currentTime = serverStatusNode.getCurrentTime();
-    ServerState state = serverStatusNode.getState();
+    BuildInfo buildInfo = serverStatusNode.readBuildInfo();
+    DateTime startTime = serverStatusNode.readStartTime();
+    DateTime currentTime = serverStatusNode.readCurrentTime();
+    ServerState state = serverStatusNode.readState();
 
     logger.info("ServerStatus.BuildInfo={}", buildInfo);
     logger.info("ServerStatus.StartTime={}", startTime);

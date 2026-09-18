@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
@@ -22,1051 +12,549 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.structured.TimeZoneDataType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.2">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.2</a>
+ * Client API for the BaseEventType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.2">Model
+ *     documentation</a>
  */
 public interface BaseEventType extends BaseObjectType {
-  QualifiedProperty<ByteString> EVENT_ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "EventId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15"),
-          -1,
-          ByteString.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2041L);
 
-  QualifiedProperty<NodeId> EVENT_TYPE =
+  QualifiedProperty<String> SourceName_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "EventType",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-          -1,
-          NodeId.class);
-
-  QualifiedProperty<NodeId> SOURCE_NODE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "SourceNode",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-          -1,
-          NodeId.class);
-
-  QualifiedProperty<String> SOURCE_NAME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "SourceName",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
           -1,
           String.class);
 
-  QualifiedProperty<DateTime> TIME =
+  QualifiedProperty<NodeId> SourceNode_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Time",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
-          -1,
-          DateTime.class);
-
-  QualifiedProperty<DateTime> RECEIVE_TIME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ReceiveTime",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
-          -1,
-          DateTime.class);
-
-  QualifiedProperty<TimeZoneDataType> LOCAL_TIME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "LocalTime",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=8912"),
-          -1,
-          TimeZoneDataType.class);
-
-  QualifiedProperty<LocalizedText> MESSAGE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Message",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
-          -1,
-          LocalizedText.class);
-
-  QualifiedProperty<UShort> SEVERITY =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Severity",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-          -1,
-          UShort.class);
-
-  QualifiedProperty<NodeId> CONDITION_CLASS_ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ConditionClassId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
+          Namespaces.OPC_UA,
+          "SourceNode",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 17L),
           -1,
           NodeId.class);
 
-  QualifiedProperty<LocalizedText> CONDITION_CLASS_NAME =
+  QualifiedProperty<DateTime> ReceiveTime_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
+          "ReceiveTime",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 294L),
+          -1,
+          DateTime.class);
+
+  QualifiedProperty<NodeId> ConditionClassId_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "ConditionClassId",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 17L),
+          -1,
+          NodeId.class);
+
+  QualifiedProperty<LocalizedText> ConditionClassName_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
           "ConditionClassName",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 21L),
           -1,
           LocalizedText.class);
 
-  QualifiedProperty<NodeId[]> CONDITION_SUB_CLASS_ID =
+  QualifiedProperty<NodeId[]> ConditionSubClassId_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "ConditionSubClassId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 17L),
           1,
           NodeId[].class);
 
-  QualifiedProperty<LocalizedText[]> CONDITION_SUB_CLASS_NAME =
+  QualifiedProperty<LocalizedText[]> ConditionSubClassName_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "ConditionSubClassName",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 21L),
           1,
           LocalizedText[].class);
 
-  /**
-   * Get the local value of the EventId Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the EventId Node.
-   * @throws UaException if an error occurs creating or getting the EventId Node.
-   */
-  ByteString getEventId() throws UaException;
+  QualifiedProperty<DateTime> Time_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "Time",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 294L),
+          -1,
+          DateTime.class);
+
+  QualifiedProperty<ByteString> EventId_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "EventId",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 15L),
+          -1,
+          ByteString.class);
+
+  QualifiedProperty<LocalizedText> Message_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "Message",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 21L),
+          -1,
+          LocalizedText.class);
+
+  QualifiedProperty<UShort> Severity_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "Severity",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 5L),
+          -1,
+          UShort.class);
+
+  QualifiedProperty<NodeId> EventType_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "EventType",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 17L),
+          -1,
+          NodeId.class);
+
+  QualifiedProperty<TimeZoneDataType> LocalTime_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "LocalTime",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 8912L),
+          -1,
+          TimeZoneDataType.class);
 
   /**
-   * Set the local value of the EventId Node.
+   * Resolves the mandatory SourceName child, a PropertyType with DataType String.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the EventId Node.
-   * @throws UaException if an error occurs creating or getting the EventId Node.
-   */
-  void setEventId(ByteString value) throws UaException;
-
-  /**
-   * Read the value of the EventId Node from the server and update the local value if the operation
-   * succeeds.
-   *
-   * @return the {@link ByteString} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  ByteString readEventId() throws UaException;
-
-  /**
-   * Write a new value for the EventId Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link ByteString} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeEventId(ByteString value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readEventId}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends ByteString> readEventIdAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeEventId}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeEventIdAsync(ByteString value);
-
-  /**
-   * Get the EventId {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the EventId {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getEventIdNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getEventIdNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getEventIdNodeAsync();
-
-  /**
-   * Get the local value of the EventType Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the EventType Node.
-   * @throws UaException if an error occurs creating or getting the EventType Node.
-   */
-  NodeId getEventType() throws UaException;
-
-  /**
-   * Set the local value of the EventType Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the EventType Node.
-   * @throws UaException if an error occurs creating or getting the EventType Node.
-   */
-  void setEventType(NodeId value) throws UaException;
-
-  /**
-   * Read the value of the EventType Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link NodeId} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  NodeId readEventType() throws UaException;
-
-  /**
-   * Write a new value for the EventType Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link NodeId} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeEventType(NodeId value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readEventType}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends NodeId> readEventTypeAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeEventType}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeEventTypeAsync(NodeId value);
-
-  /**
-   * Get the EventType {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the EventType {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getEventTypeNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getEventTypeNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getEventTypeNodeAsync();
-
-  /**
-   * Get the local value of the SourceNode Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SourceNode Node.
-   * @throws UaException if an error occurs creating or getting the SourceNode Node.
-   */
-  NodeId getSourceNode() throws UaException;
-
-  /**
-   * Set the local value of the SourceNode Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SourceNode Node.
-   * @throws UaException if an error occurs creating or getting the SourceNode Node.
-   */
-  void setSourceNode(NodeId value) throws UaException;
-
-  /**
-   * Read the value of the SourceNode Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link NodeId} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  NodeId readSourceNode() throws UaException;
-
-  /**
-   * Write a new value for the SourceNode Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link NodeId} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeSourceNode(NodeId value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readSourceNode}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends NodeId> readSourceNodeAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeSourceNode}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeSourceNodeAsync(NodeId value);
-
-  /**
-   * Get the SourceNode {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SourceNode {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getSourceNodeNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getSourceNodeNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getSourceNodeNodeAsync();
-
-  /**
-   * Get the local value of the SourceName Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SourceName Node.
-   * @throws UaException if an error occurs creating or getting the SourceName Node.
-   */
-  String getSourceName() throws UaException;
-
-  /**
-   * Set the local value of the SourceName Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SourceName Node.
-   * @throws UaException if an error occurs creating or getting the SourceName Node.
-   */
-  void setSourceName(String value) throws UaException;
-
-  /**
-   * Read the value of the SourceName Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String readSourceName() throws UaException;
-
-  /**
-   * Write a new value for the SourceName Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeSourceName(String value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readSourceName}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String> readSourceNameAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeSourceName}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeSourceNameAsync(String value);
-
-  /**
-   * Get the SourceName {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SourceName {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getSourceNameNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getSourceNameNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getSourceNameNode()}. */
   CompletableFuture<? extends PropertyType> getSourceNameNodeAsync();
 
   /**
-   * Get the local value of the Time Node.
+   * Reads the Value of the SourceName child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the Time Node.
-   * @throws UaException if an error occurs creating or getting the Time Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  DateTime getTime() throws UaException;
+  @Nullable String readSourceName() throws UaException;
 
   /**
-   * Set the local value of the Time Node.
+   * Writes the Value of the SourceName child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the Time Node.
-   * @throws UaException if an error occurs creating or getting the Time Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setTime(DateTime value) throws UaException;
+  void writeSourceName(@Nullable String value) throws UaException;
+
+  /** Asynchronous form of {@link #readSourceName()}. */
+  CompletableFuture<? extends @Nullable String> readSourceNameAsync();
+
+  /** Asynchronous form of {@link #writeSourceName}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeSourceNameAsync(@Nullable String value);
 
   /**
-   * Read the value of the Time Node from the server and update the local value if the operation
-   * succeeds.
+   * Resolves the mandatory SourceNode child, a PropertyType with DataType NodeId.
    *
-   * @return the {@link DateTime} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  DateTime readTime() throws UaException;
+  PropertyType getSourceNodeNode() throws UaException;
+
+  /** Asynchronous form of {@link #getSourceNodeNode()}. */
+  CompletableFuture<? extends PropertyType> getSourceNodeNodeAsync();
 
   /**
-   * Write a new value for the Time Node to the server and update the local value if the operation
-   * succeeds.
+   * Reads the Value of the SourceNode child from the server.
    *
-   * @param value the {@link DateTime} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeTime(DateTime value) throws UaException;
+  @Nullable NodeId readSourceNode() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readTime}.
+   * Writes the Value of the SourceNode child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends DateTime> readTimeAsync();
+  void writeSourceNode(@Nullable NodeId value) throws UaException;
+
+  /** Asynchronous form of {@link #readSourceNode()}. */
+  CompletableFuture<? extends @Nullable NodeId> readSourceNodeAsync();
+
+  /** Asynchronous form of {@link #writeSourceNode}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeSourceNodeAsync(@Nullable NodeId value);
 
   /**
-   * An asynchronous implementation of {@link #writeTime}.
+   * Resolves the mandatory ReceiveTime child, a PropertyType with DataType UtcTime.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeTimeAsync(DateTime value);
-
-  /**
-   * Get the Time {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the Time {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getTimeNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getTimeNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getTimeNodeAsync();
-
-  /**
-   * Get the local value of the ReceiveTime Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ReceiveTime Node.
-   * @throws UaException if an error occurs creating or getting the ReceiveTime Node.
-   */
-  DateTime getReceiveTime() throws UaException;
-
-  /**
-   * Set the local value of the ReceiveTime Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ReceiveTime Node.
-   * @throws UaException if an error occurs creating or getting the ReceiveTime Node.
-   */
-  void setReceiveTime(DateTime value) throws UaException;
-
-  /**
-   * Read the value of the ReceiveTime Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link DateTime} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  DateTime readReceiveTime() throws UaException;
-
-  /**
-   * Write a new value for the ReceiveTime Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link DateTime} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeReceiveTime(DateTime value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readReceiveTime}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends DateTime> readReceiveTimeAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeReceiveTime}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeReceiveTimeAsync(DateTime value);
-
-  /**
-   * Get the ReceiveTime {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ReceiveTime {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getReceiveTimeNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getReceiveTimeNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getReceiveTimeNode()}. */
   CompletableFuture<? extends PropertyType> getReceiveTimeNodeAsync();
 
   /**
-   * Get the local value of the LocalTime Node.
+   * Reads the Value of the ReceiveTime child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the LocalTime Node.
-   * @throws UaException if an error occurs creating or getting the LocalTime Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  TimeZoneDataType getLocalTime() throws UaException;
+  @Nullable DateTime readReceiveTime() throws UaException;
 
   /**
-   * Set the local value of the LocalTime Node.
+   * Writes the Value of the ReceiveTime child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the LocalTime Node.
-   * @throws UaException if an error occurs creating or getting the LocalTime Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setLocalTime(TimeZoneDataType value) throws UaException;
+  void writeReceiveTime(@Nullable DateTime value) throws UaException;
+
+  /** Asynchronous form of {@link #readReceiveTime()}. */
+  CompletableFuture<? extends @Nullable DateTime> readReceiveTimeAsync();
+
+  /** Asynchronous form of {@link #writeReceiveTime}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeReceiveTimeAsync(@Nullable DateTime value);
 
   /**
-   * Read the value of the LocalTime Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the optional ConditionClassId child, a PropertyType with DataType NodeId.
    *
-   * @return the {@link TimeZoneDataType} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  TimeZoneDataType readLocalTime() throws UaException;
+  @Nullable PropertyType getConditionClassIdNode() throws UaException;
+
+  /** Asynchronous form of {@link #getConditionClassIdNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getConditionClassIdNodeAsync();
 
   /**
-   * Write a new value for the LocalTime Node to the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the ConditionClassId child from the server.
    *
-   * @param value the {@link TimeZoneDataType} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeLocalTime(TimeZoneDataType value) throws UaException;
+  @Nullable NodeId readConditionClassId() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readLocalTime}.
+   * Writes the Value of the ConditionClassId child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends TimeZoneDataType> readLocalTimeAsync();
+  void writeConditionClassId(@Nullable NodeId value) throws UaException;
+
+  /** Asynchronous form of {@link #readConditionClassId()}. */
+  CompletableFuture<? extends @Nullable NodeId> readConditionClassIdAsync();
+
+  /** Asynchronous form of {@link #writeConditionClassId}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeConditionClassIdAsync(@Nullable NodeId value);
 
   /**
-   * An asynchronous implementation of {@link #writeLocalTime}.
+   * Resolves the optional ConditionClassName child, a PropertyType with DataType LocalizedText.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  CompletableFuture<StatusCode> writeLocalTimeAsync(TimeZoneDataType value);
+  @Nullable PropertyType getConditionClassNameNode() throws UaException;
+
+  /** Asynchronous form of {@link #getConditionClassNameNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getConditionClassNameNodeAsync();
 
   /**
-   * Get the LocalTime {@link PropertyType} Node, or {@code null} if it does not exist.
+   * Reads the Value of the ConditionClassName child from the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the LocalTime {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  PropertyType getLocalTimeNode() throws UaException;
+  @Nullable LocalizedText readConditionClassName() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getLocalTimeNode()}.
+   * Writes the Value of the ConditionClassName child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends PropertyType> getLocalTimeNodeAsync();
+  void writeConditionClassName(@Nullable LocalizedText value) throws UaException;
+
+  /** Asynchronous form of {@link #readConditionClassName()}. */
+  CompletableFuture<? extends @Nullable LocalizedText> readConditionClassNameAsync();
+
+  /** Asynchronous form of {@link #writeConditionClassName}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeConditionClassNameAsync(@Nullable LocalizedText value);
 
   /**
-   * Get the local value of the Message Node.
+   * Resolves the optional ConditionSubClassId child, a PropertyType with DataType NodeId.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the Message Node.
-   * @throws UaException if an error occurs creating or getting the Message Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  LocalizedText getMessage() throws UaException;
+  @Nullable PropertyType getConditionSubClassIdNode() throws UaException;
+
+  /** Asynchronous form of {@link #getConditionSubClassIdNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getConditionSubClassIdNodeAsync();
 
   /**
-   * Set the local value of the Message Node.
+   * Reads the Value of the ConditionSubClassId child from the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the Message Node.
-   * @throws UaException if an error occurs creating or getting the Message Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setMessage(LocalizedText value) throws UaException;
+  NodeId @Nullable [] readConditionSubClassId() throws UaException;
 
   /**
-   * Read the value of the Message Node from the server and update the local value if the operation
-   * succeeds.
+   * Writes the Value of the ConditionSubClassId child to the server.
    *
-   * @return the {@link LocalizedText} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  LocalizedText readMessage() throws UaException;
+  void writeConditionSubClassId(NodeId @Nullable [] value) throws UaException;
+
+  /** Asynchronous form of {@link #readConditionSubClassId()}. */
+  CompletableFuture<? extends NodeId @Nullable []> readConditionSubClassIdAsync();
 
   /**
-   * Write a new value for the Message Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link LocalizedText} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * Asynchronous form of {@link #writeConditionSubClassId}; completes with the operation status.
    */
-  void writeMessage(LocalizedText value) throws UaException;
+  CompletableFuture<StatusCode> writeConditionSubClassIdAsync(NodeId @Nullable [] value);
 
   /**
-   * An asynchronous implementation of {@link #readMessage}.
+   * Resolves the optional ConditionSubClassName child, a PropertyType with DataType LocalizedText.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  CompletableFuture<? extends LocalizedText> readMessageAsync();
+  @Nullable PropertyType getConditionSubClassNameNode() throws UaException;
+
+  /** Asynchronous form of {@link #getConditionSubClassNameNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getConditionSubClassNameNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeMessage}.
+   * Reads the Value of the ConditionSubClassName child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeMessageAsync(LocalizedText value);
+  LocalizedText @Nullable [] readConditionSubClassName() throws UaException;
 
   /**
-   * Get the Message {@link PropertyType} Node, or {@code null} if it does not exist.
+   * Writes the Value of the ConditionSubClassName child to the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeConditionSubClassName(LocalizedText @Nullable [] value) throws UaException;
+
+  /** Asynchronous form of {@link #readConditionSubClassName()}. */
+  CompletableFuture<? extends LocalizedText @Nullable []> readConditionSubClassNameAsync();
+
+  /**
+   * Asynchronous form of {@link #writeConditionSubClassName}; completes with the operation status.
+   */
+  CompletableFuture<StatusCode> writeConditionSubClassNameAsync(LocalizedText @Nullable [] value);
+
+  /**
+   * Resolves the mandatory Time child, a PropertyType with DataType UtcTime.
    *
-   * @return the Message {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getTimeNode() throws UaException;
+
+  /** Asynchronous form of {@link #getTimeNode()}. */
+  CompletableFuture<? extends PropertyType> getTimeNodeAsync();
+
+  /**
+   * Reads the Value of the Time child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable DateTime readTime() throws UaException;
+
+  /**
+   * Writes the Value of the Time child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeTime(@Nullable DateTime value) throws UaException;
+
+  /** Asynchronous form of {@link #readTime()}. */
+  CompletableFuture<? extends @Nullable DateTime> readTimeAsync();
+
+  /** Asynchronous form of {@link #writeTime}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeTimeAsync(@Nullable DateTime value);
+
+  /**
+   * Resolves the mandatory EventId child, a PropertyType with DataType ByteString.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getEventIdNode() throws UaException;
+
+  /** Asynchronous form of {@link #getEventIdNode()}. */
+  CompletableFuture<? extends PropertyType> getEventIdNodeAsync();
+
+  /**
+   * Reads the Value of the EventId child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable ByteString readEventId() throws UaException;
+
+  /**
+   * Writes the Value of the EventId child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeEventId(@Nullable ByteString value) throws UaException;
+
+  /** Asynchronous form of {@link #readEventId()}. */
+  CompletableFuture<? extends @Nullable ByteString> readEventIdAsync();
+
+  /** Asynchronous form of {@link #writeEventId}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeEventIdAsync(@Nullable ByteString value);
+
+  /**
+   * Resolves the mandatory Message child, a PropertyType with DataType LocalizedText.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getMessageNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getMessageNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getMessageNode()}. */
   CompletableFuture<? extends PropertyType> getMessageNodeAsync();
 
   /**
-   * Get the local value of the Severity Node.
+   * Reads the Value of the Message child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the Severity Node.
-   * @throws UaException if an error occurs creating or getting the Severity Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UShort getSeverity() throws UaException;
+  @Nullable LocalizedText readMessage() throws UaException;
 
   /**
-   * Set the local value of the Severity Node.
+   * Writes the Value of the Message child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the Severity Node.
-   * @throws UaException if an error occurs creating or getting the Severity Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setSeverity(UShort value) throws UaException;
+  void writeMessage(@Nullable LocalizedText value) throws UaException;
+
+  /** Asynchronous form of {@link #readMessage()}. */
+  CompletableFuture<? extends @Nullable LocalizedText> readMessageAsync();
+
+  /** Asynchronous form of {@link #writeMessage}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeMessageAsync(@Nullable LocalizedText value);
 
   /**
-   * Read the value of the Severity Node from the server and update the local value if the operation
-   * succeeds.
+   * Resolves the mandatory Severity child, a PropertyType with DataType UInt16.
    *
-   * @return the {@link UShort} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UShort readSeverity() throws UaException;
-
-  /**
-   * Write a new value for the Severity Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link UShort} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeSeverity(UShort value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readSeverity}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UShort> readSeverityAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeSeverity}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeSeverityAsync(UShort value);
-
-  /**
-   * Get the Severity {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the Severity {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getSeverityNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getSeverityNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getSeverityNode()}. */
   CompletableFuture<? extends PropertyType> getSeverityNodeAsync();
 
   /**
-   * Get the local value of the ConditionClassId Node.
+   * Reads the Value of the Severity child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ConditionClassId Node.
-   * @throws UaException if an error occurs creating or getting the ConditionClassId Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  NodeId getConditionClassId() throws UaException;
+  @Nullable UShort readSeverity() throws UaException;
 
   /**
-   * Set the local value of the ConditionClassId Node.
+   * Writes the Value of the Severity child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ConditionClassId Node.
-   * @throws UaException if an error occurs creating or getting the ConditionClassId Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setConditionClassId(NodeId value) throws UaException;
+  void writeSeverity(@Nullable UShort value) throws UaException;
+
+  /** Asynchronous form of {@link #readSeverity()}. */
+  CompletableFuture<? extends @Nullable UShort> readSeverityAsync();
+
+  /** Asynchronous form of {@link #writeSeverity}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeSeverityAsync(@Nullable UShort value);
 
   /**
-   * Read the value of the ConditionClassId Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the mandatory EventType child, a PropertyType with DataType NodeId.
    *
-   * @return the {@link NodeId} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  NodeId readConditionClassId() throws UaException;
+  PropertyType getEventTypeNode() throws UaException;
+
+  /** Asynchronous form of {@link #getEventTypeNode()}. */
+  CompletableFuture<? extends PropertyType> getEventTypeNodeAsync();
 
   /**
-   * Write a new value for the ConditionClassId Node to the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the EventType child from the server.
    *
-   * @param value the {@link NodeId} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeConditionClassId(NodeId value) throws UaException;
+  @Nullable NodeId readEventType() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readConditionClassId}.
+   * Writes the Value of the EventType child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends NodeId> readConditionClassIdAsync();
+  void writeEventType(@Nullable NodeId value) throws UaException;
+
+  /** Asynchronous form of {@link #readEventType()}. */
+  CompletableFuture<? extends @Nullable NodeId> readEventTypeAsync();
+
+  /** Asynchronous form of {@link #writeEventType}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeEventTypeAsync(@Nullable NodeId value);
 
   /**
-   * An asynchronous implementation of {@link #writeConditionClassId}.
+   * Resolves the optional LocalTime child, a PropertyType with DataType TimeZoneDataType.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  CompletableFuture<StatusCode> writeConditionClassIdAsync(NodeId value);
+  @Nullable PropertyType getLocalTimeNode() throws UaException;
+
+  /** Asynchronous form of {@link #getLocalTimeNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getLocalTimeNodeAsync();
 
   /**
-   * Get the ConditionClassId {@link PropertyType} Node, or {@code null} if it does not exist.
+   * Reads the Value of the LocalTime child from the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ConditionClassId {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  PropertyType getConditionClassIdNode() throws UaException;
+  @Nullable TimeZoneDataType readLocalTime() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getConditionClassIdNode()}.
+   * Writes the Value of the LocalTime child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends PropertyType> getConditionClassIdNodeAsync();
+  void writeLocalTime(@Nullable TimeZoneDataType value) throws UaException;
 
-  /**
-   * Get the local value of the ConditionClassName Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ConditionClassName Node.
-   * @throws UaException if an error occurs creating or getting the ConditionClassName Node.
-   */
-  LocalizedText getConditionClassName() throws UaException;
+  /** Asynchronous form of {@link #readLocalTime()}. */
+  CompletableFuture<? extends @Nullable TimeZoneDataType> readLocalTimeAsync();
 
-  /**
-   * Set the local value of the ConditionClassName Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ConditionClassName Node.
-   * @throws UaException if an error occurs creating or getting the ConditionClassName Node.
-   */
-  void setConditionClassName(LocalizedText value) throws UaException;
-
-  /**
-   * Read the value of the ConditionClassName Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link LocalizedText} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  LocalizedText readConditionClassName() throws UaException;
-
-  /**
-   * Write a new value for the ConditionClassName Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link LocalizedText} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeConditionClassName(LocalizedText value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readConditionClassName}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends LocalizedText> readConditionClassNameAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeConditionClassName}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeConditionClassNameAsync(LocalizedText value);
-
-  /**
-   * Get the ConditionClassName {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ConditionClassName {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getConditionClassNameNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getConditionClassNameNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getConditionClassNameNodeAsync();
-
-  /**
-   * Get the local value of the ConditionSubClassId Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ConditionSubClassId Node.
-   * @throws UaException if an error occurs creating or getting the ConditionSubClassId Node.
-   */
-  NodeId[] getConditionSubClassId() throws UaException;
-
-  /**
-   * Set the local value of the ConditionSubClassId Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ConditionSubClassId Node.
-   * @throws UaException if an error occurs creating or getting the ConditionSubClassId Node.
-   */
-  void setConditionSubClassId(NodeId[] value) throws UaException;
-
-  /**
-   * Read the value of the ConditionSubClassId Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link NodeId[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  NodeId[] readConditionSubClassId() throws UaException;
-
-  /**
-   * Write a new value for the ConditionSubClassId Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link NodeId[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeConditionSubClassId(NodeId[] value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readConditionSubClassId}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends NodeId[]> readConditionSubClassIdAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeConditionSubClassId}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeConditionSubClassIdAsync(NodeId[] value);
-
-  /**
-   * Get the ConditionSubClassId {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ConditionSubClassId {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getConditionSubClassIdNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getConditionSubClassIdNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getConditionSubClassIdNodeAsync();
-
-  /**
-   * Get the local value of the ConditionSubClassName Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ConditionSubClassName Node.
-   * @throws UaException if an error occurs creating or getting the ConditionSubClassName Node.
-   */
-  LocalizedText[] getConditionSubClassName() throws UaException;
-
-  /**
-   * Set the local value of the ConditionSubClassName Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ConditionSubClassName Node.
-   * @throws UaException if an error occurs creating or getting the ConditionSubClassName Node.
-   */
-  void setConditionSubClassName(LocalizedText[] value) throws UaException;
-
-  /**
-   * Read the value of the ConditionSubClassName Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link LocalizedText[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  LocalizedText[] readConditionSubClassName() throws UaException;
-
-  /**
-   * Write a new value for the ConditionSubClassName Node to the server and update the local value
-   * if the operation succeeds.
-   *
-   * @param value the {@link LocalizedText[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeConditionSubClassName(LocalizedText[] value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readConditionSubClassName}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends LocalizedText[]> readConditionSubClassNameAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeConditionSubClassName}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeConditionSubClassNameAsync(LocalizedText[] value);
-
-  /**
-   * Get the ConditionSubClassName {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ConditionSubClassName {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getConditionSubClassNameNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getConditionSubClassNameNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getConditionSubClassNameNodeAsync();
+  /** Asynchronous form of {@link #writeLocalTime}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeLocalTimeAsync(@Nullable TimeZoneDataType value);
 }

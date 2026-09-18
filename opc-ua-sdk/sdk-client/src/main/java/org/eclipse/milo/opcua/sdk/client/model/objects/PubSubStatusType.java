@@ -1,95 +1,144 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
-import org.eclipse.milo.opcua.sdk.client.model.variables.BaseDataVariableType;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallOptions;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallResult;
+import org.eclipse.milo.opcua.sdk.client.nodes.UaMethodNode;
+import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.PubSubState;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.10/#9.1.10.1">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.10/#9.1.10.1</a>
+ * Client API for the PubSubStatusType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.10/#9.1.10.1">Model
+ *     documentation</a>
  */
 public interface PubSubStatusType extends BaseObjectType {
-  /**
-   * Get the local value of the State Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the State Node.
-   * @throws UaException if an error occurs creating or getting the State Node.
-   */
-  PubSubState getState() throws UaException;
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 14643L);
 
   /**
-   * Set the local value of the State Node.
+   * Resolves the mandatory State child, a BaseDataVariableType with DataType PubSubState.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the State Node.
-   * @throws UaException if an error occurs creating or getting the State Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  void setState(PubSubState value) throws UaException;
+  VariableNode getStateNode() throws UaException;
+
+  /** Asynchronous form of {@link #getStateNode()}. */
+  CompletableFuture<? extends VariableNode> getStateNodeAsync();
 
   /**
-   * Read the value of the State Node from the server and update the local value if the operation
-   * succeeds.
+   * Reads the Value of the State child from the server.
    *
-   * @return the {@link PubSubState} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  PubSubState readState() throws UaException;
+  @Nullable PubSubState readState() throws UaException;
 
   /**
-   * Write a new value for the State Node to the server and update the local value if the operation
-   * succeeds.
+   * Writes the Value of the State child to the server.
    *
-   * @param value the {@link PubSubState} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeState(PubSubState value) throws UaException;
+  void writeState(@Nullable PubSubState value) throws UaException;
+
+  /** Asynchronous form of {@link #readState()}. */
+  CompletableFuture<? extends @Nullable PubSubState> readStateAsync();
+
+  /** Asynchronous form of {@link #writeState}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeStateAsync(@Nullable PubSubState value);
 
   /**
-   * An asynchronous implementation of {@link #readState}.
+   * Resolves the optional Disable Method node.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.10/#9.1.10.3">Model
+   *     documentation</a>
    */
-  CompletableFuture<? extends PubSubState> readStateAsync();
+  @Nullable UaMethodNode getDisableMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getDisableMethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getDisableMethodNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeState}.
+   * Calls the Disable Method and returns its outputs; requires a Good result.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.10/#9.1.10.3">Model
+   *     documentation</a>
    */
-  CompletableFuture<StatusCode> writeStateAsync(PubSubState value);
+  void disable() throws UaException;
 
   /**
-   * Get the State {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
+   * Calls the Disable Method and returns the complete result, including a Bad status.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the State {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, transport or conversion fails.
    */
-  BaseDataVariableType getStateNode() throws UaException;
+  MethodCallResult<Void> callDisable() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getStateNode()}.
+   * Calls the Disable Method with explicit options and returns the complete result.
    *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, transport or conversion fails.
    */
-  CompletableFuture<? extends BaseDataVariableType> getStateNodeAsync();
+  MethodCallResult<Void> callDisableWith(MethodCallOptions options) throws UaException;
+
+  /** Asynchronous form of {@link #disable}. */
+  CompletableFuture<Void> disableAsync();
+
+  /** Asynchronous form of {@link #callDisable}. */
+  CompletableFuture<MethodCallResult<Void>> callDisableAsync();
+
+  /** Asynchronous form of {@link #callDisableWith}. */
+  CompletableFuture<MethodCallResult<Void>> callDisableWithAsync(MethodCallOptions options);
+
+  /**
+   * Resolves the optional Enable Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.10/#9.1.10.2">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getEnableMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getEnableMethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getEnableMethodNodeAsync();
+
+  /**
+   * Calls the Enable Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.10/#9.1.10.2">Model
+   *     documentation</a>
+   */
+  void enable() throws UaException;
+
+  /**
+   * Calls the Enable Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callEnable() throws UaException;
+
+  /**
+   * Calls the Enable Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callEnableWith(MethodCallOptions options) throws UaException;
+
+  /** Asynchronous form of {@link #enable}. */
+  CompletableFuture<Void> enableAsync();
+
+  /** Asynchronous form of {@link #callEnable}. */
+  CompletableFuture<MethodCallResult<Void>> callEnableAsync();
+
+  /** Asynchronous form of {@link #callEnableWith}. */
+  CompletableFuture<MethodCallResult<Void>> callEnableWithAsync(MethodCallOptions options);
 }

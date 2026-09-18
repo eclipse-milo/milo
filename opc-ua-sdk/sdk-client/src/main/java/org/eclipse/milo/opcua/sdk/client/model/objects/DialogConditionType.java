@@ -1,652 +1,412 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallOptions;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallResult;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyType;
 import org.eclipse.milo.opcua.sdk.client.model.variables.TwoStateVariableType;
+import org.eclipse.milo.opcua.sdk.client.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.6.2">https://reference.opcfoundation.org/v105/Core/docs/Part9/5.6.2</a>
+ * Client API for the DialogConditionType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.6.2">Model
+ *     documentation</a>
  */
 public interface DialogConditionType extends ConditionType {
-  QualifiedProperty<LocalizedText> PROMPT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Prompt",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
-          -1,
-          LocalizedText.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2830L);
 
-  QualifiedProperty<LocalizedText[]> RESPONSE_OPTION_SET =
+  QualifiedProperty<Integer> OkResponse_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
+          "OkResponse",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 6L),
+          -1,
+          Integer.class);
+
+  QualifiedProperty<Integer> LastResponse_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "LastResponse",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 6L),
+          -1,
+          Integer.class);
+
+  QualifiedProperty<Integer> CancelResponse_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "CancelResponse",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 6L),
+          -1,
+          Integer.class);
+
+  QualifiedProperty<Integer> DefaultResponse_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "DefaultResponse",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 6L),
+          -1,
+          Integer.class);
+
+  QualifiedProperty<LocalizedText[]> ResponseOptionSet_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
           "ResponseOptionSet",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 21L),
           1,
           LocalizedText[].class);
 
-  QualifiedProperty<Integer> DEFAULT_RESPONSE =
+  QualifiedProperty<LocalizedText> Prompt_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "DefaultResponse",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=6"),
+          Namespaces.OPC_UA,
+          "Prompt",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 21L),
           -1,
-          Integer.class);
-
-  QualifiedProperty<Integer> OK_RESPONSE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "OkResponse",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=6"),
-          -1,
-          Integer.class);
-
-  QualifiedProperty<Integer> CANCEL_RESPONSE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "CancelResponse",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=6"),
-          -1,
-          Integer.class);
-
-  QualifiedProperty<Integer> LAST_RESPONSE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "LastResponse",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=6"),
-          -1,
-          Integer.class);
+          LocalizedText.class);
 
   /**
-   * Get the local value of the Prompt Node.
+   * Resolves the mandatory OkResponse child, a PropertyType with DataType Int32.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the Prompt Node.
-   * @throws UaException if an error occurs creating or getting the Prompt Node.
-   */
-  LocalizedText getPrompt() throws UaException;
-
-  /**
-   * Set the local value of the Prompt Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the Prompt Node.
-   * @throws UaException if an error occurs creating or getting the Prompt Node.
-   */
-  void setPrompt(LocalizedText value) throws UaException;
-
-  /**
-   * Read the value of the Prompt Node from the server and update the local value if the operation
-   * succeeds.
-   *
-   * @return the {@link LocalizedText} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  LocalizedText readPrompt() throws UaException;
-
-  /**
-   * Write a new value for the Prompt Node to the server and update the local value if the operation
-   * succeeds.
-   *
-   * @param value the {@link LocalizedText} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writePrompt(LocalizedText value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readPrompt}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends LocalizedText> readPromptAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writePrompt}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writePromptAsync(LocalizedText value);
-
-  /**
-   * Get the Prompt {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the Prompt {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getPromptNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getPromptNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getPromptNodeAsync();
-
-  /**
-   * Get the local value of the ResponseOptionSet Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ResponseOptionSet Node.
-   * @throws UaException if an error occurs creating or getting the ResponseOptionSet Node.
-   */
-  LocalizedText[] getResponseOptionSet() throws UaException;
-
-  /**
-   * Set the local value of the ResponseOptionSet Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ResponseOptionSet Node.
-   * @throws UaException if an error occurs creating or getting the ResponseOptionSet Node.
-   */
-  void setResponseOptionSet(LocalizedText[] value) throws UaException;
-
-  /**
-   * Read the value of the ResponseOptionSet Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link LocalizedText[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  LocalizedText[] readResponseOptionSet() throws UaException;
-
-  /**
-   * Write a new value for the ResponseOptionSet Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link LocalizedText[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeResponseOptionSet(LocalizedText[] value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readResponseOptionSet}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends LocalizedText[]> readResponseOptionSetAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeResponseOptionSet}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeResponseOptionSetAsync(LocalizedText[] value);
-
-  /**
-   * Get the ResponseOptionSet {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ResponseOptionSet {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getResponseOptionSetNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getResponseOptionSetNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getResponseOptionSetNodeAsync();
-
-  /**
-   * Get the local value of the DefaultResponse Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the DefaultResponse Node.
-   * @throws UaException if an error occurs creating or getting the DefaultResponse Node.
-   */
-  Integer getDefaultResponse() throws UaException;
-
-  /**
-   * Set the local value of the DefaultResponse Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the DefaultResponse Node.
-   * @throws UaException if an error occurs creating or getting the DefaultResponse Node.
-   */
-  void setDefaultResponse(Integer value) throws UaException;
-
-  /**
-   * Read the value of the DefaultResponse Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link Integer} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Integer readDefaultResponse() throws UaException;
-
-  /**
-   * Write a new value for the DefaultResponse Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Integer} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeDefaultResponse(Integer value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readDefaultResponse}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Integer> readDefaultResponseAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeDefaultResponse}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeDefaultResponseAsync(Integer value);
-
-  /**
-   * Get the DefaultResponse {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the DefaultResponse {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getDefaultResponseNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getDefaultResponseNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getDefaultResponseNodeAsync();
-
-  /**
-   * Get the local value of the OkResponse Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the OkResponse Node.
-   * @throws UaException if an error occurs creating or getting the OkResponse Node.
-   */
-  Integer getOkResponse() throws UaException;
-
-  /**
-   * Set the local value of the OkResponse Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the OkResponse Node.
-   * @throws UaException if an error occurs creating or getting the OkResponse Node.
-   */
-  void setOkResponse(Integer value) throws UaException;
-
-  /**
-   * Read the value of the OkResponse Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link Integer} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Integer readOkResponse() throws UaException;
-
-  /**
-   * Write a new value for the OkResponse Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Integer} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeOkResponse(Integer value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readOkResponse}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Integer> readOkResponseAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeOkResponse}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeOkResponseAsync(Integer value);
-
-  /**
-   * Get the OkResponse {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the OkResponse {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getOkResponseNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getOkResponseNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getOkResponseNode()}. */
   CompletableFuture<? extends PropertyType> getOkResponseNodeAsync();
 
   /**
-   * Get the local value of the CancelResponse Node.
+   * Reads the Value of the OkResponse child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the CancelResponse Node.
-   * @throws UaException if an error occurs creating or getting the CancelResponse Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  Integer getCancelResponse() throws UaException;
+  @Nullable Integer readOkResponse() throws UaException;
 
   /**
-   * Set the local value of the CancelResponse Node.
+   * Writes the Value of the OkResponse child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the CancelResponse Node.
-   * @throws UaException if an error occurs creating or getting the CancelResponse Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setCancelResponse(Integer value) throws UaException;
+  void writeOkResponse(@Nullable Integer value) throws UaException;
+
+  /** Asynchronous form of {@link #readOkResponse()}. */
+  CompletableFuture<? extends @Nullable Integer> readOkResponseAsync();
+
+  /** Asynchronous form of {@link #writeOkResponse}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeOkResponseAsync(@Nullable Integer value);
 
   /**
-   * Read the value of the CancelResponse Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the mandatory DialogState child, a TwoStateVariableType with DataType LocalizedText.
    *
-   * @return the {@link Integer} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Integer readCancelResponse() throws UaException;
-
-  /**
-   * Write a new value for the CancelResponse Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Integer} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeCancelResponse(Integer value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readCancelResponse}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Integer> readCancelResponseAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeCancelResponse}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeCancelResponseAsync(Integer value);
-
-  /**
-   * Get the CancelResponse {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the CancelResponse {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getCancelResponseNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getCancelResponseNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getCancelResponseNodeAsync();
-
-  /**
-   * Get the local value of the LastResponse Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the LastResponse Node.
-   * @throws UaException if an error occurs creating or getting the LastResponse Node.
-   */
-  Integer getLastResponse() throws UaException;
-
-  /**
-   * Set the local value of the LastResponse Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the LastResponse Node.
-   * @throws UaException if an error occurs creating or getting the LastResponse Node.
-   */
-  void setLastResponse(Integer value) throws UaException;
-
-  /**
-   * Read the value of the LastResponse Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link Integer} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Integer readLastResponse() throws UaException;
-
-  /**
-   * Write a new value for the LastResponse Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Integer} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeLastResponse(Integer value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readLastResponse}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Integer> readLastResponseAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeLastResponse}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeLastResponseAsync(Integer value);
-
-  /**
-   * Get the LastResponse {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the LastResponse {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getLastResponseNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getLastResponseNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getLastResponseNodeAsync();
-
-  /**
-   * Get the local value of the EnabledState Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the EnabledState Node.
-   * @throws UaException if an error occurs creating or getting the EnabledState Node.
-   */
-  LocalizedText getEnabledState() throws UaException;
-
-  /**
-   * Set the local value of the EnabledState Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the EnabledState Node.
-   * @throws UaException if an error occurs creating or getting the EnabledState Node.
-   */
-  void setEnabledState(LocalizedText value) throws UaException;
-
-  /**
-   * Read the value of the EnabledState Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link LocalizedText} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  LocalizedText readEnabledState() throws UaException;
-
-  /**
-   * Write a new value for the EnabledState Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link LocalizedText} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeEnabledState(LocalizedText value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readEnabledState}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends LocalizedText> readEnabledStateAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeEnabledState}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeEnabledStateAsync(LocalizedText value);
-
-  /**
-   * Get the EnabledState {@link TwoStateVariableType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the EnabledState {@link TwoStateVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  TwoStateVariableType getEnabledStateNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getEnabledStateNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the TwoStateVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends TwoStateVariableType> getEnabledStateNodeAsync();
-
-  /**
-   * Get the local value of the DialogState Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the DialogState Node.
-   * @throws UaException if an error occurs creating or getting the DialogState Node.
-   */
-  LocalizedText getDialogState() throws UaException;
-
-  /**
-   * Set the local value of the DialogState Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the DialogState Node.
-   * @throws UaException if an error occurs creating or getting the DialogState Node.
-   */
-  void setDialogState(LocalizedText value) throws UaException;
-
-  /**
-   * Read the value of the DialogState Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link LocalizedText} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  LocalizedText readDialogState() throws UaException;
-
-  /**
-   * Write a new value for the DialogState Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link LocalizedText} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeDialogState(LocalizedText value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readDialogState}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends LocalizedText> readDialogStateAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeDialogState}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeDialogStateAsync(LocalizedText value);
-
-  /**
-   * Get the DialogState {@link TwoStateVariableType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the DialogState {@link TwoStateVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.2">TwoStateVariableType
+   *     documentation</a>
    */
   TwoStateVariableType getDialogStateNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getDialogStateNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the TwoStateVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getDialogStateNode()}. */
   CompletableFuture<? extends TwoStateVariableType> getDialogStateNodeAsync();
+
+  /**
+   * Reads the Value of the DialogState child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable LocalizedText readDialogState() throws UaException;
+
+  /**
+   * Writes the Value of the DialogState child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeDialogState(@Nullable LocalizedText value) throws UaException;
+
+  /** Asynchronous form of {@link #readDialogState()}. */
+  CompletableFuture<? extends @Nullable LocalizedText> readDialogStateAsync();
+
+  /** Asynchronous form of {@link #writeDialogState}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeDialogStateAsync(@Nullable LocalizedText value);
+
+  /**
+   * Resolves the mandatory EnabledState child, a TwoStateVariableType with DataType LocalizedText.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.2">TwoStateVariableType
+   *     documentation</a>
+   */
+  TwoStateVariableType getEnabledStateNode() throws UaException;
+
+  /** Asynchronous form of {@link #getEnabledStateNode()}. */
+  CompletableFuture<? extends TwoStateVariableType> getEnabledStateNodeAsync();
+
+  /**
+   * Resolves the mandatory LastResponse child, a PropertyType with DataType Int32.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getLastResponseNode() throws UaException;
+
+  /** Asynchronous form of {@link #getLastResponseNode()}. */
+  CompletableFuture<? extends PropertyType> getLastResponseNodeAsync();
+
+  /**
+   * Reads the Value of the LastResponse child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable Integer readLastResponse() throws UaException;
+
+  /**
+   * Writes the Value of the LastResponse child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeLastResponse(@Nullable Integer value) throws UaException;
+
+  /** Asynchronous form of {@link #readLastResponse()}. */
+  CompletableFuture<? extends @Nullable Integer> readLastResponseAsync();
+
+  /** Asynchronous form of {@link #writeLastResponse}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeLastResponseAsync(@Nullable Integer value);
+
+  /**
+   * Resolves the mandatory CancelResponse child, a PropertyType with DataType Int32.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getCancelResponseNode() throws UaException;
+
+  /** Asynchronous form of {@link #getCancelResponseNode()}. */
+  CompletableFuture<? extends PropertyType> getCancelResponseNodeAsync();
+
+  /**
+   * Reads the Value of the CancelResponse child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable Integer readCancelResponse() throws UaException;
+
+  /**
+   * Writes the Value of the CancelResponse child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeCancelResponse(@Nullable Integer value) throws UaException;
+
+  /** Asynchronous form of {@link #readCancelResponse()}. */
+  CompletableFuture<? extends @Nullable Integer> readCancelResponseAsync();
+
+  /** Asynchronous form of {@link #writeCancelResponse}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeCancelResponseAsync(@Nullable Integer value);
+
+  /**
+   * Resolves the mandatory DefaultResponse child, a PropertyType with DataType Int32.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getDefaultResponseNode() throws UaException;
+
+  /** Asynchronous form of {@link #getDefaultResponseNode()}. */
+  CompletableFuture<? extends PropertyType> getDefaultResponseNodeAsync();
+
+  /**
+   * Reads the Value of the DefaultResponse child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable Integer readDefaultResponse() throws UaException;
+
+  /**
+   * Writes the Value of the DefaultResponse child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeDefaultResponse(@Nullable Integer value) throws UaException;
+
+  /** Asynchronous form of {@link #readDefaultResponse()}. */
+  CompletableFuture<? extends @Nullable Integer> readDefaultResponseAsync();
+
+  /** Asynchronous form of {@link #writeDefaultResponse}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeDefaultResponseAsync(@Nullable Integer value);
+
+  /**
+   * Resolves the mandatory ResponseOptionSet child, a PropertyType with DataType LocalizedText.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getResponseOptionSetNode() throws UaException;
+
+  /** Asynchronous form of {@link #getResponseOptionSetNode()}. */
+  CompletableFuture<? extends PropertyType> getResponseOptionSetNodeAsync();
+
+  /**
+   * Reads the Value of the ResponseOptionSet child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  LocalizedText @Nullable [] readResponseOptionSet() throws UaException;
+
+  /**
+   * Writes the Value of the ResponseOptionSet child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeResponseOptionSet(LocalizedText @Nullable [] value) throws UaException;
+
+  /** Asynchronous form of {@link #readResponseOptionSet()}. */
+  CompletableFuture<? extends LocalizedText @Nullable []> readResponseOptionSetAsync();
+
+  /** Asynchronous form of {@link #writeResponseOptionSet}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeResponseOptionSetAsync(LocalizedText @Nullable [] value);
+
+  /**
+   * Resolves the mandatory Prompt child, a PropertyType with DataType LocalizedText.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getPromptNode() throws UaException;
+
+  /** Asynchronous form of {@link #getPromptNode()}. */
+  CompletableFuture<? extends PropertyType> getPromptNodeAsync();
+
+  /**
+   * Reads the Value of the Prompt child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable LocalizedText readPrompt() throws UaException;
+
+  /**
+   * Writes the Value of the Prompt child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writePrompt(@Nullable LocalizedText value) throws UaException;
+
+  /** Asynchronous form of {@link #readPrompt()}. */
+  CompletableFuture<? extends @Nullable LocalizedText> readPromptAsync();
+
+  /** Asynchronous form of {@link #writePrompt}; completes with the operation status. */
+  CompletableFuture<StatusCode> writePromptAsync(@Nullable LocalizedText value);
+
+  /**
+   * Resolves the mandatory Respond Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.6.3">Model
+   *     documentation</a>
+   */
+  UaMethodNode getRespondMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getRespondMethodNode()}. */
+  CompletableFuture<UaMethodNode> getRespondMethodNodeAsync();
+
+  /**
+   * Calls the Respond Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.6.3">Model
+   *     documentation</a>
+   */
+  void respond(@Nullable Integer selectedResponse) throws UaException;
+
+  /**
+   * Calls the Respond Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callRespond(@Nullable Integer selectedResponse) throws UaException;
+
+  /**
+   * Calls the Respond Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callRespondWith(
+      MethodCallOptions options, @Nullable Integer selectedResponse) throws UaException;
+
+  /** Asynchronous form of {@link #respond}. */
+  CompletableFuture<Void> respondAsync(@Nullable Integer selectedResponse);
+
+  /** Asynchronous form of {@link #callRespond}. */
+  CompletableFuture<MethodCallResult<Void>> callRespondAsync(@Nullable Integer selectedResponse);
+
+  /** Asynchronous form of {@link #callRespondWith}. */
+  CompletableFuture<MethodCallResult<Void>> callRespondWithAsync(
+      MethodCallOptions options, @Nullable Integer selectedResponse);
+
+  /**
+   * Resolves the optional Respond2 Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.6.4">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getRespond2MethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getRespond2MethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getRespond2MethodNodeAsync();
+
+  /**
+   * Calls the Respond2 Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.6.4">Model
+   *     documentation</a>
+   */
+  void respond2(@Nullable Integer selectedResponse, @Nullable LocalizedText comment)
+      throws UaException;
+
+  /**
+   * Calls the Respond2 Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callRespond2(
+      @Nullable Integer selectedResponse, @Nullable LocalizedText comment) throws UaException;
+
+  /**
+   * Calls the Respond2 Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callRespond2With(
+      MethodCallOptions options,
+      @Nullable Integer selectedResponse,
+      @Nullable LocalizedText comment)
+      throws UaException;
+
+  /** Asynchronous form of {@link #respond2}. */
+  CompletableFuture<Void> respond2Async(
+      @Nullable Integer selectedResponse, @Nullable LocalizedText comment);
+
+  /** Asynchronous form of {@link #callRespond2}. */
+  CompletableFuture<MethodCallResult<Void>> callRespond2Async(
+      @Nullable Integer selectedResponse, @Nullable LocalizedText comment);
+
+  /** Asynchronous form of {@link #callRespond2With}. */
+  CompletableFuture<MethodCallResult<Void>> callRespond2WithAsync(
+      MethodCallOptions options,
+      @Nullable Integer selectedResponse,
+      @Nullable LocalizedText comment);
 }

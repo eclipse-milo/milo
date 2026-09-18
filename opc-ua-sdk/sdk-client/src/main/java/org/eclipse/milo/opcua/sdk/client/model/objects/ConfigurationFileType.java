@@ -1,347 +1,316 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallOptions;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallResult;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.client.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
+import org.eclipse.milo.opcua.sdk.core.model.methods.ConfigurationFileTypeCloseAndUpdate;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.structured.ConfigurationUpdateTargetType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.5/#7.8.5.1">https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.5/#7.8.5.1</a>
+ * Client API for the ConfigurationFileType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.5/#7.8.5.1">Model
+ *     documentation</a>
  */
 public interface ConfigurationFileType extends FileType {
-  QualifiedProperty<DateTime> LAST_UPDATE_TIME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "LastUpdateTime",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
-          -1,
-          DateTime.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 15437L);
 
-  QualifiedProperty<UInteger> CURRENT_VERSION =
+  QualifiedProperty<UInteger> CurrentVersion_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "CurrentVersion",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=20998"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 20998L),
           -1,
           UInteger.class);
 
-  QualifiedProperty<Double> ACTIVITY_TIMEOUT =
+  QualifiedProperty<DateTime> LastUpdateTime_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
+          "LastUpdateTime",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 294L),
+          -1,
+          DateTime.class);
+
+  QualifiedProperty<Double> ActivityTimeout_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
           "ActivityTimeout",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 290L),
           -1,
           Double.class);
 
-  QualifiedProperty<NodeId> SUPPORTED_DATA_TYPE =
+  QualifiedProperty<NodeId> SupportedDataType_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "SupportedDataType",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 17L),
           -1,
           NodeId.class);
 
   /**
-   * Get the local value of the LastUpdateTime Node.
+   * Resolves the mandatory CurrentVersion child, a PropertyType with DataType VersionTime.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the LastUpdateTime Node.
-   * @throws UaException if an error occurs creating or getting the LastUpdateTime Node.
-   */
-  DateTime getLastUpdateTime() throws UaException;
-
-  /**
-   * Set the local value of the LastUpdateTime Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the LastUpdateTime Node.
-   * @throws UaException if an error occurs creating or getting the LastUpdateTime Node.
-   */
-  void setLastUpdateTime(DateTime value) throws UaException;
-
-  /**
-   * Read the value of the LastUpdateTime Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link DateTime} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  DateTime readLastUpdateTime() throws UaException;
-
-  /**
-   * Write a new value for the LastUpdateTime Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link DateTime} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeLastUpdateTime(DateTime value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readLastUpdateTime}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends DateTime> readLastUpdateTimeAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeLastUpdateTime}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeLastUpdateTimeAsync(DateTime value);
-
-  /**
-   * Get the LastUpdateTime {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the LastUpdateTime {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getLastUpdateTimeNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getLastUpdateTimeNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getLastUpdateTimeNodeAsync();
-
-  /**
-   * Get the local value of the CurrentVersion Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the CurrentVersion Node.
-   * @throws UaException if an error occurs creating or getting the CurrentVersion Node.
-   */
-  UInteger getCurrentVersion() throws UaException;
-
-  /**
-   * Set the local value of the CurrentVersion Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the CurrentVersion Node.
-   * @throws UaException if an error occurs creating or getting the CurrentVersion Node.
-   */
-  void setCurrentVersion(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the CurrentVersion Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readCurrentVersion() throws UaException;
-
-  /**
-   * Write a new value for the CurrentVersion Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeCurrentVersion(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readCurrentVersion}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readCurrentVersionAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeCurrentVersion}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeCurrentVersionAsync(UInteger value);
-
-  /**
-   * Get the CurrentVersion {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the CurrentVersion {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getCurrentVersionNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getCurrentVersionNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getCurrentVersionNode()}. */
   CompletableFuture<? extends PropertyType> getCurrentVersionNodeAsync();
 
   /**
-   * Get the local value of the ActivityTimeout Node.
+   * Reads the Value of the CurrentVersion child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ActivityTimeout Node.
-   * @throws UaException if an error occurs creating or getting the ActivityTimeout Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  Double getActivityTimeout() throws UaException;
+  @Nullable UInteger readCurrentVersion() throws UaException;
 
   /**
-   * Set the local value of the ActivityTimeout Node.
+   * Writes the Value of the CurrentVersion child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ActivityTimeout Node.
-   * @throws UaException if an error occurs creating or getting the ActivityTimeout Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setActivityTimeout(Double value) throws UaException;
+  void writeCurrentVersion(@Nullable UInteger value) throws UaException;
+
+  /** Asynchronous form of {@link #readCurrentVersion()}. */
+  CompletableFuture<? extends @Nullable UInteger> readCurrentVersionAsync();
+
+  /** Asynchronous form of {@link #writeCurrentVersion}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeCurrentVersionAsync(@Nullable UInteger value);
 
   /**
-   * Read the value of the ActivityTimeout Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the mandatory LastUpdateTime child, a PropertyType with DataType UtcTime.
    *
-   * @return the {@link Double} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  Double readActivityTimeout() throws UaException;
+  PropertyType getLastUpdateTimeNode() throws UaException;
+
+  /** Asynchronous form of {@link #getLastUpdateTimeNode()}. */
+  CompletableFuture<? extends PropertyType> getLastUpdateTimeNodeAsync();
 
   /**
-   * Write a new value for the ActivityTimeout Node to the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the LastUpdateTime child from the server.
    *
-   * @param value the {@link Double} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeActivityTimeout(Double value) throws UaException;
+  @Nullable DateTime readLastUpdateTime() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readActivityTimeout}.
+   * Writes the Value of the LastUpdateTime child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends Double> readActivityTimeoutAsync();
+  void writeLastUpdateTime(@Nullable DateTime value) throws UaException;
+
+  /** Asynchronous form of {@link #readLastUpdateTime()}. */
+  CompletableFuture<? extends @Nullable DateTime> readLastUpdateTimeAsync();
+
+  /** Asynchronous form of {@link #writeLastUpdateTime}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeLastUpdateTimeAsync(@Nullable DateTime value);
 
   /**
-   * An asynchronous implementation of {@link #writeActivityTimeout}.
+   * Resolves the mandatory ActivityTimeout child, a PropertyType with DataType Duration.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeActivityTimeoutAsync(Double value);
-
-  /**
-   * Get the ActivityTimeout {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ActivityTimeout {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getActivityTimeoutNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getActivityTimeoutNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getActivityTimeoutNode()}. */
   CompletableFuture<? extends PropertyType> getActivityTimeoutNodeAsync();
 
   /**
-   * Get the local value of the SupportedDataType Node.
+   * Reads the Value of the ActivityTimeout child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SupportedDataType Node.
-   * @throws UaException if an error occurs creating or getting the SupportedDataType Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  NodeId getSupportedDataType() throws UaException;
+  @Nullable Double readActivityTimeout() throws UaException;
 
   /**
-   * Set the local value of the SupportedDataType Node.
+   * Writes the Value of the ActivityTimeout child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SupportedDataType Node.
-   * @throws UaException if an error occurs creating or getting the SupportedDataType Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setSupportedDataType(NodeId value) throws UaException;
+  void writeActivityTimeout(@Nullable Double value) throws UaException;
+
+  /** Asynchronous form of {@link #readActivityTimeout()}. */
+  CompletableFuture<? extends @Nullable Double> readActivityTimeoutAsync();
+
+  /** Asynchronous form of {@link #writeActivityTimeout}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeActivityTimeoutAsync(@Nullable Double value);
 
   /**
-   * Read the value of the SupportedDataType Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the mandatory SupportedDataType child, a PropertyType with DataType NodeId.
    *
-   * @return the {@link NodeId} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  NodeId readSupportedDataType() throws UaException;
-
-  /**
-   * Write a new value for the SupportedDataType Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link NodeId} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeSupportedDataType(NodeId value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readSupportedDataType}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends NodeId> readSupportedDataTypeAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeSupportedDataType}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeSupportedDataTypeAsync(NodeId value);
-
-  /**
-   * Get the SupportedDataType {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SupportedDataType {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getSupportedDataTypeNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getSupportedDataTypeNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getSupportedDataTypeNode()}. */
   CompletableFuture<? extends PropertyType> getSupportedDataTypeNodeAsync();
+
+  /**
+   * Reads the Value of the SupportedDataType child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable NodeId readSupportedDataType() throws UaException;
+
+  /**
+   * Writes the Value of the SupportedDataType child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeSupportedDataType(@Nullable NodeId value) throws UaException;
+
+  /** Asynchronous form of {@link #readSupportedDataType()}. */
+  CompletableFuture<? extends @Nullable NodeId> readSupportedDataTypeAsync();
+
+  /** Asynchronous form of {@link #writeSupportedDataType}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeSupportedDataTypeAsync(@Nullable NodeId value);
+
+  /**
+   * Resolves the mandatory CloseAndUpdate Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.5/#7.8.5.2">Model
+   *     documentation</a>
+   */
+  UaMethodNode getCloseAndUpdateMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getCloseAndUpdateMethodNode()}. */
+  CompletableFuture<UaMethodNode> getCloseAndUpdateMethodNodeAsync();
+
+  /**
+   * Calls the CloseAndUpdate Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.5/#7.8.5.2">Model
+   *     documentation</a>
+   */
+  ConfigurationFileTypeCloseAndUpdate.Outputs closeAndUpdate(
+      @Nullable UInteger fileHandle,
+      @Nullable UInteger versionToUpdate,
+      @Nullable ConfigurationUpdateTargetType @Nullable [] targets,
+      @Nullable Double revertAfterTime,
+      @Nullable Double restartDelayTime)
+      throws UaException;
+
+  /**
+   * Calls the CloseAndUpdate Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<ConfigurationFileTypeCloseAndUpdate.Outputs> callCloseAndUpdate(
+      @Nullable UInteger fileHandle,
+      @Nullable UInteger versionToUpdate,
+      @Nullable ConfigurationUpdateTargetType @Nullable [] targets,
+      @Nullable Double revertAfterTime,
+      @Nullable Double restartDelayTime)
+      throws UaException;
+
+  /**
+   * Calls the CloseAndUpdate Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<ConfigurationFileTypeCloseAndUpdate.Outputs> callCloseAndUpdateWith(
+      MethodCallOptions options,
+      @Nullable UInteger fileHandle,
+      @Nullable UInteger versionToUpdate,
+      @Nullable ConfigurationUpdateTargetType @Nullable [] targets,
+      @Nullable Double revertAfterTime,
+      @Nullable Double restartDelayTime)
+      throws UaException;
+
+  /** Asynchronous form of {@link #closeAndUpdate}. */
+  CompletableFuture<ConfigurationFileTypeCloseAndUpdate.Outputs> closeAndUpdateAsync(
+      @Nullable UInteger fileHandle,
+      @Nullable UInteger versionToUpdate,
+      @Nullable ConfigurationUpdateTargetType @Nullable [] targets,
+      @Nullable Double revertAfterTime,
+      @Nullable Double restartDelayTime);
+
+  /** Asynchronous form of {@link #callCloseAndUpdate}. */
+  CompletableFuture<MethodCallResult<ConfigurationFileTypeCloseAndUpdate.Outputs>>
+      callCloseAndUpdateAsync(
+          @Nullable UInteger fileHandle,
+          @Nullable UInteger versionToUpdate,
+          @Nullable ConfigurationUpdateTargetType @Nullable [] targets,
+          @Nullable Double revertAfterTime,
+          @Nullable Double restartDelayTime);
+
+  /** Asynchronous form of {@link #callCloseAndUpdateWith}. */
+  CompletableFuture<MethodCallResult<ConfigurationFileTypeCloseAndUpdate.Outputs>>
+      callCloseAndUpdateWithAsync(
+          MethodCallOptions options,
+          @Nullable UInteger fileHandle,
+          @Nullable UInteger versionToUpdate,
+          @Nullable ConfigurationUpdateTargetType @Nullable [] targets,
+          @Nullable Double revertAfterTime,
+          @Nullable Double restartDelayTime);
+
+  /**
+   * Resolves the mandatory ConfirmUpdate Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.5/#7.8.5.3">Model
+   *     documentation</a>
+   */
+  UaMethodNode getConfirmUpdateMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getConfirmUpdateMethodNode()}. */
+  CompletableFuture<UaMethodNode> getConfirmUpdateMethodNodeAsync();
+
+  /**
+   * Calls the ConfirmUpdate Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.5/#7.8.5.3">Model
+   *     documentation</a>
+   */
+  void confirmUpdate(@Nullable UUID updateId) throws UaException;
+
+  /**
+   * Calls the ConfirmUpdate Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callConfirmUpdate(@Nullable UUID updateId) throws UaException;
+
+  /**
+   * Calls the ConfirmUpdate Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callConfirmUpdateWith(MethodCallOptions options, @Nullable UUID updateId)
+      throws UaException;
+
+  /** Asynchronous form of {@link #confirmUpdate}. */
+  CompletableFuture<Void> confirmUpdateAsync(@Nullable UUID updateId);
+
+  /** Asynchronous form of {@link #callConfirmUpdate}. */
+  CompletableFuture<MethodCallResult<Void>> callConfirmUpdateAsync(@Nullable UUID updateId);
+
+  /** Asynchronous form of {@link #callConfirmUpdateWith}. */
+  CompletableFuture<MethodCallResult<Void>> callConfirmUpdateWithAsync(
+      MethodCallOptions options, @Nullable UUID updateId);
 }

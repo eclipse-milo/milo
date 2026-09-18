@@ -1,30 +1,15 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyTypeNode;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
@@ -32,7 +17,15 @@ import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.JsonDataSetMessageContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.JsonNetworkMessageContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link JsonDataSetReaderMessageType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.2.2/#9.2.2.3">Model
+ *     documentation</a>
+ */
 public class JsonDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNode
     implements JsonDataSetReaderMessageType {
   public JsonDataSetReaderMessageTypeNode(
@@ -41,12 +34,12 @@ public class JsonDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         client,
@@ -64,154 +57,158 @@ public class JsonDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
   }
 
   @Override
-  public JsonNetworkMessageContentMask getNetworkMessageContentMask() throws UaException {
-    PropertyTypeNode node = getNetworkMessageContentMaskNode();
-    return (JsonNetworkMessageContentMask) node.getValue().getValue().getValue();
-  }
-
-  @Override
-  public void setNetworkMessageContentMask(JsonNetworkMessageContentMask value) throws UaException {
-    PropertyTypeNode node = getNetworkMessageContentMaskNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public JsonNetworkMessageContentMask readNetworkMessageContentMask() throws UaException {
-    try {
-      return readNetworkMessageContentMaskAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeNetworkMessageContentMask(JsonNetworkMessageContentMask value)
-      throws UaException {
-    try {
-      writeNetworkMessageContentMaskAsync(value).get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends JsonNetworkMessageContentMask>
-      readNetworkMessageContentMaskAsync() {
-    return getNetworkMessageContentMaskNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (JsonNetworkMessageContentMask) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeNetworkMessageContentMaskAsync(
-      JsonNetworkMessageContentMask networkMessageContentMask) {
-    DataValue value = DataValue.valueOnly(new Variant(networkMessageContentMask));
-    return getNetworkMessageContentMaskNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public PropertyTypeNode getNetworkMessageContentMaskNode() throws UaException {
-    try {
-      return getNetworkMessageContentMaskNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends PropertyTypeNode> getNetworkMessageContentMaskNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "NetworkMessageContentMask",
-            ExpandedNodeId.parse("i=46"),
-            false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
-  }
-
-  @Override
-  public JsonDataSetMessageContentMask getDataSetMessageContentMask() throws UaException {
-    PropertyTypeNode node = getDataSetMessageContentMaskNode();
-    return (JsonDataSetMessageContentMask) node.getValue().getValue().getValue();
-  }
-
-  @Override
-  public void setDataSetMessageContentMask(JsonDataSetMessageContentMask value) throws UaException {
-    PropertyTypeNode node = getDataSetMessageContentMaskNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public JsonDataSetMessageContentMask readDataSetMessageContentMask() throws UaException {
-    try {
-      return readDataSetMessageContentMaskAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeDataSetMessageContentMask(JsonDataSetMessageContentMask value)
-      throws UaException {
-    try {
-      writeDataSetMessageContentMaskAsync(value).get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends JsonDataSetMessageContentMask>
-      readDataSetMessageContentMaskAsync() {
-    return getDataSetMessageContentMaskNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (JsonDataSetMessageContentMask) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeDataSetMessageContentMaskAsync(
-      JsonDataSetMessageContentMask dataSetMessageContentMask) {
-    DataValue value = DataValue.valueOnly(new Variant(dataSetMessageContentMask));
-    return getDataSetMessageContentMaskNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
   public PropertyTypeNode getDataSetMessageContentMaskNode() throws UaException {
-    try {
-      return getDataSetMessageContentMaskNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getDataSetMessageContentMaskNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends PropertyTypeNode> getDataSetMessageContentMaskNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "DataSetMessageContentMask",
-            ExpandedNodeId.parse("i=46"),
-            false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "DataSetMessageContentMask",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
+  }
+
+  @Override
+  public @Nullable JsonDataSetMessageContentMask readDataSetMessageContentMask()
+      throws UaException {
+    return ClientNodeSupport.await(readDataSetMessageContentMaskAsync());
+  }
+
+  @Override
+  public void writeDataSetMessageContentMask(@Nullable JsonDataSetMessageContentMask value)
+      throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeDataSetMessageContentMaskAsync(value)),
+        "http://opcfoundation.org/UA/}DataSetMessageContentMask");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable JsonDataSetMessageContentMask>
+      readDataSetMessageContentMaskAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getDataSetMessageContentMaskNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}DataSetMessageContentMask",
+                            true,
+                            JsonDataSetMessageContentMask.class,
+                            -1,
+                            null)),
+                v ->
+                    CompletableFuture.completedFuture(
+                        (@Nullable JsonDataSetMessageContentMask) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeDataSetMessageContentMaskAsync(
+      @Nullable JsonDataSetMessageContentMask value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getDataSetMessageContentMaskNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}DataSetMessageContentMask",
+                        value,
+                        JsonDataSetMessageContentMask.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public PropertyTypeNode getNetworkMessageContentMaskNode() throws UaException {
+    return ClientNodeSupport.await(getNetworkMessageContentMaskNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends PropertyTypeNode> getNetworkMessageContentMaskNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "NetworkMessageContentMask",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
+  }
+
+  @Override
+  public @Nullable JsonNetworkMessageContentMask readNetworkMessageContentMask()
+      throws UaException {
+    return ClientNodeSupport.await(readNetworkMessageContentMaskAsync());
+  }
+
+  @Override
+  public void writeNetworkMessageContentMask(@Nullable JsonNetworkMessageContentMask value)
+      throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeNetworkMessageContentMaskAsync(value)),
+        "http://opcfoundation.org/UA/}NetworkMessageContentMask");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable JsonNetworkMessageContentMask>
+      readNetworkMessageContentMaskAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getNetworkMessageContentMaskNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}NetworkMessageContentMask",
+                            true,
+                            JsonNetworkMessageContentMask.class,
+                            -1,
+                            null)),
+                v ->
+                    CompletableFuture.completedFuture(
+                        (@Nullable JsonNetworkMessageContentMask) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeNetworkMessageContentMaskAsync(
+      @Nullable JsonNetworkMessageContentMask value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getNetworkMessageContentMaskNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}NetworkMessageContentMask",
+                        value,
+                        JsonNetworkMessageContentMask.class,
+                        -1,
+                        null)));
   }
 }

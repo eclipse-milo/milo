@@ -1,1289 +1,1183 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallOptions;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallResult;
 import org.eclipse.milo.opcua.sdk.client.model.variables.AudioVariableType;
-import org.eclipse.milo.opcua.sdk.client.model.variables.BaseDataVariableType;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyType;
 import org.eclipse.milo.opcua.sdk.client.model.variables.TwoStateVariableType;
+import org.eclipse.milo.opcua.sdk.client.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
+import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.2">https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.2</a>
+ * Client API for the AlarmConditionType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.2">Model
+ *     documentation</a>
  */
 public interface AlarmConditionType extends AcknowledgeableConditionType {
-  QualifiedProperty<NodeId> INPUT_NODE =
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2915L);
+
+  QualifiedProperty<Double> ReAlarmTime_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
+          "ReAlarmTime",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 290L),
+          -1,
+          Double.class);
+
+  QualifiedProperty<Boolean> AudibleEnabled_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "AudibleEnabled",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+          -1,
+          Boolean.class);
+
+  QualifiedProperty<Double> MaxTimeShelved_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "MaxTimeShelved",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 290L),
+          -1,
+          Double.class);
+
+  QualifiedProperty<Boolean> SuppressedOrShelved_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "SuppressedOrShelved",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+          -1,
+          Boolean.class);
+
+  QualifiedProperty<Double> OnDelay_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "OnDelay",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 290L),
+          -1,
+          Double.class);
+
+  QualifiedProperty<Double> OffDelay_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "OffDelay",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 290L),
+          -1,
+          Double.class);
+
+  QualifiedProperty<NodeId> InputNode_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
           "InputNode",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 17L),
           -1,
           NodeId.class);
 
-  QualifiedProperty<Boolean> SUPPRESSED_OR_SHELVED =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "SuppressedOrShelved",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
-
-  QualifiedProperty<Double> MAX_TIME_SHELVED =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxTimeShelved",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
-          -1,
-          Double.class);
-
-  QualifiedProperty<Boolean> AUDIBLE_ENABLED =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "AudibleEnabled",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
-
-  QualifiedProperty<Double> ON_DELAY =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "OnDelay",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
-          -1,
-          Double.class);
-
-  QualifiedProperty<Double> OFF_DELAY =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "OffDelay",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
-          -1,
-          Double.class);
-
-  QualifiedProperty<Double> RE_ALARM_TIME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ReAlarmTime",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
-          -1,
-          Double.class);
-
   /**
-   * Get the local value of the InputNode Node.
+   * Resolves the mandatory ActiveState child, a TwoStateVariableType with DataType LocalizedText.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the InputNode Node.
-   * @throws UaException if an error occurs creating or getting the InputNode Node.
-   */
-  NodeId getInputNode() throws UaException;
-
-  /**
-   * Set the local value of the InputNode Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the InputNode Node.
-   * @throws UaException if an error occurs creating or getting the InputNode Node.
-   */
-  void setInputNode(NodeId value) throws UaException;
-
-  /**
-   * Read the value of the InputNode Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link NodeId} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  NodeId readInputNode() throws UaException;
-
-  /**
-   * Write a new value for the InputNode Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link NodeId} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeInputNode(NodeId value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readInputNode}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends NodeId> readInputNodeAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeInputNode}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeInputNodeAsync(NodeId value);
-
-  /**
-   * Get the InputNode {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the InputNode {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getInputNodeNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getInputNodeNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getInputNodeNodeAsync();
-
-  /**
-   * Get the local value of the SuppressedOrShelved Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SuppressedOrShelved Node.
-   * @throws UaException if an error occurs creating or getting the SuppressedOrShelved Node.
-   */
-  Boolean getSuppressedOrShelved() throws UaException;
-
-  /**
-   * Set the local value of the SuppressedOrShelved Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SuppressedOrShelved Node.
-   * @throws UaException if an error occurs creating or getting the SuppressedOrShelved Node.
-   */
-  void setSuppressedOrShelved(Boolean value) throws UaException;
-
-  /**
-   * Read the value of the SuppressedOrShelved Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Boolean readSuppressedOrShelved() throws UaException;
-
-  /**
-   * Write a new value for the SuppressedOrShelved Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeSuppressedOrShelved(Boolean value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readSuppressedOrShelved}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Boolean> readSuppressedOrShelvedAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeSuppressedOrShelved}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeSuppressedOrShelvedAsync(Boolean value);
-
-  /**
-   * Get the SuppressedOrShelved {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SuppressedOrShelved {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getSuppressedOrShelvedNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getSuppressedOrShelvedNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getSuppressedOrShelvedNodeAsync();
-
-  /**
-   * Get the local value of the MaxTimeShelved Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaxTimeShelved Node.
-   * @throws UaException if an error occurs creating or getting the MaxTimeShelved Node.
-   */
-  Double getMaxTimeShelved() throws UaException;
-
-  /**
-   * Set the local value of the MaxTimeShelved Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaxTimeShelved Node.
-   * @throws UaException if an error occurs creating or getting the MaxTimeShelved Node.
-   */
-  void setMaxTimeShelved(Double value) throws UaException;
-
-  /**
-   * Read the value of the MaxTimeShelved Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link Double} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Double readMaxTimeShelved() throws UaException;
-
-  /**
-   * Write a new value for the MaxTimeShelved Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Double} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMaxTimeShelved(Double value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readMaxTimeShelved}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Double> readMaxTimeShelvedAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeMaxTimeShelved}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMaxTimeShelvedAsync(Double value);
-
-  /**
-   * Get the MaxTimeShelved {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaxTimeShelved {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getMaxTimeShelvedNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getMaxTimeShelvedNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getMaxTimeShelvedNodeAsync();
-
-  /**
-   * Get the local value of the AudibleEnabled Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the AudibleEnabled Node.
-   * @throws UaException if an error occurs creating or getting the AudibleEnabled Node.
-   */
-  Boolean getAudibleEnabled() throws UaException;
-
-  /**
-   * Set the local value of the AudibleEnabled Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the AudibleEnabled Node.
-   * @throws UaException if an error occurs creating or getting the AudibleEnabled Node.
-   */
-  void setAudibleEnabled(Boolean value) throws UaException;
-
-  /**
-   * Read the value of the AudibleEnabled Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Boolean readAudibleEnabled() throws UaException;
-
-  /**
-   * Write a new value for the AudibleEnabled Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeAudibleEnabled(Boolean value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readAudibleEnabled}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Boolean> readAudibleEnabledAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeAudibleEnabled}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeAudibleEnabledAsync(Boolean value);
-
-  /**
-   * Get the AudibleEnabled {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the AudibleEnabled {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getAudibleEnabledNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getAudibleEnabledNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getAudibleEnabledNodeAsync();
-
-  /**
-   * Get the local value of the OnDelay Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the OnDelay Node.
-   * @throws UaException if an error occurs creating or getting the OnDelay Node.
-   */
-  Double getOnDelay() throws UaException;
-
-  /**
-   * Set the local value of the OnDelay Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the OnDelay Node.
-   * @throws UaException if an error occurs creating or getting the OnDelay Node.
-   */
-  void setOnDelay(Double value) throws UaException;
-
-  /**
-   * Read the value of the OnDelay Node from the server and update the local value if the operation
-   * succeeds.
-   *
-   * @return the {@link Double} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Double readOnDelay() throws UaException;
-
-  /**
-   * Write a new value for the OnDelay Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Double} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeOnDelay(Double value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readOnDelay}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Double> readOnDelayAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeOnDelay}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeOnDelayAsync(Double value);
-
-  /**
-   * Get the OnDelay {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the OnDelay {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getOnDelayNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getOnDelayNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getOnDelayNodeAsync();
-
-  /**
-   * Get the local value of the OffDelay Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the OffDelay Node.
-   * @throws UaException if an error occurs creating or getting the OffDelay Node.
-   */
-  Double getOffDelay() throws UaException;
-
-  /**
-   * Set the local value of the OffDelay Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the OffDelay Node.
-   * @throws UaException if an error occurs creating or getting the OffDelay Node.
-   */
-  void setOffDelay(Double value) throws UaException;
-
-  /**
-   * Read the value of the OffDelay Node from the server and update the local value if the operation
-   * succeeds.
-   *
-   * @return the {@link Double} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Double readOffDelay() throws UaException;
-
-  /**
-   * Write a new value for the OffDelay Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Double} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeOffDelay(Double value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readOffDelay}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Double> readOffDelayAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeOffDelay}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeOffDelayAsync(Double value);
-
-  /**
-   * Get the OffDelay {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the OffDelay {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getOffDelayNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getOffDelayNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getOffDelayNodeAsync();
-
-  /**
-   * Get the local value of the ReAlarmTime Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ReAlarmTime Node.
-   * @throws UaException if an error occurs creating or getting the ReAlarmTime Node.
-   */
-  Double getReAlarmTime() throws UaException;
-
-  /**
-   * Set the local value of the ReAlarmTime Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ReAlarmTime Node.
-   * @throws UaException if an error occurs creating or getting the ReAlarmTime Node.
-   */
-  void setReAlarmTime(Double value) throws UaException;
-
-  /**
-   * Read the value of the ReAlarmTime Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link Double} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Double readReAlarmTime() throws UaException;
-
-  /**
-   * Write a new value for the ReAlarmTime Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Double} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeReAlarmTime(Double value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readReAlarmTime}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Double> readReAlarmTimeAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeReAlarmTime}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeReAlarmTimeAsync(Double value);
-
-  /**
-   * Get the ReAlarmTime {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ReAlarmTime {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getReAlarmTimeNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getReAlarmTimeNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getReAlarmTimeNodeAsync();
-
-  /**
-   * Get the local value of the EnabledState Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the EnabledState Node.
-   * @throws UaException if an error occurs creating or getting the EnabledState Node.
-   */
-  LocalizedText getEnabledState() throws UaException;
-
-  /**
-   * Set the local value of the EnabledState Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the EnabledState Node.
-   * @throws UaException if an error occurs creating or getting the EnabledState Node.
-   */
-  void setEnabledState(LocalizedText value) throws UaException;
-
-  /**
-   * Read the value of the EnabledState Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link LocalizedText} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  LocalizedText readEnabledState() throws UaException;
-
-  /**
-   * Write a new value for the EnabledState Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link LocalizedText} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeEnabledState(LocalizedText value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readEnabledState}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends LocalizedText> readEnabledStateAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeEnabledState}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeEnabledStateAsync(LocalizedText value);
-
-  /**
-   * Get the EnabledState {@link TwoStateVariableType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the EnabledState {@link TwoStateVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  TwoStateVariableType getEnabledStateNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getEnabledStateNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the TwoStateVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends TwoStateVariableType> getEnabledStateNodeAsync();
-
-  /**
-   * Get the local value of the ActiveState Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ActiveState Node.
-   * @throws UaException if an error occurs creating or getting the ActiveState Node.
-   */
-  LocalizedText getActiveState() throws UaException;
-
-  /**
-   * Set the local value of the ActiveState Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ActiveState Node.
-   * @throws UaException if an error occurs creating or getting the ActiveState Node.
-   */
-  void setActiveState(LocalizedText value) throws UaException;
-
-  /**
-   * Read the value of the ActiveState Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link LocalizedText} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  LocalizedText readActiveState() throws UaException;
-
-  /**
-   * Write a new value for the ActiveState Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link LocalizedText} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeActiveState(LocalizedText value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readActiveState}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends LocalizedText> readActiveStateAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeActiveState}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeActiveStateAsync(LocalizedText value);
-
-  /**
-   * Get the ActiveState {@link TwoStateVariableType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ActiveState {@link TwoStateVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.2">TwoStateVariableType
+   *     documentation</a>
    */
   TwoStateVariableType getActiveStateNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getActiveStateNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the TwoStateVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getActiveStateNode()}. */
   CompletableFuture<? extends TwoStateVariableType> getActiveStateNodeAsync();
 
   /**
-   * Get the local value of the SuppressedState Node.
+   * Reads the Value of the ActiveState child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SuppressedState Node.
-   * @throws UaException if an error occurs creating or getting the SuppressedState Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  LocalizedText getSuppressedState() throws UaException;
+  @Nullable LocalizedText readActiveState() throws UaException;
 
   /**
-   * Set the local value of the SuppressedState Node.
+   * Writes the Value of the ActiveState child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SuppressedState Node.
-   * @throws UaException if an error occurs creating or getting the SuppressedState Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setSuppressedState(LocalizedText value) throws UaException;
+  void writeActiveState(@Nullable LocalizedText value) throws UaException;
+
+  /** Asynchronous form of {@link #readActiveState()}. */
+  CompletableFuture<? extends @Nullable LocalizedText> readActiveStateAsync();
+
+  /** Asynchronous form of {@link #writeActiveState}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeActiveStateAsync(@Nullable LocalizedText value);
 
   /**
-   * Read the value of the SuppressedState Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the optional ReAlarmTime child, a PropertyType with DataType Duration.
    *
-   * @return the {@link LocalizedText} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  LocalizedText readSuppressedState() throws UaException;
+  @Nullable PropertyType getReAlarmTimeNode() throws UaException;
+
+  /** Asynchronous form of {@link #getReAlarmTimeNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getReAlarmTimeNodeAsync();
 
   /**
-   * Write a new value for the SuppressedState Node to the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the ReAlarmTime child from the server.
    *
-   * @param value the {@link LocalizedText} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeSuppressedState(LocalizedText value) throws UaException;
+  @Nullable Double readReAlarmTime() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readSuppressedState}.
+   * Writes the Value of the ReAlarmTime child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends LocalizedText> readSuppressedStateAsync();
+  void writeReAlarmTime(@Nullable Double value) throws UaException;
+
+  /** Asynchronous form of {@link #readReAlarmTime()}. */
+  CompletableFuture<? extends @Nullable Double> readReAlarmTimeAsync();
+
+  /** Asynchronous form of {@link #writeReAlarmTime}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeReAlarmTimeAsync(@Nullable Double value);
 
   /**
-   * An asynchronous implementation of {@link #writeSuppressedState}.
+   * Resolves the optional AudibleSound child, a AudioVariableType with DataType AudioDataType.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.19">AudioVariableType
+   *     documentation</a>
    */
-  CompletableFuture<StatusCode> writeSuppressedStateAsync(LocalizedText value);
+  @Nullable AudioVariableType getAudibleSoundNode() throws UaException;
+
+  /** Asynchronous form of {@link #getAudibleSoundNode()}. */
+  CompletableFuture<? extends @Nullable AudioVariableType> getAudibleSoundNodeAsync();
 
   /**
-   * Get the SuppressedState {@link TwoStateVariableType} Node, or {@code null} if it does not
-   * exist.
+   * Reads the Value of the AudibleSound child from the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SuppressedState {@link TwoStateVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  TwoStateVariableType getSuppressedStateNode() throws UaException;
+  @Nullable ByteString readAudibleSound() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getSuppressedStateNode()}.
+   * Writes the Value of the AudibleSound child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the TwoStateVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends TwoStateVariableType> getSuppressedStateNodeAsync();
+  void writeAudibleSound(@Nullable ByteString value) throws UaException;
+
+  /** Asynchronous form of {@link #readAudibleSound()}. */
+  CompletableFuture<? extends @Nullable ByteString> readAudibleSoundAsync();
+
+  /** Asynchronous form of {@link #writeAudibleSound}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeAudibleSoundAsync(@Nullable ByteString value);
 
   /**
-   * Get the local value of the OutOfServiceState Node.
+   * Resolves the mandatory EnabledState child, a TwoStateVariableType with DataType LocalizedText.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the OutOfServiceState Node.
-   * @throws UaException if an error occurs creating or getting the OutOfServiceState Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.2">TwoStateVariableType
+   *     documentation</a>
    */
-  LocalizedText getOutOfServiceState() throws UaException;
+  TwoStateVariableType getEnabledStateNode() throws UaException;
+
+  /** Asynchronous form of {@link #getEnabledStateNode()}. */
+  CompletableFuture<? extends TwoStateVariableType> getEnabledStateNodeAsync();
 
   /**
-   * Set the local value of the OutOfServiceState Node.
+   * Resolves the optional FirstInGroup child, a AlarmGroupType.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the OutOfServiceState Node.
-   * @throws UaException if an error occurs creating or getting the OutOfServiceState Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.3">AlarmGroupType
+   *     documentation</a>
    */
-  void setOutOfServiceState(LocalizedText value) throws UaException;
+  @Nullable AlarmGroupType getFirstInGroupNode() throws UaException;
+
+  /** Asynchronous form of {@link #getFirstInGroupNode()}. */
+  CompletableFuture<? extends @Nullable AlarmGroupType> getFirstInGroupNodeAsync();
 
   /**
-   * Read the value of the OutOfServiceState Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the optional LatchedState child, a TwoStateVariableType with DataType LocalizedText.
    *
-   * @return the {@link LocalizedText} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.2">TwoStateVariableType
+   *     documentation</a>
    */
-  LocalizedText readOutOfServiceState() throws UaException;
+  @Nullable TwoStateVariableType getLatchedStateNode() throws UaException;
+
+  /** Asynchronous form of {@link #getLatchedStateNode()}. */
+  CompletableFuture<? extends @Nullable TwoStateVariableType> getLatchedStateNodeAsync();
 
   /**
-   * Write a new value for the OutOfServiceState Node to the server and update the local value if
-   * the operation succeeds.
+   * Reads the Value of the LatchedState child from the server.
    *
-   * @param value the {@link LocalizedText} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeOutOfServiceState(LocalizedText value) throws UaException;
+  @Nullable LocalizedText readLatchedState() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readOutOfServiceState}.
+   * Writes the Value of the LatchedState child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends LocalizedText> readOutOfServiceStateAsync();
+  void writeLatchedState(@Nullable LocalizedText value) throws UaException;
+
+  /** Asynchronous form of {@link #readLatchedState()}. */
+  CompletableFuture<? extends @Nullable LocalizedText> readLatchedStateAsync();
+
+  /** Asynchronous form of {@link #writeLatchedState}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeLatchedStateAsync(@Nullable LocalizedText value);
 
   /**
-   * An asynchronous implementation of {@link #writeOutOfServiceState}.
+   * Resolves the optional SilenceState child, a TwoStateVariableType with DataType LocalizedText.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.2">TwoStateVariableType
+   *     documentation</a>
    */
-  CompletableFuture<StatusCode> writeOutOfServiceStateAsync(LocalizedText value);
+  @Nullable TwoStateVariableType getSilenceStateNode() throws UaException;
+
+  /** Asynchronous form of {@link #getSilenceStateNode()}. */
+  CompletableFuture<? extends @Nullable TwoStateVariableType> getSilenceStateNodeAsync();
 
   /**
-   * Get the OutOfServiceState {@link TwoStateVariableType} Node, or {@code null} if it does not
-   * exist.
+   * Reads the Value of the SilenceState child from the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the OutOfServiceState {@link TwoStateVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  TwoStateVariableType getOutOfServiceStateNode() throws UaException;
+  @Nullable LocalizedText readSilenceState() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getOutOfServiceStateNode()}.
+   * Writes the Value of the SilenceState child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the TwoStateVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends TwoStateVariableType> getOutOfServiceStateNodeAsync();
+  void writeSilenceState(@Nullable LocalizedText value) throws UaException;
+
+  /** Asynchronous form of {@link #readSilenceState()}. */
+  CompletableFuture<? extends @Nullable LocalizedText> readSilenceStateAsync();
+
+  /** Asynchronous form of {@link #writeSilenceState}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeSilenceStateAsync(@Nullable LocalizedText value);
 
   /**
-   * Get the ShelvingState {@link ShelvedStateMachineType} Node, or {@code null} if it does not
-   * exist.
+   * Resolves the optional ShelvingState child, a ShelvedStateMachineType.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ShelvingState {@link ShelvedStateMachineType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.17/#5.8.17.1">ShelvedStateMachineType
+   *     documentation</a>
    */
-  ShelvedStateMachineType getShelvingStateNode() throws UaException;
+  @Nullable ShelvedStateMachineType getShelvingStateNode() throws UaException;
+
+  /** Asynchronous form of {@link #getShelvingStateNode()}. */
+  CompletableFuture<? extends @Nullable ShelvedStateMachineType> getShelvingStateNodeAsync();
 
   /**
-   * Asynchronous implementation of {@link #getShelvingStateNode()}.
+   * Resolves the optional AudibleEnabled child, a PropertyType with DataType Boolean.
    *
-   * @return a CompletableFuture that completes successfully with the ShelvedStateMachineType Node
-   *     or completes exceptionally if an error occurs creating or getting the Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  CompletableFuture<? extends ShelvedStateMachineType> getShelvingStateNodeAsync();
+  @Nullable PropertyType getAudibleEnabledNode() throws UaException;
+
+  /** Asynchronous form of {@link #getAudibleEnabledNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getAudibleEnabledNodeAsync();
 
   /**
-   * Get the local value of the AudibleSound Node.
+   * Reads the Value of the AudibleEnabled child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the AudibleSound Node.
-   * @throws UaException if an error occurs creating or getting the AudibleSound Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  ByteString getAudibleSound() throws UaException;
+  @Nullable Boolean readAudibleEnabled() throws UaException;
 
   /**
-   * Set the local value of the AudibleSound Node.
+   * Writes the Value of the AudibleEnabled child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the AudibleSound Node.
-   * @throws UaException if an error occurs creating or getting the AudibleSound Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setAudibleSound(ByteString value) throws UaException;
+  void writeAudibleEnabled(@Nullable Boolean value) throws UaException;
+
+  /** Asynchronous form of {@link #readAudibleEnabled()}. */
+  CompletableFuture<? extends @Nullable Boolean> readAudibleEnabledAsync();
+
+  /** Asynchronous form of {@link #writeAudibleEnabled}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeAudibleEnabledAsync(@Nullable Boolean value);
 
   /**
-   * Read the value of the AudibleSound Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the optional MaxTimeShelved child, a PropertyType with DataType Duration.
    *
-   * @return the {@link ByteString} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  ByteString readAudibleSound() throws UaException;
+  @Nullable PropertyType getMaxTimeShelvedNode() throws UaException;
+
+  /** Asynchronous form of {@link #getMaxTimeShelvedNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getMaxTimeShelvedNodeAsync();
 
   /**
-   * Write a new value for the AudibleSound Node to the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the MaxTimeShelved child from the server.
    *
-   * @param value the {@link ByteString} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeAudibleSound(ByteString value) throws UaException;
+  @Nullable Double readMaxTimeShelved() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readAudibleSound}.
+   * Writes the Value of the MaxTimeShelved child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends ByteString> readAudibleSoundAsync();
+  void writeMaxTimeShelved(@Nullable Double value) throws UaException;
+
+  /** Asynchronous form of {@link #readMaxTimeShelved()}. */
+  CompletableFuture<? extends @Nullable Double> readMaxTimeShelvedAsync();
+
+  /** Asynchronous form of {@link #writeMaxTimeShelved}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeMaxTimeShelvedAsync(@Nullable Double value);
 
   /**
-   * An asynchronous implementation of {@link #writeAudibleSound}.
+   * Resolves the optional SuppressedState child, a TwoStateVariableType with DataType
+   * LocalizedText.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.2">TwoStateVariableType
+   *     documentation</a>
    */
-  CompletableFuture<StatusCode> writeAudibleSoundAsync(ByteString value);
+  @Nullable TwoStateVariableType getSuppressedStateNode() throws UaException;
+
+  /** Asynchronous form of {@link #getSuppressedStateNode()}. */
+  CompletableFuture<? extends @Nullable TwoStateVariableType> getSuppressedStateNodeAsync();
 
   /**
-   * Get the AudibleSound {@link AudioVariableType} Node, or {@code null} if it does not exist.
+   * Reads the Value of the SuppressedState child from the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the AudibleSound {@link AudioVariableType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  AudioVariableType getAudibleSoundNode() throws UaException;
+  @Nullable LocalizedText readSuppressedState() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getAudibleSoundNode()}.
+   * Writes the Value of the SuppressedState child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the AudioVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends AudioVariableType> getAudibleSoundNodeAsync();
+  void writeSuppressedState(@Nullable LocalizedText value) throws UaException;
+
+  /** Asynchronous form of {@link #readSuppressedState()}. */
+  CompletableFuture<? extends @Nullable LocalizedText> readSuppressedStateAsync();
+
+  /** Asynchronous form of {@link #writeSuppressedState}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeSuppressedStateAsync(@Nullable LocalizedText value);
 
   /**
-   * Get the local value of the SilenceState Node.
+   * Resolves the optional FirstInGroupFlag child, a BaseDataVariableType with DataType Boolean.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SilenceState Node.
-   * @throws UaException if an error occurs creating or getting the SilenceState Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  LocalizedText getSilenceState() throws UaException;
+  @Nullable VariableNode getFirstInGroupFlagNode() throws UaException;
+
+  /** Asynchronous form of {@link #getFirstInGroupFlagNode()}. */
+  CompletableFuture<? extends @Nullable VariableNode> getFirstInGroupFlagNodeAsync();
 
   /**
-   * Set the local value of the SilenceState Node.
+   * Reads the Value of the FirstInGroupFlag child from the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SilenceState Node.
-   * @throws UaException if an error occurs creating or getting the SilenceState Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setSilenceState(LocalizedText value) throws UaException;
+  @Nullable Boolean readFirstInGroupFlag() throws UaException;
 
   /**
-   * Read the value of the SilenceState Node from the server and update the local value if the
-   * operation succeeds.
+   * Writes the Value of the FirstInGroupFlag child to the server.
    *
-   * @return the {@link LocalizedText} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  LocalizedText readSilenceState() throws UaException;
+  void writeFirstInGroupFlag(@Nullable Boolean value) throws UaException;
+
+  /** Asynchronous form of {@link #readFirstInGroupFlag()}. */
+  CompletableFuture<? extends @Nullable Boolean> readFirstInGroupFlagAsync();
+
+  /** Asynchronous form of {@link #writeFirstInGroupFlag}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeFirstInGroupFlagAsync(@Nullable Boolean value);
 
   /**
-   * Write a new value for the SilenceState Node to the server and update the local value if the
-   * operation succeeds.
+   * Resolves the optional OutOfServiceState child, a TwoStateVariableType with DataType
+   * LocalizedText.
    *
-   * @param value the {@link LocalizedText} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.2">TwoStateVariableType
+   *     documentation</a>
    */
-  void writeSilenceState(LocalizedText value) throws UaException;
+  @Nullable TwoStateVariableType getOutOfServiceStateNode() throws UaException;
+
+  /** Asynchronous form of {@link #getOutOfServiceStateNode()}. */
+  CompletableFuture<? extends @Nullable TwoStateVariableType> getOutOfServiceStateNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #readSilenceState}.
+   * Reads the Value of the OutOfServiceState child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends LocalizedText> readSilenceStateAsync();
+  @Nullable LocalizedText readOutOfServiceState() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeSilenceState}.
+   * Writes the Value of the OutOfServiceState child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeSilenceStateAsync(LocalizedText value);
+  void writeOutOfServiceState(@Nullable LocalizedText value) throws UaException;
+
+  /** Asynchronous form of {@link #readOutOfServiceState()}. */
+  CompletableFuture<? extends @Nullable LocalizedText> readOutOfServiceStateAsync();
+
+  /** Asynchronous form of {@link #writeOutOfServiceState}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeOutOfServiceStateAsync(@Nullable LocalizedText value);
 
   /**
-   * Get the SilenceState {@link TwoStateVariableType} Node, or {@code null} if it does not exist.
+   * Resolves the optional ReAlarmRepeatCount child, a BaseDataVariableType with DataType Int16.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SilenceState {@link TwoStateVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  TwoStateVariableType getSilenceStateNode() throws UaException;
+  @Nullable VariableNode getReAlarmRepeatCountNode() throws UaException;
+
+  /** Asynchronous form of {@link #getReAlarmRepeatCountNode()}. */
+  CompletableFuture<? extends @Nullable VariableNode> getReAlarmRepeatCountNodeAsync();
 
   /**
-   * Asynchronous implementation of {@link #getSilenceStateNode()}.
+   * Reads the Value of the ReAlarmRepeatCount child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the TwoStateVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends TwoStateVariableType> getSilenceStateNodeAsync();
+  @Nullable Short readReAlarmRepeatCount() throws UaException;
 
   /**
-   * Get the local value of the FirstInGroupFlag Node.
+   * Writes the Value of the ReAlarmRepeatCount child to the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the FirstInGroupFlag Node.
-   * @throws UaException if an error occurs creating or getting the FirstInGroupFlag Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  Boolean getFirstInGroupFlag() throws UaException;
+  void writeReAlarmRepeatCount(@Nullable Short value) throws UaException;
+
+  /** Asynchronous form of {@link #readReAlarmRepeatCount()}. */
+  CompletableFuture<? extends @Nullable Short> readReAlarmRepeatCountAsync();
+
+  /** Asynchronous form of {@link #writeReAlarmRepeatCount}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeReAlarmRepeatCountAsync(@Nullable Short value);
 
   /**
-   * Set the local value of the FirstInGroupFlag Node.
+   * Resolves the mandatory SuppressedOrShelved child, a PropertyType with DataType Boolean.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the FirstInGroupFlag Node.
-   * @throws UaException if an error occurs creating or getting the FirstInGroupFlag Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  void setFirstInGroupFlag(Boolean value) throws UaException;
+  PropertyType getSuppressedOrShelvedNode() throws UaException;
+
+  /** Asynchronous form of {@link #getSuppressedOrShelvedNode()}. */
+  CompletableFuture<? extends PropertyType> getSuppressedOrShelvedNodeAsync();
 
   /**
-   * Read the value of the FirstInGroupFlag Node from the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the SuppressedOrShelved child from the server.
    *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  Boolean readFirstInGroupFlag() throws UaException;
+  @Nullable Boolean readSuppressedOrShelved() throws UaException;
 
   /**
-   * Write a new value for the FirstInGroupFlag Node to the server and update the local value if the
-   * operation succeeds.
+   * Writes the Value of the SuppressedOrShelved child to the server.
    *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeFirstInGroupFlag(Boolean value) throws UaException;
+  void writeSuppressedOrShelved(@Nullable Boolean value) throws UaException;
+
+  /** Asynchronous form of {@link #readSuppressedOrShelved()}. */
+  CompletableFuture<? extends @Nullable Boolean> readSuppressedOrShelvedAsync();
 
   /**
-   * An asynchronous implementation of {@link #readFirstInGroupFlag}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * Asynchronous form of {@link #writeSuppressedOrShelved}; completes with the operation status.
    */
-  CompletableFuture<? extends Boolean> readFirstInGroupFlagAsync();
+  CompletableFuture<StatusCode> writeSuppressedOrShelvedAsync(@Nullable Boolean value);
 
   /**
-   * An asynchronous implementation of {@link #writeFirstInGroupFlag}.
+   * Resolves the optional OnDelay child, a PropertyType with DataType Duration.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  CompletableFuture<StatusCode> writeFirstInGroupFlagAsync(Boolean value);
+  @Nullable PropertyType getOnDelayNode() throws UaException;
+
+  /** Asynchronous form of {@link #getOnDelayNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getOnDelayNodeAsync();
 
   /**
-   * Get the FirstInGroupFlag {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
+   * Reads the Value of the OnDelay child from the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the FirstInGroupFlag {@link BaseDataVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  BaseDataVariableType getFirstInGroupFlagNode() throws UaException;
+  @Nullable Double readOnDelay() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getFirstInGroupFlagNode()}.
+   * Writes the Value of the OnDelay child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends BaseDataVariableType> getFirstInGroupFlagNodeAsync();
+  void writeOnDelay(@Nullable Double value) throws UaException;
+
+  /** Asynchronous form of {@link #readOnDelay()}. */
+  CompletableFuture<? extends @Nullable Double> readOnDelayAsync();
+
+  /** Asynchronous form of {@link #writeOnDelay}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeOnDelayAsync(@Nullable Double value);
 
   /**
-   * Get the FirstInGroup {@link AlarmGroupType} Node, or {@code null} if it does not exist.
+   * Resolves the optional OffDelay child, a PropertyType with DataType Duration.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the FirstInGroup {@link AlarmGroupType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  AlarmGroupType getFirstInGroupNode() throws UaException;
+  @Nullable PropertyType getOffDelayNode() throws UaException;
+
+  /** Asynchronous form of {@link #getOffDelayNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getOffDelayNodeAsync();
 
   /**
-   * Asynchronous implementation of {@link #getFirstInGroupNode()}.
+   * Reads the Value of the OffDelay child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the AlarmGroupType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends AlarmGroupType> getFirstInGroupNodeAsync();
+  @Nullable Double readOffDelay() throws UaException;
 
   /**
-   * Get the local value of the LatchedState Node.
+   * Writes the Value of the OffDelay child to the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the LatchedState Node.
-   * @throws UaException if an error occurs creating or getting the LatchedState Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  LocalizedText getLatchedState() throws UaException;
+  void writeOffDelay(@Nullable Double value) throws UaException;
+
+  /** Asynchronous form of {@link #readOffDelay()}. */
+  CompletableFuture<? extends @Nullable Double> readOffDelayAsync();
+
+  /** Asynchronous form of {@link #writeOffDelay}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeOffDelayAsync(@Nullable Double value);
 
   /**
-   * Set the local value of the LatchedState Node.
+   * Resolves the mandatory InputNode child, a PropertyType with DataType NodeId.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the LatchedState Node.
-   * @throws UaException if an error occurs creating or getting the LatchedState Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  void setLatchedState(LocalizedText value) throws UaException;
+  PropertyType getInputNodeNode() throws UaException;
+
+  /** Asynchronous form of {@link #getInputNodeNode()}. */
+  CompletableFuture<? extends PropertyType> getInputNodeNodeAsync();
 
   /**
-   * Read the value of the LatchedState Node from the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the InputNode child from the server.
    *
-   * @return the {@link LocalizedText} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  LocalizedText readLatchedState() throws UaException;
+  @Nullable NodeId readInputNode() throws UaException;
 
   /**
-   * Write a new value for the LatchedState Node to the server and update the local value if the
-   * operation succeeds.
+   * Writes the Value of the InputNode child to the server.
    *
-   * @param value the {@link LocalizedText} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeLatchedState(LocalizedText value) throws UaException;
+  void writeInputNode(@Nullable NodeId value) throws UaException;
+
+  /** Asynchronous form of {@link #readInputNode()}. */
+  CompletableFuture<? extends @Nullable NodeId> readInputNodeAsync();
+
+  /** Asynchronous form of {@link #writeInputNode}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeInputNodeAsync(@Nullable NodeId value);
 
   /**
-   * An asynchronous implementation of {@link #readLatchedState}.
+   * Resolves the optional GetGroupMemberships Method node.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.16">Model
+   *     documentation</a>
    */
-  CompletableFuture<? extends LocalizedText> readLatchedStateAsync();
+  @Nullable UaMethodNode getGetGroupMembershipsMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getGetGroupMembershipsMethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getGetGroupMembershipsMethodNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeLatchedState}.
+   * Calls the GetGroupMemberships Method and returns its outputs; requires a Good result.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.16">Model
+   *     documentation</a>
    */
-  CompletableFuture<StatusCode> writeLatchedStateAsync(LocalizedText value);
+  NodeId @Nullable [] getGroupMemberships() throws UaException;
 
   /**
-   * Get the LatchedState {@link TwoStateVariableType} Node, or {@code null} if it does not exist.
+   * Calls the GetGroupMemberships Method and returns the complete result, including a Bad status.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the LatchedState {@link TwoStateVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, transport or conversion fails.
    */
-  TwoStateVariableType getLatchedStateNode() throws UaException;
+  MethodCallResult<NodeId @Nullable []> callGetGroupMemberships() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getLatchedStateNode()}.
+   * Calls the GetGroupMemberships Method with explicit options and returns the complete result.
    *
-   * @return a CompletableFuture that completes successfully with the TwoStateVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, transport or conversion fails.
    */
-  CompletableFuture<? extends TwoStateVariableType> getLatchedStateNodeAsync();
+  MethodCallResult<NodeId @Nullable []> callGetGroupMembershipsWith(MethodCallOptions options)
+      throws UaException;
+
+  /** Asynchronous form of {@link #getGroupMemberships}. */
+  CompletableFuture<NodeId @Nullable []> getGroupMembershipsAsync();
+
+  /** Asynchronous form of {@link #callGetGroupMemberships}. */
+  CompletableFuture<MethodCallResult<NodeId @Nullable []>> callGetGroupMembershipsAsync();
+
+  /** Asynchronous form of {@link #callGetGroupMembershipsWith}. */
+  CompletableFuture<MethodCallResult<NodeId @Nullable []>> callGetGroupMembershipsWithAsync(
+      MethodCallOptions options);
 
   /**
-   * Get the local value of the ReAlarmRepeatCount Node.
+   * Resolves the optional PlaceInService Method node.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ReAlarmRepeatCount Node.
-   * @throws UaException if an error occurs creating or getting the ReAlarmRepeatCount Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.14">Model
+   *     documentation</a>
    */
-  Short getReAlarmRepeatCount() throws UaException;
+  @Nullable UaMethodNode getPlaceInServiceMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getPlaceInServiceMethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getPlaceInServiceMethodNodeAsync();
 
   /**
-   * Set the local value of the ReAlarmRepeatCount Node.
+   * Calls the PlaceInService Method and returns its outputs; requires a Good result.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ReAlarmRepeatCount Node.
-   * @throws UaException if an error occurs creating or getting the ReAlarmRepeatCount Node.
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.14">Model
+   *     documentation</a>
    */
-  void setReAlarmRepeatCount(Short value) throws UaException;
+  void placeInService() throws UaException;
 
   /**
-   * Read the value of the ReAlarmRepeatCount Node from the server and update the local value if the
-   * operation succeeds.
+   * Calls the PlaceInService Method and returns the complete result, including a Bad status.
    *
-   * @return the {@link Short} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, transport or conversion fails.
    */
-  Short readReAlarmRepeatCount() throws UaException;
+  MethodCallResult<Void> callPlaceInService() throws UaException;
 
   /**
-   * Write a new value for the ReAlarmRepeatCount Node to the server and update the local value if
-   * the operation succeeds.
+   * Calls the PlaceInService Method with explicit options and returns the complete result.
    *
-   * @param value the {@link Short} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, transport or conversion fails.
    */
-  void writeReAlarmRepeatCount(Short value) throws UaException;
+  MethodCallResult<Void> callPlaceInServiceWith(MethodCallOptions options) throws UaException;
+
+  /** Asynchronous form of {@link #placeInService}. */
+  CompletableFuture<Void> placeInServiceAsync();
+
+  /** Asynchronous form of {@link #callPlaceInService}. */
+  CompletableFuture<MethodCallResult<Void>> callPlaceInServiceAsync();
+
+  /** Asynchronous form of {@link #callPlaceInServiceWith}. */
+  CompletableFuture<MethodCallResult<Void>> callPlaceInServiceWithAsync(MethodCallOptions options);
 
   /**
-   * An asynchronous implementation of {@link #readReAlarmRepeatCount}.
+   * Resolves the optional PlaceInService2 Method node.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.15">Model
+   *     documentation</a>
    */
-  CompletableFuture<? extends Short> readReAlarmRepeatCountAsync();
+  @Nullable UaMethodNode getPlaceInService2MethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getPlaceInService2MethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getPlaceInService2MethodNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeReAlarmRepeatCount}.
+   * Calls the PlaceInService2 Method and returns its outputs; requires a Good result.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.15">Model
+   *     documentation</a>
    */
-  CompletableFuture<StatusCode> writeReAlarmRepeatCountAsync(Short value);
+  void placeInService2(@Nullable LocalizedText comment) throws UaException;
 
   /**
-   * Get the ReAlarmRepeatCount {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
+   * Calls the PlaceInService2 Method and returns the complete result, including a Bad status.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ReAlarmRepeatCount {@link BaseDataVariableType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, transport or conversion fails.
    */
-  BaseDataVariableType getReAlarmRepeatCountNode() throws UaException;
+  MethodCallResult<Void> callPlaceInService2(@Nullable LocalizedText comment) throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getReAlarmRepeatCountNode()}.
+   * Calls the PlaceInService2 Method with explicit options and returns the complete result.
    *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, transport or conversion fails.
    */
-  CompletableFuture<? extends BaseDataVariableType> getReAlarmRepeatCountNodeAsync();
+  MethodCallResult<Void> callPlaceInService2With(
+      MethodCallOptions options, @Nullable LocalizedText comment) throws UaException;
+
+  /** Asynchronous form of {@link #placeInService2}. */
+  CompletableFuture<Void> placeInService2Async(@Nullable LocalizedText comment);
+
+  /** Asynchronous form of {@link #callPlaceInService2}. */
+  CompletableFuture<MethodCallResult<Void>> callPlaceInService2Async(
+      @Nullable LocalizedText comment);
+
+  /** Asynchronous form of {@link #callPlaceInService2With}. */
+  CompletableFuture<MethodCallResult<Void>> callPlaceInService2WithAsync(
+      MethodCallOptions options, @Nullable LocalizedText comment);
+
+  /**
+   * Resolves the optional RemoveFromService Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.12">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getRemoveFromServiceMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getRemoveFromServiceMethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getRemoveFromServiceMethodNodeAsync();
+
+  /**
+   * Calls the RemoveFromService Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.12">Model
+   *     documentation</a>
+   */
+  void removeFromService() throws UaException;
+
+  /**
+   * Calls the RemoveFromService Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callRemoveFromService() throws UaException;
+
+  /**
+   * Calls the RemoveFromService Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callRemoveFromServiceWith(MethodCallOptions options) throws UaException;
+
+  /** Asynchronous form of {@link #removeFromService}. */
+  CompletableFuture<Void> removeFromServiceAsync();
+
+  /** Asynchronous form of {@link #callRemoveFromService}. */
+  CompletableFuture<MethodCallResult<Void>> callRemoveFromServiceAsync();
+
+  /** Asynchronous form of {@link #callRemoveFromServiceWith}. */
+  CompletableFuture<MethodCallResult<Void>> callRemoveFromServiceWithAsync(
+      MethodCallOptions options);
+
+  /**
+   * Resolves the optional RemoveFromService2 Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.13">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getRemoveFromService2MethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getRemoveFromService2MethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getRemoveFromService2MethodNodeAsync();
+
+  /**
+   * Calls the RemoveFromService2 Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.13">Model
+   *     documentation</a>
+   */
+  void removeFromService2(@Nullable LocalizedText comment) throws UaException;
+
+  /**
+   * Calls the RemoveFromService2 Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callRemoveFromService2(@Nullable LocalizedText comment) throws UaException;
+
+  /**
+   * Calls the RemoveFromService2 Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callRemoveFromService2With(
+      MethodCallOptions options, @Nullable LocalizedText comment) throws UaException;
+
+  /** Asynchronous form of {@link #removeFromService2}. */
+  CompletableFuture<Void> removeFromService2Async(@Nullable LocalizedText comment);
+
+  /** Asynchronous form of {@link #callRemoveFromService2}. */
+  CompletableFuture<MethodCallResult<Void>> callRemoveFromService2Async(
+      @Nullable LocalizedText comment);
+
+  /** Asynchronous form of {@link #callRemoveFromService2With}. */
+  CompletableFuture<MethodCallResult<Void>> callRemoveFromService2WithAsync(
+      MethodCallOptions options, @Nullable LocalizedText comment);
+
+  /**
+   * Resolves the optional Reset Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.5">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getResetMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getResetMethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getResetMethodNodeAsync();
+
+  /**
+   * Calls the Reset Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.5">Model
+   *     documentation</a>
+   */
+  void reset() throws UaException;
+
+  /**
+   * Calls the Reset Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callReset() throws UaException;
+
+  /**
+   * Calls the Reset Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callResetWith(MethodCallOptions options) throws UaException;
+
+  /** Asynchronous form of {@link #reset}. */
+  CompletableFuture<Void> resetAsync();
+
+  /** Asynchronous form of {@link #callReset}. */
+  CompletableFuture<MethodCallResult<Void>> callResetAsync();
+
+  /** Asynchronous form of {@link #callResetWith}. */
+  CompletableFuture<MethodCallResult<Void>> callResetWithAsync(MethodCallOptions options);
+
+  /**
+   * Resolves the optional Reset2 Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.6">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getReset2MethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getReset2MethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getReset2MethodNodeAsync();
+
+  /**
+   * Calls the Reset2 Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.6">Model
+   *     documentation</a>
+   */
+  void reset2(@Nullable LocalizedText comment) throws UaException;
+
+  /**
+   * Calls the Reset2 Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callReset2(@Nullable LocalizedText comment) throws UaException;
+
+  /**
+   * Calls the Reset2 Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callReset2With(MethodCallOptions options, @Nullable LocalizedText comment)
+      throws UaException;
+
+  /** Asynchronous form of {@link #reset2}. */
+  CompletableFuture<Void> reset2Async(@Nullable LocalizedText comment);
+
+  /** Asynchronous form of {@link #callReset2}. */
+  CompletableFuture<MethodCallResult<Void>> callReset2Async(@Nullable LocalizedText comment);
+
+  /** Asynchronous form of {@link #callReset2With}. */
+  CompletableFuture<MethodCallResult<Void>> callReset2WithAsync(
+      MethodCallOptions options, @Nullable LocalizedText comment);
+
+  /**
+   * Resolves the optional Silence Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.7">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getSilenceMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getSilenceMethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getSilenceMethodNodeAsync();
+
+  /**
+   * Calls the Silence Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.7">Model
+   *     documentation</a>
+   */
+  void silence() throws UaException;
+
+  /**
+   * Calls the Silence Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callSilence() throws UaException;
+
+  /**
+   * Calls the Silence Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callSilenceWith(MethodCallOptions options) throws UaException;
+
+  /** Asynchronous form of {@link #silence}. */
+  CompletableFuture<Void> silenceAsync();
+
+  /** Asynchronous form of {@link #callSilence}. */
+  CompletableFuture<MethodCallResult<Void>> callSilenceAsync();
+
+  /** Asynchronous form of {@link #callSilenceWith}. */
+  CompletableFuture<MethodCallResult<Void>> callSilenceWithAsync(MethodCallOptions options);
+
+  /**
+   * Resolves the optional Suppress Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.8">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getSuppressMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getSuppressMethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getSuppressMethodNodeAsync();
+
+  /**
+   * Calls the Suppress Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.8">Model
+   *     documentation</a>
+   */
+  void suppress() throws UaException;
+
+  /**
+   * Calls the Suppress Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callSuppress() throws UaException;
+
+  /**
+   * Calls the Suppress Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callSuppressWith(MethodCallOptions options) throws UaException;
+
+  /** Asynchronous form of {@link #suppress}. */
+  CompletableFuture<Void> suppressAsync();
+
+  /** Asynchronous form of {@link #callSuppress}. */
+  CompletableFuture<MethodCallResult<Void>> callSuppressAsync();
+
+  /** Asynchronous form of {@link #callSuppressWith}. */
+  CompletableFuture<MethodCallResult<Void>> callSuppressWithAsync(MethodCallOptions options);
+
+  /**
+   * Resolves the optional Suppress2 Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.9">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getSuppress2MethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getSuppress2MethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getSuppress2MethodNodeAsync();
+
+  /**
+   * Calls the Suppress2 Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.9">Model
+   *     documentation</a>
+   */
+  void suppress2(@Nullable LocalizedText comment) throws UaException;
+
+  /**
+   * Calls the Suppress2 Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callSuppress2(@Nullable LocalizedText comment) throws UaException;
+
+  /**
+   * Calls the Suppress2 Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callSuppress2With(
+      MethodCallOptions options, @Nullable LocalizedText comment) throws UaException;
+
+  /** Asynchronous form of {@link #suppress2}. */
+  CompletableFuture<Void> suppress2Async(@Nullable LocalizedText comment);
+
+  /** Asynchronous form of {@link #callSuppress2}. */
+  CompletableFuture<MethodCallResult<Void>> callSuppress2Async(@Nullable LocalizedText comment);
+
+  /** Asynchronous form of {@link #callSuppress2With}. */
+  CompletableFuture<MethodCallResult<Void>> callSuppress2WithAsync(
+      MethodCallOptions options, @Nullable LocalizedText comment);
+
+  /**
+   * Resolves the optional Unsuppress Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.10">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getUnsuppressMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getUnsuppressMethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getUnsuppressMethodNodeAsync();
+
+  /**
+   * Calls the Unsuppress Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.10">Model
+   *     documentation</a>
+   */
+  void unsuppress() throws UaException;
+
+  /**
+   * Calls the Unsuppress Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callUnsuppress() throws UaException;
+
+  /**
+   * Calls the Unsuppress Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callUnsuppressWith(MethodCallOptions options) throws UaException;
+
+  /** Asynchronous form of {@link #unsuppress}. */
+  CompletableFuture<Void> unsuppressAsync();
+
+  /** Asynchronous form of {@link #callUnsuppress}. */
+  CompletableFuture<MethodCallResult<Void>> callUnsuppressAsync();
+
+  /** Asynchronous form of {@link #callUnsuppressWith}. */
+  CompletableFuture<MethodCallResult<Void>> callUnsuppressWithAsync(MethodCallOptions options);
+
+  /**
+   * Resolves the optional Unsuppress2 Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.11">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getUnsuppress2MethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getUnsuppress2MethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getUnsuppress2MethodNodeAsync();
+
+  /**
+   * Calls the Unsuppress2 Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.11">Model
+   *     documentation</a>
+   */
+  void unsuppress2(@Nullable LocalizedText comment) throws UaException;
+
+  /**
+   * Calls the Unsuppress2 Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callUnsuppress2(@Nullable LocalizedText comment) throws UaException;
+
+  /**
+   * Calls the Unsuppress2 Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callUnsuppress2With(
+      MethodCallOptions options, @Nullable LocalizedText comment) throws UaException;
+
+  /** Asynchronous form of {@link #unsuppress2}. */
+  CompletableFuture<Void> unsuppress2Async(@Nullable LocalizedText comment);
+
+  /** Asynchronous form of {@link #callUnsuppress2}. */
+  CompletableFuture<MethodCallResult<Void>> callUnsuppress2Async(@Nullable LocalizedText comment);
+
+  /** Asynchronous form of {@link #callUnsuppress2With}. */
+  CompletableFuture<MethodCallResult<Void>> callUnsuppress2WithAsync(
+      MethodCallOptions options, @Nullable LocalizedText comment);
 }

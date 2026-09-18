@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
@@ -18,169 +8,95 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.structured.HistoryEventFieldList;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.8.8">https://reference.opcfoundation.org/v105/Core/docs/Part11/5.8.8</a>
+ * Client API for the AuditHistoryEventDeleteEventType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.8.8">Model
+ *     documentation</a>
  */
 public interface AuditHistoryEventDeleteEventType extends AuditHistoryDeleteEventType {
-  QualifiedProperty<ByteString[]> EVENT_IDS =
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 3022L);
+
+  QualifiedProperty<ByteString[]> EventIds_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "EventIds",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 15L),
           1,
           ByteString[].class);
 
-  QualifiedProperty<HistoryEventFieldList> OLD_VALUES =
+  QualifiedProperty<HistoryEventFieldList> OldValues_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "OldValues",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=920"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 920L),
           -1,
           HistoryEventFieldList.class);
 
   /**
-   * Get the local value of the EventIds Node.
+   * Resolves the mandatory EventIds child, a PropertyType with DataType ByteString.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the EventIds Node.
-   * @throws UaException if an error occurs creating or getting the EventIds Node.
-   */
-  ByteString[] getEventIds() throws UaException;
-
-  /**
-   * Set the local value of the EventIds Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the EventIds Node.
-   * @throws UaException if an error occurs creating or getting the EventIds Node.
-   */
-  void setEventIds(ByteString[] value) throws UaException;
-
-  /**
-   * Read the value of the EventIds Node from the server and update the local value if the operation
-   * succeeds.
-   *
-   * @return the {@link ByteString[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  ByteString[] readEventIds() throws UaException;
-
-  /**
-   * Write a new value for the EventIds Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link ByteString[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeEventIds(ByteString[] value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readEventIds}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends ByteString[]> readEventIdsAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeEventIds}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeEventIdsAsync(ByteString[] value);
-
-  /**
-   * Get the EventIds {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the EventIds {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getEventIdsNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getEventIdsNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getEventIdsNode()}. */
   CompletableFuture<? extends PropertyType> getEventIdsNodeAsync();
 
   /**
-   * Get the local value of the OldValues Node.
+   * Reads the Value of the EventIds child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the OldValues Node.
-   * @throws UaException if an error occurs creating or getting the OldValues Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  HistoryEventFieldList getOldValues() throws UaException;
+  ByteString @Nullable [] readEventIds() throws UaException;
 
   /**
-   * Set the local value of the OldValues Node.
+   * Writes the Value of the EventIds child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the OldValues Node.
-   * @throws UaException if an error occurs creating or getting the OldValues Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setOldValues(HistoryEventFieldList value) throws UaException;
+  void writeEventIds(ByteString @Nullable [] value) throws UaException;
+
+  /** Asynchronous form of {@link #readEventIds()}. */
+  CompletableFuture<? extends ByteString @Nullable []> readEventIdsAsync();
+
+  /** Asynchronous form of {@link #writeEventIds}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeEventIdsAsync(ByteString @Nullable [] value);
 
   /**
-   * Read the value of the OldValues Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the mandatory OldValues child, a PropertyType with DataType HistoryEventFieldList.
    *
-   * @return the {@link HistoryEventFieldList} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  HistoryEventFieldList readOldValues() throws UaException;
-
-  /**
-   * Write a new value for the OldValues Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link HistoryEventFieldList} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeOldValues(HistoryEventFieldList value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readOldValues}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends HistoryEventFieldList> readOldValuesAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeOldValues}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeOldValuesAsync(HistoryEventFieldList value);
-
-  /**
-   * Get the OldValues {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the OldValues {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getOldValuesNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getOldValuesNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getOldValuesNode()}. */
   CompletableFuture<? extends PropertyType> getOldValuesNodeAsync();
+
+  /**
+   * Reads the Value of the OldValues child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable HistoryEventFieldList readOldValues() throws UaException;
+
+  /**
+   * Writes the Value of the OldValues child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeOldValues(@Nullable HistoryEventFieldList value) throws UaException;
+
+  /** Asynchronous form of {@link #readOldValues()}. */
+  CompletableFuture<? extends @Nullable HistoryEventFieldList> readOldValuesAsync();
+
+  /** Asynchronous form of {@link #writeOldValues}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeOldValuesAsync(@Nullable HistoryEventFieldList value);
 }

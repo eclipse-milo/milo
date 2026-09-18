@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
@@ -17,1250 +7,664 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.7.2">https://reference.opcfoundation.org/v105/Core/docs/Part11/5.7.2</a>
+ * Client API for the HistoryServerCapabilitiesType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.7.2">Model
+ *     documentation</a>
  */
 public interface HistoryServerCapabilitiesType extends BaseObjectType {
-  QualifiedProperty<Boolean> ACCESS_HISTORY_DATA_CAPABILITY =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "AccessHistoryDataCapability",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2330L);
 
-  QualifiedProperty<Boolean> ACCESS_HISTORY_EVENTS_CAPABILITY =
+  QualifiedProperty<Boolean> DeleteRawCapability_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "AccessHistoryEventsCapability",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
-
-  QualifiedProperty<UInteger> MAX_RETURN_DATA_VALUES =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxReturnDataValues",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
-
-  QualifiedProperty<UInteger> MAX_RETURN_EVENT_VALUES =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxReturnEventValues",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
-
-  QualifiedProperty<Boolean> INSERT_DATA_CAPABILITY =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "InsertDataCapability",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
-
-  QualifiedProperty<Boolean> REPLACE_DATA_CAPABILITY =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ReplaceDataCapability",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
-
-  QualifiedProperty<Boolean> UPDATE_DATA_CAPABILITY =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "UpdateDataCapability",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
-
-  QualifiedProperty<Boolean> DELETE_RAW_CAPABILITY =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "DeleteRawCapability",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
           -1,
           Boolean.class);
 
-  QualifiedProperty<Boolean> DELETE_AT_TIME_CAPABILITY =
+  QualifiedProperty<UInteger> MaxReturnDataValues_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "DeleteAtTimeCapability",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          Namespaces.OPC_UA,
+          "MaxReturnDataValues",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+          -1,
+          UInteger.class);
+
+  QualifiedProperty<Boolean> InsertDataCapability_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "InsertDataCapability",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
           -1,
           Boolean.class);
 
-  QualifiedProperty<Boolean> INSERT_EVENT_CAPABILITY =
+  QualifiedProperty<UInteger> MaxReturnEventValues_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "InsertEventCapability",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          Namespaces.OPC_UA,
+          "MaxReturnEventValues",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+          -1,
+          UInteger.class);
+
+  QualifiedProperty<Boolean> UpdateDataCapability_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "UpdateDataCapability",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
           -1,
           Boolean.class);
 
-  QualifiedProperty<Boolean> REPLACE_EVENT_CAPABILITY =
+  QualifiedProperty<Boolean> DeleteEventCapability_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ReplaceEventCapability",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
-
-  QualifiedProperty<Boolean> UPDATE_EVENT_CAPABILITY =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "UpdateEventCapability",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
-
-  QualifiedProperty<Boolean> DELETE_EVENT_CAPABILITY =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "DeleteEventCapability",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
           -1,
           Boolean.class);
 
-  QualifiedProperty<Boolean> INSERT_ANNOTATION_CAPABILITY =
+  QualifiedProperty<Boolean> InsertEventCapability_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "InsertAnnotationCapability",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          Namespaces.OPC_UA,
+          "InsertEventCapability",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
           -1,
           Boolean.class);
 
-  QualifiedProperty<Boolean> SERVER_TIMESTAMP_SUPPORTED =
+  QualifiedProperty<Boolean> ReplaceDataCapability_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
+          "ReplaceDataCapability",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+          -1,
+          Boolean.class);
+
+  QualifiedProperty<Boolean> UpdateEventCapability_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "UpdateEventCapability",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+          -1,
+          Boolean.class);
+
+  QualifiedProperty<Boolean> DeleteAtTimeCapability_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "DeleteAtTimeCapability",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+          -1,
+          Boolean.class);
+
+  QualifiedProperty<Boolean> ReplaceEventCapability_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "ReplaceEventCapability",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+          -1,
+          Boolean.class);
+
+  QualifiedProperty<Boolean> ServerTimestampSupported_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
           "ServerTimestampSupported",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+          -1,
+          Boolean.class);
+
+  QualifiedProperty<Boolean> InsertAnnotationCapability_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "InsertAnnotationCapability",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+          -1,
+          Boolean.class);
+
+  QualifiedProperty<Boolean> AccessHistoryDataCapability_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "AccessHistoryDataCapability",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+          -1,
+          Boolean.class);
+
+  QualifiedProperty<Boolean> AccessHistoryEventsCapability_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "AccessHistoryEventsCapability",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
           -1,
           Boolean.class);
 
   /**
-   * Get the local value of the AccessHistoryDataCapability Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the AccessHistoryDataCapability Node.
-   * @throws UaException if an error occurs creating or getting the AccessHistoryDataCapability
-   *     Node.
-   */
-  Boolean getAccessHistoryDataCapability() throws UaException;
-
-  /**
-   * Set the local value of the AccessHistoryDataCapability Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the AccessHistoryDataCapability Node.
-   * @throws UaException if an error occurs creating or getting the AccessHistoryDataCapability
-   *     Node.
-   */
-  void setAccessHistoryDataCapability(Boolean value) throws UaException;
-
-  /**
-   * Read the value of the AccessHistoryDataCapability Node from the server and update the local
-   * value if the operation succeeds.
-   *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Boolean readAccessHistoryDataCapability() throws UaException;
-
-  /**
-   * Write a new value for the AccessHistoryDataCapability Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeAccessHistoryDataCapability(Boolean value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readAccessHistoryDataCapability}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Boolean> readAccessHistoryDataCapabilityAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeAccessHistoryDataCapability}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeAccessHistoryDataCapabilityAsync(Boolean value);
-
-  /**
-   * Get the AccessHistoryDataCapability {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the AccessHistoryDataCapability {@link PropertyType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getAccessHistoryDataCapabilityNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getAccessHistoryDataCapabilityNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getAccessHistoryDataCapabilityNodeAsync();
-
-  /**
-   * Get the local value of the AccessHistoryEventsCapability Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the AccessHistoryEventsCapability Node.
-   * @throws UaException if an error occurs creating or getting the AccessHistoryEventsCapability
-   *     Node.
-   */
-  Boolean getAccessHistoryEventsCapability() throws UaException;
-
-  /**
-   * Set the local value of the AccessHistoryEventsCapability Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the AccessHistoryEventsCapability Node.
-   * @throws UaException if an error occurs creating or getting the AccessHistoryEventsCapability
-   *     Node.
-   */
-  void setAccessHistoryEventsCapability(Boolean value) throws UaException;
-
-  /**
-   * Read the value of the AccessHistoryEventsCapability Node from the server and update the local
-   * value if the operation succeeds.
-   *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Boolean readAccessHistoryEventsCapability() throws UaException;
-
-  /**
-   * Write a new value for the AccessHistoryEventsCapability Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeAccessHistoryEventsCapability(Boolean value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readAccessHistoryEventsCapability}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Boolean> readAccessHistoryEventsCapabilityAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeAccessHistoryEventsCapability}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeAccessHistoryEventsCapabilityAsync(Boolean value);
-
-  /**
-   * Get the AccessHistoryEventsCapability {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the AccessHistoryEventsCapability {@link PropertyType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getAccessHistoryEventsCapabilityNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getAccessHistoryEventsCapabilityNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getAccessHistoryEventsCapabilityNodeAsync();
-
-  /**
-   * Get the local value of the MaxReturnDataValues Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaxReturnDataValues Node.
-   * @throws UaException if an error occurs creating or getting the MaxReturnDataValues Node.
-   */
-  UInteger getMaxReturnDataValues() throws UaException;
-
-  /**
-   * Set the local value of the MaxReturnDataValues Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaxReturnDataValues Node.
-   * @throws UaException if an error occurs creating or getting the MaxReturnDataValues Node.
-   */
-  void setMaxReturnDataValues(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the MaxReturnDataValues Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readMaxReturnDataValues() throws UaException;
-
-  /**
-   * Write a new value for the MaxReturnDataValues Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMaxReturnDataValues(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readMaxReturnDataValues}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readMaxReturnDataValuesAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeMaxReturnDataValues}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMaxReturnDataValuesAsync(UInteger value);
-
-  /**
-   * Get the MaxReturnDataValues {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaxReturnDataValues {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getMaxReturnDataValuesNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getMaxReturnDataValuesNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getMaxReturnDataValuesNodeAsync();
-
-  /**
-   * Get the local value of the MaxReturnEventValues Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaxReturnEventValues Node.
-   * @throws UaException if an error occurs creating or getting the MaxReturnEventValues Node.
-   */
-  UInteger getMaxReturnEventValues() throws UaException;
-
-  /**
-   * Set the local value of the MaxReturnEventValues Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaxReturnEventValues Node.
-   * @throws UaException if an error occurs creating or getting the MaxReturnEventValues Node.
-   */
-  void setMaxReturnEventValues(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the MaxReturnEventValues Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readMaxReturnEventValues() throws UaException;
-
-  /**
-   * Write a new value for the MaxReturnEventValues Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMaxReturnEventValues(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readMaxReturnEventValues}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readMaxReturnEventValuesAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeMaxReturnEventValues}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMaxReturnEventValuesAsync(UInteger value);
-
-  /**
-   * Get the MaxReturnEventValues {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaxReturnEventValues {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getMaxReturnEventValuesNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getMaxReturnEventValuesNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getMaxReturnEventValuesNodeAsync();
-
-  /**
-   * Get the local value of the InsertDataCapability Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the InsertDataCapability Node.
-   * @throws UaException if an error occurs creating or getting the InsertDataCapability Node.
-   */
-  Boolean getInsertDataCapability() throws UaException;
-
-  /**
-   * Set the local value of the InsertDataCapability Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the InsertDataCapability Node.
-   * @throws UaException if an error occurs creating or getting the InsertDataCapability Node.
-   */
-  void setInsertDataCapability(Boolean value) throws UaException;
-
-  /**
-   * Read the value of the InsertDataCapability Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Boolean readInsertDataCapability() throws UaException;
-
-  /**
-   * Write a new value for the InsertDataCapability Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeInsertDataCapability(Boolean value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readInsertDataCapability}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Boolean> readInsertDataCapabilityAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeInsertDataCapability}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeInsertDataCapabilityAsync(Boolean value);
-
-  /**
-   * Get the InsertDataCapability {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the InsertDataCapability {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getInsertDataCapabilityNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getInsertDataCapabilityNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getInsertDataCapabilityNodeAsync();
-
-  /**
-   * Get the local value of the ReplaceDataCapability Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ReplaceDataCapability Node.
-   * @throws UaException if an error occurs creating or getting the ReplaceDataCapability Node.
-   */
-  Boolean getReplaceDataCapability() throws UaException;
-
-  /**
-   * Set the local value of the ReplaceDataCapability Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ReplaceDataCapability Node.
-   * @throws UaException if an error occurs creating or getting the ReplaceDataCapability Node.
-   */
-  void setReplaceDataCapability(Boolean value) throws UaException;
-
-  /**
-   * Read the value of the ReplaceDataCapability Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Boolean readReplaceDataCapability() throws UaException;
-
-  /**
-   * Write a new value for the ReplaceDataCapability Node to the server and update the local value
-   * if the operation succeeds.
-   *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeReplaceDataCapability(Boolean value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readReplaceDataCapability}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Boolean> readReplaceDataCapabilityAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeReplaceDataCapability}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeReplaceDataCapabilityAsync(Boolean value);
-
-  /**
-   * Get the ReplaceDataCapability {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ReplaceDataCapability {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getReplaceDataCapabilityNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getReplaceDataCapabilityNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getReplaceDataCapabilityNodeAsync();
-
-  /**
-   * Get the local value of the UpdateDataCapability Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the UpdateDataCapability Node.
-   * @throws UaException if an error occurs creating or getting the UpdateDataCapability Node.
-   */
-  Boolean getUpdateDataCapability() throws UaException;
-
-  /**
-   * Set the local value of the UpdateDataCapability Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the UpdateDataCapability Node.
-   * @throws UaException if an error occurs creating or getting the UpdateDataCapability Node.
-   */
-  void setUpdateDataCapability(Boolean value) throws UaException;
-
-  /**
-   * Read the value of the UpdateDataCapability Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Boolean readUpdateDataCapability() throws UaException;
-
-  /**
-   * Write a new value for the UpdateDataCapability Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeUpdateDataCapability(Boolean value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readUpdateDataCapability}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Boolean> readUpdateDataCapabilityAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeUpdateDataCapability}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeUpdateDataCapabilityAsync(Boolean value);
-
-  /**
-   * Get the UpdateDataCapability {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the UpdateDataCapability {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getUpdateDataCapabilityNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getUpdateDataCapabilityNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getUpdateDataCapabilityNodeAsync();
-
-  /**
-   * Get the local value of the DeleteRawCapability Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the DeleteRawCapability Node.
-   * @throws UaException if an error occurs creating or getting the DeleteRawCapability Node.
-   */
-  Boolean getDeleteRawCapability() throws UaException;
-
-  /**
-   * Set the local value of the DeleteRawCapability Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the DeleteRawCapability Node.
-   * @throws UaException if an error occurs creating or getting the DeleteRawCapability Node.
-   */
-  void setDeleteRawCapability(Boolean value) throws UaException;
-
-  /**
-   * Read the value of the DeleteRawCapability Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Boolean readDeleteRawCapability() throws UaException;
-
-  /**
-   * Write a new value for the DeleteRawCapability Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeDeleteRawCapability(Boolean value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readDeleteRawCapability}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Boolean> readDeleteRawCapabilityAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeDeleteRawCapability}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeDeleteRawCapabilityAsync(Boolean value);
-
-  /**
-   * Get the DeleteRawCapability {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the DeleteRawCapability {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getDeleteRawCapabilityNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getDeleteRawCapabilityNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getDeleteRawCapabilityNodeAsync();
-
-  /**
-   * Get the local value of the DeleteAtTimeCapability Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the DeleteAtTimeCapability Node.
-   * @throws UaException if an error occurs creating or getting the DeleteAtTimeCapability Node.
-   */
-  Boolean getDeleteAtTimeCapability() throws UaException;
-
-  /**
-   * Set the local value of the DeleteAtTimeCapability Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the DeleteAtTimeCapability Node.
-   * @throws UaException if an error occurs creating or getting the DeleteAtTimeCapability Node.
-   */
-  void setDeleteAtTimeCapability(Boolean value) throws UaException;
-
-  /**
-   * Read the value of the DeleteAtTimeCapability Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Boolean readDeleteAtTimeCapability() throws UaException;
-
-  /**
-   * Write a new value for the DeleteAtTimeCapability Node to the server and update the local value
-   * if the operation succeeds.
-   *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeDeleteAtTimeCapability(Boolean value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readDeleteAtTimeCapability}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Boolean> readDeleteAtTimeCapabilityAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeDeleteAtTimeCapability}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeDeleteAtTimeCapabilityAsync(Boolean value);
-
-  /**
-   * Get the DeleteAtTimeCapability {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the DeleteAtTimeCapability {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getDeleteAtTimeCapabilityNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getDeleteAtTimeCapabilityNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getDeleteAtTimeCapabilityNodeAsync();
-
-  /**
-   * Get the local value of the InsertEventCapability Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the InsertEventCapability Node.
-   * @throws UaException if an error occurs creating or getting the InsertEventCapability Node.
-   */
-  Boolean getInsertEventCapability() throws UaException;
-
-  /**
-   * Set the local value of the InsertEventCapability Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the InsertEventCapability Node.
-   * @throws UaException if an error occurs creating or getting the InsertEventCapability Node.
-   */
-  void setInsertEventCapability(Boolean value) throws UaException;
-
-  /**
-   * Read the value of the InsertEventCapability Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Boolean readInsertEventCapability() throws UaException;
-
-  /**
-   * Write a new value for the InsertEventCapability Node to the server and update the local value
-   * if the operation succeeds.
-   *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeInsertEventCapability(Boolean value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readInsertEventCapability}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Boolean> readInsertEventCapabilityAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeInsertEventCapability}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeInsertEventCapabilityAsync(Boolean value);
-
-  /**
-   * Get the InsertEventCapability {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the InsertEventCapability {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getInsertEventCapabilityNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getInsertEventCapabilityNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getInsertEventCapabilityNodeAsync();
-
-  /**
-   * Get the local value of the ReplaceEventCapability Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ReplaceEventCapability Node.
-   * @throws UaException if an error occurs creating or getting the ReplaceEventCapability Node.
-   */
-  Boolean getReplaceEventCapability() throws UaException;
-
-  /**
-   * Set the local value of the ReplaceEventCapability Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ReplaceEventCapability Node.
-   * @throws UaException if an error occurs creating or getting the ReplaceEventCapability Node.
-   */
-  void setReplaceEventCapability(Boolean value) throws UaException;
-
-  /**
-   * Read the value of the ReplaceEventCapability Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Boolean readReplaceEventCapability() throws UaException;
-
-  /**
-   * Write a new value for the ReplaceEventCapability Node to the server and update the local value
-   * if the operation succeeds.
-   *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeReplaceEventCapability(Boolean value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readReplaceEventCapability}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Boolean> readReplaceEventCapabilityAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeReplaceEventCapability}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeReplaceEventCapabilityAsync(Boolean value);
-
-  /**
-   * Get the ReplaceEventCapability {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ReplaceEventCapability {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getReplaceEventCapabilityNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getReplaceEventCapabilityNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getReplaceEventCapabilityNodeAsync();
-
-  /**
-   * Get the local value of the UpdateEventCapability Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the UpdateEventCapability Node.
-   * @throws UaException if an error occurs creating or getting the UpdateEventCapability Node.
-   */
-  Boolean getUpdateEventCapability() throws UaException;
-
-  /**
-   * Set the local value of the UpdateEventCapability Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the UpdateEventCapability Node.
-   * @throws UaException if an error occurs creating or getting the UpdateEventCapability Node.
-   */
-  void setUpdateEventCapability(Boolean value) throws UaException;
-
-  /**
-   * Read the value of the UpdateEventCapability Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Boolean readUpdateEventCapability() throws UaException;
-
-  /**
-   * Write a new value for the UpdateEventCapability Node to the server and update the local value
-   * if the operation succeeds.
-   *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeUpdateEventCapability(Boolean value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readUpdateEventCapability}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Boolean> readUpdateEventCapabilityAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeUpdateEventCapability}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeUpdateEventCapabilityAsync(Boolean value);
-
-  /**
-   * Get the UpdateEventCapability {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the UpdateEventCapability {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getUpdateEventCapabilityNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getUpdateEventCapabilityNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getUpdateEventCapabilityNodeAsync();
-
-  /**
-   * Get the local value of the DeleteEventCapability Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the DeleteEventCapability Node.
-   * @throws UaException if an error occurs creating or getting the DeleteEventCapability Node.
-   */
-  Boolean getDeleteEventCapability() throws UaException;
-
-  /**
-   * Set the local value of the DeleteEventCapability Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the DeleteEventCapability Node.
-   * @throws UaException if an error occurs creating or getting the DeleteEventCapability Node.
-   */
-  void setDeleteEventCapability(Boolean value) throws UaException;
-
-  /**
-   * Read the value of the DeleteEventCapability Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Boolean readDeleteEventCapability() throws UaException;
-
-  /**
-   * Write a new value for the DeleteEventCapability Node to the server and update the local value
-   * if the operation succeeds.
-   *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeDeleteEventCapability(Boolean value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readDeleteEventCapability}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Boolean> readDeleteEventCapabilityAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeDeleteEventCapability}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeDeleteEventCapabilityAsync(Boolean value);
-
-  /**
-   * Get the DeleteEventCapability {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the DeleteEventCapability {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getDeleteEventCapabilityNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getDeleteEventCapabilityNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getDeleteEventCapabilityNodeAsync();
-
-  /**
-   * Get the local value of the InsertAnnotationCapability Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the InsertAnnotationCapability Node.
-   * @throws UaException if an error occurs creating or getting the InsertAnnotationCapability Node.
-   */
-  Boolean getInsertAnnotationCapability() throws UaException;
-
-  /**
-   * Set the local value of the InsertAnnotationCapability Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the InsertAnnotationCapability Node.
-   * @throws UaException if an error occurs creating or getting the InsertAnnotationCapability Node.
-   */
-  void setInsertAnnotationCapability(Boolean value) throws UaException;
-
-  /**
-   * Read the value of the InsertAnnotationCapability Node from the server and update the local
-   * value if the operation succeeds.
-   *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Boolean readInsertAnnotationCapability() throws UaException;
-
-  /**
-   * Write a new value for the InsertAnnotationCapability Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeInsertAnnotationCapability(Boolean value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readInsertAnnotationCapability}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Boolean> readInsertAnnotationCapabilityAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeInsertAnnotationCapability}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeInsertAnnotationCapabilityAsync(Boolean value);
-
-  /**
-   * Get the InsertAnnotationCapability {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the InsertAnnotationCapability {@link PropertyType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getInsertAnnotationCapabilityNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getInsertAnnotationCapabilityNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getInsertAnnotationCapabilityNodeAsync();
-
-  /**
-   * Get the local value of the ServerTimestampSupported Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ServerTimestampSupported Node.
-   * @throws UaException if an error occurs creating or getting the ServerTimestampSupported Node.
-   */
-  Boolean getServerTimestampSupported() throws UaException;
-
-  /**
-   * Set the local value of the ServerTimestampSupported Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ServerTimestampSupported Node.
-   * @throws UaException if an error occurs creating or getting the ServerTimestampSupported Node.
-   */
-  void setServerTimestampSupported(Boolean value) throws UaException;
-
-  /**
-   * Read the value of the ServerTimestampSupported Node from the server and update the local value
-   * if the operation succeeds.
-   *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Boolean readServerTimestampSupported() throws UaException;
-
-  /**
-   * Write a new value for the ServerTimestampSupported Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeServerTimestampSupported(Boolean value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readServerTimestampSupported}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Boolean> readServerTimestampSupportedAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeServerTimestampSupported}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeServerTimestampSupportedAsync(Boolean value);
-
-  /**
-   * Get the ServerTimestampSupported {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ServerTimestampSupported {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getServerTimestampSupportedNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getServerTimestampSupportedNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getServerTimestampSupportedNodeAsync();
-
-  /**
-   * Get the AggregateFunctions {@link FolderType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the AggregateFunctions {@link FolderType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * Resolves the mandatory AggregateFunctions child, a FolderType.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.6">FolderType
+   *     documentation</a>
    */
   FolderType getAggregateFunctionsNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getAggregateFunctionsNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the FolderType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getAggregateFunctionsNode()}. */
   CompletableFuture<? extends FolderType> getAggregateFunctionsNodeAsync();
+
+  /**
+   * Resolves the mandatory DeleteRawCapability child, a PropertyType with DataType Boolean.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getDeleteRawCapabilityNode() throws UaException;
+
+  /** Asynchronous form of {@link #getDeleteRawCapabilityNode()}. */
+  CompletableFuture<? extends PropertyType> getDeleteRawCapabilityNodeAsync();
+
+  /**
+   * Reads the Value of the DeleteRawCapability child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable Boolean readDeleteRawCapability() throws UaException;
+
+  /**
+   * Writes the Value of the DeleteRawCapability child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeDeleteRawCapability(@Nullable Boolean value) throws UaException;
+
+  /** Asynchronous form of {@link #readDeleteRawCapability()}. */
+  CompletableFuture<? extends @Nullable Boolean> readDeleteRawCapabilityAsync();
+
+  /**
+   * Asynchronous form of {@link #writeDeleteRawCapability}; completes with the operation status.
+   */
+  CompletableFuture<StatusCode> writeDeleteRawCapabilityAsync(@Nullable Boolean value);
+
+  /**
+   * Resolves the mandatory MaxReturnDataValues child, a PropertyType with DataType UInt32.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getMaxReturnDataValuesNode() throws UaException;
+
+  /** Asynchronous form of {@link #getMaxReturnDataValuesNode()}. */
+  CompletableFuture<? extends PropertyType> getMaxReturnDataValuesNodeAsync();
+
+  /**
+   * Reads the Value of the MaxReturnDataValues child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable UInteger readMaxReturnDataValues() throws UaException;
+
+  /**
+   * Writes the Value of the MaxReturnDataValues child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeMaxReturnDataValues(@Nullable UInteger value) throws UaException;
+
+  /** Asynchronous form of {@link #readMaxReturnDataValues()}. */
+  CompletableFuture<? extends @Nullable UInteger> readMaxReturnDataValuesAsync();
+
+  /**
+   * Asynchronous form of {@link #writeMaxReturnDataValues}; completes with the operation status.
+   */
+  CompletableFuture<StatusCode> writeMaxReturnDataValuesAsync(@Nullable UInteger value);
+
+  /**
+   * Resolves the mandatory InsertDataCapability child, a PropertyType with DataType Boolean.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getInsertDataCapabilityNode() throws UaException;
+
+  /** Asynchronous form of {@link #getInsertDataCapabilityNode()}. */
+  CompletableFuture<? extends PropertyType> getInsertDataCapabilityNodeAsync();
+
+  /**
+   * Reads the Value of the InsertDataCapability child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable Boolean readInsertDataCapability() throws UaException;
+
+  /**
+   * Writes the Value of the InsertDataCapability child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeInsertDataCapability(@Nullable Boolean value) throws UaException;
+
+  /** Asynchronous form of {@link #readInsertDataCapability()}. */
+  CompletableFuture<? extends @Nullable Boolean> readInsertDataCapabilityAsync();
+
+  /**
+   * Asynchronous form of {@link #writeInsertDataCapability}; completes with the operation status.
+   */
+  CompletableFuture<StatusCode> writeInsertDataCapabilityAsync(@Nullable Boolean value);
+
+  /**
+   * Resolves the mandatory MaxReturnEventValues child, a PropertyType with DataType UInt32.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getMaxReturnEventValuesNode() throws UaException;
+
+  /** Asynchronous form of {@link #getMaxReturnEventValuesNode()}. */
+  CompletableFuture<? extends PropertyType> getMaxReturnEventValuesNodeAsync();
+
+  /**
+   * Reads the Value of the MaxReturnEventValues child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable UInteger readMaxReturnEventValues() throws UaException;
+
+  /**
+   * Writes the Value of the MaxReturnEventValues child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeMaxReturnEventValues(@Nullable UInteger value) throws UaException;
+
+  /** Asynchronous form of {@link #readMaxReturnEventValues()}. */
+  CompletableFuture<? extends @Nullable UInteger> readMaxReturnEventValuesAsync();
+
+  /**
+   * Asynchronous form of {@link #writeMaxReturnEventValues}; completes with the operation status.
+   */
+  CompletableFuture<StatusCode> writeMaxReturnEventValuesAsync(@Nullable UInteger value);
+
+  /**
+   * Resolves the mandatory UpdateDataCapability child, a PropertyType with DataType Boolean.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getUpdateDataCapabilityNode() throws UaException;
+
+  /** Asynchronous form of {@link #getUpdateDataCapabilityNode()}. */
+  CompletableFuture<? extends PropertyType> getUpdateDataCapabilityNodeAsync();
+
+  /**
+   * Reads the Value of the UpdateDataCapability child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable Boolean readUpdateDataCapability() throws UaException;
+
+  /**
+   * Writes the Value of the UpdateDataCapability child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeUpdateDataCapability(@Nullable Boolean value) throws UaException;
+
+  /** Asynchronous form of {@link #readUpdateDataCapability()}. */
+  CompletableFuture<? extends @Nullable Boolean> readUpdateDataCapabilityAsync();
+
+  /**
+   * Asynchronous form of {@link #writeUpdateDataCapability}; completes with the operation status.
+   */
+  CompletableFuture<StatusCode> writeUpdateDataCapabilityAsync(@Nullable Boolean value);
+
+  /**
+   * Resolves the mandatory DeleteEventCapability child, a PropertyType with DataType Boolean.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getDeleteEventCapabilityNode() throws UaException;
+
+  /** Asynchronous form of {@link #getDeleteEventCapabilityNode()}. */
+  CompletableFuture<? extends PropertyType> getDeleteEventCapabilityNodeAsync();
+
+  /**
+   * Reads the Value of the DeleteEventCapability child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable Boolean readDeleteEventCapability() throws UaException;
+
+  /**
+   * Writes the Value of the DeleteEventCapability child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeDeleteEventCapability(@Nullable Boolean value) throws UaException;
+
+  /** Asynchronous form of {@link #readDeleteEventCapability()}. */
+  CompletableFuture<? extends @Nullable Boolean> readDeleteEventCapabilityAsync();
+
+  /**
+   * Asynchronous form of {@link #writeDeleteEventCapability}; completes with the operation status.
+   */
+  CompletableFuture<StatusCode> writeDeleteEventCapabilityAsync(@Nullable Boolean value);
+
+  /**
+   * Resolves the mandatory InsertEventCapability child, a PropertyType with DataType Boolean.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getInsertEventCapabilityNode() throws UaException;
+
+  /** Asynchronous form of {@link #getInsertEventCapabilityNode()}. */
+  CompletableFuture<? extends PropertyType> getInsertEventCapabilityNodeAsync();
+
+  /**
+   * Reads the Value of the InsertEventCapability child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable Boolean readInsertEventCapability() throws UaException;
+
+  /**
+   * Writes the Value of the InsertEventCapability child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeInsertEventCapability(@Nullable Boolean value) throws UaException;
+
+  /** Asynchronous form of {@link #readInsertEventCapability()}. */
+  CompletableFuture<? extends @Nullable Boolean> readInsertEventCapabilityAsync();
+
+  /**
+   * Asynchronous form of {@link #writeInsertEventCapability}; completes with the operation status.
+   */
+  CompletableFuture<StatusCode> writeInsertEventCapabilityAsync(@Nullable Boolean value);
+
+  /**
+   * Resolves the mandatory ReplaceDataCapability child, a PropertyType with DataType Boolean.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getReplaceDataCapabilityNode() throws UaException;
+
+  /** Asynchronous form of {@link #getReplaceDataCapabilityNode()}. */
+  CompletableFuture<? extends PropertyType> getReplaceDataCapabilityNodeAsync();
+
+  /**
+   * Reads the Value of the ReplaceDataCapability child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable Boolean readReplaceDataCapability() throws UaException;
+
+  /**
+   * Writes the Value of the ReplaceDataCapability child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeReplaceDataCapability(@Nullable Boolean value) throws UaException;
+
+  /** Asynchronous form of {@link #readReplaceDataCapability()}. */
+  CompletableFuture<? extends @Nullable Boolean> readReplaceDataCapabilityAsync();
+
+  /**
+   * Asynchronous form of {@link #writeReplaceDataCapability}; completes with the operation status.
+   */
+  CompletableFuture<StatusCode> writeReplaceDataCapabilityAsync(@Nullable Boolean value);
+
+  /**
+   * Resolves the mandatory UpdateEventCapability child, a PropertyType with DataType Boolean.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getUpdateEventCapabilityNode() throws UaException;
+
+  /** Asynchronous form of {@link #getUpdateEventCapabilityNode()}. */
+  CompletableFuture<? extends PropertyType> getUpdateEventCapabilityNodeAsync();
+
+  /**
+   * Reads the Value of the UpdateEventCapability child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable Boolean readUpdateEventCapability() throws UaException;
+
+  /**
+   * Writes the Value of the UpdateEventCapability child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeUpdateEventCapability(@Nullable Boolean value) throws UaException;
+
+  /** Asynchronous form of {@link #readUpdateEventCapability()}. */
+  CompletableFuture<? extends @Nullable Boolean> readUpdateEventCapabilityAsync();
+
+  /**
+   * Asynchronous form of {@link #writeUpdateEventCapability}; completes with the operation status.
+   */
+  CompletableFuture<StatusCode> writeUpdateEventCapabilityAsync(@Nullable Boolean value);
+
+  /**
+   * Resolves the mandatory DeleteAtTimeCapability child, a PropertyType with DataType Boolean.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getDeleteAtTimeCapabilityNode() throws UaException;
+
+  /** Asynchronous form of {@link #getDeleteAtTimeCapabilityNode()}. */
+  CompletableFuture<? extends PropertyType> getDeleteAtTimeCapabilityNodeAsync();
+
+  /**
+   * Reads the Value of the DeleteAtTimeCapability child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable Boolean readDeleteAtTimeCapability() throws UaException;
+
+  /**
+   * Writes the Value of the DeleteAtTimeCapability child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeDeleteAtTimeCapability(@Nullable Boolean value) throws UaException;
+
+  /** Asynchronous form of {@link #readDeleteAtTimeCapability()}. */
+  CompletableFuture<? extends @Nullable Boolean> readDeleteAtTimeCapabilityAsync();
+
+  /**
+   * Asynchronous form of {@link #writeDeleteAtTimeCapability}; completes with the operation status.
+   */
+  CompletableFuture<StatusCode> writeDeleteAtTimeCapabilityAsync(@Nullable Boolean value);
+
+  /**
+   * Resolves the mandatory ReplaceEventCapability child, a PropertyType with DataType Boolean.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getReplaceEventCapabilityNode() throws UaException;
+
+  /** Asynchronous form of {@link #getReplaceEventCapabilityNode()}. */
+  CompletableFuture<? extends PropertyType> getReplaceEventCapabilityNodeAsync();
+
+  /**
+   * Reads the Value of the ReplaceEventCapability child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable Boolean readReplaceEventCapability() throws UaException;
+
+  /**
+   * Writes the Value of the ReplaceEventCapability child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeReplaceEventCapability(@Nullable Boolean value) throws UaException;
+
+  /** Asynchronous form of {@link #readReplaceEventCapability()}. */
+  CompletableFuture<? extends @Nullable Boolean> readReplaceEventCapabilityAsync();
+
+  /**
+   * Asynchronous form of {@link #writeReplaceEventCapability}; completes with the operation status.
+   */
+  CompletableFuture<StatusCode> writeReplaceEventCapabilityAsync(@Nullable Boolean value);
+
+  /**
+   * Resolves the optional ServerTimestampSupported child, a PropertyType with DataType Boolean.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyType getServerTimestampSupportedNode() throws UaException;
+
+  /** Asynchronous form of {@link #getServerTimestampSupportedNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getServerTimestampSupportedNodeAsync();
+
+  /**
+   * Reads the Value of the ServerTimestampSupported child from the server.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable Boolean readServerTimestampSupported() throws UaException;
+
+  /**
+   * Writes the Value of the ServerTimestampSupported child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeServerTimestampSupported(@Nullable Boolean value) throws UaException;
+
+  /** Asynchronous form of {@link #readServerTimestampSupported()}. */
+  CompletableFuture<? extends @Nullable Boolean> readServerTimestampSupportedAsync();
+
+  /**
+   * Asynchronous form of {@link #writeServerTimestampSupported}; completes with the operation
+   * status.
+   */
+  CompletableFuture<StatusCode> writeServerTimestampSupportedAsync(@Nullable Boolean value);
+
+  /**
+   * Resolves the mandatory InsertAnnotationCapability child, a PropertyType with DataType Boolean.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getInsertAnnotationCapabilityNode() throws UaException;
+
+  /** Asynchronous form of {@link #getInsertAnnotationCapabilityNode()}. */
+  CompletableFuture<? extends PropertyType> getInsertAnnotationCapabilityNodeAsync();
+
+  /**
+   * Reads the Value of the InsertAnnotationCapability child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable Boolean readInsertAnnotationCapability() throws UaException;
+
+  /**
+   * Writes the Value of the InsertAnnotationCapability child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeInsertAnnotationCapability(@Nullable Boolean value) throws UaException;
+
+  /** Asynchronous form of {@link #readInsertAnnotationCapability()}. */
+  CompletableFuture<? extends @Nullable Boolean> readInsertAnnotationCapabilityAsync();
+
+  /**
+   * Asynchronous form of {@link #writeInsertAnnotationCapability}; completes with the operation
+   * status.
+   */
+  CompletableFuture<StatusCode> writeInsertAnnotationCapabilityAsync(@Nullable Boolean value);
+
+  /**
+   * Resolves the mandatory AccessHistoryDataCapability child, a PropertyType with DataType Boolean.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getAccessHistoryDataCapabilityNode() throws UaException;
+
+  /** Asynchronous form of {@link #getAccessHistoryDataCapabilityNode()}. */
+  CompletableFuture<? extends PropertyType> getAccessHistoryDataCapabilityNodeAsync();
+
+  /**
+   * Reads the Value of the AccessHistoryDataCapability child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable Boolean readAccessHistoryDataCapability() throws UaException;
+
+  /**
+   * Writes the Value of the AccessHistoryDataCapability child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeAccessHistoryDataCapability(@Nullable Boolean value) throws UaException;
+
+  /** Asynchronous form of {@link #readAccessHistoryDataCapability()}. */
+  CompletableFuture<? extends @Nullable Boolean> readAccessHistoryDataCapabilityAsync();
+
+  /**
+   * Asynchronous form of {@link #writeAccessHistoryDataCapability}; completes with the operation
+   * status.
+   */
+  CompletableFuture<StatusCode> writeAccessHistoryDataCapabilityAsync(@Nullable Boolean value);
+
+  /**
+   * Resolves the mandatory AccessHistoryEventsCapability child, a PropertyType with DataType
+   * Boolean.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getAccessHistoryEventsCapabilityNode() throws UaException;
+
+  /** Asynchronous form of {@link #getAccessHistoryEventsCapabilityNode()}. */
+  CompletableFuture<? extends PropertyType> getAccessHistoryEventsCapabilityNodeAsync();
+
+  /**
+   * Reads the Value of the AccessHistoryEventsCapability child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable Boolean readAccessHistoryEventsCapability() throws UaException;
+
+  /**
+   * Writes the Value of the AccessHistoryEventsCapability child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeAccessHistoryEventsCapability(@Nullable Boolean value) throws UaException;
+
+  /** Asynchronous form of {@link #readAccessHistoryEventsCapability()}. */
+  CompletableFuture<? extends @Nullable Boolean> readAccessHistoryEventsCapabilityAsync();
+
+  /**
+   * Asynchronous form of {@link #writeAccessHistoryEventsCapability}; completes with the operation
+   * status.
+   */
+  CompletableFuture<StatusCode> writeAccessHistoryEventsCapabilityAsync(@Nullable Boolean value);
 }

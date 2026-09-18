@@ -1,30 +1,15 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.variables;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
@@ -32,7 +17,16 @@ import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelExType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AxisInformation;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.types.structured.XVType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link XYArrayItemType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.4/#5.3.4.3">Model
+ *     documentation</a>
+ */
 public class XYArrayItemTypeNode extends ArrayItemTypeNode implements XYArrayItemType {
   public XYArrayItemTypeNode(
       OpcUaClient client,
@@ -40,21 +34,21 @@ public class XYArrayItemTypeNode extends ArrayItemTypeNode implements XYArrayIte
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       DataValue value,
       NodeId dataType,
       Integer valueRank,
-      UInteger[] arrayDimensions,
+      UInteger @Nullable [] arrayDimensions,
       UByte accessLevel,
       UByte userAccessLevel,
       Double minimumSamplingInterval,
       Boolean historizing,
-      AccessLevelExType accessLevelEx) {
+      @Nullable AccessLevelExType accessLevelEx) {
     super(
         client,
         nodeId,
@@ -79,78 +73,109 @@ public class XYArrayItemTypeNode extends ArrayItemTypeNode implements XYArrayIte
   }
 
   @Override
-  public AxisInformation getXAxisDefinition() throws UaException {
-    PropertyTypeNode node = getXAxisDefinitionNode();
-    return cast(node.getValue().getValue().getValue(), AxisInformation.class);
-  }
-
-  @Override
-  public void setXAxisDefinition(AxisInformation value) throws UaException {
-    PropertyTypeNode node = getXAxisDefinitionNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
-  }
-
-  @Override
-  public AxisInformation readXAxisDefinition() throws UaException {
-    try {
-      return readXAxisDefinitionAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeXAxisDefinition(AxisInformation value) throws UaException {
-    try {
-      StatusCode statusCode = writeXAxisDefinitionAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends AxisInformation> readXAxisDefinitionAsync() {
-    return getXAxisDefinitionNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), AxisInformation.class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeXAxisDefinitionAsync(AxisInformation xAxisDefinition) {
-    ExtensionObject encoded =
-        ExtensionObject.encode(client.getStaticEncodingContext(), xAxisDefinition);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getXAxisDefinitionNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
   public PropertyTypeNode getXAxisDefinitionNode() throws UaException {
-    try {
-      return getXAxisDefinitionNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getXAxisDefinitionNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends PropertyTypeNode> getXAxisDefinitionNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "XAxisDefinition", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "XAxisDefinition",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
+  }
+
+  @Override
+  public @Nullable AxisInformation readXAxisDefinition() throws UaException {
+    return ClientNodeSupport.await(readXAxisDefinitionAsync());
+  }
+
+  @Override
+  public void writeXAxisDefinition(@Nullable AxisInformation value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeXAxisDefinitionAsync(value)),
+        "http://opcfoundation.org/UA/}XAxisDefinition");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable AxisInformation> readXAxisDefinitionAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getXAxisDefinitionNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}XAxisDefinition",
+                            true,
+                            AxisInformation.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable AxisInformation) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeXAxisDefinitionAsync(@Nullable AxisInformation value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getXAxisDefinitionNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}XAxisDefinition",
+                        value,
+                        AxisInformation.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public @Nullable XVType @Nullable [] readXYArrayItemValue() throws UaException {
+    return ClientNodeSupport.await(readXYArrayItemValueAsync());
+  }
+
+  @Override
+  public void writeXYArrayItemValue(@Nullable XVType @Nullable [] value) throws UaException {
+    ClientNodeSupport.good(ClientNodeSupport.await(writeXYArrayItemValueAsync(value)), "Value");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable XVType @Nullable []> readXYArrayItemValueAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    CompletableFuture.completedFuture(this),
+                    n ->
+                        ClientNodeSupport.read(
+                            client, n, this, "Value", true, XVType.class, 1, null)),
+                v -> CompletableFuture.completedFuture((@Nullable XVType @Nullable []) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeXYArrayItemValueAsync(
+      @Nullable XVType @Nullable [] value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                n ->
+                    ClientNodeSupport.write(
+                        client, n, this, "Value", value, XVType.class, 1, null)));
   }
 }

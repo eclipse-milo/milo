@@ -1,31 +1,15 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyTypeNode;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
@@ -33,7 +17,15 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.PortIdSubtype;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.LldpManagementAddressTxPortType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link LldpPortInformationType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.5.5">Model
+ *     documentation</a>
+ */
 public class LldpPortInformationTypeNode extends BaseObjectTypeNode
     implements LldpPortInformationType {
   public LldpPortInformationTypeNode(
@@ -42,12 +34,12 @@ public class LldpPortInformationTypeNode extends BaseObjectTypeNode
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         client,
@@ -65,491 +57,463 @@ public class LldpPortInformationTypeNode extends BaseObjectTypeNode
   }
 
   @Override
-  public String getIetfBaseNetworkInterfaceName() throws UaException {
-    PropertyTypeNode node = getIetfBaseNetworkInterfaceNameNode();
-    return (String) node.getValue().getValue().getValue();
-  }
-
-  @Override
-  public void setIetfBaseNetworkInterfaceName(String value) throws UaException {
-    PropertyTypeNode node = getIetfBaseNetworkInterfaceNameNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public String readIetfBaseNetworkInterfaceName() throws UaException {
-    try {
-      return readIetfBaseNetworkInterfaceNameAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeIetfBaseNetworkInterfaceName(String value) throws UaException {
-    try {
-      StatusCode statusCode = writeIetfBaseNetworkInterfaceNameAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends String> readIetfBaseNetworkInterfaceNameAsync() {
-    return getIetfBaseNetworkInterfaceNameNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (String) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeIetfBaseNetworkInterfaceNameAsync(
-      String ietfBaseNetworkInterfaceName) {
-    DataValue value = DataValue.valueOnly(new Variant(ietfBaseNetworkInterfaceName));
-    return getIetfBaseNetworkInterfaceNameNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public PropertyTypeNode getIetfBaseNetworkInterfaceNameNode() throws UaException {
-    try {
-      return getIetfBaseNetworkInterfaceNameNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends PropertyTypeNode> getIetfBaseNetworkInterfaceNameNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "IetfBaseNetworkInterfaceName",
-            ExpandedNodeId.parse("i=46"),
-            false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
-  }
-
-  @Override
-  public UByte[] getDestMacAddress() throws UaException {
-    PropertyTypeNode node = getDestMacAddressNode();
-    return (UByte[]) node.getValue().getValue().getValue();
-  }
-
-  @Override
-  public void setDestMacAddress(UByte[] value) throws UaException {
-    PropertyTypeNode node = getDestMacAddressNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public UByte[] readDestMacAddress() throws UaException {
-    try {
-      return readDestMacAddressAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeDestMacAddress(UByte[] value) throws UaException {
-    try {
-      StatusCode statusCode = writeDestMacAddressAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends UByte[]> readDestMacAddressAsync() {
-    return getDestMacAddressNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (UByte[]) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeDestMacAddressAsync(UByte[] destMacAddress) {
-    DataValue value = DataValue.valueOnly(new Variant(destMacAddress));
-    return getDestMacAddressNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public PropertyTypeNode getDestMacAddressNode() throws UaException {
-    try {
-      return getDestMacAddressNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends PropertyTypeNode> getDestMacAddressNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "DestMacAddress", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
-  }
-
-  @Override
-  public PortIdSubtype getPortIdSubtype() throws UaException {
-    PropertyTypeNode node = getPortIdSubtypeNode();
-    Object value = node.getValue().getValue().getValue();
-
-    if (value instanceof Integer) {
-      return PortIdSubtype.from((Integer) value);
-    } else if (value instanceof PortIdSubtype) {
-      return (PortIdSubtype) value;
-    } else {
-      return null;
-    }
-  }
-
-  @Override
-  public void setPortIdSubtype(PortIdSubtype value) throws UaException {
-    PropertyTypeNode node = getPortIdSubtypeNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public PortIdSubtype readPortIdSubtype() throws UaException {
-    try {
-      return readPortIdSubtypeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writePortIdSubtype(PortIdSubtype value) throws UaException {
-    try {
-      StatusCode statusCode = writePortIdSubtypeAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends PortIdSubtype> readPortIdSubtypeAsync() {
-    return getPortIdSubtypeNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(
-            v -> {
-              Object value = v.getValue().getValue();
-              if (value instanceof Integer) {
-                return PortIdSubtype.from((Integer) value);
-              } else {
-                return null;
-              }
-            });
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writePortIdSubtypeAsync(PortIdSubtype portIdSubtype) {
-    DataValue value = DataValue.valueOnly(new Variant(portIdSubtype));
-    return getPortIdSubtypeNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
   public PropertyTypeNode getPortIdSubtypeNode() throws UaException {
-    try {
-      return getPortIdSubtypeNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getPortIdSubtypeNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends PropertyTypeNode> getPortIdSubtypeNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "PortIdSubtype", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "PortIdSubtype",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public String getPortId() throws UaException {
-    PropertyTypeNode node = getPortIdNode();
-    return (String) node.getValue().getValue().getValue();
+  public @Nullable PortIdSubtype readPortIdSubtype() throws UaException {
+    return ClientNodeSupport.await(readPortIdSubtypeAsync());
   }
 
   @Override
-  public void setPortId(String value) throws UaException {
-    PropertyTypeNode node = getPortIdNode();
-    node.setValue(new Variant(value));
+  public void writePortIdSubtype(@Nullable PortIdSubtype value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writePortIdSubtypeAsync(value)),
+        "http://opcfoundation.org/UA/}PortIdSubtype");
   }
 
   @Override
-  public String readPortId() throws UaException {
-    try {
-      return readPortIdAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable PortIdSubtype> readPortIdSubtypeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getPortIdSubtypeNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}PortIdSubtype",
+                            true,
+                            PortIdSubtype.class,
+                            -1,
+                            PortIdSubtype::from)),
+                v -> CompletableFuture.completedFuture((@Nullable PortIdSubtype) v)));
   }
 
   @Override
-  public void writePortId(String value) throws UaException {
-    try {
-      StatusCode statusCode = writePortIdAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<StatusCode> writePortIdSubtypeAsync(@Nullable PortIdSubtype value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getPortIdSubtypeNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}PortIdSubtype",
+                        value,
+                        PortIdSubtype.class,
+                        -1,
+                        PortIdSubtype::from)));
   }
 
   @Override
-  public CompletableFuture<? extends String> readPortIdAsync() {
-    return getPortIdNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (String) v.getValue().getValue());
+  public PropertyTypeNode getDestMacAddressNode() throws UaException {
+    return ClientNodeSupport.await(getDestMacAddressNodeAsync());
   }
 
   @Override
-  public CompletableFuture<StatusCode> writePortIdAsync(String portId) {
-    DataValue value = DataValue.valueOnly(new Variant(portId));
-    return getPortIdNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<? extends PropertyTypeNode> getDestMacAddressNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "DestMacAddress",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public PropertyTypeNode getPortIdNode() throws UaException {
-    try {
-      return getPortIdNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public UByte @Nullable [] readDestMacAddress() throws UaException {
+    return ClientNodeSupport.await(readDestMacAddressAsync());
   }
 
   @Override
-  public CompletableFuture<? extends PropertyTypeNode> getPortIdNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "PortId", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+  public void writeDestMacAddress(UByte @Nullable [] value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeDestMacAddressAsync(value)),
+        "http://opcfoundation.org/UA/}DestMacAddress");
   }
 
   @Override
-  public String getPortDescription() throws UaException {
-    PropertyTypeNode node = getPortDescriptionNode();
-    return (String) node.getValue().getValue().getValue();
+  public CompletableFuture<? extends UByte @Nullable []> readDestMacAddressAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getDestMacAddressNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}DestMacAddress",
+                            true,
+                            UByte.class,
+                            1,
+                            null)),
+                v -> CompletableFuture.completedFuture((UByte @Nullable []) v)));
   }
 
   @Override
-  public void setPortDescription(String value) throws UaException {
-    PropertyTypeNode node = getPortDescriptionNode();
-    node.setValue(new Variant(value));
+  public CompletableFuture<StatusCode> writeDestMacAddressAsync(UByte @Nullable [] value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getDestMacAddressNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}DestMacAddress",
+                        value,
+                        UByte.class,
+                        1,
+                        null)));
   }
 
   @Override
-  public String readPortDescription() throws UaException {
-    try {
-      return readPortDescriptionAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable PropertyTypeNode getPortDescriptionNode() throws UaException {
+    return ClientNodeSupport.await(getPortDescriptionNodeAsync());
   }
 
   @Override
-  public void writePortDescription(String value) throws UaException {
-    try {
-      StatusCode statusCode = writePortDescriptionAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable PropertyTypeNode> getPortDescriptionNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "PortDescription",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public CompletableFuture<? extends String> readPortDescriptionAsync() {
-    return getPortDescriptionNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (String) v.getValue().getValue());
+  public @Nullable String readPortDescription() throws UaException {
+    return ClientNodeSupport.await(readPortDescriptionAsync());
   }
 
   @Override
-  public CompletableFuture<StatusCode> writePortDescriptionAsync(String portDescription) {
-    DataValue value = DataValue.valueOnly(new Variant(portDescription));
-    return getPortDescriptionNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public void writePortDescription(@Nullable String value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writePortDescriptionAsync(value)),
+        "http://opcfoundation.org/UA/}PortDescription");
   }
 
   @Override
-  public PropertyTypeNode getPortDescriptionNode() throws UaException {
-    try {
-      return getPortDescriptionNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable String> readPortDescriptionAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getPortDescriptionNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}PortDescription",
+                            false,
+                            String.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable String) v)));
   }
 
   @Override
-  public CompletableFuture<? extends PropertyTypeNode> getPortDescriptionNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "PortDescription", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+  public CompletableFuture<StatusCode> writePortDescriptionAsync(@Nullable String value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getPortDescriptionNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}PortDescription",
+                        value,
+                        String.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public LldpManagementAddressTxPortType[] getManagementAddressTxPort() throws UaException {
-    PropertyTypeNode node = getManagementAddressTxPortNode();
-    return cast(node.getValue().getValue().getValue(), LldpManagementAddressTxPortType[].class);
+  public @Nullable FolderTypeNode getRemoteSystemsDataNode() throws UaException {
+    return ClientNodeSupport.await(getRemoteSystemsDataNodeAsync());
   }
 
   @Override
-  public void setManagementAddressTxPort(LldpManagementAddressTxPortType[] value)
+  public CompletableFuture<? extends @Nullable FolderTypeNode> getRemoteSystemsDataNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "RemoteSystemsData",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Object,
+                        FolderTypeNode.class)));
+  }
+
+  @Override
+  public @Nullable PropertyTypeNode getManagementAddressTxPortNode() throws UaException {
+    return ClientNodeSupport.await(getManagementAddressTxPortNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable PropertyTypeNode>
+      getManagementAddressTxPortNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "ManagementAddressTxPort",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
+  }
+
+  @Override
+  public @Nullable LldpManagementAddressTxPortType @Nullable [] readManagementAddressTxPort()
       throws UaException {
-    PropertyTypeNode node = getManagementAddressTxPortNode();
-    ExtensionObject[] encoded =
-        ExtensionObject.encodeArray(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
+    return ClientNodeSupport.await(readManagementAddressTxPortAsync());
   }
 
   @Override
-  public LldpManagementAddressTxPortType[] readManagementAddressTxPort() throws UaException {
-    try {
-      return readManagementAddressTxPortAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public void writeManagementAddressTxPort(
+      @Nullable LldpManagementAddressTxPortType @Nullable [] value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeManagementAddressTxPortAsync(value)),
+        "http://opcfoundation.org/UA/}ManagementAddressTxPort");
   }
 
   @Override
-  public void writeManagementAddressTxPort(LldpManagementAddressTxPortType[] value)
-      throws UaException {
-    try {
-      writeManagementAddressTxPortAsync(value).get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends LldpManagementAddressTxPortType[]>
+  public CompletableFuture<? extends @Nullable LldpManagementAddressTxPortType @Nullable []>
       readManagementAddressTxPortAsync() {
-    return getManagementAddressTxPortNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), LldpManagementAddressTxPortType[].class));
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getManagementAddressTxPortNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}ManagementAddressTxPort",
+                            false,
+                            LldpManagementAddressTxPortType.class,
+                            1,
+                            null)),
+                v ->
+                    CompletableFuture.completedFuture(
+                        (@Nullable LldpManagementAddressTxPortType @Nullable []) v)));
   }
 
   @Override
   public CompletableFuture<StatusCode> writeManagementAddressTxPortAsync(
-      LldpManagementAddressTxPortType[] managementAddressTxPort) {
-    ExtensionObject[] encoded =
-        ExtensionObject.encodeArray(client.getStaticEncodingContext(), managementAddressTxPort);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getManagementAddressTxPortNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+      @Nullable LldpManagementAddressTxPortType @Nullable [] value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getManagementAddressTxPortNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}ManagementAddressTxPort",
+                        value,
+                        LldpManagementAddressTxPortType.class,
+                        1,
+                        null)));
   }
 
   @Override
-  public PropertyTypeNode getManagementAddressTxPortNode() throws UaException {
-    try {
-      return getManagementAddressTxPortNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public PropertyTypeNode getIetfBaseNetworkInterfaceNameNode() throws UaException {
+    return ClientNodeSupport.await(getIetfBaseNetworkInterfaceNameNodeAsync());
   }
 
   @Override
-  public CompletableFuture<? extends PropertyTypeNode> getManagementAddressTxPortNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "ManagementAddressTxPort",
-            ExpandedNodeId.parse("i=46"),
-            false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+  public CompletableFuture<? extends PropertyTypeNode> getIetfBaseNetworkInterfaceNameNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "IetfBaseNetworkInterfaceName",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public FolderTypeNode getRemoteSystemsDataNode() throws UaException {
-    try {
-      return getRemoteSystemsDataNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable String readIetfBaseNetworkInterfaceName() throws UaException {
+    return ClientNodeSupport.await(readIetfBaseNetworkInterfaceNameAsync());
   }
 
   @Override
-  public CompletableFuture<? extends FolderTypeNode> getRemoteSystemsDataNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "RemoteSystemsData",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (FolderTypeNode) node);
+  public void writeIetfBaseNetworkInterfaceName(@Nullable String value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeIetfBaseNetworkInterfaceNameAsync(value)),
+        "http://opcfoundation.org/UA/}IetfBaseNetworkInterfaceName");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable String> readIetfBaseNetworkInterfaceNameAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getIetfBaseNetworkInterfaceNameNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}IetfBaseNetworkInterfaceName",
+                            true,
+                            String.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable String) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeIetfBaseNetworkInterfaceNameAsync(
+      @Nullable String value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getIetfBaseNetworkInterfaceNameNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}IetfBaseNetworkInterfaceName",
+                        value,
+                        String.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public PropertyTypeNode getPortIdNode() throws UaException {
+    return ClientNodeSupport.await(getPortIdNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends PropertyTypeNode> getPortIdNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "PortId",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
+  }
+
+  @Override
+  public @Nullable String readPortId() throws UaException {
+    return ClientNodeSupport.await(readPortIdAsync());
+  }
+
+  @Override
+  public void writePortId(@Nullable String value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writePortIdAsync(value)), "http://opcfoundation.org/UA/}PortId");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable String> readPortIdAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getPortIdNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}PortId",
+                            true,
+                            String.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable String) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writePortIdAsync(@Nullable String value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getPortIdNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}PortId",
+                        value,
+                        String.class,
+                        -1,
+                        null)));
   }
 }

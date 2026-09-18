@@ -1,170 +1,88 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
-import org.eclipse.milo.opcua.sdk.client.model.variables.BaseDataVariableType;
+import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.13">https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.13</a>
+ * Client API for the IIeeeTsnMacAddressType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.13">Model
+ *     documentation</a>
  */
 public interface IIeeeTsnMacAddressType extends BaseInterfaceType {
-  /**
-   * Get the local value of the DestinationAddress Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the DestinationAddress Node.
-   * @throws UaException if an error occurs creating or getting the DestinationAddress Node.
-   */
-  UByte[] getDestinationAddress() throws UaException;
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 24199L);
 
   /**
-   * Set the local value of the DestinationAddress Node.
+   * Resolves the optional SourceAddress child, a BaseDataVariableType with DataType Byte.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the DestinationAddress Node.
-   * @throws UaException if an error occurs creating or getting the DestinationAddress Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  void setDestinationAddress(UByte[] value) throws UaException;
+  @Nullable VariableNode getSourceAddressNode() throws UaException;
+
+  /** Asynchronous form of {@link #getSourceAddressNode()}. */
+  CompletableFuture<? extends @Nullable VariableNode> getSourceAddressNodeAsync();
 
   /**
-   * Read the value of the DestinationAddress Node from the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the SourceAddress child from the server.
    *
-   * @return the {@link UByte[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UByte[] readDestinationAddress() throws UaException;
+  UByte @Nullable [] readSourceAddress() throws UaException;
 
   /**
-   * Write a new value for the DestinationAddress Node to the server and update the local value if
-   * the operation succeeds.
+   * Writes the Value of the SourceAddress child to the server.
    *
-   * @param value the {@link UByte[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeDestinationAddress(UByte[] value) throws UaException;
+  void writeSourceAddress(UByte @Nullable [] value) throws UaException;
+
+  /** Asynchronous form of {@link #readSourceAddress()}. */
+  CompletableFuture<? extends UByte @Nullable []> readSourceAddressAsync();
+
+  /** Asynchronous form of {@link #writeSourceAddress}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeSourceAddressAsync(UByte @Nullable [] value);
 
   /**
-   * An asynchronous implementation of {@link #readDestinationAddress}.
+   * Resolves the mandatory DestinationAddress child, a BaseDataVariableType with DataType Byte.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  CompletableFuture<? extends UByte[]> readDestinationAddressAsync();
+  VariableNode getDestinationAddressNode() throws UaException;
+
+  /** Asynchronous form of {@link #getDestinationAddressNode()}. */
+  CompletableFuture<? extends VariableNode> getDestinationAddressNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeDestinationAddress}.
+   * Reads the Value of the DestinationAddress child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeDestinationAddressAsync(UByte[] value);
+  UByte @Nullable [] readDestinationAddress() throws UaException;
 
   /**
-   * Get the DestinationAddress {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
+   * Writes the Value of the DestinationAddress child to the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the DestinationAddress {@link BaseDataVariableType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  BaseDataVariableType getDestinationAddressNode() throws UaException;
+  void writeDestinationAddress(UByte @Nullable [] value) throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getDestinationAddressNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getDestinationAddressNodeAsync();
+  /** Asynchronous form of {@link #readDestinationAddress()}. */
+  CompletableFuture<? extends UByte @Nullable []> readDestinationAddressAsync();
 
-  /**
-   * Get the local value of the SourceAddress Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SourceAddress Node.
-   * @throws UaException if an error occurs creating or getting the SourceAddress Node.
-   */
-  UByte[] getSourceAddress() throws UaException;
-
-  /**
-   * Set the local value of the SourceAddress Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SourceAddress Node.
-   * @throws UaException if an error occurs creating or getting the SourceAddress Node.
-   */
-  void setSourceAddress(UByte[] value) throws UaException;
-
-  /**
-   * Read the value of the SourceAddress Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link UByte[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UByte[] readSourceAddress() throws UaException;
-
-  /**
-   * Write a new value for the SourceAddress Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link UByte[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeSourceAddress(UByte[] value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readSourceAddress}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UByte[]> readSourceAddressAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeSourceAddress}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeSourceAddressAsync(UByte[] value);
-
-  /**
-   * Get the SourceAddress {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SourceAddress {@link BaseDataVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getSourceAddressNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getSourceAddressNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getSourceAddressNodeAsync();
+  /** Asynchronous form of {@link #writeDestinationAddress}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeDestinationAddressAsync(UByte @Nullable [] value);
 }

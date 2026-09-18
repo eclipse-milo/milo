@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
@@ -21,1000 +11,550 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.IdType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.13">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.13</a>
+ * Client API for the NamespaceMetadataType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.13">Model
+ *     documentation</a>
  */
 public interface NamespaceMetadataType extends BaseObjectType {
-  QualifiedProperty<String> NAMESPACE_URI =
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 11616L);
+
+  QualifiedProperty<String> ModelVersion_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
+          "ModelVersion",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 24263L),
+          -1,
+          String.class);
+
+  QualifiedProperty<String> NamespaceUri_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
           "NamespaceUri",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
           -1,
           String.class);
 
-  QualifiedProperty<String> NAMESPACE_VERSION =
+  QualifiedProperty<String> NamespaceVersion_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "NamespaceVersion",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
           -1,
           String.class);
 
-  QualifiedProperty<DateTime> NAMESPACE_PUBLICATION_DATE =
+  QualifiedProperty<Boolean> IsNamespaceSubset_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "NamespacePublicationDate",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=13"),
-          -1,
-          DateTime.class);
-
-  QualifiedProperty<Boolean> IS_NAMESPACE_SUBSET =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "IsNamespaceSubset",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
           -1,
           Boolean.class);
 
-  QualifiedProperty<IdType[]> STATIC_NODE_ID_TYPES =
+  QualifiedProperty<IdType[]> StaticNodeIdTypes_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "StaticNodeIdTypes",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=256"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 256L),
           1,
           IdType[].class);
 
-  QualifiedProperty<String[]> STATIC_NUMERIC_NODE_ID_RANGE =
+  QualifiedProperty<UInteger> ConfigurationVersion_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "StaticNumericNodeIdRange",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=291"),
-          1,
-          String[].class);
-
-  QualifiedProperty<String> STATIC_STRING_NODE_ID_PATTERN =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "StaticStringNodeIdPattern",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
-
-  QualifiedProperty<RolePermissionType[]> DEFAULT_ROLE_PERMISSIONS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "DefaultRolePermissions",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=96"),
-          1,
-          RolePermissionType[].class);
-
-  QualifiedProperty<RolePermissionType[]> DEFAULT_USER_ROLE_PERMISSIONS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "DefaultUserRolePermissions",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=96"),
-          1,
-          RolePermissionType[].class);
-
-  QualifiedProperty<AccessRestrictionType> DEFAULT_ACCESS_RESTRICTIONS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "DefaultAccessRestrictions",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=95"),
-          -1,
-          AccessRestrictionType.class);
-
-  QualifiedProperty<UInteger> CONFIGURATION_VERSION =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "ConfigurationVersion",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=20998"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 20998L),
           -1,
           UInteger.class);
 
-  QualifiedProperty<String> MODEL_VERSION =
+  QualifiedProperty<RolePermissionType[]> DefaultRolePermissions_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ModelVersion",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24263"),
+          Namespaces.OPC_UA,
+          "DefaultRolePermissions",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 96L),
+          1,
+          RolePermissionType[].class);
+
+  QualifiedProperty<DateTime> NamespacePublicationDate_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "NamespacePublicationDate",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 13L),
+          -1,
+          DateTime.class);
+
+  QualifiedProperty<String[]> StaticNumericNodeIdRange_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "StaticNumericNodeIdRange",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 291L),
+          1,
+          String[].class);
+
+  QualifiedProperty<AccessRestrictionType> DefaultAccessRestrictions_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "DefaultAccessRestrictions",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 95L),
+          -1,
+          AccessRestrictionType.class);
+
+  QualifiedProperty<String> StaticStringNodeIdPattern_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "StaticStringNodeIdPattern",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
           -1,
           String.class);
 
-  /**
-   * Get the local value of the NamespaceUri Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the NamespaceUri Node.
-   * @throws UaException if an error occurs creating or getting the NamespaceUri Node.
-   */
-  String getNamespaceUri() throws UaException;
+  QualifiedProperty<RolePermissionType[]> DefaultUserRolePermissions_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "DefaultUserRolePermissions",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 96L),
+          1,
+          RolePermissionType[].class);
 
   /**
-   * Set the local value of the NamespaceUri Node.
+   * Resolves the optional ModelVersion child, a PropertyType with DataType SemanticVersionString.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the NamespaceUri Node.
-   * @throws UaException if an error occurs creating or getting the NamespaceUri Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  void setNamespaceUri(String value) throws UaException;
+  @Nullable PropertyType getModelVersionNode() throws UaException;
+
+  /** Asynchronous form of {@link #getModelVersionNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getModelVersionNodeAsync();
 
   /**
-   * Read the value of the NamespaceUri Node from the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the ModelVersion child from the server.
    *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  String readNamespaceUri() throws UaException;
+  @Nullable String readModelVersion() throws UaException;
 
   /**
-   * Write a new value for the NamespaceUri Node to the server and update the local value if the
-   * operation succeeds.
+   * Writes the Value of the ModelVersion child to the server.
    *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeNamespaceUri(String value) throws UaException;
+  void writeModelVersion(@Nullable String value) throws UaException;
+
+  /** Asynchronous form of {@link #readModelVersion()}. */
+  CompletableFuture<? extends @Nullable String> readModelVersionAsync();
+
+  /** Asynchronous form of {@link #writeModelVersion}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeModelVersionAsync(@Nullable String value);
 
   /**
-   * An asynchronous implementation of {@link #readNamespaceUri}.
+   * Resolves the mandatory NamespaceUri child, a PropertyType with DataType String.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String> readNamespaceUriAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeNamespaceUri}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeNamespaceUriAsync(String value);
-
-  /**
-   * Get the NamespaceUri {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the NamespaceUri {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getNamespaceUriNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getNamespaceUriNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getNamespaceUriNode()}. */
   CompletableFuture<? extends PropertyType> getNamespaceUriNodeAsync();
 
   /**
-   * Get the local value of the NamespaceVersion Node.
+   * Reads the Value of the NamespaceUri child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the NamespaceVersion Node.
-   * @throws UaException if an error occurs creating or getting the NamespaceVersion Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  String getNamespaceVersion() throws UaException;
+  @Nullable String readNamespaceUri() throws UaException;
 
   /**
-   * Set the local value of the NamespaceVersion Node.
+   * Writes the Value of the NamespaceUri child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the NamespaceVersion Node.
-   * @throws UaException if an error occurs creating or getting the NamespaceVersion Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setNamespaceVersion(String value) throws UaException;
+  void writeNamespaceUri(@Nullable String value) throws UaException;
+
+  /** Asynchronous form of {@link #readNamespaceUri()}. */
+  CompletableFuture<? extends @Nullable String> readNamespaceUriAsync();
+
+  /** Asynchronous form of {@link #writeNamespaceUri}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeNamespaceUriAsync(@Nullable String value);
 
   /**
-   * Read the value of the NamespaceVersion Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the optional NamespaceFile child, a AddressSpaceFileType.
    *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.12">AddressSpaceFileType
+   *     documentation</a>
    */
-  String readNamespaceVersion() throws UaException;
+  @Nullable AddressSpaceFileType getNamespaceFileNode() throws UaException;
+
+  /** Asynchronous form of {@link #getNamespaceFileNode()}. */
+  CompletableFuture<? extends @Nullable AddressSpaceFileType> getNamespaceFileNodeAsync();
 
   /**
-   * Write a new value for the NamespaceVersion Node to the server and update the local value if the
-   * operation succeeds.
+   * Resolves the mandatory NamespaceVersion child, a PropertyType with DataType String.
    *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeNamespaceVersion(String value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readNamespaceVersion}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String> readNamespaceVersionAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeNamespaceVersion}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeNamespaceVersionAsync(String value);
-
-  /**
-   * Get the NamespaceVersion {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the NamespaceVersion {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getNamespaceVersionNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getNamespaceVersionNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getNamespaceVersionNode()}. */
   CompletableFuture<? extends PropertyType> getNamespaceVersionNodeAsync();
 
   /**
-   * Get the local value of the NamespacePublicationDate Node.
+   * Reads the Value of the NamespaceVersion child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the NamespacePublicationDate Node.
-   * @throws UaException if an error occurs creating or getting the NamespacePublicationDate Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  DateTime getNamespacePublicationDate() throws UaException;
+  @Nullable String readNamespaceVersion() throws UaException;
 
   /**
-   * Set the local value of the NamespacePublicationDate Node.
+   * Writes the Value of the NamespaceVersion child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the NamespacePublicationDate Node.
-   * @throws UaException if an error occurs creating or getting the NamespacePublicationDate Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setNamespacePublicationDate(DateTime value) throws UaException;
+  void writeNamespaceVersion(@Nullable String value) throws UaException;
+
+  /** Asynchronous form of {@link #readNamespaceVersion()}. */
+  CompletableFuture<? extends @Nullable String> readNamespaceVersionAsync();
+
+  /** Asynchronous form of {@link #writeNamespaceVersion}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeNamespaceVersionAsync(@Nullable String value);
 
   /**
-   * Read the value of the NamespacePublicationDate Node from the server and update the local value
-   * if the operation succeeds.
+   * Resolves the mandatory IsNamespaceSubset child, a PropertyType with DataType Boolean.
    *
-   * @return the {@link DateTime} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  DateTime readNamespacePublicationDate() throws UaException;
-
-  /**
-   * Write a new value for the NamespacePublicationDate Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link DateTime} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeNamespacePublicationDate(DateTime value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readNamespacePublicationDate}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends DateTime> readNamespacePublicationDateAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeNamespacePublicationDate}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeNamespacePublicationDateAsync(DateTime value);
-
-  /**
-   * Get the NamespacePublicationDate {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the NamespacePublicationDate {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getNamespacePublicationDateNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getNamespacePublicationDateNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getNamespacePublicationDateNodeAsync();
-
-  /**
-   * Get the local value of the IsNamespaceSubset Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the IsNamespaceSubset Node.
-   * @throws UaException if an error occurs creating or getting the IsNamespaceSubset Node.
-   */
-  Boolean getIsNamespaceSubset() throws UaException;
-
-  /**
-   * Set the local value of the IsNamespaceSubset Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the IsNamespaceSubset Node.
-   * @throws UaException if an error occurs creating or getting the IsNamespaceSubset Node.
-   */
-  void setIsNamespaceSubset(Boolean value) throws UaException;
-
-  /**
-   * Read the value of the IsNamespaceSubset Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Boolean readIsNamespaceSubset() throws UaException;
-
-  /**
-   * Write a new value for the IsNamespaceSubset Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeIsNamespaceSubset(Boolean value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readIsNamespaceSubset}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Boolean> readIsNamespaceSubsetAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeIsNamespaceSubset}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeIsNamespaceSubsetAsync(Boolean value);
-
-  /**
-   * Get the IsNamespaceSubset {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the IsNamespaceSubset {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getIsNamespaceSubsetNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getIsNamespaceSubsetNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getIsNamespaceSubsetNode()}. */
   CompletableFuture<? extends PropertyType> getIsNamespaceSubsetNodeAsync();
 
   /**
-   * Get the local value of the StaticNodeIdTypes Node.
+   * Reads the Value of the IsNamespaceSubset child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the StaticNodeIdTypes Node.
-   * @throws UaException if an error occurs creating or getting the StaticNodeIdTypes Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  IdType[] getStaticNodeIdTypes() throws UaException;
+  @Nullable Boolean readIsNamespaceSubset() throws UaException;
 
   /**
-   * Set the local value of the StaticNodeIdTypes Node.
+   * Writes the Value of the IsNamespaceSubset child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the StaticNodeIdTypes Node.
-   * @throws UaException if an error occurs creating or getting the StaticNodeIdTypes Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setStaticNodeIdTypes(IdType[] value) throws UaException;
+  void writeIsNamespaceSubset(@Nullable Boolean value) throws UaException;
+
+  /** Asynchronous form of {@link #readIsNamespaceSubset()}. */
+  CompletableFuture<? extends @Nullable Boolean> readIsNamespaceSubsetAsync();
+
+  /** Asynchronous form of {@link #writeIsNamespaceSubset}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeIsNamespaceSubsetAsync(@Nullable Boolean value);
 
   /**
-   * Read the value of the StaticNodeIdTypes Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the mandatory StaticNodeIdTypes child, a PropertyType with DataType IdType.
    *
-   * @return the {@link IdType[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  IdType[] readStaticNodeIdTypes() throws UaException;
-
-  /**
-   * Write a new value for the StaticNodeIdTypes Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link IdType[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeStaticNodeIdTypes(IdType[] value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readStaticNodeIdTypes}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends IdType[]> readStaticNodeIdTypesAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeStaticNodeIdTypes}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeStaticNodeIdTypesAsync(IdType[] value);
-
-  /**
-   * Get the StaticNodeIdTypes {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the StaticNodeIdTypes {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getStaticNodeIdTypesNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getStaticNodeIdTypesNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getStaticNodeIdTypesNode()}. */
   CompletableFuture<? extends PropertyType> getStaticNodeIdTypesNodeAsync();
 
   /**
-   * Get the local value of the StaticNumericNodeIdRange Node.
+   * Reads the Value of the StaticNodeIdTypes child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the StaticNumericNodeIdRange Node.
-   * @throws UaException if an error occurs creating or getting the StaticNumericNodeIdRange Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  String[] getStaticNumericNodeIdRange() throws UaException;
+  IdType @Nullable [] readStaticNodeIdTypes() throws UaException;
 
   /**
-   * Set the local value of the StaticNumericNodeIdRange Node.
+   * Writes the Value of the StaticNodeIdTypes child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the StaticNumericNodeIdRange Node.
-   * @throws UaException if an error occurs creating or getting the StaticNumericNodeIdRange Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setStaticNumericNodeIdRange(String[] value) throws UaException;
+  void writeStaticNodeIdTypes(IdType @Nullable [] value) throws UaException;
+
+  /** Asynchronous form of {@link #readStaticNodeIdTypes()}. */
+  CompletableFuture<? extends IdType @Nullable []> readStaticNodeIdTypesAsync();
+
+  /** Asynchronous form of {@link #writeStaticNodeIdTypes}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeStaticNodeIdTypesAsync(IdType @Nullable [] value);
 
   /**
-   * Read the value of the StaticNumericNodeIdRange Node from the server and update the local value
-   * if the operation succeeds.
+   * Resolves the optional ConfigurationVersion child, a PropertyType with DataType VersionTime.
    *
-   * @return the {@link String[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  String[] readStaticNumericNodeIdRange() throws UaException;
+  @Nullable PropertyType getConfigurationVersionNode() throws UaException;
+
+  /** Asynchronous form of {@link #getConfigurationVersionNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getConfigurationVersionNodeAsync();
 
   /**
-   * Write a new value for the StaticNumericNodeIdRange Node to the server and update the local
-   * value if the operation succeeds.
+   * Reads the Value of the ConfigurationVersion child from the server.
    *
-   * @param value the {@link String[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeStaticNumericNodeIdRange(String[] value) throws UaException;
+  @Nullable UInteger readConfigurationVersion() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readStaticNumericNodeIdRange}.
+   * Writes the Value of the ConfigurationVersion child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends String[]> readStaticNumericNodeIdRangeAsync();
+  void writeConfigurationVersion(@Nullable UInteger value) throws UaException;
+
+  /** Asynchronous form of {@link #readConfigurationVersion()}. */
+  CompletableFuture<? extends @Nullable UInteger> readConfigurationVersionAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeStaticNumericNodeIdRange}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * Asynchronous form of {@link #writeConfigurationVersion}; completes with the operation status.
    */
-  CompletableFuture<StatusCode> writeStaticNumericNodeIdRangeAsync(String[] value);
+  CompletableFuture<StatusCode> writeConfigurationVersionAsync(@Nullable UInteger value);
 
   /**
-   * Get the StaticNumericNodeIdRange {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
+   * Resolves the optional DefaultRolePermissions child, a PropertyType with DataType
+   * RolePermissionType.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyType getDefaultRolePermissionsNode() throws UaException;
+
+  /** Asynchronous form of {@link #getDefaultRolePermissionsNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getDefaultRolePermissionsNodeAsync();
+
+  /**
+   * Reads the Value of the DefaultRolePermissions child from the server.
    *
-   * @return the StaticNumericNodeIdRange {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable RolePermissionType @Nullable [] readDefaultRolePermissions() throws UaException;
+
+  /**
+   * Writes the Value of the DefaultRolePermissions child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeDefaultRolePermissions(@Nullable RolePermissionType @Nullable [] value)
+      throws UaException;
+
+  /** Asynchronous form of {@link #readDefaultRolePermissions()}. */
+  CompletableFuture<? extends @Nullable RolePermissionType @Nullable []>
+      readDefaultRolePermissionsAsync();
+
+  /**
+   * Asynchronous form of {@link #writeDefaultRolePermissions}; completes with the operation status.
+   */
+  CompletableFuture<StatusCode> writeDefaultRolePermissionsAsync(
+      @Nullable RolePermissionType @Nullable [] value);
+
+  /**
+   * Resolves the mandatory NamespacePublicationDate child, a PropertyType with DataType DateTime.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getNamespacePublicationDateNode() throws UaException;
+
+  /** Asynchronous form of {@link #getNamespacePublicationDateNode()}. */
+  CompletableFuture<? extends PropertyType> getNamespacePublicationDateNodeAsync();
+
+  /**
+   * Reads the Value of the NamespacePublicationDate child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable DateTime readNamespacePublicationDate() throws UaException;
+
+  /**
+   * Writes the Value of the NamespacePublicationDate child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeNamespacePublicationDate(@Nullable DateTime value) throws UaException;
+
+  /** Asynchronous form of {@link #readNamespacePublicationDate()}. */
+  CompletableFuture<? extends @Nullable DateTime> readNamespacePublicationDateAsync();
+
+  /**
+   * Asynchronous form of {@link #writeNamespacePublicationDate}; completes with the operation
+   * status.
+   */
+  CompletableFuture<StatusCode> writeNamespacePublicationDateAsync(@Nullable DateTime value);
+
+  /**
+   * Resolves the mandatory StaticNumericNodeIdRange child, a PropertyType with DataType
+   * NumericRange.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getStaticNumericNodeIdRangeNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getStaticNumericNodeIdRangeNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getStaticNumericNodeIdRangeNode()}. */
   CompletableFuture<? extends PropertyType> getStaticNumericNodeIdRangeNodeAsync();
 
   /**
-   * Get the local value of the StaticStringNodeIdPattern Node.
+   * Reads the Value of the StaticNumericNodeIdRange child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the StaticStringNodeIdPattern Node.
-   * @throws UaException if an error occurs creating or getting the StaticStringNodeIdPattern Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  String getStaticStringNodeIdPattern() throws UaException;
+  @Nullable String @Nullable [] readStaticNumericNodeIdRange() throws UaException;
 
   /**
-   * Set the local value of the StaticStringNodeIdPattern Node.
+   * Writes the Value of the StaticNumericNodeIdRange child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the StaticStringNodeIdPattern Node.
-   * @throws UaException if an error occurs creating or getting the StaticStringNodeIdPattern Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setStaticStringNodeIdPattern(String value) throws UaException;
+  void writeStaticNumericNodeIdRange(@Nullable String @Nullable [] value) throws UaException;
+
+  /** Asynchronous form of {@link #readStaticNumericNodeIdRange()}. */
+  CompletableFuture<? extends @Nullable String @Nullable []> readStaticNumericNodeIdRangeAsync();
 
   /**
-   * Read the value of the StaticStringNodeIdPattern Node from the server and update the local value
-   * if the operation succeeds.
-   *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * Asynchronous form of {@link #writeStaticNumericNodeIdRange}; completes with the operation
+   * status.
    */
-  String readStaticStringNodeIdPattern() throws UaException;
+  CompletableFuture<StatusCode> writeStaticNumericNodeIdRangeAsync(
+      @Nullable String @Nullable [] value);
 
   /**
-   * Write a new value for the StaticStringNodeIdPattern Node to the server and update the local
-   * value if the operation succeeds.
+   * Resolves the optional DefaultAccessRestrictions child, a PropertyType with DataType
+   * AccessRestrictionType.
    *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  void writeStaticStringNodeIdPattern(String value) throws UaException;
+  @Nullable PropertyType getDefaultAccessRestrictionsNode() throws UaException;
+
+  /** Asynchronous form of {@link #getDefaultAccessRestrictionsNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getDefaultAccessRestrictionsNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #readStaticStringNodeIdPattern}.
+   * Reads the Value of the DefaultAccessRestrictions child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends String> readStaticStringNodeIdPatternAsync();
+  @Nullable AccessRestrictionType readDefaultAccessRestrictions() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeStaticStringNodeIdPattern}.
+   * Writes the Value of the DefaultAccessRestrictions child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeStaticStringNodeIdPatternAsync(String value);
+  void writeDefaultAccessRestrictions(@Nullable AccessRestrictionType value) throws UaException;
+
+  /** Asynchronous form of {@link #readDefaultAccessRestrictions()}. */
+  CompletableFuture<? extends @Nullable AccessRestrictionType> readDefaultAccessRestrictionsAsync();
 
   /**
-   * Get the StaticStringNodeIdPattern {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
+   * Asynchronous form of {@link #writeDefaultAccessRestrictions}; completes with the operation
+   * status.
+   */
+  CompletableFuture<StatusCode> writeDefaultAccessRestrictionsAsync(
+      @Nullable AccessRestrictionType value);
+
+  /**
+   * Resolves the mandatory StaticStringNodeIdPattern child, a PropertyType with DataType String.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the StaticStringNodeIdPattern {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getStaticStringNodeIdPatternNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getStaticStringNodeIdPatternNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getStaticStringNodeIdPatternNode()}. */
   CompletableFuture<? extends PropertyType> getStaticStringNodeIdPatternNodeAsync();
 
   /**
-   * Get the local value of the DefaultRolePermissions Node.
+   * Reads the Value of the StaticStringNodeIdPattern child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the DefaultRolePermissions Node.
-   * @throws UaException if an error occurs creating or getting the DefaultRolePermissions Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  RolePermissionType[] getDefaultRolePermissions() throws UaException;
+  @Nullable String readStaticStringNodeIdPattern() throws UaException;
 
   /**
-   * Set the local value of the DefaultRolePermissions Node.
+   * Writes the Value of the StaticStringNodeIdPattern child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the DefaultRolePermissions Node.
-   * @throws UaException if an error occurs creating or getting the DefaultRolePermissions Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setDefaultRolePermissions(RolePermissionType[] value) throws UaException;
+  void writeStaticStringNodeIdPattern(@Nullable String value) throws UaException;
+
+  /** Asynchronous form of {@link #readStaticStringNodeIdPattern()}. */
+  CompletableFuture<? extends @Nullable String> readStaticStringNodeIdPatternAsync();
 
   /**
-   * Read the value of the DefaultRolePermissions Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link RolePermissionType[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * Asynchronous form of {@link #writeStaticStringNodeIdPattern}; completes with the operation
+   * status.
    */
-  RolePermissionType[] readDefaultRolePermissions() throws UaException;
+  CompletableFuture<StatusCode> writeStaticStringNodeIdPatternAsync(@Nullable String value);
 
   /**
-   * Write a new value for the DefaultRolePermissions Node to the server and update the local value
-   * if the operation succeeds.
+   * Resolves the optional DefaultUserRolePermissions child, a PropertyType with DataType
+   * RolePermissionType.
    *
-   * @param value the {@link RolePermissionType[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  void writeDefaultRolePermissions(RolePermissionType[] value) throws UaException;
+  @Nullable PropertyType getDefaultUserRolePermissionsNode() throws UaException;
+
+  /** Asynchronous form of {@link #getDefaultUserRolePermissionsNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getDefaultUserRolePermissionsNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #readDefaultRolePermissions}.
+   * Reads the Value of the DefaultUserRolePermissions child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends RolePermissionType[]> readDefaultRolePermissionsAsync();
+  @Nullable RolePermissionType @Nullable [] readDefaultUserRolePermissions() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeDefaultRolePermissions}.
+   * Writes the Value of the DefaultUserRolePermissions child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeDefaultRolePermissionsAsync(RolePermissionType[] value);
+  void writeDefaultUserRolePermissions(@Nullable RolePermissionType @Nullable [] value)
+      throws UaException;
+
+  /** Asynchronous form of {@link #readDefaultUserRolePermissions()}. */
+  CompletableFuture<? extends @Nullable RolePermissionType @Nullable []>
+      readDefaultUserRolePermissionsAsync();
 
   /**
-   * Get the DefaultRolePermissions {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the DefaultRolePermissions {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * Asynchronous form of {@link #writeDefaultUserRolePermissions}; completes with the operation
+   * status.
    */
-  PropertyType getDefaultRolePermissionsNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getDefaultRolePermissionsNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getDefaultRolePermissionsNodeAsync();
-
-  /**
-   * Get the local value of the DefaultUserRolePermissions Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the DefaultUserRolePermissions Node.
-   * @throws UaException if an error occurs creating or getting the DefaultUserRolePermissions Node.
-   */
-  RolePermissionType[] getDefaultUserRolePermissions() throws UaException;
-
-  /**
-   * Set the local value of the DefaultUserRolePermissions Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the DefaultUserRolePermissions Node.
-   * @throws UaException if an error occurs creating or getting the DefaultUserRolePermissions Node.
-   */
-  void setDefaultUserRolePermissions(RolePermissionType[] value) throws UaException;
-
-  /**
-   * Read the value of the DefaultUserRolePermissions Node from the server and update the local
-   * value if the operation succeeds.
-   *
-   * @return the {@link RolePermissionType[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  RolePermissionType[] readDefaultUserRolePermissions() throws UaException;
-
-  /**
-   * Write a new value for the DefaultUserRolePermissions Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link RolePermissionType[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeDefaultUserRolePermissions(RolePermissionType[] value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readDefaultUserRolePermissions}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends RolePermissionType[]> readDefaultUserRolePermissionsAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeDefaultUserRolePermissions}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeDefaultUserRolePermissionsAsync(RolePermissionType[] value);
-
-  /**
-   * Get the DefaultUserRolePermissions {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the DefaultUserRolePermissions {@link PropertyType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getDefaultUserRolePermissionsNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getDefaultUserRolePermissionsNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getDefaultUserRolePermissionsNodeAsync();
-
-  /**
-   * Get the local value of the DefaultAccessRestrictions Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the DefaultAccessRestrictions Node.
-   * @throws UaException if an error occurs creating or getting the DefaultAccessRestrictions Node.
-   */
-  AccessRestrictionType getDefaultAccessRestrictions() throws UaException;
-
-  /**
-   * Set the local value of the DefaultAccessRestrictions Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the DefaultAccessRestrictions Node.
-   * @throws UaException if an error occurs creating or getting the DefaultAccessRestrictions Node.
-   */
-  void setDefaultAccessRestrictions(AccessRestrictionType value) throws UaException;
-
-  /**
-   * Read the value of the DefaultAccessRestrictions Node from the server and update the local value
-   * if the operation succeeds.
-   *
-   * @return the {@link AccessRestrictionType} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  AccessRestrictionType readDefaultAccessRestrictions() throws UaException;
-
-  /**
-   * Write a new value for the DefaultAccessRestrictions Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link AccessRestrictionType} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeDefaultAccessRestrictions(AccessRestrictionType value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readDefaultAccessRestrictions}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends AccessRestrictionType> readDefaultAccessRestrictionsAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeDefaultAccessRestrictions}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeDefaultAccessRestrictionsAsync(AccessRestrictionType value);
-
-  /**
-   * Get the DefaultAccessRestrictions {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the DefaultAccessRestrictions {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getDefaultAccessRestrictionsNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getDefaultAccessRestrictionsNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getDefaultAccessRestrictionsNodeAsync();
-
-  /**
-   * Get the local value of the ConfigurationVersion Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ConfigurationVersion Node.
-   * @throws UaException if an error occurs creating or getting the ConfigurationVersion Node.
-   */
-  UInteger getConfigurationVersion() throws UaException;
-
-  /**
-   * Set the local value of the ConfigurationVersion Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ConfigurationVersion Node.
-   * @throws UaException if an error occurs creating or getting the ConfigurationVersion Node.
-   */
-  void setConfigurationVersion(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the ConfigurationVersion Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readConfigurationVersion() throws UaException;
-
-  /**
-   * Write a new value for the ConfigurationVersion Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeConfigurationVersion(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readConfigurationVersion}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readConfigurationVersionAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeConfigurationVersion}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeConfigurationVersionAsync(UInteger value);
-
-  /**
-   * Get the ConfigurationVersion {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ConfigurationVersion {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getConfigurationVersionNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getConfigurationVersionNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getConfigurationVersionNodeAsync();
-
-  /**
-   * Get the local value of the ModelVersion Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ModelVersion Node.
-   * @throws UaException if an error occurs creating or getting the ModelVersion Node.
-   */
-  String getModelVersion() throws UaException;
-
-  /**
-   * Set the local value of the ModelVersion Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ModelVersion Node.
-   * @throws UaException if an error occurs creating or getting the ModelVersion Node.
-   */
-  void setModelVersion(String value) throws UaException;
-
-  /**
-   * Read the value of the ModelVersion Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String readModelVersion() throws UaException;
-
-  /**
-   * Write a new value for the ModelVersion Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeModelVersion(String value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readModelVersion}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String> readModelVersionAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeModelVersion}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeModelVersionAsync(String value);
-
-  /**
-   * Get the ModelVersion {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ModelVersion {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getModelVersionNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getModelVersionNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getModelVersionNodeAsync();
-
-  /**
-   * Get the NamespaceFile {@link AddressSpaceFileType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the NamespaceFile {@link AddressSpaceFileType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  AddressSpaceFileType getNamespaceFileNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getNamespaceFileNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the AddressSpaceFileType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends AddressSpaceFileType> getNamespaceFileNodeAsync();
+  CompletableFuture<StatusCode> writeDefaultUserRolePermissionsAsync(
+      @Nullable RolePermissionType @Nullable [] value);
 }

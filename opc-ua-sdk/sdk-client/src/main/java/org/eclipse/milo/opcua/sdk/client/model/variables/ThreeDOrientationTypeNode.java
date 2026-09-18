@@ -1,21 +1,9 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.variables;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
+import org.eclipse.milo.opcua.sdk.client.nodes.UaVariableNode;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
@@ -23,14 +11,22 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelExType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.types.structured.ThreeDOrientation;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link ThreeDOrientationType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.26">Model
+ *     documentation</a>
+ */
 public class ThreeDOrientationTypeNode extends OrientationTypeNode
     implements ThreeDOrientationType {
   public ThreeDOrientationTypeNode(
@@ -39,21 +35,21 @@ public class ThreeDOrientationTypeNode extends OrientationTypeNode
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       DataValue value,
       NodeId dataType,
       Integer valueRank,
-      UInteger[] arrayDimensions,
+      UInteger @Nullable [] arrayDimensions,
       UByte accessLevel,
       UByte userAccessLevel,
       Double minimumSamplingInterval,
       Boolean historizing,
-      AccessLevelExType accessLevelEx) {
+      @Nullable AccessLevelExType accessLevelEx) {
     super(
         client,
         nodeId,
@@ -78,218 +74,252 @@ public class ThreeDOrientationTypeNode extends OrientationTypeNode
   }
 
   @Override
-  public Double getA() throws UaException {
-    BaseDataVariableTypeNode node = getANode();
-    return (Double) node.getValue().getValue().getValue();
+  public UaVariableNode getANode() throws UaException {
+    return ClientNodeSupport.await(getANodeAsync());
   }
 
   @Override
-  public void setA(Double value) throws UaException {
-    BaseDataVariableTypeNode node = getANode();
-    node.setValue(new Variant(value));
+  public CompletableFuture<? extends UaVariableNode> getANodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "A",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
   }
 
   @Override
-  public Double readA() throws UaException {
-    try {
-      return readAAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable Double readA() throws UaException {
+    return ClientNodeSupport.await(readAAsync());
   }
 
   @Override
-  public void writeA(Double value) throws UaException {
-    try {
-      StatusCode statusCode = writeAAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public void writeA(@Nullable Double value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeAAsync(value)), "http://opcfoundation.org/UA/}A");
   }
 
   @Override
-  public CompletableFuture<? extends Double> readAAsync() {
-    return getANodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (Double) v.getValue().getValue());
+  public CompletableFuture<? extends @Nullable Double> readAAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getANodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}A",
+                            true,
+                            Double.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable Double) v)));
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeAAsync(Double a) {
-    DataValue value = DataValue.valueOnly(new Variant(a));
-    return getANodeAsync().thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<StatusCode> writeAAsync(@Nullable Double value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getANodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}A",
+                        value,
+                        Double.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public BaseDataVariableTypeNode getANode() throws UaException {
-    try {
-      return getANodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public UaVariableNode getBNode() throws UaException {
+    return ClientNodeSupport.await(getBNodeAsync());
   }
 
   @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getANodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "A", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
+  public CompletableFuture<? extends UaVariableNode> getBNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "B",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
   }
 
   @Override
-  public Double getB() throws UaException {
-    BaseDataVariableTypeNode node = getBNode();
-    return (Double) node.getValue().getValue().getValue();
+  public @Nullable Double readB() throws UaException {
+    return ClientNodeSupport.await(readBAsync());
   }
 
   @Override
-  public void setB(Double value) throws UaException {
-    BaseDataVariableTypeNode node = getBNode();
-    node.setValue(new Variant(value));
+  public void writeB(@Nullable Double value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeBAsync(value)), "http://opcfoundation.org/UA/}B");
   }
 
   @Override
-  public Double readB() throws UaException {
-    try {
-      return readBAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable Double> readBAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getBNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}B",
+                            true,
+                            Double.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable Double) v)));
   }
 
   @Override
-  public void writeB(Double value) throws UaException {
-    try {
-      StatusCode statusCode = writeBAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<StatusCode> writeBAsync(@Nullable Double value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getBNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}B",
+                        value,
+                        Double.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public CompletableFuture<? extends Double> readBAsync() {
-    return getBNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (Double) v.getValue().getValue());
+  public UaVariableNode getCNode() throws UaException {
+    return ClientNodeSupport.await(getCNodeAsync());
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeBAsync(Double b) {
-    DataValue value = DataValue.valueOnly(new Variant(b));
-    return getBNodeAsync().thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<? extends UaVariableNode> getCNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "C",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
   }
 
   @Override
-  public BaseDataVariableTypeNode getBNode() throws UaException {
-    try {
-      return getBNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable Double readC() throws UaException {
+    return ClientNodeSupport.await(readCAsync());
   }
 
   @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getBNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "B", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
+  public void writeC(@Nullable Double value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeCAsync(value)), "http://opcfoundation.org/UA/}C");
   }
 
   @Override
-  public Double getC() throws UaException {
-    BaseDataVariableTypeNode node = getCNode();
-    return (Double) node.getValue().getValue().getValue();
+  public CompletableFuture<? extends @Nullable Double> readCAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getCNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}C",
+                            true,
+                            Double.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable Double) v)));
   }
 
   @Override
-  public void setC(Double value) throws UaException {
-    BaseDataVariableTypeNode node = getCNode();
-    node.setValue(new Variant(value));
+  public CompletableFuture<StatusCode> writeCAsync(@Nullable Double value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getCNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}C",
+                        value,
+                        Double.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public Double readC() throws UaException {
-    try {
-      return readCAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable ThreeDOrientation readThreeDOrientationValue() throws UaException {
+    return ClientNodeSupport.await(readThreeDOrientationValueAsync());
   }
 
   @Override
-  public void writeC(Double value) throws UaException {
-    try {
-      StatusCode statusCode = writeCAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public void writeThreeDOrientationValue(@Nullable ThreeDOrientation value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeThreeDOrientationValueAsync(value)), "Value");
   }
 
   @Override
-  public CompletableFuture<? extends Double> readCAsync() {
-    return getCNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (Double) v.getValue().getValue());
+  public CompletableFuture<? extends @Nullable ThreeDOrientation>
+      readThreeDOrientationValueAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    CompletableFuture.completedFuture(this),
+                    n ->
+                        ClientNodeSupport.read(
+                            client, n, this, "Value", true, ThreeDOrientation.class, -1, null)),
+                v -> CompletableFuture.completedFuture((@Nullable ThreeDOrientation) v)));
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeCAsync(Double c) {
-    DataValue value = DataValue.valueOnly(new Variant(c));
-    return getCNodeAsync().thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getCNode() throws UaException {
-    try {
-      return getCNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getCNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "C", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
+  public CompletableFuture<StatusCode> writeThreeDOrientationValueAsync(
+      @Nullable ThreeDOrientation value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                n ->
+                    ClientNodeSupport.write(
+                        client, n, this, "Value", value, ThreeDOrientation.class, -1, null)));
   }
 }

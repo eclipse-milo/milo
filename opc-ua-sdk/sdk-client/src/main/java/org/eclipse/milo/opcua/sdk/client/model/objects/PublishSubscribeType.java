@@ -1,572 +1,544 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallOptions;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallResult;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.client.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.KeyValuePair;
+import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConnectionDataType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.3/#9.1.3.2">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.3/#9.1.3.2</a>
+ * Client API for the PublishSubscribeType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.3/#9.1.3.2">Model
+ *     documentation</a>
  */
 public interface PublishSubscribeType extends PubSubKeyServiceType {
-  QualifiedProperty<String[]> SUPPORTED_TRANSPORT_PROFILES =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "SupportedTransportProfiles",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          1,
-          String[].class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 14416L);
 
-  QualifiedProperty<ULong> DEFAULT_DATAGRAM_PUBLISHER_ID =
+  QualifiedProperty<UInteger> ConfigurationVersion_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "DefaultDatagramPublisherId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=9"),
-          -1,
-          ULong.class);
-
-  QualifiedProperty<UInteger> CONFIGURATION_VERSION =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "ConfigurationVersion",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=20998"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 20998L),
           -1,
           UInteger.class);
 
-  QualifiedProperty<EndpointDescription[]> DEFAULT_SECURITY_KEY_SERVICES =
+  QualifiedProperty<KeyValuePair[]> ConfigurationProperties_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "DefaultSecurityKeyServices",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=312"),
-          1,
-          EndpointDescription[].class);
-
-  QualifiedProperty<KeyValuePair[]> CONFIGURATION_PROPERTIES =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "ConfigurationProperties",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14533"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 14533L),
           1,
           KeyValuePair[].class);
 
-  /**
-   * Get the local value of the SupportedTransportProfiles Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SupportedTransportProfiles Node.
-   * @throws UaException if an error occurs creating or getting the SupportedTransportProfiles Node.
-   */
-  String[] getSupportedTransportProfiles() throws UaException;
+  QualifiedProperty<ULong> DefaultDatagramPublisherId_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "DefaultDatagramPublisherId",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 9L),
+          -1,
+          ULong.class);
+
+  QualifiedProperty<EndpointDescription[]> DefaultSecurityKeyServices_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "DefaultSecurityKeyServices",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 312L),
+          1,
+          EndpointDescription[].class);
+
+  QualifiedProperty<String[]> SupportedTransportProfiles_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "SupportedTransportProfiles",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+          1,
+          String[].class);
 
   /**
-   * Set the local value of the SupportedTransportProfiles Node.
+   * Resolves the optional Diagnostics child, a PubSubDiagnosticsRootType.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SupportedTransportProfiles Node.
-   * @throws UaException if an error occurs creating or getting the SupportedTransportProfiles Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.11/#9.1.11.7">PubSubDiagnosticsRootType
+   *     documentation</a>
    */
-  void setSupportedTransportProfiles(String[] value) throws UaException;
+  @Nullable PubSubDiagnosticsRootType getDiagnosticsNode() throws UaException;
+
+  /** Asynchronous form of {@link #getDiagnosticsNode()}. */
+  CompletableFuture<? extends @Nullable PubSubDiagnosticsRootType> getDiagnosticsNodeAsync();
 
   /**
-   * Read the value of the SupportedTransportProfiles Node from the server and update the local
-   * value if the operation succeeds.
+   * Resolves the optional DataSetClasses child, a FolderType.
    *
-   * @return the {@link String[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.6">FolderType
+   *     documentation</a>
    */
-  String[] readSupportedTransportProfiles() throws UaException;
+  @Nullable FolderType getDataSetClassesNode() throws UaException;
+
+  /** Asynchronous form of {@link #getDataSetClassesNode()}. */
+  CompletableFuture<? extends @Nullable FolderType> getDataSetClassesNodeAsync();
 
   /**
-   * Write a new value for the SupportedTransportProfiles Node to the server and update the local
-   * value if the operation succeeds.
+   * Resolves the optional PubSubCapablities child, a PubSubCapabilitiesType.
    *
-   * @param value the {@link String[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.12/#9.1.12.1">PubSubCapabilitiesType
+   *     documentation</a>
    */
-  void writeSupportedTransportProfiles(String[] value) throws UaException;
+  @Nullable PubSubCapabilitiesType getPubSubCapablitiesNode() throws UaException;
+
+  /** Asynchronous form of {@link #getPubSubCapablitiesNode()}. */
+  CompletableFuture<? extends @Nullable PubSubCapabilitiesType> getPubSubCapablitiesNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #readSupportedTransportProfiles}.
+   * Resolves the mandatory PublishedDataSets child, a DataSetFolderType.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String[]> readSupportedTransportProfilesAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeSupportedTransportProfiles}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeSupportedTransportProfilesAsync(String[] value);
-
-  /**
-   * Get the SupportedTransportProfiles {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SupportedTransportProfiles {@link PropertyType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getSupportedTransportProfilesNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getSupportedTransportProfilesNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getSupportedTransportProfilesNodeAsync();
-
-  /**
-   * Get the local value of the DefaultDatagramPublisherId Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the DefaultDatagramPublisherId Node.
-   * @throws UaException if an error occurs creating or getting the DefaultDatagramPublisherId Node.
-   */
-  ULong getDefaultDatagramPublisherId() throws UaException;
-
-  /**
-   * Set the local value of the DefaultDatagramPublisherId Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the DefaultDatagramPublisherId Node.
-   * @throws UaException if an error occurs creating or getting the DefaultDatagramPublisherId Node.
-   */
-  void setDefaultDatagramPublisherId(ULong value) throws UaException;
-
-  /**
-   * Read the value of the DefaultDatagramPublisherId Node from the server and update the local
-   * value if the operation succeeds.
-   *
-   * @return the {@link ULong} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  ULong readDefaultDatagramPublisherId() throws UaException;
-
-  /**
-   * Write a new value for the DefaultDatagramPublisherId Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link ULong} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeDefaultDatagramPublisherId(ULong value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readDefaultDatagramPublisherId}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends ULong> readDefaultDatagramPublisherIdAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeDefaultDatagramPublisherId}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeDefaultDatagramPublisherIdAsync(ULong value);
-
-  /**
-   * Get the DefaultDatagramPublisherId {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the DefaultDatagramPublisherId {@link PropertyType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getDefaultDatagramPublisherIdNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getDefaultDatagramPublisherIdNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getDefaultDatagramPublisherIdNodeAsync();
-
-  /**
-   * Get the local value of the ConfigurationVersion Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ConfigurationVersion Node.
-   * @throws UaException if an error occurs creating or getting the ConfigurationVersion Node.
-   */
-  UInteger getConfigurationVersion() throws UaException;
-
-  /**
-   * Set the local value of the ConfigurationVersion Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ConfigurationVersion Node.
-   * @throws UaException if an error occurs creating or getting the ConfigurationVersion Node.
-   */
-  void setConfigurationVersion(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the ConfigurationVersion Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readConfigurationVersion() throws UaException;
-
-  /**
-   * Write a new value for the ConfigurationVersion Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeConfigurationVersion(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readConfigurationVersion}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readConfigurationVersionAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeConfigurationVersion}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeConfigurationVersionAsync(UInteger value);
-
-  /**
-   * Get the ConfigurationVersion {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ConfigurationVersion {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getConfigurationVersionNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getConfigurationVersionNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getConfigurationVersionNodeAsync();
-
-  /**
-   * Get the local value of the DefaultSecurityKeyServices Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the DefaultSecurityKeyServices Node.
-   * @throws UaException if an error occurs creating or getting the DefaultSecurityKeyServices Node.
-   */
-  EndpointDescription[] getDefaultSecurityKeyServices() throws UaException;
-
-  /**
-   * Set the local value of the DefaultSecurityKeyServices Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the DefaultSecurityKeyServices Node.
-   * @throws UaException if an error occurs creating or getting the DefaultSecurityKeyServices Node.
-   */
-  void setDefaultSecurityKeyServices(EndpointDescription[] value) throws UaException;
-
-  /**
-   * Read the value of the DefaultSecurityKeyServices Node from the server and update the local
-   * value if the operation succeeds.
-   *
-   * @return the {@link EndpointDescription[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  EndpointDescription[] readDefaultSecurityKeyServices() throws UaException;
-
-  /**
-   * Write a new value for the DefaultSecurityKeyServices Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link EndpointDescription[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeDefaultSecurityKeyServices(EndpointDescription[] value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readDefaultSecurityKeyServices}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends EndpointDescription[]> readDefaultSecurityKeyServicesAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeDefaultSecurityKeyServices}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeDefaultSecurityKeyServicesAsync(EndpointDescription[] value);
-
-  /**
-   * Get the DefaultSecurityKeyServices {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the DefaultSecurityKeyServices {@link PropertyType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getDefaultSecurityKeyServicesNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getDefaultSecurityKeyServicesNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getDefaultSecurityKeyServicesNodeAsync();
-
-  /**
-   * Get the local value of the ConfigurationProperties Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ConfigurationProperties Node.
-   * @throws UaException if an error occurs creating or getting the ConfigurationProperties Node.
-   */
-  KeyValuePair[] getConfigurationProperties() throws UaException;
-
-  /**
-   * Set the local value of the ConfigurationProperties Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ConfigurationProperties Node.
-   * @throws UaException if an error occurs creating or getting the ConfigurationProperties Node.
-   */
-  void setConfigurationProperties(KeyValuePair[] value) throws UaException;
-
-  /**
-   * Read the value of the ConfigurationProperties Node from the server and update the local value
-   * if the operation succeeds.
-   *
-   * @return the {@link KeyValuePair[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  KeyValuePair[] readConfigurationProperties() throws UaException;
-
-  /**
-   * Write a new value for the ConfigurationProperties Node to the server and update the local value
-   * if the operation succeeds.
-   *
-   * @param value the {@link KeyValuePair[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeConfigurationProperties(KeyValuePair[] value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readConfigurationProperties}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends KeyValuePair[]> readConfigurationPropertiesAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeConfigurationProperties}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeConfigurationPropertiesAsync(KeyValuePair[] value);
-
-  /**
-   * Get the ConfigurationProperties {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ConfigurationProperties {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getConfigurationPropertiesNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getConfigurationPropertiesNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getConfigurationPropertiesNodeAsync();
-
-  /**
-   * Get the PublishedDataSets {@link DataSetFolderType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the PublishedDataSets {@link DataSetFolderType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.1">DataSetFolderType
+   *     documentation</a>
    */
   DataSetFolderType getPublishedDataSetsNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getPublishedDataSetsNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the DataSetFolderType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getPublishedDataSetsNode()}. */
   CompletableFuture<? extends DataSetFolderType> getPublishedDataSetsNodeAsync();
 
   /**
-   * Get the SubscribedDataSets {@link SubscribedDataSetFolderType} Node, or {@code null} if it does
-   * not exist.
+   * Resolves the optional SubscribedDataSets child, a SubscribedDataSetFolderType.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SubscribedDataSets {@link SubscribedDataSetFolderType} Node, or {@code null} if it
-   *     does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.9/#9.1.9.4.1">SubscribedDataSetFolderType
+   *     documentation</a>
    */
-  SubscribedDataSetFolderType getSubscribedDataSetsNode() throws UaException;
+  @Nullable SubscribedDataSetFolderType getSubscribedDataSetsNode() throws UaException;
+
+  /** Asynchronous form of {@link #getSubscribedDataSetsNode()}. */
+  CompletableFuture<? extends @Nullable SubscribedDataSetFolderType>
+      getSubscribedDataSetsNodeAsync();
 
   /**
-   * Asynchronous implementation of {@link #getSubscribedDataSetsNode()}.
+   * Resolves the optional PubSubConfiguration child, a PubSubConfigurationType.
    *
-   * @return a CompletableFuture that completes successfully with the SubscribedDataSetFolderType
-   *     Node or completes exceptionally if an error occurs creating or getting the Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.3/#9.1.3.7.1">PubSubConfigurationType
+   *     documentation</a>
    */
-  CompletableFuture<? extends SubscribedDataSetFolderType> getSubscribedDataSetsNodeAsync();
+  @Nullable PubSubConfigurationType getPubSubConfigurationNode() throws UaException;
+
+  /** Asynchronous form of {@link #getPubSubConfigurationNode()}. */
+  CompletableFuture<? extends @Nullable PubSubConfigurationType> getPubSubConfigurationNodeAsync();
 
   /**
-   * Get the PubSubConfiguration {@link PubSubConfigurationType} Node, or {@code null} if it does
-   * not exist.
+   * Resolves the optional ConfigurationVersion child, a PropertyType with DataType VersionTime.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the PubSubConfiguration {@link PubSubConfigurationType} Node, or {@code null} if it
-   *     does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  PubSubConfigurationType getPubSubConfigurationNode() throws UaException;
+  @Nullable PropertyType getConfigurationVersionNode() throws UaException;
+
+  /** Asynchronous form of {@link #getConfigurationVersionNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getConfigurationVersionNodeAsync();
 
   /**
-   * Asynchronous implementation of {@link #getPubSubConfigurationNode()}.
+   * Reads the Value of the ConfigurationVersion child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the PubSubConfigurationType Node
-   *     or completes exceptionally if an error occurs creating or getting the Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends PubSubConfigurationType> getPubSubConfigurationNodeAsync();
+  @Nullable UInteger readConfigurationVersion() throws UaException;
 
   /**
-   * Get the Status {@link PubSubStatusType} Node, or {@code null} if it does not exist.
+   * Writes the Value of the ConfigurationVersion child to the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeConfigurationVersion(@Nullable UInteger value) throws UaException;
+
+  /** Asynchronous form of {@link #readConfigurationVersion()}. */
+  CompletableFuture<? extends @Nullable UInteger> readConfigurationVersionAsync();
+
+  /**
+   * Asynchronous form of {@link #writeConfigurationVersion}; completes with the operation status.
+   */
+  CompletableFuture<StatusCode> writeConfigurationVersionAsync(@Nullable UInteger value);
+
+  /**
+   * Resolves the optional ConfigurationProperties child, a PropertyType with DataType KeyValuePair.
    *
-   * @return the Status {@link PubSubStatusType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyType getConfigurationPropertiesNode() throws UaException;
+
+  /** Asynchronous form of {@link #getConfigurationPropertiesNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getConfigurationPropertiesNodeAsync();
+
+  /**
+   * Reads the Value of the ConfigurationProperties child from the server.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable KeyValuePair @Nullable [] readConfigurationProperties() throws UaException;
+
+  /**
+   * Writes the Value of the ConfigurationProperties child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeConfigurationProperties(@Nullable KeyValuePair @Nullable [] value) throws UaException;
+
+  /** Asynchronous form of {@link #readConfigurationProperties()}. */
+  CompletableFuture<? extends @Nullable KeyValuePair @Nullable []>
+      readConfigurationPropertiesAsync();
+
+  /**
+   * Asynchronous form of {@link #writeConfigurationProperties}; completes with the operation
+   * status.
+   */
+  CompletableFuture<StatusCode> writeConfigurationPropertiesAsync(
+      @Nullable KeyValuePair @Nullable [] value);
+
+  /**
+   * Resolves the optional DefaultDatagramPublisherId child, a PropertyType with DataType UInt64.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyType getDefaultDatagramPublisherIdNode() throws UaException;
+
+  /** Asynchronous form of {@link #getDefaultDatagramPublisherIdNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getDefaultDatagramPublisherIdNodeAsync();
+
+  /**
+   * Reads the Value of the DefaultDatagramPublisherId child from the server.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable ULong readDefaultDatagramPublisherId() throws UaException;
+
+  /**
+   * Writes the Value of the DefaultDatagramPublisherId child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeDefaultDatagramPublisherId(@Nullable ULong value) throws UaException;
+
+  /** Asynchronous form of {@link #readDefaultDatagramPublisherId()}. */
+  CompletableFuture<? extends @Nullable ULong> readDefaultDatagramPublisherIdAsync();
+
+  /**
+   * Asynchronous form of {@link #writeDefaultDatagramPublisherId}; completes with the operation
+   * status.
+   */
+  CompletableFuture<StatusCode> writeDefaultDatagramPublisherIdAsync(@Nullable ULong value);
+
+  /**
+   * Resolves the optional DefaultSecurityKeyServices child, a PropertyType with DataType
+   * EndpointDescription.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyType getDefaultSecurityKeyServicesNode() throws UaException;
+
+  /** Asynchronous form of {@link #getDefaultSecurityKeyServicesNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getDefaultSecurityKeyServicesNodeAsync();
+
+  /**
+   * Reads the Value of the DefaultSecurityKeyServices child from the server.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable EndpointDescription @Nullable [] readDefaultSecurityKeyServices() throws UaException;
+
+  /**
+   * Writes the Value of the DefaultSecurityKeyServices child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeDefaultSecurityKeyServices(@Nullable EndpointDescription @Nullable [] value)
+      throws UaException;
+
+  /** Asynchronous form of {@link #readDefaultSecurityKeyServices()}. */
+  CompletableFuture<? extends @Nullable EndpointDescription @Nullable []>
+      readDefaultSecurityKeyServicesAsync();
+
+  /**
+   * Asynchronous form of {@link #writeDefaultSecurityKeyServices}; completes with the operation
+   * status.
+   */
+  CompletableFuture<StatusCode> writeDefaultSecurityKeyServicesAsync(
+      @Nullable EndpointDescription @Nullable [] value);
+
+  /**
+   * Resolves the mandatory SupportedTransportProfiles child, a PropertyType with DataType String.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getSupportedTransportProfilesNode() throws UaException;
+
+  /** Asynchronous form of {@link #getSupportedTransportProfilesNode()}. */
+  CompletableFuture<? extends PropertyType> getSupportedTransportProfilesNodeAsync();
+
+  /**
+   * Reads the Value of the SupportedTransportProfiles child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable String @Nullable [] readSupportedTransportProfiles() throws UaException;
+
+  /**
+   * Writes the Value of the SupportedTransportProfiles child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeSupportedTransportProfiles(@Nullable String @Nullable [] value) throws UaException;
+
+  /** Asynchronous form of {@link #readSupportedTransportProfiles()}. */
+  CompletableFuture<? extends @Nullable String @Nullable []> readSupportedTransportProfilesAsync();
+
+  /**
+   * Asynchronous form of {@link #writeSupportedTransportProfiles}; completes with the operation
+   * status.
+   */
+  CompletableFuture<StatusCode> writeSupportedTransportProfilesAsync(
+      @Nullable String @Nullable [] value);
+
+  /**
+   * Resolves the mandatory Status child, a PubSubStatusType.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.10/#9.1.10.1">PubSubStatusType
+   *     documentation</a>
    */
   PubSubStatusType getStatusNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getStatusNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PubSubStatusType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getStatusNode()}. */
   CompletableFuture<? extends PubSubStatusType> getStatusNodeAsync();
 
   /**
-   * Get the Diagnostics {@link PubSubDiagnosticsRootType} Node, or {@code null} if it does not
-   * exist.
+   * Resolves the optional AddConnection Method node.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the Diagnostics {@link PubSubDiagnosticsRootType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.3/#9.1.3.4">Model
+   *     documentation</a>
    */
-  PubSubDiagnosticsRootType getDiagnosticsNode() throws UaException;
+  @Nullable UaMethodNode getAddConnectionMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getAddConnectionMethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getAddConnectionMethodNodeAsync();
 
   /**
-   * Asynchronous implementation of {@link #getDiagnosticsNode()}.
+   * Calls the AddConnection Method and returns its outputs; requires a Good result.
    *
-   * @return a CompletableFuture that completes successfully with the PubSubDiagnosticsRootType Node
-   *     or completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.3/#9.1.3.4">Model
+   *     documentation</a>
    */
-  CompletableFuture<? extends PubSubDiagnosticsRootType> getDiagnosticsNodeAsync();
+  @Nullable NodeId addConnection(@Nullable PubSubConnectionDataType configuration)
+      throws UaException;
 
   /**
-   * Get the PubSubCapablities {@link PubSubCapabilitiesType} Node, or {@code null} if it does not
-   * exist.
+   * Calls the AddConnection Method and returns the complete result, including a Bad status.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the PubSubCapablities {@link PubSubCapabilitiesType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, transport or conversion fails.
    */
-  PubSubCapabilitiesType getPubSubCapablitiesNode() throws UaException;
+  MethodCallResult<@Nullable NodeId> callAddConnection(
+      @Nullable PubSubConnectionDataType configuration) throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getPubSubCapablitiesNode()}.
+   * Calls the AddConnection Method with explicit options and returns the complete result.
    *
-   * @return a CompletableFuture that completes successfully with the PubSubCapabilitiesType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, transport or conversion fails.
    */
-  CompletableFuture<? extends PubSubCapabilitiesType> getPubSubCapablitiesNodeAsync();
+  MethodCallResult<@Nullable NodeId> callAddConnectionWith(
+      MethodCallOptions options, @Nullable PubSubConnectionDataType configuration)
+      throws UaException;
+
+  /** Asynchronous form of {@link #addConnection}. */
+  CompletableFuture<@Nullable NodeId> addConnectionAsync(
+      @Nullable PubSubConnectionDataType configuration);
+
+  /** Asynchronous form of {@link #callAddConnection}. */
+  CompletableFuture<MethodCallResult<@Nullable NodeId>> callAddConnectionAsync(
+      @Nullable PubSubConnectionDataType configuration);
+
+  /** Asynchronous form of {@link #callAddConnectionWith}. */
+  CompletableFuture<MethodCallResult<@Nullable NodeId>> callAddConnectionWithAsync(
+      MethodCallOptions options, @Nullable PubSubConnectionDataType configuration);
 
   /**
-   * Get the DataSetClasses {@link FolderType} Node, or {@code null} if it does not exist.
+   * Resolves the optional RemoveConnection Method node.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the DataSetClasses {@link FolderType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.3/#9.1.3.5">Model
+   *     documentation</a>
    */
-  FolderType getDataSetClassesNode() throws UaException;
+  @Nullable UaMethodNode getRemoveConnectionMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getRemoveConnectionMethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getRemoveConnectionMethodNodeAsync();
 
   /**
-   * Asynchronous implementation of {@link #getDataSetClassesNode()}.
+   * Calls the RemoveConnection Method and returns its outputs; requires a Good result.
    *
-   * @return a CompletableFuture that completes successfully with the FolderType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.3/#9.1.3.5">Model
+   *     documentation</a>
    */
-  CompletableFuture<? extends FolderType> getDataSetClassesNodeAsync();
+  void removeConnection(@Nullable NodeId connectionId) throws UaException;
+
+  /**
+   * Calls the RemoveConnection Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callRemoveConnection(@Nullable NodeId connectionId) throws UaException;
+
+  /**
+   * Calls the RemoveConnection Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callRemoveConnectionWith(
+      MethodCallOptions options, @Nullable NodeId connectionId) throws UaException;
+
+  /** Asynchronous form of {@link #removeConnection}. */
+  CompletableFuture<Void> removeConnectionAsync(@Nullable NodeId connectionId);
+
+  /** Asynchronous form of {@link #callRemoveConnection}. */
+  CompletableFuture<MethodCallResult<Void>> callRemoveConnectionAsync(
+      @Nullable NodeId connectionId);
+
+  /** Asynchronous form of {@link #callRemoveConnectionWith}. */
+  CompletableFuture<MethodCallResult<Void>> callRemoveConnectionWithAsync(
+      MethodCallOptions options, @Nullable NodeId connectionId);
+
+  /**
+   * Resolves the optional SetSecurityKeys Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.3/#9.1.3.3">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getSetSecurityKeysMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getSetSecurityKeysMethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getSetSecurityKeysMethodNodeAsync();
+
+  /**
+   * Calls the SetSecurityKeys Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.3/#9.1.3.3">Model
+   *     documentation</a>
+   */
+  void setSecurityKeys(
+      @Nullable String securityGroupId,
+      @Nullable String securityPolicyUri,
+      @Nullable UInteger currentTokenId,
+      @Nullable ByteString currentKey,
+      ByteString @Nullable [] futureKeys,
+      @Nullable Double timeToNextKey,
+      @Nullable Double keyLifetime)
+      throws UaException;
+
+  /**
+   * Calls the SetSecurityKeys Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callSetSecurityKeys(
+      @Nullable String securityGroupId,
+      @Nullable String securityPolicyUri,
+      @Nullable UInteger currentTokenId,
+      @Nullable ByteString currentKey,
+      ByteString @Nullable [] futureKeys,
+      @Nullable Double timeToNextKey,
+      @Nullable Double keyLifetime)
+      throws UaException;
+
+  /**
+   * Calls the SetSecurityKeys Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callSetSecurityKeysWith(
+      MethodCallOptions options,
+      @Nullable String securityGroupId,
+      @Nullable String securityPolicyUri,
+      @Nullable UInteger currentTokenId,
+      @Nullable ByteString currentKey,
+      ByteString @Nullable [] futureKeys,
+      @Nullable Double timeToNextKey,
+      @Nullable Double keyLifetime)
+      throws UaException;
+
+  /** Asynchronous form of {@link #setSecurityKeys}. */
+  CompletableFuture<Void> setSecurityKeysAsync(
+      @Nullable String securityGroupId,
+      @Nullable String securityPolicyUri,
+      @Nullable UInteger currentTokenId,
+      @Nullable ByteString currentKey,
+      ByteString @Nullable [] futureKeys,
+      @Nullable Double timeToNextKey,
+      @Nullable Double keyLifetime);
+
+  /** Asynchronous form of {@link #callSetSecurityKeys}. */
+  CompletableFuture<MethodCallResult<Void>> callSetSecurityKeysAsync(
+      @Nullable String securityGroupId,
+      @Nullable String securityPolicyUri,
+      @Nullable UInteger currentTokenId,
+      @Nullable ByteString currentKey,
+      ByteString @Nullable [] futureKeys,
+      @Nullable Double timeToNextKey,
+      @Nullable Double keyLifetime);
+
+  /** Asynchronous form of {@link #callSetSecurityKeysWith}. */
+  CompletableFuture<MethodCallResult<Void>> callSetSecurityKeysWithAsync(
+      MethodCallOptions options,
+      @Nullable String securityGroupId,
+      @Nullable String securityPolicyUri,
+      @Nullable UInteger currentTokenId,
+      @Nullable ByteString currentKey,
+      ByteString @Nullable [] futureKeys,
+      @Nullable Double timeToNextKey,
+      @Nullable Double keyLifetime);
 }

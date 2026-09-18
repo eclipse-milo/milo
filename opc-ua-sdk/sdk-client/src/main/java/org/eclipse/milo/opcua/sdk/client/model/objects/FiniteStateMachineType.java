@@ -1,322 +1,123 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
-import org.eclipse.milo.opcua.sdk.client.model.variables.BaseDataVariableType;
 import org.eclipse.milo.opcua.sdk.client.model.variables.FiniteStateVariableType;
 import org.eclipse.milo.opcua.sdk.client.model.variables.FiniteTransitionVariableType;
+import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part16/4.4.5">https://reference.opcfoundation.org/v105/Core/docs/Part16/4.4.5</a>
+ * Client API for the FiniteStateMachineType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part16/4.4.5">Model
+ *     documentation</a>
  */
 public interface FiniteStateMachineType extends StateMachineType {
-  /**
-   * Get the local value of the CurrentState Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the CurrentState Node.
-   * @throws UaException if an error occurs creating or getting the CurrentState Node.
-   */
-  LocalizedText getCurrentState() throws UaException;
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2771L);
 
   /**
-   * Set the local value of the CurrentState Node.
+   * Resolves the mandatory CurrentState child, a FiniteStateVariableType with DataType
+   * LocalizedText.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the CurrentState Node.
-   * @throws UaException if an error occurs creating or getting the CurrentState Node.
-   */
-  void setCurrentState(LocalizedText value) throws UaException;
-
-  /**
-   * Read the value of the CurrentState Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link LocalizedText} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  LocalizedText readCurrentState() throws UaException;
-
-  /**
-   * Write a new value for the CurrentState Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link LocalizedText} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeCurrentState(LocalizedText value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readCurrentState}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends LocalizedText> readCurrentStateAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeCurrentState}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeCurrentStateAsync(LocalizedText value);
-
-  /**
-   * Get the CurrentState {@link FiniteStateVariableType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the CurrentState {@link FiniteStateVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part16/4.4.6">FiniteStateVariableType
+   *     documentation</a>
    */
   FiniteStateVariableType getCurrentStateNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getCurrentStateNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the FiniteStateVariableType Node
-   *     or completes exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getCurrentStateNode()}. */
   CompletableFuture<? extends FiniteStateVariableType> getCurrentStateNodeAsync();
 
   /**
-   * Get the local value of the LastTransition Node.
+   * Resolves the optional LastTransition child, a FiniteTransitionVariableType with DataType
+   * LocalizedText.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the LastTransition Node.
-   * @throws UaException if an error occurs creating or getting the LastTransition Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part16/4.4.7">FiniteTransitionVariableType
+   *     documentation</a>
    */
-  LocalizedText getLastTransition() throws UaException;
+  @Nullable FiniteTransitionVariableType getLastTransitionNode() throws UaException;
+
+  /** Asynchronous form of {@link #getLastTransitionNode()}. */
+  CompletableFuture<? extends @Nullable FiniteTransitionVariableType> getLastTransitionNodeAsync();
 
   /**
-   * Set the local value of the LastTransition Node.
+   * Resolves the optional AvailableStates child, a BaseDataVariableType with DataType NodeId.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the LastTransition Node.
-   * @throws UaException if an error occurs creating or getting the LastTransition Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  void setLastTransition(LocalizedText value) throws UaException;
+  @Nullable VariableNode getAvailableStatesNode() throws UaException;
+
+  /** Asynchronous form of {@link #getAvailableStatesNode()}. */
+  CompletableFuture<? extends @Nullable VariableNode> getAvailableStatesNodeAsync();
 
   /**
-   * Read the value of the LastTransition Node from the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the AvailableStates child from the server.
    *
-   * @return the {@link LocalizedText} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  LocalizedText readLastTransition() throws UaException;
+  NodeId @Nullable [] readAvailableStates() throws UaException;
 
   /**
-   * Write a new value for the LastTransition Node to the server and update the local value if the
-   * operation succeeds.
+   * Writes the Value of the AvailableStates child to the server.
    *
-   * @param value the {@link LocalizedText} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeLastTransition(LocalizedText value) throws UaException;
+  void writeAvailableStates(NodeId @Nullable [] value) throws UaException;
+
+  /** Asynchronous form of {@link #readAvailableStates()}. */
+  CompletableFuture<? extends NodeId @Nullable []> readAvailableStatesAsync();
+
+  /** Asynchronous form of {@link #writeAvailableStates}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeAvailableStatesAsync(NodeId @Nullable [] value);
 
   /**
-   * An asynchronous implementation of {@link #readLastTransition}.
+   * Resolves the optional AvailableTransitions child, a BaseDataVariableType with DataType NodeId.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  CompletableFuture<? extends LocalizedText> readLastTransitionAsync();
+  @Nullable VariableNode getAvailableTransitionsNode() throws UaException;
+
+  /** Asynchronous form of {@link #getAvailableTransitionsNode()}. */
+  CompletableFuture<? extends @Nullable VariableNode> getAvailableTransitionsNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeLastTransition}.
+   * Reads the Value of the AvailableTransitions child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeLastTransitionAsync(LocalizedText value);
+  NodeId @Nullable [] readAvailableTransitions() throws UaException;
 
   /**
-   * Get the LastTransition {@link FiniteTransitionVariableType} Node, or {@code null} if it does
-   * not exist.
+   * Writes the Value of the AvailableTransitions child to the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the LastTransition {@link FiniteTransitionVariableType} Node, or {@code null} if it
-   *     does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  FiniteTransitionVariableType getLastTransitionNode() throws UaException;
+  void writeAvailableTransitions(NodeId @Nullable [] value) throws UaException;
+
+  /** Asynchronous form of {@link #readAvailableTransitions()}. */
+  CompletableFuture<? extends NodeId @Nullable []> readAvailableTransitionsAsync();
 
   /**
-   * Asynchronous implementation of {@link #getLastTransitionNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the FiniteTransitionVariableType
-   *     Node or completes exceptionally if an error occurs creating or getting the Node.
+   * Asynchronous form of {@link #writeAvailableTransitions}; completes with the operation status.
    */
-  CompletableFuture<? extends FiniteTransitionVariableType> getLastTransitionNodeAsync();
-
-  /**
-   * Get the local value of the AvailableStates Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the AvailableStates Node.
-   * @throws UaException if an error occurs creating or getting the AvailableStates Node.
-   */
-  NodeId[] getAvailableStates() throws UaException;
-
-  /**
-   * Set the local value of the AvailableStates Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the AvailableStates Node.
-   * @throws UaException if an error occurs creating or getting the AvailableStates Node.
-   */
-  void setAvailableStates(NodeId[] value) throws UaException;
-
-  /**
-   * Read the value of the AvailableStates Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link NodeId[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  NodeId[] readAvailableStates() throws UaException;
-
-  /**
-   * Write a new value for the AvailableStates Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link NodeId[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeAvailableStates(NodeId[] value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readAvailableStates}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends NodeId[]> readAvailableStatesAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeAvailableStates}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeAvailableStatesAsync(NodeId[] value);
-
-  /**
-   * Get the AvailableStates {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the AvailableStates {@link BaseDataVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getAvailableStatesNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getAvailableStatesNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getAvailableStatesNodeAsync();
-
-  /**
-   * Get the local value of the AvailableTransitions Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the AvailableTransitions Node.
-   * @throws UaException if an error occurs creating or getting the AvailableTransitions Node.
-   */
-  NodeId[] getAvailableTransitions() throws UaException;
-
-  /**
-   * Set the local value of the AvailableTransitions Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the AvailableTransitions Node.
-   * @throws UaException if an error occurs creating or getting the AvailableTransitions Node.
-   */
-  void setAvailableTransitions(NodeId[] value) throws UaException;
-
-  /**
-   * Read the value of the AvailableTransitions Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link NodeId[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  NodeId[] readAvailableTransitions() throws UaException;
-
-  /**
-   * Write a new value for the AvailableTransitions Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link NodeId[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeAvailableTransitions(NodeId[] value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readAvailableTransitions}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends NodeId[]> readAvailableTransitionsAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeAvailableTransitions}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeAvailableTransitionsAsync(NodeId[] value);
-
-  /**
-   * Get the AvailableTransitions {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the AvailableTransitions {@link BaseDataVariableType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getAvailableTransitionsNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getAvailableTransitionsNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getAvailableTransitionsNodeAsync();
+  CompletableFuture<StatusCode> writeAvailableTransitionsAsync(NodeId @Nullable [] value);
 }

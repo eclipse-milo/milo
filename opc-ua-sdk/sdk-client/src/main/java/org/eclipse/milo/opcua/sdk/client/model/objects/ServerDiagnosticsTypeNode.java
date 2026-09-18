@@ -1,34 +1,18 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.client.model.variables.SamplingIntervalDiagnosticsArrayTypeNode;
 import org.eclipse.milo.opcua.sdk.client.model.variables.ServerDiagnosticsSummaryTypeNode;
 import org.eclipse.milo.opcua.sdk.client.model.variables.SubscriptionDiagnosticsArrayTypeNode;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
@@ -37,7 +21,15 @@ import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SamplingIntervalDiagnosticsDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ServerDiagnosticsSummaryDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SubscriptionDiagnosticsDataType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link ServerDiagnosticsType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.3">Model
+ *     documentation</a>
+ */
 public class ServerDiagnosticsTypeNode extends BaseObjectTypeNode implements ServerDiagnosticsType {
   public ServerDiagnosticsTypeNode(
       OpcUaClient client,
@@ -45,12 +37,12 @@ public class ServerDiagnosticsTypeNode extends BaseObjectTypeNode implements Ser
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         client,
@@ -68,350 +60,336 @@ public class ServerDiagnosticsTypeNode extends BaseObjectTypeNode implements Ser
   }
 
   @Override
-  public Boolean getEnabledFlag() throws UaException {
-    PropertyTypeNode node = getEnabledFlagNode();
-    return (Boolean) node.getValue().getValue().getValue();
-  }
-
-  @Override
-  public void setEnabledFlag(Boolean value) throws UaException {
-    PropertyTypeNode node = getEnabledFlagNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public Boolean readEnabledFlag() throws UaException {
-    try {
-      return readEnabledFlagAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeEnabledFlag(Boolean value) throws UaException {
-    try {
-      StatusCode statusCode = writeEnabledFlagAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends Boolean> readEnabledFlagAsync() {
-    return getEnabledFlagNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (Boolean) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeEnabledFlagAsync(Boolean enabledFlag) {
-    DataValue value = DataValue.valueOnly(new Variant(enabledFlag));
-    return getEnabledFlagNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
   public PropertyTypeNode getEnabledFlagNode() throws UaException {
-    try {
-      return getEnabledFlagNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getEnabledFlagNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends PropertyTypeNode> getEnabledFlagNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "EnabledFlag", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "EnabledFlag",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public ServerDiagnosticsSummaryDataType getServerDiagnosticsSummary() throws UaException {
-    ServerDiagnosticsSummaryTypeNode node = getServerDiagnosticsSummaryNode();
-    return cast(node.getValue().getValue().getValue(), ServerDiagnosticsSummaryDataType.class);
+  public @Nullable Boolean readEnabledFlag() throws UaException {
+    return ClientNodeSupport.await(readEnabledFlagAsync());
   }
 
   @Override
-  public void setServerDiagnosticsSummary(ServerDiagnosticsSummaryDataType value)
-      throws UaException {
-    ServerDiagnosticsSummaryTypeNode node = getServerDiagnosticsSummaryNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
+  public void writeEnabledFlag(@Nullable Boolean value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeEnabledFlagAsync(value)),
+        "http://opcfoundation.org/UA/}EnabledFlag");
   }
 
   @Override
-  public ServerDiagnosticsSummaryDataType readServerDiagnosticsSummary() throws UaException {
-    try {
-      return readServerDiagnosticsSummaryAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable Boolean> readEnabledFlagAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getEnabledFlagNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}EnabledFlag",
+                            true,
+                            Boolean.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable Boolean) v)));
   }
 
   @Override
-  public void writeServerDiagnosticsSummary(ServerDiagnosticsSummaryDataType value)
-      throws UaException {
-    try {
-      writeServerDiagnosticsSummaryAsync(value).get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends ServerDiagnosticsSummaryDataType>
-      readServerDiagnosticsSummaryAsync() {
-    return getServerDiagnosticsSummaryNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), ServerDiagnosticsSummaryDataType.class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeServerDiagnosticsSummaryAsync(
-      ServerDiagnosticsSummaryDataType serverDiagnosticsSummary) {
-    ExtensionObject encoded =
-        ExtensionObject.encode(client.getStaticEncodingContext(), serverDiagnosticsSummary);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getServerDiagnosticsSummaryNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<StatusCode> writeEnabledFlagAsync(@Nullable Boolean value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getEnabledFlagNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}EnabledFlag",
+                        value,
+                        Boolean.class,
+                        -1,
+                        null)));
   }
 
   @Override
   public ServerDiagnosticsSummaryTypeNode getServerDiagnosticsSummaryNode() throws UaException {
-    try {
-      return getServerDiagnosticsSummaryNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getServerDiagnosticsSummaryNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends ServerDiagnosticsSummaryTypeNode>
       getServerDiagnosticsSummaryNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "ServerDiagnosticsSummary",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (ServerDiagnosticsSummaryTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "ServerDiagnosticsSummary",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        ServerDiagnosticsSummaryTypeNode.class)));
   }
 
   @Override
-  public SamplingIntervalDiagnosticsDataType[] getSamplingIntervalDiagnosticsArray()
+  public @Nullable ServerDiagnosticsSummaryDataType readServerDiagnosticsSummary()
       throws UaException {
-    SamplingIntervalDiagnosticsArrayTypeNode node = getSamplingIntervalDiagnosticsArrayNode();
-    return cast(node.getValue().getValue().getValue(), SamplingIntervalDiagnosticsDataType[].class);
+    return ClientNodeSupport.await(readServerDiagnosticsSummaryAsync());
   }
 
   @Override
-  public void setSamplingIntervalDiagnosticsArray(SamplingIntervalDiagnosticsDataType[] value)
+  public void writeServerDiagnosticsSummary(@Nullable ServerDiagnosticsSummaryDataType value)
       throws UaException {
-    SamplingIntervalDiagnosticsArrayTypeNode node = getSamplingIntervalDiagnosticsArrayNode();
-    ExtensionObject[] encoded =
-        ExtensionObject.encodeArray(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeServerDiagnosticsSummaryAsync(value)),
+        "http://opcfoundation.org/UA/}ServerDiagnosticsSummary");
   }
 
   @Override
-  public SamplingIntervalDiagnosticsDataType[] readSamplingIntervalDiagnosticsArray()
-      throws UaException {
-    try {
-      return readSamplingIntervalDiagnosticsArrayAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable ServerDiagnosticsSummaryDataType>
+      readServerDiagnosticsSummaryAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getServerDiagnosticsSummaryNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}ServerDiagnosticsSummary",
+                            true,
+                            ServerDiagnosticsSummaryDataType.class,
+                            -1,
+                            null)),
+                v ->
+                    CompletableFuture.completedFuture(
+                        (@Nullable ServerDiagnosticsSummaryDataType) v)));
   }
 
   @Override
-  public void writeSamplingIntervalDiagnosticsArray(SamplingIntervalDiagnosticsDataType[] value)
-      throws UaException {
-    try {
-      writeSamplingIntervalDiagnosticsArrayAsync(value).get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends SamplingIntervalDiagnosticsDataType[]>
-      readSamplingIntervalDiagnosticsArrayAsync() {
-    return getSamplingIntervalDiagnosticsArrayNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), SamplingIntervalDiagnosticsDataType[].class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeSamplingIntervalDiagnosticsArrayAsync(
-      SamplingIntervalDiagnosticsDataType[] samplingIntervalDiagnosticsArray) {
-    ExtensionObject[] encoded =
-        ExtensionObject.encodeArray(
-            client.getStaticEncodingContext(), samplingIntervalDiagnosticsArray);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getSamplingIntervalDiagnosticsArrayNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public SamplingIntervalDiagnosticsArrayTypeNode getSamplingIntervalDiagnosticsArrayNode()
-      throws UaException {
-    try {
-      return getSamplingIntervalDiagnosticsArrayNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends SamplingIntervalDiagnosticsArrayTypeNode>
-      getSamplingIntervalDiagnosticsArrayNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "SamplingIntervalDiagnosticsArray",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (SamplingIntervalDiagnosticsArrayTypeNode) node);
-  }
-
-  @Override
-  public SubscriptionDiagnosticsDataType[] getSubscriptionDiagnosticsArray() throws UaException {
-    SubscriptionDiagnosticsArrayTypeNode node = getSubscriptionDiagnosticsArrayNode();
-    return cast(node.getValue().getValue().getValue(), SubscriptionDiagnosticsDataType[].class);
-  }
-
-  @Override
-  public void setSubscriptionDiagnosticsArray(SubscriptionDiagnosticsDataType[] value)
-      throws UaException {
-    SubscriptionDiagnosticsArrayTypeNode node = getSubscriptionDiagnosticsArrayNode();
-    ExtensionObject[] encoded =
-        ExtensionObject.encodeArray(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
-  }
-
-  @Override
-  public SubscriptionDiagnosticsDataType[] readSubscriptionDiagnosticsArray() throws UaException {
-    try {
-      return readSubscriptionDiagnosticsArrayAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeSubscriptionDiagnosticsArray(SubscriptionDiagnosticsDataType[] value)
-      throws UaException {
-    try {
-      writeSubscriptionDiagnosticsArrayAsync(value).get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends SubscriptionDiagnosticsDataType[]>
-      readSubscriptionDiagnosticsArrayAsync() {
-    return getSubscriptionDiagnosticsArrayNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), SubscriptionDiagnosticsDataType[].class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeSubscriptionDiagnosticsArrayAsync(
-      SubscriptionDiagnosticsDataType[] subscriptionDiagnosticsArray) {
-    ExtensionObject[] encoded =
-        ExtensionObject.encodeArray(
-            client.getStaticEncodingContext(), subscriptionDiagnosticsArray);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getSubscriptionDiagnosticsArrayNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public SubscriptionDiagnosticsArrayTypeNode getSubscriptionDiagnosticsArrayNode()
-      throws UaException {
-    try {
-      return getSubscriptionDiagnosticsArrayNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends SubscriptionDiagnosticsArrayTypeNode>
-      getSubscriptionDiagnosticsArrayNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "SubscriptionDiagnosticsArray",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (SubscriptionDiagnosticsArrayTypeNode) node);
+  public CompletableFuture<StatusCode> writeServerDiagnosticsSummaryAsync(
+      @Nullable ServerDiagnosticsSummaryDataType value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getServerDiagnosticsSummaryNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}ServerDiagnosticsSummary",
+                        value,
+                        ServerDiagnosticsSummaryDataType.class,
+                        -1,
+                        null)));
   }
 
   @Override
   public SessionsDiagnosticsSummaryTypeNode getSessionsDiagnosticsSummaryNode() throws UaException {
-    try {
-      return getSessionsDiagnosticsSummaryNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getSessionsDiagnosticsSummaryNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends SessionsDiagnosticsSummaryTypeNode>
       getSessionsDiagnosticsSummaryNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "SessionsDiagnosticsSummary",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (SessionsDiagnosticsSummaryTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "SessionsDiagnosticsSummary",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Object,
+                        SessionsDiagnosticsSummaryTypeNode.class)));
+  }
+
+  @Override
+  public SubscriptionDiagnosticsArrayTypeNode getSubscriptionDiagnosticsArrayNode()
+      throws UaException {
+    return ClientNodeSupport.await(getSubscriptionDiagnosticsArrayNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends SubscriptionDiagnosticsArrayTypeNode>
+      getSubscriptionDiagnosticsArrayNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "SubscriptionDiagnosticsArray",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        SubscriptionDiagnosticsArrayTypeNode.class)));
+  }
+
+  @Override
+  public @Nullable SubscriptionDiagnosticsDataType @Nullable [] readSubscriptionDiagnosticsArray()
+      throws UaException {
+    return ClientNodeSupport.await(readSubscriptionDiagnosticsArrayAsync());
+  }
+
+  @Override
+  public void writeSubscriptionDiagnosticsArray(
+      @Nullable SubscriptionDiagnosticsDataType @Nullable [] value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeSubscriptionDiagnosticsArrayAsync(value)),
+        "http://opcfoundation.org/UA/}SubscriptionDiagnosticsArray");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable SubscriptionDiagnosticsDataType @Nullable []>
+      readSubscriptionDiagnosticsArrayAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getSubscriptionDiagnosticsArrayNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}SubscriptionDiagnosticsArray",
+                            true,
+                            SubscriptionDiagnosticsDataType.class,
+                            1,
+                            null)),
+                v ->
+                    CompletableFuture.completedFuture(
+                        (@Nullable SubscriptionDiagnosticsDataType @Nullable []) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeSubscriptionDiagnosticsArrayAsync(
+      @Nullable SubscriptionDiagnosticsDataType @Nullable [] value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getSubscriptionDiagnosticsArrayNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}SubscriptionDiagnosticsArray",
+                        value,
+                        SubscriptionDiagnosticsDataType.class,
+                        1,
+                        null)));
+  }
+
+  @Override
+  public @Nullable SamplingIntervalDiagnosticsArrayTypeNode
+      getSamplingIntervalDiagnosticsArrayNode() throws UaException {
+    return ClientNodeSupport.await(getSamplingIntervalDiagnosticsArrayNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable SamplingIntervalDiagnosticsArrayTypeNode>
+      getSamplingIntervalDiagnosticsArrayNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "SamplingIntervalDiagnosticsArray",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        SamplingIntervalDiagnosticsArrayTypeNode.class)));
+  }
+
+  @Override
+  public @Nullable SamplingIntervalDiagnosticsDataType @Nullable []
+      readSamplingIntervalDiagnosticsArray() throws UaException {
+    return ClientNodeSupport.await(readSamplingIntervalDiagnosticsArrayAsync());
+  }
+
+  @Override
+  public void writeSamplingIntervalDiagnosticsArray(
+      @Nullable SamplingIntervalDiagnosticsDataType @Nullable [] value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeSamplingIntervalDiagnosticsArrayAsync(value)),
+        "http://opcfoundation.org/UA/}SamplingIntervalDiagnosticsArray");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable SamplingIntervalDiagnosticsDataType @Nullable []>
+      readSamplingIntervalDiagnosticsArrayAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getSamplingIntervalDiagnosticsArrayNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}SamplingIntervalDiagnosticsArray",
+                            false,
+                            SamplingIntervalDiagnosticsDataType.class,
+                            1,
+                            null)),
+                v ->
+                    CompletableFuture.completedFuture(
+                        (@Nullable SamplingIntervalDiagnosticsDataType @Nullable []) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeSamplingIntervalDiagnosticsArrayAsync(
+      @Nullable SamplingIntervalDiagnosticsDataType @Nullable [] value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getSamplingIntervalDiagnosticsArrayNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}SamplingIntervalDiagnosticsArray",
+                        value,
+                        SamplingIntervalDiagnosticsDataType.class,
+                        1,
+                        null)));
   }
 }

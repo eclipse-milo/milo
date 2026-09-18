@@ -1,30 +1,15 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyTypeNode;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.DataSetOrderingType;
@@ -32,7 +17,15 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.UadpNetworkMessageContentMask;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link UadpWriterGroupMessageType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.2.1/#9.2.1.1">Model
+ *     documentation</a>
+ */
 public class UadpWriterGroupMessageTypeNode extends WriterGroupMessageTypeNode
     implements UadpWriterGroupMessageType {
   public UadpWriterGroupMessageTypeNode(
@@ -41,12 +34,12 @@ public class UadpWriterGroupMessageTypeNode extends WriterGroupMessageTypeNode
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         client,
@@ -64,390 +57,369 @@ public class UadpWriterGroupMessageTypeNode extends WriterGroupMessageTypeNode
   }
 
   @Override
-  public UInteger getGroupVersion() throws UaException {
-    PropertyTypeNode node = getGroupVersionNode();
-    return (UInteger) node.getValue().getValue().getValue();
-  }
-
-  @Override
-  public void setGroupVersion(UInteger value) throws UaException {
-    PropertyTypeNode node = getGroupVersionNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public UInteger readGroupVersion() throws UaException {
-    try {
-      return readGroupVersionAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeGroupVersion(UInteger value) throws UaException {
-    try {
-      StatusCode statusCode = writeGroupVersionAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends UInteger> readGroupVersionAsync() {
-    return getGroupVersionNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (UInteger) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeGroupVersionAsync(UInteger groupVersion) {
-    DataValue value = DataValue.valueOnly(new Variant(groupVersion));
-    return getGroupVersionNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
   public PropertyTypeNode getGroupVersionNode() throws UaException {
-    try {
-      return getGroupVersionNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getGroupVersionNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends PropertyTypeNode> getGroupVersionNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "GroupVersion", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "GroupVersion",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public DataSetOrderingType getDataSetOrdering() throws UaException {
-    PropertyTypeNode node = getDataSetOrderingNode();
-    Object value = node.getValue().getValue().getValue();
-
-    if (value instanceof Integer) {
-      return DataSetOrderingType.from((Integer) value);
-    } else if (value instanceof DataSetOrderingType) {
-      return (DataSetOrderingType) value;
-    } else {
-      return null;
-    }
+  public @Nullable UInteger readGroupVersion() throws UaException {
+    return ClientNodeSupport.await(readGroupVersionAsync());
   }
 
   @Override
-  public void setDataSetOrdering(DataSetOrderingType value) throws UaException {
-    PropertyTypeNode node = getDataSetOrderingNode();
-    node.setValue(new Variant(value));
+  public void writeGroupVersion(@Nullable UInteger value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeGroupVersionAsync(value)),
+        "http://opcfoundation.org/UA/}GroupVersion");
   }
 
   @Override
-  public DataSetOrderingType readDataSetOrdering() throws UaException {
-    try {
-      return readDataSetOrderingAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable UInteger> readGroupVersionAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getGroupVersionNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}GroupVersion",
+                            true,
+                            UInteger.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable UInteger) v)));
   }
 
   @Override
-  public void writeDataSetOrdering(DataSetOrderingType value) throws UaException {
-    try {
-      StatusCode statusCode = writeDataSetOrderingAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<StatusCode> writeGroupVersionAsync(@Nullable UInteger value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getGroupVersionNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}GroupVersion",
+                        value,
+                        UInteger.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public CompletableFuture<? extends DataSetOrderingType> readDataSetOrderingAsync() {
-    return getDataSetOrderingNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(
-            v -> {
-              Object value = v.getValue().getValue();
-              if (value instanceof Integer) {
-                return DataSetOrderingType.from((Integer) value);
-              } else {
-                return null;
-              }
-            });
+  public @Nullable PropertyTypeNode getSamplingOffsetNode() throws UaException {
+    return ClientNodeSupport.await(getSamplingOffsetNodeAsync());
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeDataSetOrderingAsync(
-      DataSetOrderingType dataSetOrdering) {
-    DataValue value = DataValue.valueOnly(new Variant(dataSetOrdering));
-    return getDataSetOrderingNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<? extends @Nullable PropertyTypeNode> getSamplingOffsetNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "SamplingOffset",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
+  }
+
+  @Override
+  public @Nullable Double readSamplingOffset() throws UaException {
+    return ClientNodeSupport.await(readSamplingOffsetAsync());
+  }
+
+  @Override
+  public void writeSamplingOffset(@Nullable Double value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeSamplingOffsetAsync(value)),
+        "http://opcfoundation.org/UA/}SamplingOffset");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable Double> readSamplingOffsetAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getSamplingOffsetNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}SamplingOffset",
+                            false,
+                            Double.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable Double) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeSamplingOffsetAsync(@Nullable Double value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getSamplingOffsetNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}SamplingOffset",
+                        value,
+                        Double.class,
+                        -1,
+                        null)));
   }
 
   @Override
   public PropertyTypeNode getDataSetOrderingNode() throws UaException {
-    try {
-      return getDataSetOrderingNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getDataSetOrderingNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends PropertyTypeNode> getDataSetOrderingNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "DataSetOrdering", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "DataSetOrdering",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public UadpNetworkMessageContentMask getNetworkMessageContentMask() throws UaException {
-    PropertyTypeNode node = getNetworkMessageContentMaskNode();
-    return (UadpNetworkMessageContentMask) node.getValue().getValue().getValue();
+  public @Nullable DataSetOrderingType readDataSetOrdering() throws UaException {
+    return ClientNodeSupport.await(readDataSetOrderingAsync());
   }
 
   @Override
-  public void setNetworkMessageContentMask(UadpNetworkMessageContentMask value) throws UaException {
-    PropertyTypeNode node = getNetworkMessageContentMaskNode();
-    node.setValue(new Variant(value));
+  public void writeDataSetOrdering(@Nullable DataSetOrderingType value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeDataSetOrderingAsync(value)),
+        "http://opcfoundation.org/UA/}DataSetOrdering");
   }
 
   @Override
-  public UadpNetworkMessageContentMask readNetworkMessageContentMask() throws UaException {
-    try {
-      return readNetworkMessageContentMaskAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable DataSetOrderingType> readDataSetOrderingAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getDataSetOrderingNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}DataSetOrdering",
+                            true,
+                            DataSetOrderingType.class,
+                            -1,
+                            DataSetOrderingType::from)),
+                v -> CompletableFuture.completedFuture((@Nullable DataSetOrderingType) v)));
   }
 
   @Override
-  public void writeNetworkMessageContentMask(UadpNetworkMessageContentMask value)
-      throws UaException {
-    try {
-      writeNetworkMessageContentMaskAsync(value).get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends UadpNetworkMessageContentMask>
-      readNetworkMessageContentMaskAsync() {
-    return getNetworkMessageContentMaskNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (UadpNetworkMessageContentMask) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeNetworkMessageContentMaskAsync(
-      UadpNetworkMessageContentMask networkMessageContentMask) {
-    DataValue value = DataValue.valueOnly(new Variant(networkMessageContentMask));
-    return getNetworkMessageContentMaskNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public PropertyTypeNode getNetworkMessageContentMaskNode() throws UaException {
-    try {
-      return getNetworkMessageContentMaskNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends PropertyTypeNode> getNetworkMessageContentMaskNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "NetworkMessageContentMask",
-            ExpandedNodeId.parse("i=46"),
-            false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
-  }
-
-  @Override
-  public Double getSamplingOffset() throws UaException {
-    PropertyTypeNode node = getSamplingOffsetNode();
-    return (Double) node.getValue().getValue().getValue();
-  }
-
-  @Override
-  public void setSamplingOffset(Double value) throws UaException {
-    PropertyTypeNode node = getSamplingOffsetNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public Double readSamplingOffset() throws UaException {
-    try {
-      return readSamplingOffsetAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeSamplingOffset(Double value) throws UaException {
-    try {
-      StatusCode statusCode = writeSamplingOffsetAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends Double> readSamplingOffsetAsync() {
-    return getSamplingOffsetNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (Double) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeSamplingOffsetAsync(Double samplingOffset) {
-    DataValue value = DataValue.valueOnly(new Variant(samplingOffset));
-    return getSamplingOffsetNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public PropertyTypeNode getSamplingOffsetNode() throws UaException {
-    try {
-      return getSamplingOffsetNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends PropertyTypeNode> getSamplingOffsetNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "SamplingOffset", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
-  }
-
-  @Override
-  public Double[] getPublishingOffset() throws UaException {
-    PropertyTypeNode node = getPublishingOffsetNode();
-    return (Double[]) node.getValue().getValue().getValue();
-  }
-
-  @Override
-  public void setPublishingOffset(Double[] value) throws UaException {
-    PropertyTypeNode node = getPublishingOffsetNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public Double[] readPublishingOffset() throws UaException {
-    try {
-      return readPublishingOffsetAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writePublishingOffset(Double[] value) throws UaException {
-    try {
-      StatusCode statusCode = writePublishingOffsetAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends Double[]> readPublishingOffsetAsync() {
-    return getPublishingOffsetNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (Double[]) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writePublishingOffsetAsync(Double[] publishingOffset) {
-    DataValue value = DataValue.valueOnly(new Variant(publishingOffset));
-    return getPublishingOffsetNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<StatusCode> writeDataSetOrderingAsync(
+      @Nullable DataSetOrderingType value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getDataSetOrderingNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}DataSetOrdering",
+                        value,
+                        DataSetOrderingType.class,
+                        -1,
+                        DataSetOrderingType::from)));
   }
 
   @Override
   public PropertyTypeNode getPublishingOffsetNode() throws UaException {
-    try {
-      return getPublishingOffsetNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getPublishingOffsetNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends PropertyTypeNode> getPublishingOffsetNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "PublishingOffset",
-            ExpandedNodeId.parse("i=46"),
-            false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "PublishingOffset",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
+  }
+
+  @Override
+  public Double @Nullable [] readPublishingOffset() throws UaException {
+    return ClientNodeSupport.await(readPublishingOffsetAsync());
+  }
+
+  @Override
+  public void writePublishingOffset(Double @Nullable [] value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writePublishingOffsetAsync(value)),
+        "http://opcfoundation.org/UA/}PublishingOffset");
+  }
+
+  @Override
+  public CompletableFuture<? extends Double @Nullable []> readPublishingOffsetAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getPublishingOffsetNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}PublishingOffset",
+                            true,
+                            Double.class,
+                            1,
+                            null)),
+                v -> CompletableFuture.completedFuture((Double @Nullable []) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writePublishingOffsetAsync(Double @Nullable [] value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getPublishingOffsetNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}PublishingOffset",
+                        value,
+                        Double.class,
+                        1,
+                        null)));
+  }
+
+  @Override
+  public PropertyTypeNode getNetworkMessageContentMaskNode() throws UaException {
+    return ClientNodeSupport.await(getNetworkMessageContentMaskNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends PropertyTypeNode> getNetworkMessageContentMaskNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "NetworkMessageContentMask",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
+  }
+
+  @Override
+  public @Nullable UadpNetworkMessageContentMask readNetworkMessageContentMask()
+      throws UaException {
+    return ClientNodeSupport.await(readNetworkMessageContentMaskAsync());
+  }
+
+  @Override
+  public void writeNetworkMessageContentMask(@Nullable UadpNetworkMessageContentMask value)
+      throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeNetworkMessageContentMaskAsync(value)),
+        "http://opcfoundation.org/UA/}NetworkMessageContentMask");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable UadpNetworkMessageContentMask>
+      readNetworkMessageContentMaskAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getNetworkMessageContentMaskNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}NetworkMessageContentMask",
+                            true,
+                            UadpNetworkMessageContentMask.class,
+                            -1,
+                            null)),
+                v ->
+                    CompletableFuture.completedFuture(
+                        (@Nullable UadpNetworkMessageContentMask) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeNetworkMessageContentMaskAsync(
+      @Nullable UadpNetworkMessageContentMask value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getNetworkMessageContentMaskNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}NetworkMessageContentMask",
+                        value,
+                        UadpNetworkMessageContentMask.class,
+                        -1,
+                        null)));
   }
 }

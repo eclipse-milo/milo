@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.variables;
 
 import java.util.concurrent.CompletableFuture;
@@ -16,169 +6,117 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.3/#5.3.3.2">https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.3/#5.3.3.2</a>
+ * Client API for the TwoStateDiscreteType VariableType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.3/#5.3.3.2">Model
+ *     documentation</a>
  */
 public interface TwoStateDiscreteType extends DiscreteItemType {
-  QualifiedProperty<LocalizedText> FALSE_STATE =
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2373L);
+
+  QualifiedProperty<LocalizedText> FalseState_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "FalseState",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 21L),
           -1,
           LocalizedText.class);
 
-  QualifiedProperty<LocalizedText> TRUE_STATE =
+  QualifiedProperty<LocalizedText> TrueState_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "TrueState",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 21L),
           -1,
           LocalizedText.class);
 
   /**
-   * Get the local value of the FalseState Node.
+   * Resolves the mandatory FalseState child, a PropertyType with DataType LocalizedText.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the FalseState Node.
-   * @throws UaException if an error occurs creating or getting the FalseState Node.
-   */
-  LocalizedText getFalseState() throws UaException;
-
-  /**
-   * Set the local value of the FalseState Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the FalseState Node.
-   * @throws UaException if an error occurs creating or getting the FalseState Node.
-   */
-  void setFalseState(LocalizedText value) throws UaException;
-
-  /**
-   * Read the value of the FalseState Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link LocalizedText} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  LocalizedText readFalseState() throws UaException;
-
-  /**
-   * Write a new value for the FalseState Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link LocalizedText} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeFalseState(LocalizedText value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readFalseState}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends LocalizedText> readFalseStateAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeFalseState}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeFalseStateAsync(LocalizedText value);
-
-  /**
-   * Get the FalseState {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the FalseState {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getFalseStateNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getFalseStateNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getFalseStateNode()}. */
   CompletableFuture<? extends PropertyType> getFalseStateNodeAsync();
 
   /**
-   * Get the local value of the TrueState Node.
+   * Reads the Value of the FalseState child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the TrueState Node.
-   * @throws UaException if an error occurs creating or getting the TrueState Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  LocalizedText getTrueState() throws UaException;
+  @Nullable LocalizedText readFalseState() throws UaException;
 
   /**
-   * Set the local value of the TrueState Node.
+   * Writes the Value of the FalseState child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the TrueState Node.
-   * @throws UaException if an error occurs creating or getting the TrueState Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setTrueState(LocalizedText value) throws UaException;
+  void writeFalseState(@Nullable LocalizedText value) throws UaException;
+
+  /** Asynchronous form of {@link #readFalseState()}. */
+  CompletableFuture<? extends @Nullable LocalizedText> readFalseStateAsync();
+
+  /** Asynchronous form of {@link #writeFalseState}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeFalseStateAsync(@Nullable LocalizedText value);
 
   /**
-   * Read the value of the TrueState Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the mandatory TrueState child, a PropertyType with DataType LocalizedText.
    *
-   * @return the {@link LocalizedText} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  LocalizedText readTrueState() throws UaException;
-
-  /**
-   * Write a new value for the TrueState Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link LocalizedText} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeTrueState(LocalizedText value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readTrueState}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends LocalizedText> readTrueStateAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeTrueState}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeTrueStateAsync(LocalizedText value);
-
-  /**
-   * Get the TrueState {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the TrueState {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getTrueStateNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getTrueStateNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getTrueStateNode()}. */
   CompletableFuture<? extends PropertyType> getTrueStateNodeAsync();
+
+  /**
+   * Reads the Value of the TrueState child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable LocalizedText readTrueState() throws UaException;
+
+  /**
+   * Writes the Value of the TrueState child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeTrueState(@Nullable LocalizedText value) throws UaException;
+
+  /** Asynchronous form of {@link #readTrueState()}. */
+  CompletableFuture<? extends @Nullable LocalizedText> readTrueStateAsync();
+
+  /** Asynchronous form of {@link #writeTrueState}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeTrueStateAsync(@Nullable LocalizedText value);
+
+  /**
+   * Reads the Value of this node from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable Object readTwoStateDiscreteValue() throws UaException;
+
+  /**
+   * Writes the Value of this node to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeTwoStateDiscreteValue(@Nullable Object value) throws UaException;
+
+  /** Asynchronous form of {@link #readTwoStateDiscreteValue()}. */
+  CompletableFuture<? extends @Nullable Object> readTwoStateDiscreteValueAsync();
+
+  /**
+   * Asynchronous form of {@link #writeTwoStateDiscreteValue}; completes with the operation status.
+   */
+  CompletableFuture<StatusCode> writeTwoStateDiscreteValueAsync(@Nullable Object value);
 }

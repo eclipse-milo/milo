@@ -1,38 +1,30 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyTypeNode;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.LinearConversionDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link AlternativeUnitType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part8/6.4.2/#6.4.2.4">Model
+ *     documentation</a>
+ */
 public class AlternativeUnitTypeNode extends UnitTypeNode implements AlternativeUnitType {
   public AlternativeUnitTypeNode(
       OpcUaClient client,
@@ -40,12 +32,12 @@ public class AlternativeUnitTypeNode extends UnitTypeNode implements Alternative
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         client,
@@ -63,235 +55,221 @@ public class AlternativeUnitTypeNode extends UnitTypeNode implements Alternative
   }
 
   @Override
-  public LinearConversionDataType getLinearConversion() throws UaException {
-    PropertyTypeNode node = getLinearConversionNode();
-    return cast(node.getValue().getValue().getValue(), LinearConversionDataType.class);
+  public @Nullable PropertyTypeNode getLinearConversionNode() throws UaException {
+    return ClientNodeSupport.await(getLinearConversionNodeAsync());
   }
 
   @Override
-  public void setLinearConversion(LinearConversionDataType value) throws UaException {
-    PropertyTypeNode node = getLinearConversionNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
+  public CompletableFuture<? extends @Nullable PropertyTypeNode> getLinearConversionNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "LinearConversion",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public LinearConversionDataType readLinearConversion() throws UaException {
-    try {
-      return readLinearConversionAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable LinearConversionDataType readLinearConversion() throws UaException {
+    return ClientNodeSupport.await(readLinearConversionAsync());
   }
 
   @Override
-  public void writeLinearConversion(LinearConversionDataType value) throws UaException {
-    try {
-      StatusCode statusCode = writeLinearConversionAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public void writeLinearConversion(@Nullable LinearConversionDataType value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeLinearConversionAsync(value)),
+        "http://opcfoundation.org/UA/}LinearConversion");
   }
 
   @Override
-  public CompletableFuture<? extends LinearConversionDataType> readLinearConversionAsync() {
-    return getLinearConversionNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), LinearConversionDataType.class));
+  public CompletableFuture<? extends @Nullable LinearConversionDataType>
+      readLinearConversionAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getLinearConversionNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}LinearConversion",
+                            false,
+                            LinearConversionDataType.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable LinearConversionDataType) v)));
   }
 
   @Override
   public CompletableFuture<StatusCode> writeLinearConversionAsync(
-      LinearConversionDataType linearConversion) {
-    ExtensionObject encoded =
-        ExtensionObject.encode(client.getStaticEncodingContext(), linearConversion);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getLinearConversionNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+      @Nullable LinearConversionDataType value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getLinearConversionNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}LinearConversion",
+                        value,
+                        LinearConversionDataType.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public PropertyTypeNode getLinearConversionNode() throws UaException {
-    try {
-      return getLinearConversionNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable PropertyTypeNode getMathMLConversionNode() throws UaException {
+    return ClientNodeSupport.await(getMathMLConversionNodeAsync());
   }
 
   @Override
-  public CompletableFuture<? extends PropertyTypeNode> getLinearConversionNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "LinearConversion",
-            ExpandedNodeId.parse("i=46"),
-            false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+  public CompletableFuture<? extends @Nullable PropertyTypeNode> getMathMLConversionNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "MathMLConversion",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public String getMathMlConversion() throws UaException {
-    PropertyTypeNode node = getMathMlConversionNode();
-    return (String) node.getValue().getValue().getValue();
+  public @Nullable String readMathMLConversion() throws UaException {
+    return ClientNodeSupport.await(readMathMLConversionAsync());
   }
 
   @Override
-  public void setMathMlConversion(String value) throws UaException {
-    PropertyTypeNode node = getMathMlConversionNode();
-    node.setValue(new Variant(value));
+  public void writeMathMLConversion(@Nullable String value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeMathMLConversionAsync(value)),
+        "http://opcfoundation.org/UA/}MathMLConversion");
   }
 
   @Override
-  public String readMathMlConversion() throws UaException {
-    try {
-      return readMathMlConversionAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable String> readMathMLConversionAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getMathMLConversionNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}MathMLConversion",
+                            false,
+                            String.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable String) v)));
   }
 
   @Override
-  public void writeMathMlConversion(String value) throws UaException {
-    try {
-      StatusCode statusCode = writeMathMlConversionAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<StatusCode> writeMathMLConversionAsync(@Nullable String value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getMathMLConversionNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}MathMLConversion",
+                        value,
+                        String.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public CompletableFuture<? extends String> readMathMlConversionAsync() {
-    return getMathMlConversionNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (String) v.getValue().getValue());
+  public @Nullable PropertyTypeNode getMathMLInverseConversionNode() throws UaException {
+    return ClientNodeSupport.await(getMathMLInverseConversionNodeAsync());
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeMathMlConversionAsync(String mathMlConversion) {
-    DataValue value = DataValue.valueOnly(new Variant(mathMlConversion));
-    return getMathMlConversionNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<? extends @Nullable PropertyTypeNode>
+      getMathMLInverseConversionNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "MathMLInverseConversion",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public PropertyTypeNode getMathMlConversionNode() throws UaException {
-    try {
-      return getMathMlConversionNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable String readMathMLInverseConversion() throws UaException {
+    return ClientNodeSupport.await(readMathMLInverseConversionAsync());
   }
 
   @Override
-  public CompletableFuture<? extends PropertyTypeNode> getMathMlConversionNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "MathMLConversion",
-            ExpandedNodeId.parse("i=46"),
-            false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+  public void writeMathMLInverseConversion(@Nullable String value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeMathMLInverseConversionAsync(value)),
+        "http://opcfoundation.org/UA/}MathMLInverseConversion");
   }
 
   @Override
-  public String getMathMlInverseConversion() throws UaException {
-    PropertyTypeNode node = getMathMlInverseConversionNode();
-    return (String) node.getValue().getValue().getValue();
+  public CompletableFuture<? extends @Nullable String> readMathMLInverseConversionAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getMathMLInverseConversionNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}MathMLInverseConversion",
+                            false,
+                            String.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable String) v)));
   }
 
   @Override
-  public void setMathMlInverseConversion(String value) throws UaException {
-    PropertyTypeNode node = getMathMlInverseConversionNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public String readMathMlInverseConversion() throws UaException {
-    try {
-      return readMathMlInverseConversionAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeMathMlInverseConversion(String value) throws UaException {
-    try {
-      StatusCode statusCode = writeMathMlInverseConversionAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends String> readMathMlInverseConversionAsync() {
-    return getMathMlInverseConversionNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (String) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeMathMlInverseConversionAsync(
-      String mathMlInverseConversion) {
-    DataValue value = DataValue.valueOnly(new Variant(mathMlInverseConversion));
-    return getMathMlInverseConversionNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public PropertyTypeNode getMathMlInverseConversionNode() throws UaException {
-    try {
-      return getMathMlInverseConversionNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends PropertyTypeNode> getMathMlInverseConversionNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "MathMLInverseConversion",
-            ExpandedNodeId.parse("i=46"),
-            false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+  public CompletableFuture<StatusCode> writeMathMLInverseConversionAsync(@Nullable String value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getMathMLInverseConversionNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}MathMLInverseConversion",
+                        value,
+                        String.class,
+                        -1,
+                        null)));
   }
 }

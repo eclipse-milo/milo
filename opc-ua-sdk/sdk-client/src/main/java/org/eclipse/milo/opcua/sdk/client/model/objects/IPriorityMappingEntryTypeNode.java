@@ -1,36 +1,29 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
-import org.eclipse.milo.opcua.sdk.client.model.variables.BaseDataVariableTypeNode;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
+import org.eclipse.milo.opcua.sdk.client.nodes.UaVariableNode;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link IPriorityMappingEntryType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.15">Model
+ *     documentation</a>
+ */
 public class IPriorityMappingEntryTypeNode extends BaseInterfaceTypeNode
     implements IPriorityMappingEntryType {
   public IPriorityMappingEntryTypeNode(
@@ -39,12 +32,12 @@ public class IPriorityMappingEntryTypeNode extends BaseInterfaceTypeNode
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         client,
@@ -62,300 +55,290 @@ public class IPriorityMappingEntryTypeNode extends BaseInterfaceTypeNode
   }
 
   @Override
-  public String getMappingUri() throws UaException {
-    BaseDataVariableTypeNode node = getMappingUriNode();
-    return (String) node.getValue().getValue().getValue();
+  public UaVariableNode getMappingUriNode() throws UaException {
+    return ClientNodeSupport.await(getMappingUriNodeAsync());
   }
 
   @Override
-  public void setMappingUri(String value) throws UaException {
-    BaseDataVariableTypeNode node = getMappingUriNode();
-    node.setValue(new Variant(value));
+  public CompletableFuture<? extends UaVariableNode> getMappingUriNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "MappingUri",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
   }
 
   @Override
-  public String readMappingUri() throws UaException {
-    try {
-      return readMappingUriAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable String readMappingUri() throws UaException {
+    return ClientNodeSupport.await(readMappingUriAsync());
   }
 
   @Override
-  public void writeMappingUri(String value) throws UaException {
-    try {
-      StatusCode statusCode = writeMappingUriAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public void writeMappingUri(@Nullable String value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeMappingUriAsync(value)),
+        "http://opcfoundation.org/UA/}MappingUri");
   }
 
   @Override
-  public CompletableFuture<? extends String> readMappingUriAsync() {
-    return getMappingUriNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (String) v.getValue().getValue());
+  public CompletableFuture<? extends @Nullable String> readMappingUriAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getMappingUriNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}MappingUri",
+                            true,
+                            String.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable String) v)));
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeMappingUriAsync(String mappingUri) {
-    DataValue value = DataValue.valueOnly(new Variant(mappingUri));
-    return getMappingUriNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<StatusCode> writeMappingUriAsync(@Nullable String value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getMappingUriNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}MappingUri",
+                        value,
+                        String.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public BaseDataVariableTypeNode getMappingUriNode() throws UaException {
-    try {
-      return getMappingUriNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public UaVariableNode getPriorityLabelNode() throws UaException {
+    return ClientNodeSupport.await(getPriorityLabelNodeAsync());
   }
 
   @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getMappingUriNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "MappingUri", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
+  public CompletableFuture<? extends UaVariableNode> getPriorityLabelNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "PriorityLabel",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
   }
 
   @Override
-  public String getPriorityLabel() throws UaException {
-    BaseDataVariableTypeNode node = getPriorityLabelNode();
-    return (String) node.getValue().getValue().getValue();
+  public @Nullable String readPriorityLabel() throws UaException {
+    return ClientNodeSupport.await(readPriorityLabelAsync());
   }
 
   @Override
-  public void setPriorityLabel(String value) throws UaException {
-    BaseDataVariableTypeNode node = getPriorityLabelNode();
-    node.setValue(new Variant(value));
+  public void writePriorityLabel(@Nullable String value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writePriorityLabelAsync(value)),
+        "http://opcfoundation.org/UA/}PriorityLabel");
   }
 
   @Override
-  public String readPriorityLabel() throws UaException {
-    try {
-      return readPriorityLabelAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable String> readPriorityLabelAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getPriorityLabelNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}PriorityLabel",
+                            true,
+                            String.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable String) v)));
   }
 
   @Override
-  public void writePriorityLabel(String value) throws UaException {
-    try {
-      StatusCode statusCode = writePriorityLabelAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<StatusCode> writePriorityLabelAsync(@Nullable String value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getPriorityLabelNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}PriorityLabel",
+                        value,
+                        String.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public CompletableFuture<? extends String> readPriorityLabelAsync() {
-    return getPriorityLabelNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (String) v.getValue().getValue());
+  public @Nullable UaVariableNode getPriorityValue_PCPNode() throws UaException {
+    return ClientNodeSupport.await(getPriorityValue_PCPNodeAsync());
   }
 
   @Override
-  public CompletableFuture<StatusCode> writePriorityLabelAsync(String priorityLabel) {
-    DataValue value = DataValue.valueOnly(new Variant(priorityLabel));
-    return getPriorityLabelNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<? extends @Nullable UaVariableNode> getPriorityValue_PCPNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "PriorityValue_PCP",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
   }
 
   @Override
-  public BaseDataVariableTypeNode getPriorityLabelNode() throws UaException {
-    try {
-      return getPriorityLabelNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable UByte readPriorityValue_PCP() throws UaException {
+    return ClientNodeSupport.await(readPriorityValue_PCPAsync());
   }
 
   @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getPriorityLabelNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "PriorityLabel", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
+  public void writePriorityValue_PCP(@Nullable UByte value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writePriorityValue_PCPAsync(value)),
+        "http://opcfoundation.org/UA/}PriorityValue_PCP");
   }
 
   @Override
-  public UByte getPriorityValuePcp() throws UaException {
-    BaseDataVariableTypeNode node = getPriorityValuePcpNode();
-    return (UByte) node.getValue().getValue().getValue();
+  public CompletableFuture<? extends @Nullable UByte> readPriorityValue_PCPAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getPriorityValue_PCPNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}PriorityValue_PCP",
+                            false,
+                            UByte.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable UByte) v)));
   }
 
   @Override
-  public void setPriorityValuePcp(UByte value) throws UaException {
-    BaseDataVariableTypeNode node = getPriorityValuePcpNode();
-    node.setValue(new Variant(value));
+  public CompletableFuture<StatusCode> writePriorityValue_PCPAsync(@Nullable UByte value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getPriorityValue_PCPNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}PriorityValue_PCP",
+                        value,
+                        UByte.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public UByte readPriorityValuePcp() throws UaException {
-    try {
-      return readPriorityValuePcpAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable UaVariableNode getPriorityValue_DSCPNode() throws UaException {
+    return ClientNodeSupport.await(getPriorityValue_DSCPNodeAsync());
   }
 
   @Override
-  public void writePriorityValuePcp(UByte value) throws UaException {
-    try {
-      StatusCode statusCode = writePriorityValuePcpAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable UaVariableNode> getPriorityValue_DSCPNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "PriorityValue_DSCP",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
   }
 
   @Override
-  public CompletableFuture<? extends UByte> readPriorityValuePcpAsync() {
-    return getPriorityValuePcpNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (UByte) v.getValue().getValue());
+  public @Nullable UInteger readPriorityValue_DSCP() throws UaException {
+    return ClientNodeSupport.await(readPriorityValue_DSCPAsync());
   }
 
   @Override
-  public CompletableFuture<StatusCode> writePriorityValuePcpAsync(UByte priorityValuePcp) {
-    DataValue value = DataValue.valueOnly(new Variant(priorityValuePcp));
-    return getPriorityValuePcpNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public void writePriorityValue_DSCP(@Nullable UInteger value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writePriorityValue_DSCPAsync(value)),
+        "http://opcfoundation.org/UA/}PriorityValue_DSCP");
   }
 
   @Override
-  public BaseDataVariableTypeNode getPriorityValuePcpNode() throws UaException {
-    try {
-      return getPriorityValuePcpNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable UInteger> readPriorityValue_DSCPAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getPriorityValue_DSCPNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}PriorityValue_DSCP",
+                            false,
+                            UInteger.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable UInteger) v)));
   }
 
   @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getPriorityValuePcpNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "PriorityValue_PCP",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
-  }
-
-  @Override
-  public UInteger getPriorityValueDscp() throws UaException {
-    BaseDataVariableTypeNode node = getPriorityValueDscpNode();
-    return (UInteger) node.getValue().getValue().getValue();
-  }
-
-  @Override
-  public void setPriorityValueDscp(UInteger value) throws UaException {
-    BaseDataVariableTypeNode node = getPriorityValueDscpNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public UInteger readPriorityValueDscp() throws UaException {
-    try {
-      return readPriorityValueDscpAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writePriorityValueDscp(UInteger value) throws UaException {
-    try {
-      StatusCode statusCode = writePriorityValueDscpAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends UInteger> readPriorityValueDscpAsync() {
-    return getPriorityValueDscpNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (UInteger) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writePriorityValueDscpAsync(UInteger priorityValueDscp) {
-    DataValue value = DataValue.valueOnly(new Variant(priorityValueDscp));
-    return getPriorityValueDscpNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getPriorityValueDscpNode() throws UaException {
-    try {
-      return getPriorityValueDscpNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getPriorityValueDscpNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "PriorityValue_DSCP",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
+  public CompletableFuture<StatusCode> writePriorityValue_DSCPAsync(@Nullable UInteger value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getPriorityValue_DSCPNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}PriorityValue_DSCP",
+                        value,
+                        UInteger.class,
+                        -1,
+                        null)));
   }
 }

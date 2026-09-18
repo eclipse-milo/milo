@@ -1,30 +1,15 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
-import org.eclipse.milo.opcua.sdk.client.model.variables.BaseDataVariableTypeNode;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
+import org.eclipse.milo.opcua.sdk.client.nodes.UaVariableNode;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
@@ -33,7 +18,15 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.TsnListenerStatus;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TsnTalkerStatus;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link IIeeeBaseTsnStatusStreamType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.9">Model
+ *     documentation</a>
+ */
 public class IIeeeBaseTsnStatusStreamTypeNode extends BaseInterfaceTypeNode
     implements IIeeeBaseTsnStatusStreamType {
   public IIeeeBaseTsnStatusStreamTypeNode(
@@ -42,12 +35,12 @@ public class IIeeeBaseTsnStatusStreamTypeNode extends BaseInterfaceTypeNode
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         client,
@@ -65,347 +58,290 @@ public class IIeeeBaseTsnStatusStreamTypeNode extends BaseInterfaceTypeNode
   }
 
   @Override
-  public TsnTalkerStatus getTalkerStatus() throws UaException {
-    BaseDataVariableTypeNode node = getTalkerStatusNode();
-    Object value = node.getValue().getValue().getValue();
-
-    if (value instanceof Integer) {
-      return TsnTalkerStatus.from((Integer) value);
-    } else if (value instanceof TsnTalkerStatus) {
-      return (TsnTalkerStatus) value;
-    } else {
-      return null;
-    }
+  public UaVariableNode getFailureCodeNode() throws UaException {
+    return ClientNodeSupport.await(getFailureCodeNodeAsync());
   }
 
   @Override
-  public void setTalkerStatus(TsnTalkerStatus value) throws UaException {
-    BaseDataVariableTypeNode node = getTalkerStatusNode();
-    node.setValue(new Variant(value));
+  public CompletableFuture<? extends UaVariableNode> getFailureCodeNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "FailureCode",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
   }
 
   @Override
-  public TsnTalkerStatus readTalkerStatus() throws UaException {
-    try {
-      return readTalkerStatusAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable TsnFailureCode readFailureCode() throws UaException {
+    return ClientNodeSupport.await(readFailureCodeAsync());
   }
 
   @Override
-  public void writeTalkerStatus(TsnTalkerStatus value) throws UaException {
-    try {
-      StatusCode statusCode = writeTalkerStatusAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public void writeFailureCode(@Nullable TsnFailureCode value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeFailureCodeAsync(value)),
+        "http://opcfoundation.org/UA/}FailureCode");
   }
 
   @Override
-  public CompletableFuture<? extends TsnTalkerStatus> readTalkerStatusAsync() {
-    return getTalkerStatusNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(
-            v -> {
-              Object value = v.getValue().getValue();
-              if (value instanceof Integer) {
-                return TsnTalkerStatus.from((Integer) value);
-              } else {
-                return null;
-              }
-            });
+  public CompletableFuture<? extends @Nullable TsnFailureCode> readFailureCodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getFailureCodeNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}FailureCode",
+                            true,
+                            TsnFailureCode.class,
+                            -1,
+                            TsnFailureCode::from)),
+                v -> CompletableFuture.completedFuture((@Nullable TsnFailureCode) v)));
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeTalkerStatusAsync(TsnTalkerStatus talkerStatus) {
-    DataValue value = DataValue.valueOnly(new Variant(talkerStatus));
-    return getTalkerStatusNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<StatusCode> writeFailureCodeAsync(@Nullable TsnFailureCode value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getFailureCodeNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}FailureCode",
+                        value,
+                        TsnFailureCode.class,
+                        -1,
+                        TsnFailureCode::from)));
   }
 
   @Override
-  public BaseDataVariableTypeNode getTalkerStatusNode() throws UaException {
-    try {
-      return getTalkerStatusNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable UaVariableNode getTalkerStatusNode() throws UaException {
+    return ClientNodeSupport.await(getTalkerStatusNodeAsync());
   }
 
   @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getTalkerStatusNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "TalkerStatus", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
+  public CompletableFuture<? extends @Nullable UaVariableNode> getTalkerStatusNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "TalkerStatus",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
   }
 
   @Override
-  public TsnListenerStatus getListenerStatus() throws UaException {
-    BaseDataVariableTypeNode node = getListenerStatusNode();
-    Object value = node.getValue().getValue().getValue();
-
-    if (value instanceof Integer) {
-      return TsnListenerStatus.from((Integer) value);
-    } else if (value instanceof TsnListenerStatus) {
-      return (TsnListenerStatus) value;
-    } else {
-      return null;
-    }
+  public @Nullable TsnTalkerStatus readTalkerStatus() throws UaException {
+    return ClientNodeSupport.await(readTalkerStatusAsync());
   }
 
   @Override
-  public void setListenerStatus(TsnListenerStatus value) throws UaException {
-    BaseDataVariableTypeNode node = getListenerStatusNode();
-    node.setValue(new Variant(value));
+  public void writeTalkerStatus(@Nullable TsnTalkerStatus value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeTalkerStatusAsync(value)),
+        "http://opcfoundation.org/UA/}TalkerStatus");
   }
 
   @Override
-  public TsnListenerStatus readListenerStatus() throws UaException {
-    try {
-      return readListenerStatusAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable TsnTalkerStatus> readTalkerStatusAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getTalkerStatusNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}TalkerStatus",
+                            false,
+                            TsnTalkerStatus.class,
+                            -1,
+                            TsnTalkerStatus::from)),
+                v -> CompletableFuture.completedFuture((@Nullable TsnTalkerStatus) v)));
   }
 
   @Override
-  public void writeListenerStatus(TsnListenerStatus value) throws UaException {
-    try {
-      StatusCode statusCode = writeListenerStatusAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<StatusCode> writeTalkerStatusAsync(@Nullable TsnTalkerStatus value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getTalkerStatusNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}TalkerStatus",
+                        value,
+                        TsnTalkerStatus.class,
+                        -1,
+                        TsnTalkerStatus::from)));
   }
 
   @Override
-  public CompletableFuture<? extends TsnListenerStatus> readListenerStatusAsync() {
-    return getListenerStatusNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(
-            v -> {
-              Object value = v.getValue().getValue();
-              if (value instanceof Integer) {
-                return TsnListenerStatus.from((Integer) value);
-              } else {
-                return null;
-              }
-            });
+  public @Nullable UaVariableNode getListenerStatusNode() throws UaException {
+    return ClientNodeSupport.await(getListenerStatusNodeAsync());
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeListenerStatusAsync(TsnListenerStatus listenerStatus) {
-    DataValue value = DataValue.valueOnly(new Variant(listenerStatus));
-    return getListenerStatusNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<? extends @Nullable UaVariableNode> getListenerStatusNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "ListenerStatus",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
   }
 
   @Override
-  public BaseDataVariableTypeNode getListenerStatusNode() throws UaException {
-    try {
-      return getListenerStatusNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable TsnListenerStatus readListenerStatus() throws UaException {
+    return ClientNodeSupport.await(readListenerStatusAsync());
   }
 
   @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getListenerStatusNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "ListenerStatus", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
+  public void writeListenerStatus(@Nullable TsnListenerStatus value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeListenerStatusAsync(value)),
+        "http://opcfoundation.org/UA/}ListenerStatus");
   }
 
   @Override
-  public TsnFailureCode getFailureCode() throws UaException {
-    BaseDataVariableTypeNode node = getFailureCodeNode();
-    Object value = node.getValue().getValue().getValue();
-
-    if (value instanceof Integer) {
-      return TsnFailureCode.from((Integer) value);
-    } else if (value instanceof TsnFailureCode) {
-      return (TsnFailureCode) value;
-    } else {
-      return null;
-    }
+  public CompletableFuture<? extends @Nullable TsnListenerStatus> readListenerStatusAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getListenerStatusNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}ListenerStatus",
+                            false,
+                            TsnListenerStatus.class,
+                            -1,
+                            TsnListenerStatus::from)),
+                v -> CompletableFuture.completedFuture((@Nullable TsnListenerStatus) v)));
   }
 
   @Override
-  public void setFailureCode(TsnFailureCode value) throws UaException {
-    BaseDataVariableTypeNode node = getFailureCodeNode();
-    node.setValue(new Variant(value));
+  public CompletableFuture<StatusCode> writeListenerStatusAsync(@Nullable TsnListenerStatus value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getListenerStatusNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}ListenerStatus",
+                        value,
+                        TsnListenerStatus.class,
+                        -1,
+                        TsnListenerStatus::from)));
   }
 
   @Override
-  public TsnFailureCode readFailureCode() throws UaException {
-    try {
-      return readFailureCodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public UaVariableNode getFailureSystemIdentifierNode() throws UaException {
+    return ClientNodeSupport.await(getFailureSystemIdentifierNodeAsync());
   }
 
   @Override
-  public void writeFailureCode(TsnFailureCode value) throws UaException {
-    try {
-      StatusCode statusCode = writeFailureCodeAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends UaVariableNode> getFailureSystemIdentifierNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "FailureSystemIdentifier",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
   }
 
   @Override
-  public CompletableFuture<? extends TsnFailureCode> readFailureCodeAsync() {
-    return getFailureCodeNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(
-            v -> {
-              Object value = v.getValue().getValue();
-              if (value instanceof Integer) {
-                return TsnFailureCode.from((Integer) value);
-              } else {
-                return null;
-              }
-            });
+  public @Nullable Object readFailureSystemIdentifier() throws UaException {
+    return ClientNodeSupport.await(readFailureSystemIdentifierAsync());
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeFailureCodeAsync(TsnFailureCode failureCode) {
-    DataValue value = DataValue.valueOnly(new Variant(failureCode));
-    return getFailureCodeNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public void writeFailureSystemIdentifier(@Nullable Object value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeFailureSystemIdentifierAsync(value)),
+        "http://opcfoundation.org/UA/}FailureSystemIdentifier");
   }
 
   @Override
-  public BaseDataVariableTypeNode getFailureCodeNode() throws UaException {
-    try {
-      return getFailureCodeNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable Object> readFailureSystemIdentifierAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getFailureSystemIdentifierNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}FailureSystemIdentifier",
+                            true,
+                            UByte.class,
+                            2,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable Object) v)));
   }
 
   @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getFailureCodeNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "FailureCode", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
-  }
-
-  @Override
-  public Object getFailureSystemIdentifier() throws UaException {
-    BaseDataVariableTypeNode node = getFailureSystemIdentifierNode();
-    return (Object) node.getValue().getValue().getValue();
-  }
-
-  @Override
-  public void setFailureSystemIdentifier(Object value) throws UaException {
-    BaseDataVariableTypeNode node = getFailureSystemIdentifierNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public Object readFailureSystemIdentifier() throws UaException {
-    try {
-      return readFailureSystemIdentifierAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeFailureSystemIdentifier(Object value) throws UaException {
-    try {
-      StatusCode statusCode = writeFailureSystemIdentifierAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<?> readFailureSystemIdentifierAsync() {
-    return getFailureSystemIdentifierNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (Object) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeFailureSystemIdentifierAsync(
-      Object failureSystemIdentifier) {
-    DataValue value = DataValue.valueOnly(new Variant(failureSystemIdentifier));
-    return getFailureSystemIdentifierNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getFailureSystemIdentifierNode() throws UaException {
-    try {
-      return getFailureSystemIdentifierNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode>
-      getFailureSystemIdentifierNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "FailureSystemIdentifier",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
+  public CompletableFuture<StatusCode> writeFailureSystemIdentifierAsync(@Nullable Object value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getFailureSystemIdentifierNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}FailureSystemIdentifier",
+                        value,
+                        UByte.class,
+                        2,
+                        null)));
   }
 }

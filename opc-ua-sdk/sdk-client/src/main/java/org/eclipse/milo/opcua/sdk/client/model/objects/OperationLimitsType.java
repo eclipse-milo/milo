@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
@@ -17,994 +7,550 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.11">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.11</a>
+ * Client API for the OperationLimitsType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.11">Model
+ *     documentation</a>
  */
 public interface OperationLimitsType extends FolderType {
-  QualifiedProperty<UInteger> MAX_NODES_PER_READ =
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 11564L);
+
+  QualifiedProperty<UInteger> MaxNodesPerRead_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "MaxNodesPerRead",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
           -1,
           UInteger.class);
 
-  QualifiedProperty<UInteger> MAX_NODES_PER_HISTORY_READ_DATA =
+  QualifiedProperty<UInteger> MaxNodesPerWrite_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxNodesPerHistoryReadData",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
-
-  QualifiedProperty<UInteger> MAX_NODES_PER_HISTORY_READ_EVENTS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxNodesPerHistoryReadEvents",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
-
-  QualifiedProperty<UInteger> MAX_NODES_PER_WRITE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "MaxNodesPerWrite",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
           -1,
           UInteger.class);
 
-  QualifiedProperty<UInteger> MAX_NODES_PER_HISTORY_UPDATE_DATA =
+  QualifiedProperty<UInteger> MaxNodesPerBrowse_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxNodesPerHistoryUpdateData",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
-
-  QualifiedProperty<UInteger> MAX_NODES_PER_HISTORY_UPDATE_EVENTS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxNodesPerHistoryUpdateEvents",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
-
-  QualifiedProperty<UInteger> MAX_NODES_PER_METHOD_CALL =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxNodesPerMethodCall",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
-
-  QualifiedProperty<UInteger> MAX_NODES_PER_BROWSE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "MaxNodesPerBrowse",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
           -1,
           UInteger.class);
 
-  QualifiedProperty<UInteger> MAX_NODES_PER_REGISTER_NODES =
+  QualifiedProperty<UInteger> MaxNodesPerMethodCall_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxNodesPerRegisterNodes",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
+          Namespaces.OPC_UA,
+          "MaxNodesPerMethodCall",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
           -1,
           UInteger.class);
 
-  QualifiedProperty<UInteger> MAX_NODES_PER_TRANSLATE_BROWSE_PATHS_TO_NODE_IDS =
+  QualifiedProperty<UInteger> MaxMonitoredItemsPerCall_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxNodesPerTranslateBrowsePathsToNodeIds",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
-
-  QualifiedProperty<UInteger> MAX_NODES_PER_NODE_MANAGEMENT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxNodesPerNodeManagement",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
-
-  QualifiedProperty<UInteger> MAX_MONITORED_ITEMS_PER_CALL =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "MaxMonitoredItemsPerCall",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+          -1,
+          UInteger.class);
+
+  QualifiedProperty<UInteger> MaxNodesPerRegisterNodes_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "MaxNodesPerRegisterNodes",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+          -1,
+          UInteger.class);
+
+  QualifiedProperty<UInteger> MaxNodesPerNodeManagement_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "MaxNodesPerNodeManagement",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+          -1,
+          UInteger.class);
+
+  QualifiedProperty<UInteger> MaxNodesPerHistoryReadData_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "MaxNodesPerHistoryReadData",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+          -1,
+          UInteger.class);
+
+  QualifiedProperty<UInteger> MaxNodesPerHistoryReadEvents_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "MaxNodesPerHistoryReadEvents",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+          -1,
+          UInteger.class);
+
+  QualifiedProperty<UInteger> MaxNodesPerHistoryUpdateData_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "MaxNodesPerHistoryUpdateData",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+          -1,
+          UInteger.class);
+
+  QualifiedProperty<UInteger> MaxNodesPerHistoryUpdateEvents_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "MaxNodesPerHistoryUpdateEvents",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+          -1,
+          UInteger.class);
+
+  QualifiedProperty<UInteger> MaxNodesPerTranslateBrowsePathsToNodeIds_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "MaxNodesPerTranslateBrowsePathsToNodeIds",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
           -1,
           UInteger.class);
 
   /**
-   * Get the local value of the MaxNodesPerRead Node.
+   * Resolves the optional MaxNodesPerRead child, a PropertyType with DataType UInt32.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaxNodesPerRead Node.
-   * @throws UaException if an error occurs creating or getting the MaxNodesPerRead Node.
-   */
-  UInteger getMaxNodesPerRead() throws UaException;
-
-  /**
-   * Set the local value of the MaxNodesPerRead Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaxNodesPerRead Node.
-   * @throws UaException if an error occurs creating or getting the MaxNodesPerRead Node.
-   */
-  void setMaxNodesPerRead(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the MaxNodesPerRead Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readMaxNodesPerRead() throws UaException;
-
-  /**
-   * Write a new value for the MaxNodesPerRead Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMaxNodesPerRead(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readMaxNodesPerRead}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readMaxNodesPerReadAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeMaxNodesPerRead}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMaxNodesPerReadAsync(UInteger value);
-
-  /**
-   * Get the MaxNodesPerRead {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaxNodesPerRead {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getMaxNodesPerReadNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getMaxNodesPerReadNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getMaxNodesPerReadNodeAsync();
-
-  /**
-   * Get the local value of the MaxNodesPerHistoryReadData Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaxNodesPerHistoryReadData Node.
-   * @throws UaException if an error occurs creating or getting the MaxNodesPerHistoryReadData Node.
-   */
-  UInteger getMaxNodesPerHistoryReadData() throws UaException;
-
-  /**
-   * Set the local value of the MaxNodesPerHistoryReadData Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaxNodesPerHistoryReadData Node.
-   * @throws UaException if an error occurs creating or getting the MaxNodesPerHistoryReadData Node.
-   */
-  void setMaxNodesPerHistoryReadData(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the MaxNodesPerHistoryReadData Node from the server and update the local
-   * value if the operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readMaxNodesPerHistoryReadData() throws UaException;
-
-  /**
-   * Write a new value for the MaxNodesPerHistoryReadData Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMaxNodesPerHistoryReadData(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readMaxNodesPerHistoryReadData}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readMaxNodesPerHistoryReadDataAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeMaxNodesPerHistoryReadData}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMaxNodesPerHistoryReadDataAsync(UInteger value);
-
-  /**
-   * Get the MaxNodesPerHistoryReadData {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaxNodesPerHistoryReadData {@link PropertyType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getMaxNodesPerHistoryReadDataNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getMaxNodesPerHistoryReadDataNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getMaxNodesPerHistoryReadDataNodeAsync();
-
-  /**
-   * Get the local value of the MaxNodesPerHistoryReadEvents Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaxNodesPerHistoryReadEvents Node.
-   * @throws UaException if an error occurs creating or getting the MaxNodesPerHistoryReadEvents
-   *     Node.
-   */
-  UInteger getMaxNodesPerHistoryReadEvents() throws UaException;
-
-  /**
-   * Set the local value of the MaxNodesPerHistoryReadEvents Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaxNodesPerHistoryReadEvents Node.
-   * @throws UaException if an error occurs creating or getting the MaxNodesPerHistoryReadEvents
-   *     Node.
-   */
-  void setMaxNodesPerHistoryReadEvents(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the MaxNodesPerHistoryReadEvents Node from the server and update the local
-   * value if the operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readMaxNodesPerHistoryReadEvents() throws UaException;
-
-  /**
-   * Write a new value for the MaxNodesPerHistoryReadEvents Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMaxNodesPerHistoryReadEvents(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readMaxNodesPerHistoryReadEvents}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readMaxNodesPerHistoryReadEventsAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeMaxNodesPerHistoryReadEvents}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMaxNodesPerHistoryReadEventsAsync(UInteger value);
-
-  /**
-   * Get the MaxNodesPerHistoryReadEvents {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaxNodesPerHistoryReadEvents {@link PropertyType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  PropertyType getMaxNodesPerHistoryReadEventsNode() throws UaException;
+  @Nullable PropertyType getMaxNodesPerReadNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getMaxNodesPerHistoryReadEventsNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getMaxNodesPerHistoryReadEventsNodeAsync();
-
-  /**
-   * Get the local value of the MaxNodesPerWrite Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaxNodesPerWrite Node.
-   * @throws UaException if an error occurs creating or getting the MaxNodesPerWrite Node.
-   */
-  UInteger getMaxNodesPerWrite() throws UaException;
-
-  /**
-   * Set the local value of the MaxNodesPerWrite Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaxNodesPerWrite Node.
-   * @throws UaException if an error occurs creating or getting the MaxNodesPerWrite Node.
-   */
-  void setMaxNodesPerWrite(UInteger value) throws UaException;
+  /** Asynchronous form of {@link #getMaxNodesPerReadNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getMaxNodesPerReadNodeAsync();
 
   /**
-   * Read the value of the MaxNodesPerWrite Node from the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the MaxNodesPerRead child from the server.
    *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UInteger readMaxNodesPerWrite() throws UaException;
+  @Nullable UInteger readMaxNodesPerRead() throws UaException;
 
   /**
-   * Write a new value for the MaxNodesPerWrite Node to the server and update the local value if the
-   * operation succeeds.
+   * Writes the Value of the MaxNodesPerRead child to the server.
    *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeMaxNodesPerWrite(UInteger value) throws UaException;
+  void writeMaxNodesPerRead(@Nullable UInteger value) throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #readMaxNodesPerWrite}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readMaxNodesPerWriteAsync();
+  /** Asynchronous form of {@link #readMaxNodesPerRead()}. */
+  CompletableFuture<? extends @Nullable UInteger> readMaxNodesPerReadAsync();
 
-  /**
-   * An asynchronous implementation of {@link #writeMaxNodesPerWrite}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMaxNodesPerWriteAsync(UInteger value);
+  /** Asynchronous form of {@link #writeMaxNodesPerRead}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeMaxNodesPerReadAsync(@Nullable UInteger value);
 
   /**
-   * Get the MaxNodesPerWrite {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * Resolves the optional MaxNodesPerWrite child, a PropertyType with DataType UInt32.
    *
-   * @return the MaxNodesPerWrite {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  PropertyType getMaxNodesPerWriteNode() throws UaException;
+  @Nullable PropertyType getMaxNodesPerWriteNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getMaxNodesPerWriteNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getMaxNodesPerWriteNodeAsync();
+  /** Asynchronous form of {@link #getMaxNodesPerWriteNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getMaxNodesPerWriteNodeAsync();
 
   /**
-   * Get the local value of the MaxNodesPerHistoryUpdateData Node.
+   * Reads the Value of the MaxNodesPerWrite child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaxNodesPerHistoryUpdateData Node.
-   * @throws UaException if an error occurs creating or getting the MaxNodesPerHistoryUpdateData
-   *     Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UInteger getMaxNodesPerHistoryUpdateData() throws UaException;
+  @Nullable UInteger readMaxNodesPerWrite() throws UaException;
 
   /**
-   * Set the local value of the MaxNodesPerHistoryUpdateData Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
+   * Writes the Value of the MaxNodesPerWrite child to the server.
    *
-   * @param value the local value to set for the MaxNodesPerHistoryUpdateData Node.
-   * @throws UaException if an error occurs creating or getting the MaxNodesPerHistoryUpdateData
-   *     Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setMaxNodesPerHistoryUpdateData(UInteger value) throws UaException;
+  void writeMaxNodesPerWrite(@Nullable UInteger value) throws UaException;
 
-  /**
-   * Read the value of the MaxNodesPerHistoryUpdateData Node from the server and update the local
-   * value if the operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readMaxNodesPerHistoryUpdateData() throws UaException;
+  /** Asynchronous form of {@link #readMaxNodesPerWrite()}. */
+  CompletableFuture<? extends @Nullable UInteger> readMaxNodesPerWriteAsync();
 
-  /**
-   * Write a new value for the MaxNodesPerHistoryUpdateData Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMaxNodesPerHistoryUpdateData(UInteger value) throws UaException;
+  /** Asynchronous form of {@link #writeMaxNodesPerWrite}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeMaxNodesPerWriteAsync(@Nullable UInteger value);
 
   /**
-   * An asynchronous implementation of {@link #readMaxNodesPerHistoryUpdateData}.
+   * Resolves the optional MaxNodesPerBrowse child, a PropertyType with DataType UInt32.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  CompletableFuture<? extends UInteger> readMaxNodesPerHistoryUpdateDataAsync();
+  @Nullable PropertyType getMaxNodesPerBrowseNode() throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #writeMaxNodesPerHistoryUpdateData}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMaxNodesPerHistoryUpdateDataAsync(UInteger value);
+  /** Asynchronous form of {@link #getMaxNodesPerBrowseNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getMaxNodesPerBrowseNodeAsync();
 
   /**
-   * Get the MaxNodesPerHistoryUpdateData {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
+   * Reads the Value of the MaxNodesPerBrowse child from the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaxNodesPerHistoryUpdateData {@link PropertyType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  PropertyType getMaxNodesPerHistoryUpdateDataNode() throws UaException;
+  @Nullable UInteger readMaxNodesPerBrowse() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getMaxNodesPerHistoryUpdateDataNode()}.
+   * Writes the Value of the MaxNodesPerBrowse child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends PropertyType> getMaxNodesPerHistoryUpdateDataNodeAsync();
+  void writeMaxNodesPerBrowse(@Nullable UInteger value) throws UaException;
 
-  /**
-   * Get the local value of the MaxNodesPerHistoryUpdateEvents Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaxNodesPerHistoryUpdateEvents Node.
-   * @throws UaException if an error occurs creating or getting the MaxNodesPerHistoryUpdateEvents
-   *     Node.
-   */
-  UInteger getMaxNodesPerHistoryUpdateEvents() throws UaException;
+  /** Asynchronous form of {@link #readMaxNodesPerBrowse()}. */
+  CompletableFuture<? extends @Nullable UInteger> readMaxNodesPerBrowseAsync();
 
-  /**
-   * Set the local value of the MaxNodesPerHistoryUpdateEvents Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaxNodesPerHistoryUpdateEvents Node.
-   * @throws UaException if an error occurs creating or getting the MaxNodesPerHistoryUpdateEvents
-   *     Node.
-   */
-  void setMaxNodesPerHistoryUpdateEvents(UInteger value) throws UaException;
+  /** Asynchronous form of {@link #writeMaxNodesPerBrowse}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeMaxNodesPerBrowseAsync(@Nullable UInteger value);
 
   /**
-   * Read the value of the MaxNodesPerHistoryUpdateEvents Node from the server and update the local
-   * value if the operation succeeds.
+   * Resolves the optional MaxNodesPerMethodCall child, a PropertyType with DataType UInt32.
    *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  UInteger readMaxNodesPerHistoryUpdateEvents() throws UaException;
+  @Nullable PropertyType getMaxNodesPerMethodCallNode() throws UaException;
 
-  /**
-   * Write a new value for the MaxNodesPerHistoryUpdateEvents Node to the server and update the
-   * local value if the operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMaxNodesPerHistoryUpdateEvents(UInteger value) throws UaException;
+  /** Asynchronous form of {@link #getMaxNodesPerMethodCallNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getMaxNodesPerMethodCallNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #readMaxNodesPerHistoryUpdateEvents}.
+   * Reads the Value of the MaxNodesPerMethodCall child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends UInteger> readMaxNodesPerHistoryUpdateEventsAsync();
+  @Nullable UInteger readMaxNodesPerMethodCall() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeMaxNodesPerHistoryUpdateEvents}.
+   * Writes the Value of the MaxNodesPerMethodCall child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeMaxNodesPerHistoryUpdateEventsAsync(UInteger value);
+  void writeMaxNodesPerMethodCall(@Nullable UInteger value) throws UaException;
 
-  /**
-   * Get the MaxNodesPerHistoryUpdateEvents {@link PropertyType} Node, or {@code null} if it does
-   * not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaxNodesPerHistoryUpdateEvents {@link PropertyType} Node, or {@code null} if it
-   *     does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getMaxNodesPerHistoryUpdateEventsNode() throws UaException;
+  /** Asynchronous form of {@link #readMaxNodesPerMethodCall()}. */
+  CompletableFuture<? extends @Nullable UInteger> readMaxNodesPerMethodCallAsync();
 
   /**
-   * Asynchronous implementation of {@link #getMaxNodesPerHistoryUpdateEventsNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * Asynchronous form of {@link #writeMaxNodesPerMethodCall}; completes with the operation status.
    */
-  CompletableFuture<? extends PropertyType> getMaxNodesPerHistoryUpdateEventsNodeAsync();
+  CompletableFuture<StatusCode> writeMaxNodesPerMethodCallAsync(@Nullable UInteger value);
 
   /**
-   * Get the local value of the MaxNodesPerMethodCall Node.
+   * Resolves the optional MaxMonitoredItemsPerCall child, a PropertyType with DataType UInt32.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaxNodesPerMethodCall Node.
-   * @throws UaException if an error occurs creating or getting the MaxNodesPerMethodCall Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  UInteger getMaxNodesPerMethodCall() throws UaException;
+  @Nullable PropertyType getMaxMonitoredItemsPerCallNode() throws UaException;
 
-  /**
-   * Set the local value of the MaxNodesPerMethodCall Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaxNodesPerMethodCall Node.
-   * @throws UaException if an error occurs creating or getting the MaxNodesPerMethodCall Node.
-   */
-  void setMaxNodesPerMethodCall(UInteger value) throws UaException;
+  /** Asynchronous form of {@link #getMaxMonitoredItemsPerCallNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getMaxMonitoredItemsPerCallNodeAsync();
 
   /**
-   * Read the value of the MaxNodesPerMethodCall Node from the server and update the local value if
-   * the operation succeeds.
+   * Reads the Value of the MaxMonitoredItemsPerCall child from the server.
    *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UInteger readMaxNodesPerMethodCall() throws UaException;
+  @Nullable UInteger readMaxMonitoredItemsPerCall() throws UaException;
 
   /**
-   * Write a new value for the MaxNodesPerMethodCall Node to the server and update the local value
-   * if the operation succeeds.
+   * Writes the Value of the MaxMonitoredItemsPerCall child to the server.
    *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeMaxNodesPerMethodCall(UInteger value) throws UaException;
+  void writeMaxMonitoredItemsPerCall(@Nullable UInteger value) throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #readMaxNodesPerMethodCall}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readMaxNodesPerMethodCallAsync();
+  /** Asynchronous form of {@link #readMaxMonitoredItemsPerCall()}. */
+  CompletableFuture<? extends @Nullable UInteger> readMaxMonitoredItemsPerCallAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeMaxNodesPerMethodCall}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * Asynchronous form of {@link #writeMaxMonitoredItemsPerCall}; completes with the operation
+   * status.
    */
-  CompletableFuture<StatusCode> writeMaxNodesPerMethodCallAsync(UInteger value);
+  CompletableFuture<StatusCode> writeMaxMonitoredItemsPerCallAsync(@Nullable UInteger value);
 
   /**
-   * Get the MaxNodesPerMethodCall {@link PropertyType} Node, or {@code null} if it does not exist.
+   * Resolves the optional MaxNodesPerRegisterNodes child, a PropertyType with DataType UInt32.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaxNodesPerMethodCall {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  PropertyType getMaxNodesPerMethodCallNode() throws UaException;
+  @Nullable PropertyType getMaxNodesPerRegisterNodesNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getMaxNodesPerMethodCallNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getMaxNodesPerMethodCallNodeAsync();
+  /** Asynchronous form of {@link #getMaxNodesPerRegisterNodesNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getMaxNodesPerRegisterNodesNodeAsync();
 
   /**
-   * Get the local value of the MaxNodesPerBrowse Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
+   * Reads the Value of the MaxNodesPerRegisterNodes child from the server.
    *
-   * @return the local value of the MaxNodesPerBrowse Node.
-   * @throws UaException if an error occurs creating or getting the MaxNodesPerBrowse Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UInteger getMaxNodesPerBrowse() throws UaException;
+  @Nullable UInteger readMaxNodesPerRegisterNodes() throws UaException;
 
   /**
-   * Set the local value of the MaxNodesPerBrowse Node.
+   * Writes the Value of the MaxNodesPerRegisterNodes child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaxNodesPerBrowse Node.
-   * @throws UaException if an error occurs creating or getting the MaxNodesPerBrowse Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setMaxNodesPerBrowse(UInteger value) throws UaException;
+  void writeMaxNodesPerRegisterNodes(@Nullable UInteger value) throws UaException;
 
-  /**
-   * Read the value of the MaxNodesPerBrowse Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readMaxNodesPerBrowse() throws UaException;
+  /** Asynchronous form of {@link #readMaxNodesPerRegisterNodes()}. */
+  CompletableFuture<? extends @Nullable UInteger> readMaxNodesPerRegisterNodesAsync();
 
   /**
-   * Write a new value for the MaxNodesPerBrowse Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * Asynchronous form of {@link #writeMaxNodesPerRegisterNodes}; completes with the operation
+   * status.
    */
-  void writeMaxNodesPerBrowse(UInteger value) throws UaException;
+  CompletableFuture<StatusCode> writeMaxNodesPerRegisterNodesAsync(@Nullable UInteger value);
 
   /**
-   * An asynchronous implementation of {@link #readMaxNodesPerBrowse}.
+   * Resolves the optional MaxNodesPerNodeManagement child, a PropertyType with DataType UInt32.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  CompletableFuture<? extends UInteger> readMaxNodesPerBrowseAsync();
+  @Nullable PropertyType getMaxNodesPerNodeManagementNode() throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #writeMaxNodesPerBrowse}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMaxNodesPerBrowseAsync(UInteger value);
+  /** Asynchronous form of {@link #getMaxNodesPerNodeManagementNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getMaxNodesPerNodeManagementNodeAsync();
 
   /**
-   * Get the MaxNodesPerBrowse {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * Reads the Value of the MaxNodesPerNodeManagement child from the server.
    *
-   * @return the MaxNodesPerBrowse {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  PropertyType getMaxNodesPerBrowseNode() throws UaException;
+  @Nullable UInteger readMaxNodesPerNodeManagement() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getMaxNodesPerBrowseNode()}.
+   * Writes the Value of the MaxNodesPerNodeManagement child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends PropertyType> getMaxNodesPerBrowseNodeAsync();
+  void writeMaxNodesPerNodeManagement(@Nullable UInteger value) throws UaException;
 
-  /**
-   * Get the local value of the MaxNodesPerRegisterNodes Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaxNodesPerRegisterNodes Node.
-   * @throws UaException if an error occurs creating or getting the MaxNodesPerRegisterNodes Node.
-   */
-  UInteger getMaxNodesPerRegisterNodes() throws UaException;
+  /** Asynchronous form of {@link #readMaxNodesPerNodeManagement()}. */
+  CompletableFuture<? extends @Nullable UInteger> readMaxNodesPerNodeManagementAsync();
 
   /**
-   * Set the local value of the MaxNodesPerRegisterNodes Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaxNodesPerRegisterNodes Node.
-   * @throws UaException if an error occurs creating or getting the MaxNodesPerRegisterNodes Node.
+   * Asynchronous form of {@link #writeMaxNodesPerNodeManagement}; completes with the operation
+   * status.
    */
-  void setMaxNodesPerRegisterNodes(UInteger value) throws UaException;
+  CompletableFuture<StatusCode> writeMaxNodesPerNodeManagementAsync(@Nullable UInteger value);
 
   /**
-   * Read the value of the MaxNodesPerRegisterNodes Node from the server and update the local value
-   * if the operation succeeds.
+   * Resolves the optional MaxNodesPerHistoryReadData child, a PropertyType with DataType UInt32.
    *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  UInteger readMaxNodesPerRegisterNodes() throws UaException;
+  @Nullable PropertyType getMaxNodesPerHistoryReadDataNode() throws UaException;
 
-  /**
-   * Write a new value for the MaxNodesPerRegisterNodes Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMaxNodesPerRegisterNodes(UInteger value) throws UaException;
+  /** Asynchronous form of {@link #getMaxNodesPerHistoryReadDataNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getMaxNodesPerHistoryReadDataNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #readMaxNodesPerRegisterNodes}.
+   * Reads the Value of the MaxNodesPerHistoryReadData child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends UInteger> readMaxNodesPerRegisterNodesAsync();
+  @Nullable UInteger readMaxNodesPerHistoryReadData() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeMaxNodesPerRegisterNodes}.
+   * Writes the Value of the MaxNodesPerHistoryReadData child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeMaxNodesPerRegisterNodesAsync(UInteger value);
+  void writeMaxNodesPerHistoryReadData(@Nullable UInteger value) throws UaException;
 
-  /**
-   * Get the MaxNodesPerRegisterNodes {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaxNodesPerRegisterNodes {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getMaxNodesPerRegisterNodesNode() throws UaException;
+  /** Asynchronous form of {@link #readMaxNodesPerHistoryReadData()}. */
+  CompletableFuture<? extends @Nullable UInteger> readMaxNodesPerHistoryReadDataAsync();
 
   /**
-   * Asynchronous implementation of {@link #getMaxNodesPerRegisterNodesNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * Asynchronous form of {@link #writeMaxNodesPerHistoryReadData}; completes with the operation
+   * status.
    */
-  CompletableFuture<? extends PropertyType> getMaxNodesPerRegisterNodesNodeAsync();
+  CompletableFuture<StatusCode> writeMaxNodesPerHistoryReadDataAsync(@Nullable UInteger value);
 
   /**
-   * Get the local value of the MaxNodesPerTranslateBrowsePathsToNodeIds Node.
+   * Resolves the optional MaxNodesPerHistoryReadEvents child, a PropertyType with DataType UInt32.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaxNodesPerTranslateBrowsePathsToNodeIds Node.
-   * @throws UaException if an error occurs creating or getting the
-   *     MaxNodesPerTranslateBrowsePathsToNodeIds Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  UInteger getMaxNodesPerTranslateBrowsePathsToNodeIds() throws UaException;
+  @Nullable PropertyType getMaxNodesPerHistoryReadEventsNode() throws UaException;
 
-  /**
-   * Set the local value of the MaxNodesPerTranslateBrowsePathsToNodeIds Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaxNodesPerTranslateBrowsePathsToNodeIds Node.
-   * @throws UaException if an error occurs creating or getting the
-   *     MaxNodesPerTranslateBrowsePathsToNodeIds Node.
-   */
-  void setMaxNodesPerTranslateBrowsePathsToNodeIds(UInteger value) throws UaException;
+  /** Asynchronous form of {@link #getMaxNodesPerHistoryReadEventsNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getMaxNodesPerHistoryReadEventsNodeAsync();
 
   /**
-   * Read the value of the MaxNodesPerTranslateBrowsePathsToNodeIds Node from the server and update
-   * the local value if the operation succeeds.
+   * Reads the Value of the MaxNodesPerHistoryReadEvents child from the server.
    *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UInteger readMaxNodesPerTranslateBrowsePathsToNodeIds() throws UaException;
+  @Nullable UInteger readMaxNodesPerHistoryReadEvents() throws UaException;
 
   /**
-   * Write a new value for the MaxNodesPerTranslateBrowsePathsToNodeIds Node to the server and
-   * update the local value if the operation succeeds.
+   * Writes the Value of the MaxNodesPerHistoryReadEvents child to the server.
    *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeMaxNodesPerTranslateBrowsePathsToNodeIds(UInteger value) throws UaException;
+  void writeMaxNodesPerHistoryReadEvents(@Nullable UInteger value) throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #readMaxNodesPerTranslateBrowsePathsToNodeIds}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readMaxNodesPerTranslateBrowsePathsToNodeIdsAsync();
+  /** Asynchronous form of {@link #readMaxNodesPerHistoryReadEvents()}. */
+  CompletableFuture<? extends @Nullable UInteger> readMaxNodesPerHistoryReadEventsAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeMaxNodesPerTranslateBrowsePathsToNodeIds}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * Asynchronous form of {@link #writeMaxNodesPerHistoryReadEvents}; completes with the operation
+   * status.
    */
-  CompletableFuture<StatusCode> writeMaxNodesPerTranslateBrowsePathsToNodeIdsAsync(UInteger value);
+  CompletableFuture<StatusCode> writeMaxNodesPerHistoryReadEventsAsync(@Nullable UInteger value);
 
   /**
-   * Get the MaxNodesPerTranslateBrowsePathsToNodeIds {@link PropertyType} Node, or {@code null} if
-   * it does not exist.
+   * Resolves the optional MaxNodesPerHistoryUpdateData child, a PropertyType with DataType UInt32.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaxNodesPerTranslateBrowsePathsToNodeIds {@link PropertyType} Node, or {@code null}
-   *     if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  PropertyType getMaxNodesPerTranslateBrowsePathsToNodeIdsNode() throws UaException;
+  @Nullable PropertyType getMaxNodesPerHistoryUpdateDataNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getMaxNodesPerTranslateBrowsePathsToNodeIdsNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getMaxNodesPerTranslateBrowsePathsToNodeIdsNodeAsync();
+  /** Asynchronous form of {@link #getMaxNodesPerHistoryUpdateDataNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getMaxNodesPerHistoryUpdateDataNodeAsync();
 
   /**
-   * Get the local value of the MaxNodesPerNodeManagement Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
+   * Reads the Value of the MaxNodesPerHistoryUpdateData child from the server.
    *
-   * @return the local value of the MaxNodesPerNodeManagement Node.
-   * @throws UaException if an error occurs creating or getting the MaxNodesPerNodeManagement Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UInteger getMaxNodesPerNodeManagement() throws UaException;
+  @Nullable UInteger readMaxNodesPerHistoryUpdateData() throws UaException;
 
   /**
-   * Set the local value of the MaxNodesPerNodeManagement Node.
+   * Writes the Value of the MaxNodesPerHistoryUpdateData child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaxNodesPerNodeManagement Node.
-   * @throws UaException if an error occurs creating or getting the MaxNodesPerNodeManagement Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setMaxNodesPerNodeManagement(UInteger value) throws UaException;
+  void writeMaxNodesPerHistoryUpdateData(@Nullable UInteger value) throws UaException;
 
-  /**
-   * Read the value of the MaxNodesPerNodeManagement Node from the server and update the local value
-   * if the operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readMaxNodesPerNodeManagement() throws UaException;
+  /** Asynchronous form of {@link #readMaxNodesPerHistoryUpdateData()}. */
+  CompletableFuture<? extends @Nullable UInteger> readMaxNodesPerHistoryUpdateDataAsync();
 
   /**
-   * Write a new value for the MaxNodesPerNodeManagement Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * Asynchronous form of {@link #writeMaxNodesPerHistoryUpdateData}; completes with the operation
+   * status.
    */
-  void writeMaxNodesPerNodeManagement(UInteger value) throws UaException;
+  CompletableFuture<StatusCode> writeMaxNodesPerHistoryUpdateDataAsync(@Nullable UInteger value);
 
   /**
-   * An asynchronous implementation of {@link #readMaxNodesPerNodeManagement}.
+   * Resolves the optional MaxNodesPerHistoryUpdateEvents child, a PropertyType with DataType
+   * UInt32.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  CompletableFuture<? extends UInteger> readMaxNodesPerNodeManagementAsync();
+  @Nullable PropertyType getMaxNodesPerHistoryUpdateEventsNode() throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #writeMaxNodesPerNodeManagement}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMaxNodesPerNodeManagementAsync(UInteger value);
+  /** Asynchronous form of {@link #getMaxNodesPerHistoryUpdateEventsNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getMaxNodesPerHistoryUpdateEventsNodeAsync();
 
   /**
-   * Get the MaxNodesPerNodeManagement {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * Reads the Value of the MaxNodesPerHistoryUpdateEvents child from the server.
    *
-   * @return the MaxNodesPerNodeManagement {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  PropertyType getMaxNodesPerNodeManagementNode() throws UaException;
+  @Nullable UInteger readMaxNodesPerHistoryUpdateEvents() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getMaxNodesPerNodeManagementNode()}.
+   * Writes the Value of the MaxNodesPerHistoryUpdateEvents child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends PropertyType> getMaxNodesPerNodeManagementNodeAsync();
+  void writeMaxNodesPerHistoryUpdateEvents(@Nullable UInteger value) throws UaException;
 
-  /**
-   * Get the local value of the MaxMonitoredItemsPerCall Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaxMonitoredItemsPerCall Node.
-   * @throws UaException if an error occurs creating or getting the MaxMonitoredItemsPerCall Node.
-   */
-  UInteger getMaxMonitoredItemsPerCall() throws UaException;
+  /** Asynchronous form of {@link #readMaxNodesPerHistoryUpdateEvents()}. */
+  CompletableFuture<? extends @Nullable UInteger> readMaxNodesPerHistoryUpdateEventsAsync();
 
   /**
-   * Set the local value of the MaxMonitoredItemsPerCall Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaxMonitoredItemsPerCall Node.
-   * @throws UaException if an error occurs creating or getting the MaxMonitoredItemsPerCall Node.
+   * Asynchronous form of {@link #writeMaxNodesPerHistoryUpdateEvents}; completes with the operation
+   * status.
    */
-  void setMaxMonitoredItemsPerCall(UInteger value) throws UaException;
+  CompletableFuture<StatusCode> writeMaxNodesPerHistoryUpdateEventsAsync(@Nullable UInteger value);
 
   /**
-   * Read the value of the MaxMonitoredItemsPerCall Node from the server and update the local value
-   * if the operation succeeds.
+   * Resolves the optional MaxNodesPerTranslateBrowsePathsToNodeIds child, a PropertyType with
+   * DataType UInt32.
    *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  UInteger readMaxMonitoredItemsPerCall() throws UaException;
+  @Nullable PropertyType getMaxNodesPerTranslateBrowsePathsToNodeIdsNode() throws UaException;
 
-  /**
-   * Write a new value for the MaxMonitoredItemsPerCall Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMaxMonitoredItemsPerCall(UInteger value) throws UaException;
+  /** Asynchronous form of {@link #getMaxNodesPerTranslateBrowsePathsToNodeIdsNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType>
+      getMaxNodesPerTranslateBrowsePathsToNodeIdsNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #readMaxMonitoredItemsPerCall}.
+   * Reads the Value of the MaxNodesPerTranslateBrowsePathsToNodeIds child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends UInteger> readMaxMonitoredItemsPerCallAsync();
+  @Nullable UInteger readMaxNodesPerTranslateBrowsePathsToNodeIds() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeMaxMonitoredItemsPerCall}.
+   * Writes the Value of the MaxNodesPerTranslateBrowsePathsToNodeIds child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeMaxMonitoredItemsPerCallAsync(UInteger value);
+  void writeMaxNodesPerTranslateBrowsePathsToNodeIds(@Nullable UInteger value) throws UaException;
 
-  /**
-   * Get the MaxMonitoredItemsPerCall {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaxMonitoredItemsPerCall {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getMaxMonitoredItemsPerCallNode() throws UaException;
+  /** Asynchronous form of {@link #readMaxNodesPerTranslateBrowsePathsToNodeIds()}. */
+  CompletableFuture<? extends @Nullable UInteger>
+      readMaxNodesPerTranslateBrowsePathsToNodeIdsAsync();
 
   /**
-   * Asynchronous implementation of {@link #getMaxMonitoredItemsPerCallNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * Asynchronous form of {@link #writeMaxNodesPerTranslateBrowsePathsToNodeIds}; completes with the
+   * operation status.
    */
-  CompletableFuture<? extends PropertyType> getMaxMonitoredItemsPerCallNodeAsync();
+  CompletableFuture<StatusCode> writeMaxNodesPerTranslateBrowsePathsToNodeIdsAsync(
+      @Nullable UInteger value);
 }

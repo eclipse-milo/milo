@@ -1,31 +1,15 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyTypeNode;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
@@ -33,7 +17,15 @@ import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SignedSoftwareCertificate;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserIdentityToken;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link AuditActivateSessionEventType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.10">Model
+ *     documentation</a>
+ */
 public class AuditActivateSessionEventTypeNode extends AuditSessionEventTypeNode
     implements AuditActivateSessionEventType {
   public AuditActivateSessionEventTypeNode(
@@ -42,12 +34,12 @@ public class AuditActivateSessionEventTypeNode extends AuditSessionEventTypeNode
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         client,
@@ -65,308 +57,297 @@ public class AuditActivateSessionEventTypeNode extends AuditSessionEventTypeNode
   }
 
   @Override
-  public SignedSoftwareCertificate[] getClientSoftwareCertificates() throws UaException {
-    PropertyTypeNode node = getClientSoftwareCertificatesNode();
-    return cast(node.getValue().getValue().getValue(), SignedSoftwareCertificate[].class);
+  public @Nullable PropertyTypeNode getCurrentRoleIdsNode() throws UaException {
+    return ClientNodeSupport.await(getCurrentRoleIdsNodeAsync());
   }
 
   @Override
-  public void setClientSoftwareCertificates(SignedSoftwareCertificate[] value) throws UaException {
-    PropertyTypeNode node = getClientSoftwareCertificatesNode();
-    ExtensionObject[] encoded =
-        ExtensionObject.encodeArray(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
+  public CompletableFuture<? extends @Nullable PropertyTypeNode> getCurrentRoleIdsNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "CurrentRoleIds",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public SignedSoftwareCertificate[] readClientSoftwareCertificates() throws UaException {
-    try {
-      return readClientSoftwareCertificatesAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public NodeId @Nullable [] readCurrentRoleIds() throws UaException {
+    return ClientNodeSupport.await(readCurrentRoleIdsAsync());
   }
 
   @Override
-  public void writeClientSoftwareCertificates(SignedSoftwareCertificate[] value)
-      throws UaException {
-    try {
-      writeClientSoftwareCertificatesAsync(value).get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public void writeCurrentRoleIds(NodeId @Nullable [] value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeCurrentRoleIdsAsync(value)),
+        "http://opcfoundation.org/UA/}CurrentRoleIds");
   }
 
   @Override
-  public CompletableFuture<? extends SignedSoftwareCertificate[]>
-      readClientSoftwareCertificatesAsync() {
-    return getClientSoftwareCertificatesNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), SignedSoftwareCertificate[].class));
+  public CompletableFuture<? extends NodeId @Nullable []> readCurrentRoleIdsAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getCurrentRoleIdsNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}CurrentRoleIds",
+                            false,
+                            NodeId.class,
+                            1,
+                            null)),
+                v -> CompletableFuture.completedFuture((NodeId @Nullable []) v)));
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeClientSoftwareCertificatesAsync(
-      SignedSoftwareCertificate[] clientSoftwareCertificates) {
-    ExtensionObject[] encoded =
-        ExtensionObject.encodeArray(client.getStaticEncodingContext(), clientSoftwareCertificates);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getClientSoftwareCertificatesNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public PropertyTypeNode getClientSoftwareCertificatesNode() throws UaException {
-    try {
-      return getClientSoftwareCertificatesNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends PropertyTypeNode> getClientSoftwareCertificatesNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "ClientSoftwareCertificates",
-            ExpandedNodeId.parse("i=46"),
-            false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
-  }
-
-  @Override
-  public UserIdentityToken getUserIdentityToken() throws UaException {
-    PropertyTypeNode node = getUserIdentityTokenNode();
-    return cast(node.getValue().getValue().getValue(), UserIdentityToken.class);
-  }
-
-  @Override
-  public void setUserIdentityToken(UserIdentityToken value) throws UaException {
-    PropertyTypeNode node = getUserIdentityTokenNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
-  }
-
-  @Override
-  public UserIdentityToken readUserIdentityToken() throws UaException {
-    try {
-      return readUserIdentityTokenAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeUserIdentityToken(UserIdentityToken value) throws UaException {
-    try {
-      StatusCode statusCode = writeUserIdentityTokenAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends UserIdentityToken> readUserIdentityTokenAsync() {
-    return getUserIdentityTokenNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), UserIdentityToken.class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeUserIdentityTokenAsync(
-      UserIdentityToken userIdentityToken) {
-    ExtensionObject encoded =
-        ExtensionObject.encode(client.getStaticEncodingContext(), userIdentityToken);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getUserIdentityTokenNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public PropertyTypeNode getUserIdentityTokenNode() throws UaException {
-    try {
-      return getUserIdentityTokenNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends PropertyTypeNode> getUserIdentityTokenNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "UserIdentityToken",
-            ExpandedNodeId.parse("i=46"),
-            false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
-  }
-
-  @Override
-  public String getSecureChannelId() throws UaException {
-    PropertyTypeNode node = getSecureChannelIdNode();
-    return (String) node.getValue().getValue().getValue();
-  }
-
-  @Override
-  public void setSecureChannelId(String value) throws UaException {
-    PropertyTypeNode node = getSecureChannelIdNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public String readSecureChannelId() throws UaException {
-    try {
-      return readSecureChannelIdAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeSecureChannelId(String value) throws UaException {
-    try {
-      StatusCode statusCode = writeSecureChannelIdAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends String> readSecureChannelIdAsync() {
-    return getSecureChannelIdNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (String) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeSecureChannelIdAsync(String secureChannelId) {
-    DataValue value = DataValue.valueOnly(new Variant(secureChannelId));
-    return getSecureChannelIdNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<StatusCode> writeCurrentRoleIdsAsync(NodeId @Nullable [] value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getCurrentRoleIdsNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}CurrentRoleIds",
+                        value,
+                        NodeId.class,
+                        1,
+                        null)));
   }
 
   @Override
   public PropertyTypeNode getSecureChannelIdNode() throws UaException {
-    try {
-      return getSecureChannelIdNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getSecureChannelIdNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends PropertyTypeNode> getSecureChannelIdNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "SecureChannelId", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "SecureChannelId",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public NodeId[] getCurrentRoleIds() throws UaException {
-    PropertyTypeNode node = getCurrentRoleIdsNode();
-    return (NodeId[]) node.getValue().getValue().getValue();
+  public @Nullable String readSecureChannelId() throws UaException {
+    return ClientNodeSupport.await(readSecureChannelIdAsync());
   }
 
   @Override
-  public void setCurrentRoleIds(NodeId[] value) throws UaException {
-    PropertyTypeNode node = getCurrentRoleIdsNode();
-    node.setValue(new Variant(value));
+  public void writeSecureChannelId(@Nullable String value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeSecureChannelIdAsync(value)),
+        "http://opcfoundation.org/UA/}SecureChannelId");
   }
 
   @Override
-  public NodeId[] readCurrentRoleIds() throws UaException {
-    try {
-      return readCurrentRoleIdsAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable String> readSecureChannelIdAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getSecureChannelIdNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}SecureChannelId",
+                            true,
+                            String.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable String) v)));
   }
 
   @Override
-  public void writeCurrentRoleIds(NodeId[] value) throws UaException {
-    try {
-      StatusCode statusCode = writeCurrentRoleIdsAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<StatusCode> writeSecureChannelIdAsync(@Nullable String value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getSecureChannelIdNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}SecureChannelId",
+                        value,
+                        String.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public CompletableFuture<? extends NodeId[]> readCurrentRoleIdsAsync() {
-    return getCurrentRoleIdsNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (NodeId[]) v.getValue().getValue());
+  public PropertyTypeNode getUserIdentityTokenNode() throws UaException {
+    return ClientNodeSupport.await(getUserIdentityTokenNodeAsync());
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeCurrentRoleIdsAsync(NodeId[] currentRoleIds) {
-    DataValue value = DataValue.valueOnly(new Variant(currentRoleIds));
-    return getCurrentRoleIdsNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<? extends PropertyTypeNode> getUserIdentityTokenNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "UserIdentityToken",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public PropertyTypeNode getCurrentRoleIdsNode() throws UaException {
-    try {
-      return getCurrentRoleIdsNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable UserIdentityToken readUserIdentityToken() throws UaException {
+    return ClientNodeSupport.await(readUserIdentityTokenAsync());
   }
 
   @Override
-  public CompletableFuture<? extends PropertyTypeNode> getCurrentRoleIdsNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "CurrentRoleIds", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+  public void writeUserIdentityToken(@Nullable UserIdentityToken value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeUserIdentityTokenAsync(value)),
+        "http://opcfoundation.org/UA/}UserIdentityToken");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable UserIdentityToken> readUserIdentityTokenAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getUserIdentityTokenNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}UserIdentityToken",
+                            true,
+                            UserIdentityToken.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable UserIdentityToken) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeUserIdentityTokenAsync(
+      @Nullable UserIdentityToken value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getUserIdentityTokenNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}UserIdentityToken",
+                        value,
+                        UserIdentityToken.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public PropertyTypeNode getClientSoftwareCertificatesNode() throws UaException {
+    return ClientNodeSupport.await(getClientSoftwareCertificatesNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends PropertyTypeNode> getClientSoftwareCertificatesNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "ClientSoftwareCertificates",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
+  }
+
+  @Override
+  public @Nullable SignedSoftwareCertificate @Nullable [] readClientSoftwareCertificates()
+      throws UaException {
+    return ClientNodeSupport.await(readClientSoftwareCertificatesAsync());
+  }
+
+  @Override
+  public void writeClientSoftwareCertificates(
+      @Nullable SignedSoftwareCertificate @Nullable [] value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeClientSoftwareCertificatesAsync(value)),
+        "http://opcfoundation.org/UA/}ClientSoftwareCertificates");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable SignedSoftwareCertificate @Nullable []>
+      readClientSoftwareCertificatesAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getClientSoftwareCertificatesNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}ClientSoftwareCertificates",
+                            true,
+                            SignedSoftwareCertificate.class,
+                            1,
+                            null)),
+                v ->
+                    CompletableFuture.completedFuture(
+                        (@Nullable SignedSoftwareCertificate @Nullable []) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeClientSoftwareCertificatesAsync(
+      @Nullable SignedSoftwareCertificate @Nullable [] value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getClientSoftwareCertificatesNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}ClientSoftwareCertificates",
+                        value,
+                        SignedSoftwareCertificate.class,
+                        1,
+                        null)));
   }
 }

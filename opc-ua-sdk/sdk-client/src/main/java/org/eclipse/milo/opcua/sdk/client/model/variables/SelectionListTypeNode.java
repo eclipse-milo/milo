@@ -1,21 +1,8 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.variables;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
@@ -30,7 +17,15 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelExType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link SelectionListType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.18">Model
+ *     documentation</a>
+ */
 public class SelectionListTypeNode extends BaseDataVariableTypeNode implements SelectionListType {
   public SelectionListTypeNode(
       OpcUaClient client,
@@ -38,21 +33,21 @@ public class SelectionListTypeNode extends BaseDataVariableTypeNode implements S
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       DataValue value,
       NodeId dataType,
       Integer valueRank,
-      UInteger[] arrayDimensions,
+      UInteger @Nullable [] arrayDimensions,
       UByte accessLevel,
       UByte userAccessLevel,
       Double minimumSamplingInterval,
       Boolean historizing,
-      AccessLevelExType accessLevelEx) {
+      @Nullable AccessLevelExType accessLevelEx) {
     super(
         client,
         nodeId,
@@ -77,225 +72,254 @@ public class SelectionListTypeNode extends BaseDataVariableTypeNode implements S
   }
 
   @Override
-  public Object[] getSelections() throws UaException {
-    PropertyTypeNode node = getSelectionsNode();
-    return (Object[]) node.getValue().getValue().getValue();
-  }
-
-  @Override
-  public void setSelections(Object[] value) throws UaException {
-    PropertyTypeNode node = getSelectionsNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public Object[] readSelections() throws UaException {
-    try {
-      return readSelectionsAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeSelections(Object[] value) throws UaException {
-    try {
-      StatusCode statusCode = writeSelectionsAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends Object[]> readSelectionsAsync() {
-    return getSelectionsNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (Object[]) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeSelectionsAsync(Object[] selections) {
-    DataValue value = DataValue.valueOnly(new Variant(selections));
-    return getSelectionsNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
   public PropertyTypeNode getSelectionsNode() throws UaException {
-    try {
-      return getSelectionsNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getSelectionsNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends PropertyTypeNode> getSelectionsNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Selections", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "Selections",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public LocalizedText[] getSelectionDescriptions() throws UaException {
-    PropertyTypeNode node = getSelectionDescriptionsNode();
-    return (LocalizedText[]) node.getValue().getValue().getValue();
+  public @Nullable Variant @Nullable [] readSelections() throws UaException {
+    return ClientNodeSupport.await(readSelectionsAsync());
   }
 
   @Override
-  public void setSelectionDescriptions(LocalizedText[] value) throws UaException {
-    PropertyTypeNode node = getSelectionDescriptionsNode();
-    node.setValue(new Variant(value));
+  public void writeSelections(@Nullable Variant @Nullable [] value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeSelectionsAsync(value)),
+        "http://opcfoundation.org/UA/}Selections");
   }
 
   @Override
-  public LocalizedText[] readSelectionDescriptions() throws UaException {
-    try {
-      return readSelectionDescriptionsAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable Variant @Nullable []> readSelectionsAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getSelectionsNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}Selections",
+                            true,
+                            Variant.class,
+                            1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable Variant @Nullable []) v)));
   }
 
   @Override
-  public void writeSelectionDescriptions(LocalizedText[] value) throws UaException {
-    try {
-      StatusCode statusCode = writeSelectionDescriptionsAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<StatusCode> writeSelectionsAsync(@Nullable Variant @Nullable [] value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getSelectionsNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}Selections",
+                        value,
+                        Variant.class,
+                        1,
+                        null)));
   }
 
   @Override
-  public CompletableFuture<? extends LocalizedText[]> readSelectionDescriptionsAsync() {
-    return getSelectionDescriptionsNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (LocalizedText[]) v.getValue().getValue());
+  public @Nullable PropertyTypeNode getRestrictToListNode() throws UaException {
+    return ClientNodeSupport.await(getRestrictToListNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable PropertyTypeNode> getRestrictToListNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "RestrictToList",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
+  }
+
+  @Override
+  public @Nullable Boolean readRestrictToList() throws UaException {
+    return ClientNodeSupport.await(readRestrictToListAsync());
+  }
+
+  @Override
+  public void writeRestrictToList(@Nullable Boolean value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeRestrictToListAsync(value)),
+        "http://opcfoundation.org/UA/}RestrictToList");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable Boolean> readRestrictToListAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getRestrictToListNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}RestrictToList",
+                            false,
+                            Boolean.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable Boolean) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeRestrictToListAsync(@Nullable Boolean value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getRestrictToListNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}RestrictToList",
+                        value,
+                        Boolean.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public @Nullable PropertyTypeNode getSelectionDescriptionsNode() throws UaException {
+    return ClientNodeSupport.await(getSelectionDescriptionsNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable PropertyTypeNode>
+      getSelectionDescriptionsNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "SelectionDescriptions",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
+  }
+
+  @Override
+  public LocalizedText @Nullable [] readSelectionDescriptions() throws UaException {
+    return ClientNodeSupport.await(readSelectionDescriptionsAsync());
+  }
+
+  @Override
+  public void writeSelectionDescriptions(LocalizedText @Nullable [] value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeSelectionDescriptionsAsync(value)),
+        "http://opcfoundation.org/UA/}SelectionDescriptions");
+  }
+
+  @Override
+  public CompletableFuture<? extends LocalizedText @Nullable []> readSelectionDescriptionsAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getSelectionDescriptionsNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}SelectionDescriptions",
+                            false,
+                            LocalizedText.class,
+                            1,
+                            null)),
+                v -> CompletableFuture.completedFuture((LocalizedText @Nullable []) v)));
   }
 
   @Override
   public CompletableFuture<StatusCode> writeSelectionDescriptionsAsync(
-      LocalizedText[] selectionDescriptions) {
-    DataValue value = DataValue.valueOnly(new Variant(selectionDescriptions));
-    return getSelectionDescriptionsNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+      LocalizedText @Nullable [] value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getSelectionDescriptionsNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}SelectionDescriptions",
+                        value,
+                        LocalizedText.class,
+                        1,
+                        null)));
   }
 
   @Override
-  public PropertyTypeNode getSelectionDescriptionsNode() throws UaException {
-    try {
-      return getSelectionDescriptionsNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable Variant readTypedValue() throws UaException {
+    return ClientNodeSupport.await(readTypedValueAsync());
   }
 
   @Override
-  public CompletableFuture<? extends PropertyTypeNode> getSelectionDescriptionsNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "SelectionDescriptions",
-            ExpandedNodeId.parse("i=46"),
-            false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+  public void writeTypedValue(@Nullable Variant value) throws UaException {
+    ClientNodeSupport.good(ClientNodeSupport.await(writeTypedValueAsync(value)), "Value");
   }
 
   @Override
-  public Boolean getRestrictToList() throws UaException {
-    PropertyTypeNode node = getRestrictToListNode();
-    return (Boolean) node.getValue().getValue().getValue();
+  public CompletableFuture<? extends @Nullable Variant> readTypedValueAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    CompletableFuture.completedFuture(this),
+                    n ->
+                        ClientNodeSupport.read(
+                            client, n, this, "Value", true, Variant.class, -1, null)),
+                v -> CompletableFuture.completedFuture((@Nullable Variant) v)));
   }
 
   @Override
-  public void setRestrictToList(Boolean value) throws UaException {
-    PropertyTypeNode node = getRestrictToListNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public Boolean readRestrictToList() throws UaException {
-    try {
-      return readRestrictToListAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeRestrictToList(Boolean value) throws UaException {
-    try {
-      StatusCode statusCode = writeRestrictToListAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends Boolean> readRestrictToListAsync() {
-    return getRestrictToListNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (Boolean) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeRestrictToListAsync(Boolean restrictToList) {
-    DataValue value = DataValue.valueOnly(new Variant(restrictToList));
-    return getRestrictToListNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public PropertyTypeNode getRestrictToListNode() throws UaException {
-    try {
-      return getRestrictToListNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends PropertyTypeNode> getRestrictToListNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "RestrictToList", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+  public CompletableFuture<StatusCode> writeTypedValueAsync(@Nullable Variant value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                n ->
+                    ClientNodeSupport.write(
+                        client, n, this, "Value", value, Variant.class, -1, null)));
   }
 }

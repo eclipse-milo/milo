@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.variables;
 
 import java.util.concurrent.CompletableFuture;
@@ -17,411 +7,224 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.2">https://reference.opcfoundation.org/v105/Core/docs/Part9/5.2</a>
+ * Client API for the TwoStateVariableType VariableType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.2">Model
+ *     documentation</a>
  */
 public interface TwoStateVariableType extends StateVariableType {
-  QualifiedProperty<Boolean> ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Id",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 8995L);
 
-  QualifiedProperty<DateTime> TRANSITION_TIME =
+  QualifiedProperty<LocalizedText> FalseState_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "TransitionTime",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
-          -1,
-          DateTime.class);
-
-  QualifiedProperty<DateTime> EFFECTIVE_TRANSITION_TIME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "EffectiveTransitionTime",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
-          -1,
-          DateTime.class);
-
-  QualifiedProperty<LocalizedText> TRUE_STATE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "TrueState",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
-          -1,
-          LocalizedText.class);
-
-  QualifiedProperty<LocalizedText> FALSE_STATE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "FalseState",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 21L),
+          -1,
+          LocalizedText.class);
+
+  QualifiedProperty<DateTime> TransitionTime_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "TransitionTime",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 294L),
+          -1,
+          DateTime.class);
+
+  QualifiedProperty<DateTime> EffectiveTransitionTime_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "EffectiveTransitionTime",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 294L),
+          -1,
+          DateTime.class);
+
+  QualifiedProperty<Boolean> TwoStateVariableTypeId_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA, "Id", ExpandedNodeId.of(Namespaces.OPC_UA, 1L), -1, Boolean.class);
+
+  QualifiedProperty<LocalizedText> TrueState_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "TrueState",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 21L),
           -1,
           LocalizedText.class);
 
   /**
-   * Get the local value of the Id Node.
+   * Resolves the optional FalseState child, a PropertyType with DataType LocalizedText.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the Id Node.
-   * @throws UaException if an error occurs creating or getting the Id Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  Boolean getId() throws UaException;
+  @Nullable PropertyType getFalseStateNode() throws UaException;
+
+  /** Asynchronous form of {@link #getFalseStateNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getFalseStateNodeAsync();
 
   /**
-   * Set the local value of the Id Node.
+   * Reads the Value of the FalseState child from the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the Id Node.
-   * @throws UaException if an error occurs creating or getting the Id Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setId(Boolean value) throws UaException;
+  @Nullable LocalizedText readFalseState() throws UaException;
 
   /**
-   * Read the value of the Id Node from the server and update the local value if the operation
-   * succeeds.
+   * Writes the Value of the FalseState child to the server.
    *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  Boolean readId() throws UaException;
+  void writeFalseState(@Nullable LocalizedText value) throws UaException;
+
+  /** Asynchronous form of {@link #readFalseState()}. */
+  CompletableFuture<? extends @Nullable LocalizedText> readFalseStateAsync();
+
+  /** Asynchronous form of {@link #writeFalseState}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeFalseStateAsync(@Nullable LocalizedText value);
 
   /**
-   * Write a new value for the Id Node to the server and update the local value if the operation
-   * succeeds.
+   * Resolves the optional TransitionTime child, a PropertyType with DataType UtcTime.
    *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  void writeId(Boolean value) throws UaException;
+  @Nullable PropertyType getTransitionTimeNode() throws UaException;
+
+  /** Asynchronous form of {@link #getTransitionTimeNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getTransitionTimeNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #readId}.
+   * Reads the Value of the TransitionTime child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends Boolean> readIdAsync();
+  @Nullable DateTime readTransitionTime() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeId}.
+   * Writes the Value of the TransitionTime child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeIdAsync(Boolean value);
+  void writeTransitionTime(@Nullable DateTime value) throws UaException;
+
+  /** Asynchronous form of {@link #readTransitionTime()}. */
+  CompletableFuture<? extends @Nullable DateTime> readTransitionTimeAsync();
+
+  /** Asynchronous form of {@link #writeTransitionTime}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeTransitionTimeAsync(@Nullable DateTime value);
 
   /**
-   * Get the Id {@link PropertyType} Node, or {@code null} if it does not exist.
+   * Resolves the optional EffectiveTransitionTime child, a PropertyType with DataType UtcTime.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyType getEffectiveTransitionTimeNode() throws UaException;
+
+  /** Asynchronous form of {@link #getEffectiveTransitionTimeNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getEffectiveTransitionTimeNodeAsync();
+
+  /**
+   * Reads the Value of the EffectiveTransitionTime child from the server.
    *
-   * @return the Id {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable DateTime readEffectiveTransitionTime() throws UaException;
+
+  /**
+   * Writes the Value of the EffectiveTransitionTime child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeEffectiveTransitionTime(@Nullable DateTime value) throws UaException;
+
+  /** Asynchronous form of {@link #readEffectiveTransitionTime()}. */
+  CompletableFuture<? extends @Nullable DateTime> readEffectiveTransitionTimeAsync();
+
+  /**
+   * Asynchronous form of {@link #writeEffectiveTransitionTime}; completes with the operation
+   * status.
+   */
+  CompletableFuture<StatusCode> writeEffectiveTransitionTimeAsync(@Nullable DateTime value);
+
+  /**
+   * Resolves the mandatory Id child, a PropertyType with DataType Boolean.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getIdNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getIdNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getIdNode()}. */
   CompletableFuture<? extends PropertyType> getIdNodeAsync();
 
   /**
-   * Get the local value of the TransitionTime Node.
+   * Reads the Value of the Id child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the TransitionTime Node.
-   * @throws UaException if an error occurs creating or getting the TransitionTime Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  DateTime getTransitionTime() throws UaException;
+  @Nullable Boolean readTwoStateVariableTypeId() throws UaException;
 
   /**
-   * Set the local value of the TransitionTime Node.
+   * Writes the Value of the Id child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the TransitionTime Node.
-   * @throws UaException if an error occurs creating or getting the TransitionTime Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setTransitionTime(DateTime value) throws UaException;
+  void writeTwoStateVariableTypeId(@Nullable Boolean value) throws UaException;
+
+  /** Asynchronous form of {@link #readTwoStateVariableTypeId()}. */
+  CompletableFuture<? extends @Nullable Boolean> readTwoStateVariableTypeIdAsync();
 
   /**
-   * Read the value of the TransitionTime Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link DateTime} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * Asynchronous form of {@link #writeTwoStateVariableTypeId}; completes with the operation status.
    */
-  DateTime readTransitionTime() throws UaException;
+  CompletableFuture<StatusCode> writeTwoStateVariableTypeIdAsync(@Nullable Boolean value);
 
   /**
-   * Write a new value for the TransitionTime Node to the server and update the local value if the
-   * operation succeeds.
+   * Resolves the optional TrueState child, a PropertyType with DataType LocalizedText.
    *
-   * @param value the {@link DateTime} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  void writeTransitionTime(DateTime value) throws UaException;
+  @Nullable PropertyType getTrueStateNode() throws UaException;
+
+  /** Asynchronous form of {@link #getTrueStateNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getTrueStateNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #readTransitionTime}.
+   * Reads the Value of the TrueState child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends DateTime> readTransitionTimeAsync();
+  @Nullable LocalizedText readTrueState() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeTransitionTime}.
+   * Writes the Value of the TrueState child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeTransitionTimeAsync(DateTime value);
+  void writeTrueState(@Nullable LocalizedText value) throws UaException;
 
-  /**
-   * Get the TransitionTime {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the TransitionTime {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getTransitionTimeNode() throws UaException;
+  /** Asynchronous form of {@link #readTrueState()}. */
+  CompletableFuture<? extends @Nullable LocalizedText> readTrueStateAsync();
 
-  /**
-   * Asynchronous implementation of {@link #getTransitionTimeNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getTransitionTimeNodeAsync();
-
-  /**
-   * Get the local value of the EffectiveTransitionTime Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the EffectiveTransitionTime Node.
-   * @throws UaException if an error occurs creating or getting the EffectiveTransitionTime Node.
-   */
-  DateTime getEffectiveTransitionTime() throws UaException;
-
-  /**
-   * Set the local value of the EffectiveTransitionTime Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the EffectiveTransitionTime Node.
-   * @throws UaException if an error occurs creating or getting the EffectiveTransitionTime Node.
-   */
-  void setEffectiveTransitionTime(DateTime value) throws UaException;
-
-  /**
-   * Read the value of the EffectiveTransitionTime Node from the server and update the local value
-   * if the operation succeeds.
-   *
-   * @return the {@link DateTime} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  DateTime readEffectiveTransitionTime() throws UaException;
-
-  /**
-   * Write a new value for the EffectiveTransitionTime Node to the server and update the local value
-   * if the operation succeeds.
-   *
-   * @param value the {@link DateTime} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeEffectiveTransitionTime(DateTime value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readEffectiveTransitionTime}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends DateTime> readEffectiveTransitionTimeAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeEffectiveTransitionTime}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeEffectiveTransitionTimeAsync(DateTime value);
-
-  /**
-   * Get the EffectiveTransitionTime {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the EffectiveTransitionTime {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getEffectiveTransitionTimeNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getEffectiveTransitionTimeNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getEffectiveTransitionTimeNodeAsync();
-
-  /**
-   * Get the local value of the TrueState Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the TrueState Node.
-   * @throws UaException if an error occurs creating or getting the TrueState Node.
-   */
-  LocalizedText getTrueState() throws UaException;
-
-  /**
-   * Set the local value of the TrueState Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the TrueState Node.
-   * @throws UaException if an error occurs creating or getting the TrueState Node.
-   */
-  void setTrueState(LocalizedText value) throws UaException;
-
-  /**
-   * Read the value of the TrueState Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link LocalizedText} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  LocalizedText readTrueState() throws UaException;
-
-  /**
-   * Write a new value for the TrueState Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link LocalizedText} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeTrueState(LocalizedText value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readTrueState}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends LocalizedText> readTrueStateAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeTrueState}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeTrueStateAsync(LocalizedText value);
-
-  /**
-   * Get the TrueState {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the TrueState {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getTrueStateNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getTrueStateNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getTrueStateNodeAsync();
-
-  /**
-   * Get the local value of the FalseState Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the FalseState Node.
-   * @throws UaException if an error occurs creating or getting the FalseState Node.
-   */
-  LocalizedText getFalseState() throws UaException;
-
-  /**
-   * Set the local value of the FalseState Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the FalseState Node.
-   * @throws UaException if an error occurs creating or getting the FalseState Node.
-   */
-  void setFalseState(LocalizedText value) throws UaException;
-
-  /**
-   * Read the value of the FalseState Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link LocalizedText} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  LocalizedText readFalseState() throws UaException;
-
-  /**
-   * Write a new value for the FalseState Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link LocalizedText} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeFalseState(LocalizedText value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readFalseState}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends LocalizedText> readFalseStateAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeFalseState}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeFalseStateAsync(LocalizedText value);
-
-  /**
-   * Get the FalseState {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the FalseState {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getFalseStateNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getFalseStateNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getFalseStateNodeAsync();
+  /** Asynchronous form of {@link #writeTrueState}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeTrueStateAsync(@Nullable LocalizedText value);
 }

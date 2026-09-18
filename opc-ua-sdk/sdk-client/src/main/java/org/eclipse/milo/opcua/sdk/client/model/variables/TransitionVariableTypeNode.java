@@ -1,21 +1,8 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.variables;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
@@ -31,7 +18,15 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelExType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link TransitionVariableType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part16/4.4.4">Model
+ *     documentation</a>
+ */
 public class TransitionVariableTypeNode extends BaseDataVariableTypeNode
     implements TransitionVariableType {
   public TransitionVariableTypeNode(
@@ -40,21 +35,21 @@ public class TransitionVariableTypeNode extends BaseDataVariableTypeNode
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       DataValue value,
       NodeId dataType,
       Integer valueRank,
-      UInteger[] arrayDimensions,
+      UInteger @Nullable [] arrayDimensions,
       UByte accessLevel,
       UByte userAccessLevel,
       Double minimumSamplingInterval,
       Boolean historizing,
-      AccessLevelExType accessLevelEx) {
+      @Nullable AccessLevelExType accessLevelEx) {
     super(
         client,
         nodeId,
@@ -79,370 +74,394 @@ public class TransitionVariableTypeNode extends BaseDataVariableTypeNode
   }
 
   @Override
-  public Object getId() throws UaException {
-    PropertyTypeNode node = getIdNode();
-    return (Object) node.getValue().getValue().getValue();
+  public @Nullable PropertyTypeNode getTransitionTimeNode() throws UaException {
+    return ClientNodeSupport.await(getTransitionTimeNodeAsync());
   }
 
   @Override
-  public void setId(Object value) throws UaException {
-    PropertyTypeNode node = getIdNode();
-    node.setValue(new Variant(value));
+  public CompletableFuture<? extends @Nullable PropertyTypeNode> getTransitionTimeNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "TransitionTime",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public Object readId() throws UaException {
-    try {
-      return readIdAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable DateTime readTransitionTime() throws UaException {
+    return ClientNodeSupport.await(readTransitionTimeAsync());
   }
 
   @Override
-  public void writeId(Object value) throws UaException {
-    try {
-      StatusCode statusCode = writeIdAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public void writeTransitionTime(@Nullable DateTime value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeTransitionTimeAsync(value)),
+        "http://opcfoundation.org/UA/}TransitionTime");
   }
 
   @Override
-  public CompletableFuture<?> readIdAsync() {
-    return getIdNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (Object) v.getValue().getValue());
+  public CompletableFuture<? extends @Nullable DateTime> readTransitionTimeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getTransitionTimeNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}TransitionTime",
+                            false,
+                            DateTime.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable DateTime) v)));
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeIdAsync(Object id) {
-    DataValue value = DataValue.valueOnly(new Variant(id));
-    return getIdNodeAsync().thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<StatusCode> writeTransitionTimeAsync(@Nullable DateTime value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getTransitionTimeNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}TransitionTime",
+                        value,
+                        DateTime.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public @Nullable PropertyTypeNode getEffectiveTransitionTimeNode() throws UaException {
+    return ClientNodeSupport.await(getEffectiveTransitionTimeNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable PropertyTypeNode>
+      getEffectiveTransitionTimeNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "EffectiveTransitionTime",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
+  }
+
+  @Override
+  public @Nullable DateTime readEffectiveTransitionTime() throws UaException {
+    return ClientNodeSupport.await(readEffectiveTransitionTimeAsync());
+  }
+
+  @Override
+  public void writeEffectiveTransitionTime(@Nullable DateTime value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeEffectiveTransitionTimeAsync(value)),
+        "http://opcfoundation.org/UA/}EffectiveTransitionTime");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable DateTime> readEffectiveTransitionTimeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getEffectiveTransitionTimeNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}EffectiveTransitionTime",
+                            false,
+                            DateTime.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable DateTime) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeEffectiveTransitionTimeAsync(@Nullable DateTime value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getEffectiveTransitionTimeNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}EffectiveTransitionTime",
+                        value,
+                        DateTime.class,
+                        -1,
+                        null)));
   }
 
   @Override
   public PropertyTypeNode getIdNode() throws UaException {
-    try {
-      return getIdNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getIdNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends PropertyTypeNode> getIdNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Id", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "Id",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public QualifiedName getName() throws UaException {
-    PropertyTypeNode node = getNameNode();
-    return (QualifiedName) node.getValue().getValue().getValue();
+  public @Nullable Variant readId() throws UaException {
+    return ClientNodeSupport.await(readIdAsync());
   }
 
   @Override
-  public void setName(QualifiedName value) throws UaException {
-    PropertyTypeNode node = getNameNode();
-    node.setValue(new Variant(value));
+  public void writeId(@Nullable Variant value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeIdAsync(value)), "http://opcfoundation.org/UA/}Id");
   }
 
   @Override
-  public QualifiedName readName() throws UaException {
-    try {
-      return readNameAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable Variant> readIdAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getIdNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}Id",
+                            true,
+                            Variant.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable Variant) v)));
   }
 
   @Override
-  public void writeName(QualifiedName value) throws UaException {
-    try {
-      StatusCode statusCode = writeNameAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<StatusCode> writeIdAsync(@Nullable Variant value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getIdNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}Id",
+                        value,
+                        Variant.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public CompletableFuture<? extends QualifiedName> readNameAsync() {
-    return getNameNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (QualifiedName) v.getValue().getValue());
+  public @Nullable PropertyTypeNode getNameNode() throws UaException {
+    return ClientNodeSupport.await(getNameNodeAsync());
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeNameAsync(QualifiedName name) {
-    DataValue value = DataValue.valueOnly(new Variant(name));
-    return getNameNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<? extends @Nullable PropertyTypeNode> getNameNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "Name",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public PropertyTypeNode getNameNode() throws UaException {
-    try {
-      return getNameNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable QualifiedName readName() throws UaException {
+    return ClientNodeSupport.await(readNameAsync());
   }
 
   @Override
-  public CompletableFuture<? extends PropertyTypeNode> getNameNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Name", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+  public void writeName(@Nullable QualifiedName value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeNameAsync(value)), "http://opcfoundation.org/UA/}Name");
   }
 
   @Override
-  public UInteger getNumber() throws UaException {
-    PropertyTypeNode node = getNumberNode();
-    return (UInteger) node.getValue().getValue().getValue();
+  public CompletableFuture<? extends @Nullable QualifiedName> readNameAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getNameNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}Name",
+                            false,
+                            QualifiedName.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable QualifiedName) v)));
   }
 
   @Override
-  public void setNumber(UInteger value) throws UaException {
-    PropertyTypeNode node = getNumberNode();
-    node.setValue(new Variant(value));
+  public CompletableFuture<StatusCode> writeNameAsync(@Nullable QualifiedName value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getNameNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}Name",
+                        value,
+                        QualifiedName.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public UInteger readNumber() throws UaException {
-    try {
-      return readNumberAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable PropertyTypeNode getNumberNode() throws UaException {
+    return ClientNodeSupport.await(getNumberNodeAsync());
   }
 
   @Override
-  public void writeNumber(UInteger value) throws UaException {
-    try {
-      StatusCode statusCode = writeNumberAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable PropertyTypeNode> getNumberNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "Number",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public CompletableFuture<? extends UInteger> readNumberAsync() {
-    return getNumberNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (UInteger) v.getValue().getValue());
+  public @Nullable UInteger readNumber() throws UaException {
+    return ClientNodeSupport.await(readNumberAsync());
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeNumberAsync(UInteger number) {
-    DataValue value = DataValue.valueOnly(new Variant(number));
-    return getNumberNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public void writeNumber(@Nullable UInteger value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeNumberAsync(value)), "http://opcfoundation.org/UA/}Number");
   }
 
   @Override
-  public PropertyTypeNode getNumberNode() throws UaException {
-    try {
-      return getNumberNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable UInteger> readNumberAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getNumberNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}Number",
+                            false,
+                            UInteger.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable UInteger) v)));
   }
 
   @Override
-  public CompletableFuture<? extends PropertyTypeNode> getNumberNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Number", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+  public CompletableFuture<StatusCode> writeNumberAsync(@Nullable UInteger value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getNumberNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}Number",
+                        value,
+                        UInteger.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public DateTime getTransitionTime() throws UaException {
-    PropertyTypeNode node = getTransitionTimeNode();
-    return (DateTime) node.getValue().getValue().getValue();
+  public @Nullable LocalizedText readTypedValue() throws UaException {
+    return ClientNodeSupport.await(readTypedValueAsync());
   }
 
   @Override
-  public void setTransitionTime(DateTime value) throws UaException {
-    PropertyTypeNode node = getTransitionTimeNode();
-    node.setValue(new Variant(value));
+  public void writeTypedValue(@Nullable LocalizedText value) throws UaException {
+    ClientNodeSupport.good(ClientNodeSupport.await(writeTypedValueAsync(value)), "Value");
   }
 
   @Override
-  public DateTime readTransitionTime() throws UaException {
-    try {
-      return readTransitionTimeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable LocalizedText> readTypedValueAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    CompletableFuture.completedFuture(this),
+                    n ->
+                        ClientNodeSupport.read(
+                            client, n, this, "Value", true, LocalizedText.class, -1, null)),
+                v -> CompletableFuture.completedFuture((@Nullable LocalizedText) v)));
   }
 
   @Override
-  public void writeTransitionTime(DateTime value) throws UaException {
-    try {
-      StatusCode statusCode = writeTransitionTimeAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends DateTime> readTransitionTimeAsync() {
-    return getTransitionTimeNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (DateTime) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeTransitionTimeAsync(DateTime transitionTime) {
-    DataValue value = DataValue.valueOnly(new Variant(transitionTime));
-    return getTransitionTimeNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public PropertyTypeNode getTransitionTimeNode() throws UaException {
-    try {
-      return getTransitionTimeNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends PropertyTypeNode> getTransitionTimeNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "TransitionTime", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
-  }
-
-  @Override
-  public DateTime getEffectiveTransitionTime() throws UaException {
-    PropertyTypeNode node = getEffectiveTransitionTimeNode();
-    return (DateTime) node.getValue().getValue().getValue();
-  }
-
-  @Override
-  public void setEffectiveTransitionTime(DateTime value) throws UaException {
-    PropertyTypeNode node = getEffectiveTransitionTimeNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public DateTime readEffectiveTransitionTime() throws UaException {
-    try {
-      return readEffectiveTransitionTimeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeEffectiveTransitionTime(DateTime value) throws UaException {
-    try {
-      StatusCode statusCode = writeEffectiveTransitionTimeAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends DateTime> readEffectiveTransitionTimeAsync() {
-    return getEffectiveTransitionTimeNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (DateTime) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeEffectiveTransitionTimeAsync(
-      DateTime effectiveTransitionTime) {
-    DataValue value = DataValue.valueOnly(new Variant(effectiveTransitionTime));
-    return getEffectiveTransitionTimeNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public PropertyTypeNode getEffectiveTransitionTimeNode() throws UaException {
-    try {
-      return getEffectiveTransitionTimeNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends PropertyTypeNode> getEffectiveTransitionTimeNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "EffectiveTransitionTime",
-            ExpandedNodeId.parse("i=46"),
-            false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+  public CompletableFuture<StatusCode> writeTypedValueAsync(@Nullable LocalizedText value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                n ->
+                    ClientNodeSupport.write(
+                        client, n, this, "Value", value, LocalizedText.class, -1, null)));
   }
 }

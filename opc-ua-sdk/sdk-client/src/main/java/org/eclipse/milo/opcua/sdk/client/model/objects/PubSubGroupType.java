@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
@@ -20,429 +10,241 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.KeyValuePair;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.6/#9.1.6.2">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.6/#9.1.6.2</a>
+ * Client API for the PubSubGroupType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.6/#9.1.6.2">Model
+ *     documentation</a>
  */
 public interface PubSubGroupType extends BaseObjectType {
-  QualifiedProperty<MessageSecurityMode> SECURITY_MODE =
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 14232L);
+
+  QualifiedProperty<MessageSecurityMode> SecurityMode_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "SecurityMode",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=302"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 302L),
           -1,
           MessageSecurityMode.class);
 
-  QualifiedProperty<String> SECURITY_GROUP_ID =
+  QualifiedProperty<KeyValuePair[]> GroupProperties_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "SecurityGroupId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
-
-  QualifiedProperty<EndpointDescription[]> SECURITY_KEY_SERVICES =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "SecurityKeyServices",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=312"),
-          1,
-          EndpointDescription[].class);
-
-  QualifiedProperty<UInteger> MAX_NETWORK_MESSAGE_SIZE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxNetworkMessageSize",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
-
-  QualifiedProperty<KeyValuePair[]> GROUP_PROPERTIES =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "GroupProperties",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14533"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 14533L),
           1,
           KeyValuePair[].class);
 
-  /**
-   * Get the local value of the SecurityMode Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SecurityMode Node.
-   * @throws UaException if an error occurs creating or getting the SecurityMode Node.
-   */
-  MessageSecurityMode getSecurityMode() throws UaException;
+  QualifiedProperty<String> SecurityGroupId_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "SecurityGroupId",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+          -1,
+          String.class);
+
+  QualifiedProperty<EndpointDescription[]> SecurityKeyServices_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "SecurityKeyServices",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 312L),
+          1,
+          EndpointDescription[].class);
+
+  QualifiedProperty<UInteger> MaxNetworkMessageSize_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "MaxNetworkMessageSize",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+          -1,
+          UInteger.class);
 
   /**
-   * Set the local value of the SecurityMode Node.
+   * Resolves the mandatory SecurityMode child, a PropertyType with DataType MessageSecurityMode.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SecurityMode Node.
-   * @throws UaException if an error occurs creating or getting the SecurityMode Node.
-   */
-  void setSecurityMode(MessageSecurityMode value) throws UaException;
-
-  /**
-   * Read the value of the SecurityMode Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link MessageSecurityMode} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  MessageSecurityMode readSecurityMode() throws UaException;
-
-  /**
-   * Write a new value for the SecurityMode Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link MessageSecurityMode} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeSecurityMode(MessageSecurityMode value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readSecurityMode}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends MessageSecurityMode> readSecurityModeAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeSecurityMode}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeSecurityModeAsync(MessageSecurityMode value);
-
-  /**
-   * Get the SecurityMode {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SecurityMode {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getSecurityModeNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getSecurityModeNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getSecurityModeNode()}. */
   CompletableFuture<? extends PropertyType> getSecurityModeNodeAsync();
 
   /**
-   * Get the local value of the SecurityGroupId Node.
+   * Reads the Value of the SecurityMode child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SecurityGroupId Node.
-   * @throws UaException if an error occurs creating or getting the SecurityGroupId Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  String getSecurityGroupId() throws UaException;
+  @Nullable MessageSecurityMode readSecurityMode() throws UaException;
 
   /**
-   * Set the local value of the SecurityGroupId Node.
+   * Writes the Value of the SecurityMode child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SecurityGroupId Node.
-   * @throws UaException if an error occurs creating or getting the SecurityGroupId Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setSecurityGroupId(String value) throws UaException;
+  void writeSecurityMode(@Nullable MessageSecurityMode value) throws UaException;
+
+  /** Asynchronous form of {@link #readSecurityMode()}. */
+  CompletableFuture<? extends @Nullable MessageSecurityMode> readSecurityModeAsync();
+
+  /** Asynchronous form of {@link #writeSecurityMode}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeSecurityModeAsync(@Nullable MessageSecurityMode value);
 
   /**
-   * Read the value of the SecurityGroupId Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the mandatory GroupProperties child, a PropertyType with DataType KeyValuePair.
    *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String readSecurityGroupId() throws UaException;
-
-  /**
-   * Write a new value for the SecurityGroupId Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeSecurityGroupId(String value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readSecurityGroupId}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String> readSecurityGroupIdAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeSecurityGroupId}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeSecurityGroupIdAsync(String value);
-
-  /**
-   * Get the SecurityGroupId {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SecurityGroupId {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getSecurityGroupIdNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getSecurityGroupIdNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getSecurityGroupIdNodeAsync();
-
-  /**
-   * Get the local value of the SecurityKeyServices Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SecurityKeyServices Node.
-   * @throws UaException if an error occurs creating or getting the SecurityKeyServices Node.
-   */
-  EndpointDescription[] getSecurityKeyServices() throws UaException;
-
-  /**
-   * Set the local value of the SecurityKeyServices Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SecurityKeyServices Node.
-   * @throws UaException if an error occurs creating or getting the SecurityKeyServices Node.
-   */
-  void setSecurityKeyServices(EndpointDescription[] value) throws UaException;
-
-  /**
-   * Read the value of the SecurityKeyServices Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link EndpointDescription[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  EndpointDescription[] readSecurityKeyServices() throws UaException;
-
-  /**
-   * Write a new value for the SecurityKeyServices Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link EndpointDescription[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeSecurityKeyServices(EndpointDescription[] value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readSecurityKeyServices}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends EndpointDescription[]> readSecurityKeyServicesAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeSecurityKeyServices}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeSecurityKeyServicesAsync(EndpointDescription[] value);
-
-  /**
-   * Get the SecurityKeyServices {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SecurityKeyServices {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getSecurityKeyServicesNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getSecurityKeyServicesNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getSecurityKeyServicesNodeAsync();
-
-  /**
-   * Get the local value of the MaxNetworkMessageSize Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaxNetworkMessageSize Node.
-   * @throws UaException if an error occurs creating or getting the MaxNetworkMessageSize Node.
-   */
-  UInteger getMaxNetworkMessageSize() throws UaException;
-
-  /**
-   * Set the local value of the MaxNetworkMessageSize Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaxNetworkMessageSize Node.
-   * @throws UaException if an error occurs creating or getting the MaxNetworkMessageSize Node.
-   */
-  void setMaxNetworkMessageSize(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the MaxNetworkMessageSize Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readMaxNetworkMessageSize() throws UaException;
-
-  /**
-   * Write a new value for the MaxNetworkMessageSize Node to the server and update the local value
-   * if the operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMaxNetworkMessageSize(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readMaxNetworkMessageSize}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readMaxNetworkMessageSizeAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeMaxNetworkMessageSize}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMaxNetworkMessageSizeAsync(UInteger value);
-
-  /**
-   * Get the MaxNetworkMessageSize {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaxNetworkMessageSize {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getMaxNetworkMessageSizeNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getMaxNetworkMessageSizeNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getMaxNetworkMessageSizeNodeAsync();
-
-  /**
-   * Get the local value of the GroupProperties Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the GroupProperties Node.
-   * @throws UaException if an error occurs creating or getting the GroupProperties Node.
-   */
-  KeyValuePair[] getGroupProperties() throws UaException;
-
-  /**
-   * Set the local value of the GroupProperties Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the GroupProperties Node.
-   * @throws UaException if an error occurs creating or getting the GroupProperties Node.
-   */
-  void setGroupProperties(KeyValuePair[] value) throws UaException;
-
-  /**
-   * Read the value of the GroupProperties Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link KeyValuePair[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  KeyValuePair[] readGroupProperties() throws UaException;
-
-  /**
-   * Write a new value for the GroupProperties Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link KeyValuePair[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeGroupProperties(KeyValuePair[] value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readGroupProperties}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends KeyValuePair[]> readGroupPropertiesAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeGroupProperties}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeGroupPropertiesAsync(KeyValuePair[] value);
-
-  /**
-   * Get the GroupProperties {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the GroupProperties {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getGroupPropertiesNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getGroupPropertiesNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getGroupPropertiesNode()}. */
   CompletableFuture<? extends PropertyType> getGroupPropertiesNodeAsync();
 
   /**
-   * Get the Status {@link PubSubStatusType} Node, or {@code null} if it does not exist.
+   * Reads the Value of the GroupProperties child from the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable KeyValuePair @Nullable [] readGroupProperties() throws UaException;
+
+  /**
+   * Writes the Value of the GroupProperties child to the server.
    *
-   * @return the Status {@link PubSubStatusType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeGroupProperties(@Nullable KeyValuePair @Nullable [] value) throws UaException;
+
+  /** Asynchronous form of {@link #readGroupProperties()}. */
+  CompletableFuture<? extends @Nullable KeyValuePair @Nullable []> readGroupPropertiesAsync();
+
+  /** Asynchronous form of {@link #writeGroupProperties}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeGroupPropertiesAsync(
+      @Nullable KeyValuePair @Nullable [] value);
+
+  /**
+   * Resolves the optional SecurityGroupId child, a PropertyType with DataType String.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyType getSecurityGroupIdNode() throws UaException;
+
+  /** Asynchronous form of {@link #getSecurityGroupIdNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getSecurityGroupIdNodeAsync();
+
+  /**
+   * Reads the Value of the SecurityGroupId child from the server.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable String readSecurityGroupId() throws UaException;
+
+  /**
+   * Writes the Value of the SecurityGroupId child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeSecurityGroupId(@Nullable String value) throws UaException;
+
+  /** Asynchronous form of {@link #readSecurityGroupId()}. */
+  CompletableFuture<? extends @Nullable String> readSecurityGroupIdAsync();
+
+  /** Asynchronous form of {@link #writeSecurityGroupId}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeSecurityGroupIdAsync(@Nullable String value);
+
+  /**
+   * Resolves the optional SecurityKeyServices child, a PropertyType with DataType
+   * EndpointDescription.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyType getSecurityKeyServicesNode() throws UaException;
+
+  /** Asynchronous form of {@link #getSecurityKeyServicesNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getSecurityKeyServicesNodeAsync();
+
+  /**
+   * Reads the Value of the SecurityKeyServices child from the server.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable EndpointDescription @Nullable [] readSecurityKeyServices() throws UaException;
+
+  /**
+   * Writes the Value of the SecurityKeyServices child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeSecurityKeyServices(@Nullable EndpointDescription @Nullable [] value)
+      throws UaException;
+
+  /** Asynchronous form of {@link #readSecurityKeyServices()}. */
+  CompletableFuture<? extends @Nullable EndpointDescription @Nullable []>
+      readSecurityKeyServicesAsync();
+
+  /**
+   * Asynchronous form of {@link #writeSecurityKeyServices}; completes with the operation status.
+   */
+  CompletableFuture<StatusCode> writeSecurityKeyServicesAsync(
+      @Nullable EndpointDescription @Nullable [] value);
+
+  /**
+   * Resolves the mandatory MaxNetworkMessageSize child, a PropertyType with DataType UInt32.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getMaxNetworkMessageSizeNode() throws UaException;
+
+  /** Asynchronous form of {@link #getMaxNetworkMessageSizeNode()}. */
+  CompletableFuture<? extends PropertyType> getMaxNetworkMessageSizeNodeAsync();
+
+  /**
+   * Reads the Value of the MaxNetworkMessageSize child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable UInteger readMaxNetworkMessageSize() throws UaException;
+
+  /**
+   * Writes the Value of the MaxNetworkMessageSize child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeMaxNetworkMessageSize(@Nullable UInteger value) throws UaException;
+
+  /** Asynchronous form of {@link #readMaxNetworkMessageSize()}. */
+  CompletableFuture<? extends @Nullable UInteger> readMaxNetworkMessageSizeAsync();
+
+  /**
+   * Asynchronous form of {@link #writeMaxNetworkMessageSize}; completes with the operation status.
+   */
+  CompletableFuture<StatusCode> writeMaxNetworkMessageSizeAsync(@Nullable UInteger value);
+
+  /**
+   * Resolves the mandatory Status child, a PubSubStatusType.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.10/#9.1.10.1">PubSubStatusType
+   *     documentation</a>
    */
   PubSubStatusType getStatusNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getStatusNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PubSubStatusType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getStatusNode()}. */
   CompletableFuture<? extends PubSubStatusType> getStatusNodeAsync();
 }

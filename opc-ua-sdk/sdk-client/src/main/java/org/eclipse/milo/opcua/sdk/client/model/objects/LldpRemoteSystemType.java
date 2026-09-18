@@ -1,18 +1,9 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
-import org.eclipse.milo.opcua.sdk.client.model.variables.BaseDataVariableType;
+import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ChassisIdSubtype;
@@ -20,1112 +11,550 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.PortIdSubtype;
 import org.eclipse.milo.opcua.stack.core.types.structured.LldpManagementAddressType;
 import org.eclipse.milo.opcua.stack.core.types.structured.LldpSystemCapabilitiesMap;
 import org.eclipse.milo.opcua.stack.core.types.structured.LldpTlvType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.5.6">https://reference.opcfoundation.org/v105/Core/docs/Part22/5.5.6</a>
+ * Client API for the LldpRemoteSystemType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.5.6">Model
+ *     documentation</a>
  */
 public interface LldpRemoteSystemType extends BaseObjectType {
-  /**
-   * Get the local value of the TimeMark Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the TimeMark Node.
-   * @throws UaException if an error occurs creating or getting the TimeMark Node.
-   */
-  UInteger getTimeMark() throws UaException;
-
-  /**
-   * Set the local value of the TimeMark Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the TimeMark Node.
-   * @throws UaException if an error occurs creating or getting the TimeMark Node.
-   */
-  void setTimeMark(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the TimeMark Node from the server and update the local value if the operation
-   * succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readTimeMark() throws UaException;
-
-  /**
-   * Write a new value for the TimeMark Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeTimeMark(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readTimeMark}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readTimeMarkAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeTimeMark}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeTimeMarkAsync(UInteger value);
-
-  /**
-   * Get the TimeMark {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the TimeMark {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getTimeMarkNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getTimeMarkNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getTimeMarkNodeAsync();
-
-  /**
-   * Get the local value of the RemoteIndex Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the RemoteIndex Node.
-   * @throws UaException if an error occurs creating or getting the RemoteIndex Node.
-   */
-  UInteger getRemoteIndex() throws UaException;
-
-  /**
-   * Set the local value of the RemoteIndex Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the RemoteIndex Node.
-   * @throws UaException if an error occurs creating or getting the RemoteIndex Node.
-   */
-  void setRemoteIndex(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the RemoteIndex Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readRemoteIndex() throws UaException;
-
-  /**
-   * Write a new value for the RemoteIndex Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeRemoteIndex(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readRemoteIndex}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readRemoteIndexAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeRemoteIndex}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeRemoteIndexAsync(UInteger value);
-
-  /**
-   * Get the RemoteIndex {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the RemoteIndex {@link BaseDataVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getRemoteIndexNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getRemoteIndexNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getRemoteIndexNodeAsync();
-
-  /**
-   * Get the local value of the ChassisIdSubtype Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ChassisIdSubtype Node.
-   * @throws UaException if an error occurs creating or getting the ChassisIdSubtype Node.
-   */
-  ChassisIdSubtype getChassisIdSubtype() throws UaException;
-
-  /**
-   * Set the local value of the ChassisIdSubtype Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ChassisIdSubtype Node.
-   * @throws UaException if an error occurs creating or getting the ChassisIdSubtype Node.
-   */
-  void setChassisIdSubtype(ChassisIdSubtype value) throws UaException;
-
-  /**
-   * Read the value of the ChassisIdSubtype Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link ChassisIdSubtype} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  ChassisIdSubtype readChassisIdSubtype() throws UaException;
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 19033L);
 
   /**
-   * Write a new value for the ChassisIdSubtype Node to the server and update the local value if the
-   * operation succeeds.
+   * Resolves the optional SystemName child, a BaseDataVariableType with DataType String.
    *
-   * @param value the {@link ChassisIdSubtype} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  void writeChassisIdSubtype(ChassisIdSubtype value) throws UaException;
+  @Nullable VariableNode getSystemNameNode() throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #readChassisIdSubtype}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends ChassisIdSubtype> readChassisIdSubtypeAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeChassisIdSubtype}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeChassisIdSubtypeAsync(ChassisIdSubtype value);
+  /** Asynchronous form of {@link #getSystemNameNode()}. */
+  CompletableFuture<? extends @Nullable VariableNode> getSystemNameNodeAsync();
 
   /**
-   * Get the ChassisIdSubtype {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
+   * Reads the Value of the SystemName child from the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ChassisIdSubtype {@link BaseDataVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  BaseDataVariableType getChassisIdSubtypeNode() throws UaException;
+  @Nullable String readSystemName() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getChassisIdSubtypeNode()}.
+   * Writes the Value of the SystemName child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends BaseDataVariableType> getChassisIdSubtypeNodeAsync();
+  void writeSystemName(@Nullable String value) throws UaException;
 
-  /**
-   * Get the local value of the ChassisId Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ChassisId Node.
-   * @throws UaException if an error occurs creating or getting the ChassisId Node.
-   */
-  String getChassisId() throws UaException;
+  /** Asynchronous form of {@link #readSystemName()}. */
+  CompletableFuture<? extends @Nullable String> readSystemNameAsync();
 
-  /**
-   * Set the local value of the ChassisId Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ChassisId Node.
-   * @throws UaException if an error occurs creating or getting the ChassisId Node.
-   */
-  void setChassisId(String value) throws UaException;
+  /** Asynchronous form of {@link #writeSystemName}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeSystemNameAsync(@Nullable String value);
 
   /**
-   * Read the value of the ChassisId Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the mandatory RemoteIndex child, a BaseDataVariableType with DataType UInt32.
    *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  String readChassisId() throws UaException;
+  VariableNode getRemoteIndexNode() throws UaException;
 
-  /**
-   * Write a new value for the ChassisId Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeChassisId(String value) throws UaException;
+  /** Asynchronous form of {@link #getRemoteIndexNode()}. */
+  CompletableFuture<? extends VariableNode> getRemoteIndexNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #readChassisId}.
+   * Reads the Value of the RemoteIndex child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends String> readChassisIdAsync();
+  @Nullable UInteger readRemoteIndex() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeChassisId}.
+   * Writes the Value of the RemoteIndex child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeChassisIdAsync(String value);
+  void writeRemoteIndex(@Nullable UInteger value) throws UaException;
 
-  /**
-   * Get the ChassisId {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ChassisId {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getChassisIdNode() throws UaException;
+  /** Asynchronous form of {@link #readRemoteIndex()}. */
+  CompletableFuture<? extends @Nullable UInteger> readRemoteIndexAsync();
 
-  /**
-   * Asynchronous implementation of {@link #getChassisIdNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getChassisIdNodeAsync();
+  /** Asynchronous form of {@link #writeRemoteIndex}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeRemoteIndexAsync(@Nullable UInteger value);
 
   /**
-   * Get the local value of the PortIdSubtype Node.
+   * Resolves the mandatory PortIdSubtype child, a BaseDataVariableType with DataType PortIdSubtype.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the PortIdSubtype Node.
-   * @throws UaException if an error occurs creating or getting the PortIdSubtype Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  PortIdSubtype getPortIdSubtype() throws UaException;
+  VariableNode getPortIdSubtypeNode() throws UaException;
 
-  /**
-   * Set the local value of the PortIdSubtype Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the PortIdSubtype Node.
-   * @throws UaException if an error occurs creating or getting the PortIdSubtype Node.
-   */
-  void setPortIdSubtype(PortIdSubtype value) throws UaException;
+  /** Asynchronous form of {@link #getPortIdSubtypeNode()}. */
+  CompletableFuture<? extends VariableNode> getPortIdSubtypeNodeAsync();
 
   /**
-   * Read the value of the PortIdSubtype Node from the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the PortIdSubtype child from the server.
    *
-   * @return the {@link PortIdSubtype} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  PortIdSubtype readPortIdSubtype() throws UaException;
+  @Nullable PortIdSubtype readPortIdSubtype() throws UaException;
 
   /**
-   * Write a new value for the PortIdSubtype Node to the server and update the local value if the
-   * operation succeeds.
+   * Writes the Value of the PortIdSubtype child to the server.
    *
-   * @param value the {@link PortIdSubtype} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writePortIdSubtype(PortIdSubtype value) throws UaException;
+  void writePortIdSubtype(@Nullable PortIdSubtype value) throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #readPortIdSubtype}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends PortIdSubtype> readPortIdSubtypeAsync();
+  /** Asynchronous form of {@link #readPortIdSubtype()}. */
+  CompletableFuture<? extends @Nullable PortIdSubtype> readPortIdSubtypeAsync();
 
-  /**
-   * An asynchronous implementation of {@link #writePortIdSubtype}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writePortIdSubtypeAsync(PortIdSubtype value);
+  /** Asynchronous form of {@link #writePortIdSubtype}; completes with the operation status. */
+  CompletableFuture<StatusCode> writePortIdSubtypeAsync(@Nullable PortIdSubtype value);
 
   /**
-   * Get the PortIdSubtype {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * Resolves the optional RemoteChanges child, a BaseDataVariableType with DataType Boolean.
    *
-   * @return the PortIdSubtype {@link BaseDataVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  BaseDataVariableType getPortIdSubtypeNode() throws UaException;
+  @Nullable VariableNode getRemoteChangesNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getPortIdSubtypeNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getPortIdSubtypeNodeAsync();
+  /** Asynchronous form of {@link #getRemoteChangesNode()}. */
+  CompletableFuture<? extends @Nullable VariableNode> getRemoteChangesNodeAsync();
 
   /**
-   * Get the local value of the PortId Node.
+   * Reads the Value of the RemoteChanges child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the PortId Node.
-   * @throws UaException if an error occurs creating or getting the PortId Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  String getPortId() throws UaException;
+  @Nullable Boolean readRemoteChanges() throws UaException;
 
   /**
-   * Set the local value of the PortId Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
+   * Writes the Value of the RemoteChanges child to the server.
    *
-   * @param value the local value to set for the PortId Node.
-   * @throws UaException if an error occurs creating or getting the PortId Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setPortId(String value) throws UaException;
+  void writeRemoteChanges(@Nullable Boolean value) throws UaException;
 
-  /**
-   * Read the value of the PortId Node from the server and update the local value if the operation
-   * succeeds.
-   *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String readPortId() throws UaException;
+  /** Asynchronous form of {@link #readRemoteChanges()}. */
+  CompletableFuture<? extends @Nullable Boolean> readRemoteChangesAsync();
 
-  /**
-   * Write a new value for the PortId Node to the server and update the local value if the operation
-   * succeeds.
-   *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writePortId(String value) throws UaException;
+  /** Asynchronous form of {@link #writeRemoteChanges}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeRemoteChangesAsync(@Nullable Boolean value);
 
   /**
-   * An asynchronous implementation of {@link #readPortId}.
+   * Resolves the optional PortDescription child, a BaseDataVariableType with DataType String.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  CompletableFuture<? extends String> readPortIdAsync();
+  @Nullable VariableNode getPortDescriptionNode() throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #writePortId}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writePortIdAsync(String value);
+  /** Asynchronous form of {@link #getPortDescriptionNode()}. */
+  CompletableFuture<? extends @Nullable VariableNode> getPortDescriptionNodeAsync();
 
   /**
-   * Get the PortId {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
+   * Reads the Value of the PortDescription child from the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the PortId {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  BaseDataVariableType getPortIdNode() throws UaException;
+  @Nullable String readPortDescription() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getPortIdNode()}.
+   * Writes the Value of the PortDescription child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends BaseDataVariableType> getPortIdNodeAsync();
+  void writePortDescription(@Nullable String value) throws UaException;
 
-  /**
-   * Get the local value of the PortDescription Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the PortDescription Node.
-   * @throws UaException if an error occurs creating or getting the PortDescription Node.
-   */
-  String getPortDescription() throws UaException;
+  /** Asynchronous form of {@link #readPortDescription()}. */
+  CompletableFuture<? extends @Nullable String> readPortDescriptionAsync();
 
-  /**
-   * Set the local value of the PortDescription Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the PortDescription Node.
-   * @throws UaException if an error occurs creating or getting the PortDescription Node.
-   */
-  void setPortDescription(String value) throws UaException;
+  /** Asynchronous form of {@link #writePortDescription}; completes with the operation status. */
+  CompletableFuture<StatusCode> writePortDescriptionAsync(@Nullable String value);
 
   /**
-   * Read the value of the PortDescription Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the mandatory ChassisIdSubtype child, a BaseDataVariableType with DataType
+   * ChassisIdSubtype.
    *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  String readPortDescription() throws UaException;
+  VariableNode getChassisIdSubtypeNode() throws UaException;
 
-  /**
-   * Write a new value for the PortDescription Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writePortDescription(String value) throws UaException;
+  /** Asynchronous form of {@link #getChassisIdSubtypeNode()}. */
+  CompletableFuture<? extends VariableNode> getChassisIdSubtypeNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #readPortDescription}.
+   * Reads the Value of the ChassisIdSubtype child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends String> readPortDescriptionAsync();
+  @Nullable ChassisIdSubtype readChassisIdSubtype() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writePortDescription}.
+   * Writes the Value of the ChassisIdSubtype child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writePortDescriptionAsync(String value);
+  void writeChassisIdSubtype(@Nullable ChassisIdSubtype value) throws UaException;
 
-  /**
-   * Get the PortDescription {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the PortDescription {@link BaseDataVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getPortDescriptionNode() throws UaException;
+  /** Asynchronous form of {@link #readChassisIdSubtype()}. */
+  CompletableFuture<? extends @Nullable ChassisIdSubtype> readChassisIdSubtypeAsync();
 
-  /**
-   * Asynchronous implementation of {@link #getPortDescriptionNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getPortDescriptionNodeAsync();
+  /** Asynchronous form of {@link #writeChassisIdSubtype}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeChassisIdSubtypeAsync(@Nullable ChassisIdSubtype value);
 
   /**
-   * Get the local value of the SystemName Node.
+   * Resolves the optional RemoteUnknownTlv child, a BaseDataVariableType with DataType LldpTlvType.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SystemName Node.
-   * @throws UaException if an error occurs creating or getting the SystemName Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  String getSystemName() throws UaException;
+  @Nullable VariableNode getRemoteUnknownTlvNode() throws UaException;
 
-  /**
-   * Set the local value of the SystemName Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SystemName Node.
-   * @throws UaException if an error occurs creating or getting the SystemName Node.
-   */
-  void setSystemName(String value) throws UaException;
+  /** Asynchronous form of {@link #getRemoteUnknownTlvNode()}. */
+  CompletableFuture<? extends @Nullable VariableNode> getRemoteUnknownTlvNodeAsync();
 
   /**
-   * Read the value of the SystemName Node from the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the RemoteUnknownTlv child from the server.
    *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  String readSystemName() throws UaException;
+  @Nullable LldpTlvType @Nullable [] readRemoteUnknownTlv() throws UaException;
 
   /**
-   * Write a new value for the SystemName Node to the server and update the local value if the
-   * operation succeeds.
+   * Writes the Value of the RemoteUnknownTlv child to the server.
    *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeSystemName(String value) throws UaException;
+  void writeRemoteUnknownTlv(@Nullable LldpTlvType @Nullable [] value) throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #readSystemName}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String> readSystemNameAsync();
+  /** Asynchronous form of {@link #readRemoteUnknownTlv()}. */
+  CompletableFuture<? extends @Nullable LldpTlvType @Nullable []> readRemoteUnknownTlvAsync();
 
-  /**
-   * An asynchronous implementation of {@link #writeSystemName}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeSystemNameAsync(String value);
+  /** Asynchronous form of {@link #writeRemoteUnknownTlv}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeRemoteUnknownTlvAsync(
+      @Nullable LldpTlvType @Nullable [] value);
 
   /**
-   * Get the SystemName {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
+   * Resolves the optional ManagementAddress child, a BaseDataVariableType with DataType
+   * LldpManagementAddressType.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SystemName {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  BaseDataVariableType getSystemNameNode() throws UaException;
+  @Nullable VariableNode getManagementAddressNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getSystemNameNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getSystemNameNodeAsync();
+  /** Asynchronous form of {@link #getManagementAddressNode()}. */
+  CompletableFuture<? extends @Nullable VariableNode> getManagementAddressNodeAsync();
 
   /**
-   * Get the local value of the SystemDescription Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
+   * Reads the Value of the ManagementAddress child from the server.
    *
-   * @return the local value of the SystemDescription Node.
-   * @throws UaException if an error occurs creating or getting the SystemDescription Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  String getSystemDescription() throws UaException;
+  @Nullable LldpManagementAddressType @Nullable [] readManagementAddress() throws UaException;
 
   /**
-   * Set the local value of the SystemDescription Node.
+   * Writes the Value of the ManagementAddress child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SystemDescription Node.
-   * @throws UaException if an error occurs creating or getting the SystemDescription Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setSystemDescription(String value) throws UaException;
+  void writeManagementAddress(@Nullable LldpManagementAddressType @Nullable [] value)
+      throws UaException;
 
-  /**
-   * Read the value of the SystemDescription Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String readSystemDescription() throws UaException;
+  /** Asynchronous form of {@link #readManagementAddress()}. */
+  CompletableFuture<? extends @Nullable LldpManagementAddressType @Nullable []>
+      readManagementAddressAsync();
 
-  /**
-   * Write a new value for the SystemDescription Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeSystemDescription(String value) throws UaException;
+  /** Asynchronous form of {@link #writeManagementAddress}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeManagementAddressAsync(
+      @Nullable LldpManagementAddressType @Nullable [] value);
 
   /**
-   * An asynchronous implementation of {@link #readSystemDescription}.
+   * Resolves the optional SystemDescription child, a BaseDataVariableType with DataType String.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  CompletableFuture<? extends String> readSystemDescriptionAsync();
+  @Nullable VariableNode getSystemDescriptionNode() throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #writeSystemDescription}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeSystemDescriptionAsync(String value);
+  /** Asynchronous form of {@link #getSystemDescriptionNode()}. */
+  CompletableFuture<? extends @Nullable VariableNode> getSystemDescriptionNodeAsync();
 
   /**
-   * Get the SystemDescription {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
+   * Reads the Value of the SystemDescription child from the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SystemDescription {@link BaseDataVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  BaseDataVariableType getSystemDescriptionNode() throws UaException;
+  @Nullable String readSystemDescription() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getSystemDescriptionNode()}.
+   * Writes the Value of the SystemDescription child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends BaseDataVariableType> getSystemDescriptionNodeAsync();
+  void writeSystemDescription(@Nullable String value) throws UaException;
 
-  /**
-   * Get the local value of the SystemCapabilitiesSupported Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SystemCapabilitiesSupported Node.
-   * @throws UaException if an error occurs creating or getting the SystemCapabilitiesSupported
-   *     Node.
-   */
-  LldpSystemCapabilitiesMap getSystemCapabilitiesSupported() throws UaException;
+  /** Asynchronous form of {@link #readSystemDescription()}. */
+  CompletableFuture<? extends @Nullable String> readSystemDescriptionAsync();
 
-  /**
-   * Set the local value of the SystemCapabilitiesSupported Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SystemCapabilitiesSupported Node.
-   * @throws UaException if an error occurs creating or getting the SystemCapabilitiesSupported
-   *     Node.
-   */
-  void setSystemCapabilitiesSupported(LldpSystemCapabilitiesMap value) throws UaException;
+  /** Asynchronous form of {@link #writeSystemDescription}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeSystemDescriptionAsync(@Nullable String value);
 
   /**
-   * Read the value of the SystemCapabilitiesSupported Node from the server and update the local
-   * value if the operation succeeds.
+   * Resolves the optional RemoteTooManyNeighbors child, a BaseDataVariableType with DataType
+   * Boolean.
    *
-   * @return the {@link LldpSystemCapabilitiesMap} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  LldpSystemCapabilitiesMap readSystemCapabilitiesSupported() throws UaException;
+  @Nullable VariableNode getRemoteTooManyNeighborsNode() throws UaException;
 
-  /**
-   * Write a new value for the SystemCapabilitiesSupported Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link LldpSystemCapabilitiesMap} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeSystemCapabilitiesSupported(LldpSystemCapabilitiesMap value) throws UaException;
+  /** Asynchronous form of {@link #getRemoteTooManyNeighborsNode()}. */
+  CompletableFuture<? extends @Nullable VariableNode> getRemoteTooManyNeighborsNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #readSystemCapabilitiesSupported}.
+   * Reads the Value of the RemoteTooManyNeighbors child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends LldpSystemCapabilitiesMap> readSystemCapabilitiesSupportedAsync();
+  @Nullable Boolean readRemoteTooManyNeighbors() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeSystemCapabilitiesSupported}.
+   * Writes the Value of the RemoteTooManyNeighbors child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeSystemCapabilitiesSupportedAsync(
-      LldpSystemCapabilitiesMap value);
+  void writeRemoteTooManyNeighbors(@Nullable Boolean value) throws UaException;
 
-  /**
-   * Get the SystemCapabilitiesSupported {@link BaseDataVariableType} Node, or {@code null} if it
-   * does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SystemCapabilitiesSupported {@link BaseDataVariableType} Node, or {@code null} if
-   *     it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getSystemCapabilitiesSupportedNode() throws UaException;
+  /** Asynchronous form of {@link #readRemoteTooManyNeighbors()}. */
+  CompletableFuture<? extends @Nullable Boolean> readRemoteTooManyNeighborsAsync();
 
   /**
-   * Asynchronous implementation of {@link #getSystemCapabilitiesSupportedNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * Asynchronous form of {@link #writeRemoteTooManyNeighbors}; completes with the operation status.
    */
-  CompletableFuture<? extends BaseDataVariableType> getSystemCapabilitiesSupportedNodeAsync();
+  CompletableFuture<StatusCode> writeRemoteTooManyNeighborsAsync(@Nullable Boolean value);
 
   /**
-   * Get the local value of the SystemCapabilitiesEnabled Node.
+   * Resolves the optional SystemCapabilitiesEnabled child, a BaseDataVariableType with DataType
+   * LldpSystemCapabilitiesMap.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SystemCapabilitiesEnabled Node.
-   * @throws UaException if an error occurs creating or getting the SystemCapabilitiesEnabled Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  LldpSystemCapabilitiesMap getSystemCapabilitiesEnabled() throws UaException;
+  @Nullable VariableNode getSystemCapabilitiesEnabledNode() throws UaException;
 
-  /**
-   * Set the local value of the SystemCapabilitiesEnabled Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SystemCapabilitiesEnabled Node.
-   * @throws UaException if an error occurs creating or getting the SystemCapabilitiesEnabled Node.
-   */
-  void setSystemCapabilitiesEnabled(LldpSystemCapabilitiesMap value) throws UaException;
+  /** Asynchronous form of {@link #getSystemCapabilitiesEnabledNode()}. */
+  CompletableFuture<? extends @Nullable VariableNode> getSystemCapabilitiesEnabledNodeAsync();
 
   /**
-   * Read the value of the SystemCapabilitiesEnabled Node from the server and update the local value
-   * if the operation succeeds.
+   * Reads the Value of the SystemCapabilitiesEnabled child from the server.
    *
-   * @return the {@link LldpSystemCapabilitiesMap} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  LldpSystemCapabilitiesMap readSystemCapabilitiesEnabled() throws UaException;
+  @Nullable LldpSystemCapabilitiesMap readSystemCapabilitiesEnabled() throws UaException;
 
   /**
-   * Write a new value for the SystemCapabilitiesEnabled Node to the server and update the local
-   * value if the operation succeeds.
+   * Writes the Value of the SystemCapabilitiesEnabled child to the server.
    *
-   * @param value the {@link LldpSystemCapabilitiesMap} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeSystemCapabilitiesEnabled(LldpSystemCapabilitiesMap value) throws UaException;
+  void writeSystemCapabilitiesEnabled(@Nullable LldpSystemCapabilitiesMap value) throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #readSystemCapabilitiesEnabled}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends LldpSystemCapabilitiesMap> readSystemCapabilitiesEnabledAsync();
+  /** Asynchronous form of {@link #readSystemCapabilitiesEnabled()}. */
+  CompletableFuture<? extends @Nullable LldpSystemCapabilitiesMap>
+      readSystemCapabilitiesEnabledAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeSystemCapabilitiesEnabled}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * Asynchronous form of {@link #writeSystemCapabilitiesEnabled}; completes with the operation
+   * status.
    */
   CompletableFuture<StatusCode> writeSystemCapabilitiesEnabledAsync(
-      LldpSystemCapabilitiesMap value);
+      @Nullable LldpSystemCapabilitiesMap value);
 
   /**
-   * Get the SystemCapabilitiesEnabled {@link BaseDataVariableType} Node, or {@code null} if it does
-   * not exist.
+   * Resolves the optional SystemCapabilitiesSupported child, a BaseDataVariableType with DataType
+   * LldpSystemCapabilitiesMap.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SystemCapabilitiesEnabled {@link BaseDataVariableType} Node, or {@code null} if it
-   *     does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  BaseDataVariableType getSystemCapabilitiesEnabledNode() throws UaException;
+  @Nullable VariableNode getSystemCapabilitiesSupportedNode() throws UaException;
+
+  /** Asynchronous form of {@link #getSystemCapabilitiesSupportedNode()}. */
+  CompletableFuture<? extends @Nullable VariableNode> getSystemCapabilitiesSupportedNodeAsync();
 
   /**
-   * Asynchronous implementation of {@link #getSystemCapabilitiesEnabledNode()}.
+   * Reads the Value of the SystemCapabilitiesSupported child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends BaseDataVariableType> getSystemCapabilitiesEnabledNodeAsync();
+  @Nullable LldpSystemCapabilitiesMap readSystemCapabilitiesSupported() throws UaException;
 
   /**
-   * Get the local value of the RemoteChanges Node.
+   * Writes the Value of the SystemCapabilitiesSupported child to the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the RemoteChanges Node.
-   * @throws UaException if an error occurs creating or getting the RemoteChanges Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  Boolean getRemoteChanges() throws UaException;
+  void writeSystemCapabilitiesSupported(@Nullable LldpSystemCapabilitiesMap value)
+      throws UaException;
+
+  /** Asynchronous form of {@link #readSystemCapabilitiesSupported()}. */
+  CompletableFuture<? extends @Nullable LldpSystemCapabilitiesMap>
+      readSystemCapabilitiesSupportedAsync();
 
   /**
-   * Set the local value of the RemoteChanges Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the RemoteChanges Node.
-   * @throws UaException if an error occurs creating or getting the RemoteChanges Node.
+   * Asynchronous form of {@link #writeSystemCapabilitiesSupported}; completes with the operation
+   * status.
    */
-  void setRemoteChanges(Boolean value) throws UaException;
+  CompletableFuture<StatusCode> writeSystemCapabilitiesSupportedAsync(
+      @Nullable LldpSystemCapabilitiesMap value);
 
   /**
-   * Read the value of the RemoteChanges Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the mandatory PortId child, a BaseDataVariableType with DataType String.
    *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  Boolean readRemoteChanges() throws UaException;
+  VariableNode getPortIdNode() throws UaException;
+
+  /** Asynchronous form of {@link #getPortIdNode()}. */
+  CompletableFuture<? extends VariableNode> getPortIdNodeAsync();
 
   /**
-   * Write a new value for the RemoteChanges Node to the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the PortId child from the server.
    *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeRemoteChanges(Boolean value) throws UaException;
+  @Nullable String readPortId() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readRemoteChanges}.
+   * Writes the Value of the PortId child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends Boolean> readRemoteChangesAsync();
+  void writePortId(@Nullable String value) throws UaException;
+
+  /** Asynchronous form of {@link #readPortId()}. */
+  CompletableFuture<? extends @Nullable String> readPortIdAsync();
+
+  /** Asynchronous form of {@link #writePortId}; completes with the operation status. */
+  CompletableFuture<StatusCode> writePortIdAsync(@Nullable String value);
 
   /**
-   * An asynchronous implementation of {@link #writeRemoteChanges}.
+   * Resolves the mandatory TimeMark child, a BaseDataVariableType with DataType UInt32.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  CompletableFuture<StatusCode> writeRemoteChangesAsync(Boolean value);
+  VariableNode getTimeMarkNode() throws UaException;
+
+  /** Asynchronous form of {@link #getTimeMarkNode()}. */
+  CompletableFuture<? extends VariableNode> getTimeMarkNodeAsync();
 
   /**
-   * Get the RemoteChanges {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
+   * Reads the Value of the TimeMark child from the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the RemoteChanges {@link BaseDataVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  BaseDataVariableType getRemoteChangesNode() throws UaException;
+  @Nullable UInteger readTimeMark() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getRemoteChangesNode()}.
+   * Writes the Value of the TimeMark child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends BaseDataVariableType> getRemoteChangesNodeAsync();
+  void writeTimeMark(@Nullable UInteger value) throws UaException;
+
+  /** Asynchronous form of {@link #readTimeMark()}. */
+  CompletableFuture<? extends @Nullable UInteger> readTimeMarkAsync();
+
+  /** Asynchronous form of {@link #writeTimeMark}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeTimeMarkAsync(@Nullable UInteger value);
 
   /**
-   * Get the local value of the RemoteTooManyNeighbors Node.
+   * Resolves the mandatory ChassisId child, a BaseDataVariableType with DataType String.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the RemoteTooManyNeighbors Node.
-   * @throws UaException if an error occurs creating or getting the RemoteTooManyNeighbors Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  Boolean getRemoteTooManyNeighbors() throws UaException;
+  VariableNode getChassisIdNode() throws UaException;
+
+  /** Asynchronous form of {@link #getChassisIdNode()}. */
+  CompletableFuture<? extends VariableNode> getChassisIdNodeAsync();
 
   /**
-   * Set the local value of the RemoteTooManyNeighbors Node.
+   * Reads the Value of the ChassisId child from the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the RemoteTooManyNeighbors Node.
-   * @throws UaException if an error occurs creating or getting the RemoteTooManyNeighbors Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setRemoteTooManyNeighbors(Boolean value) throws UaException;
+  @Nullable String readChassisId() throws UaException;
 
   /**
-   * Read the value of the RemoteTooManyNeighbors Node from the server and update the local value if
-   * the operation succeeds.
+   * Writes the Value of the ChassisId child to the server.
    *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  Boolean readRemoteTooManyNeighbors() throws UaException;
+  void writeChassisId(@Nullable String value) throws UaException;
 
-  /**
-   * Write a new value for the RemoteTooManyNeighbors Node to the server and update the local value
-   * if the operation succeeds.
-   *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeRemoteTooManyNeighbors(Boolean value) throws UaException;
+  /** Asynchronous form of {@link #readChassisId()}. */
+  CompletableFuture<? extends @Nullable String> readChassisIdAsync();
 
-  /**
-   * An asynchronous implementation of {@link #readRemoteTooManyNeighbors}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Boolean> readRemoteTooManyNeighborsAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeRemoteTooManyNeighbors}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeRemoteTooManyNeighborsAsync(Boolean value);
-
-  /**
-   * Get the RemoteTooManyNeighbors {@link BaseDataVariableType} Node, or {@code null} if it does
-   * not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the RemoteTooManyNeighbors {@link BaseDataVariableType} Node, or {@code null} if it
-   *     does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getRemoteTooManyNeighborsNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getRemoteTooManyNeighborsNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getRemoteTooManyNeighborsNodeAsync();
-
-  /**
-   * Get the local value of the ManagementAddress Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ManagementAddress Node.
-   * @throws UaException if an error occurs creating or getting the ManagementAddress Node.
-   */
-  LldpManagementAddressType[] getManagementAddress() throws UaException;
-
-  /**
-   * Set the local value of the ManagementAddress Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ManagementAddress Node.
-   * @throws UaException if an error occurs creating or getting the ManagementAddress Node.
-   */
-  void setManagementAddress(LldpManagementAddressType[] value) throws UaException;
-
-  /**
-   * Read the value of the ManagementAddress Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link LldpManagementAddressType[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  LldpManagementAddressType[] readManagementAddress() throws UaException;
-
-  /**
-   * Write a new value for the ManagementAddress Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link LldpManagementAddressType[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeManagementAddress(LldpManagementAddressType[] value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readManagementAddress}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends LldpManagementAddressType[]> readManagementAddressAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeManagementAddress}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeManagementAddressAsync(LldpManagementAddressType[] value);
-
-  /**
-   * Get the ManagementAddress {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ManagementAddress {@link BaseDataVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getManagementAddressNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getManagementAddressNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getManagementAddressNodeAsync();
-
-  /**
-   * Get the local value of the RemoteUnknownTlv Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the RemoteUnknownTlv Node.
-   * @throws UaException if an error occurs creating or getting the RemoteUnknownTlv Node.
-   */
-  LldpTlvType[] getRemoteUnknownTlv() throws UaException;
-
-  /**
-   * Set the local value of the RemoteUnknownTlv Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the RemoteUnknownTlv Node.
-   * @throws UaException if an error occurs creating or getting the RemoteUnknownTlv Node.
-   */
-  void setRemoteUnknownTlv(LldpTlvType[] value) throws UaException;
-
-  /**
-   * Read the value of the RemoteUnknownTlv Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link LldpTlvType[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  LldpTlvType[] readRemoteUnknownTlv() throws UaException;
-
-  /**
-   * Write a new value for the RemoteUnknownTlv Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link LldpTlvType[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeRemoteUnknownTlv(LldpTlvType[] value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readRemoteUnknownTlv}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends LldpTlvType[]> readRemoteUnknownTlvAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeRemoteUnknownTlv}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeRemoteUnknownTlvAsync(LldpTlvType[] value);
-
-  /**
-   * Get the RemoteUnknownTlv {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the RemoteUnknownTlv {@link BaseDataVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getRemoteUnknownTlvNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getRemoteUnknownTlvNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getRemoteUnknownTlvNodeAsync();
+  /** Asynchronous form of {@link #writeChassisId}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeChassisIdAsync(@Nullable String value);
 }

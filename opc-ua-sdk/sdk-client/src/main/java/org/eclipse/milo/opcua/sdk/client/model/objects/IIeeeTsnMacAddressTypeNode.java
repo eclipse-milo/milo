@@ -1,36 +1,29 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
-import org.eclipse.milo.opcua.sdk.client.model.variables.BaseDataVariableTypeNode;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
+import org.eclipse.milo.opcua.sdk.client.nodes.UaVariableNode;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link IIeeeTsnMacAddressType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.13">Model
+ *     documentation</a>
+ */
 public class IIeeeTsnMacAddressTypeNode extends BaseInterfaceTypeNode
     implements IIeeeTsnMacAddressType {
   public IIeeeTsnMacAddressTypeNode(
@@ -39,12 +32,12 @@ public class IIeeeTsnMacAddressTypeNode extends BaseInterfaceTypeNode
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         client,
@@ -62,151 +55,146 @@ public class IIeeeTsnMacAddressTypeNode extends BaseInterfaceTypeNode
   }
 
   @Override
-  public UByte[] getDestinationAddress() throws UaException {
-    BaseDataVariableTypeNode node = getDestinationAddressNode();
-    return (UByte[]) node.getValue().getValue().getValue();
+  public @Nullable UaVariableNode getSourceAddressNode() throws UaException {
+    return ClientNodeSupport.await(getSourceAddressNodeAsync());
   }
 
   @Override
-  public void setDestinationAddress(UByte[] value) throws UaException {
-    BaseDataVariableTypeNode node = getDestinationAddressNode();
-    node.setValue(new Variant(value));
+  public CompletableFuture<? extends @Nullable UaVariableNode> getSourceAddressNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "SourceAddress",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
   }
 
   @Override
-  public UByte[] readDestinationAddress() throws UaException {
-    try {
-      return readDestinationAddressAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public UByte @Nullable [] readSourceAddress() throws UaException {
+    return ClientNodeSupport.await(readSourceAddressAsync());
   }
 
   @Override
-  public void writeDestinationAddress(UByte[] value) throws UaException {
-    try {
-      StatusCode statusCode = writeDestinationAddressAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public void writeSourceAddress(UByte @Nullable [] value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeSourceAddressAsync(value)),
+        "http://opcfoundation.org/UA/}SourceAddress");
   }
 
   @Override
-  public CompletableFuture<? extends UByte[]> readDestinationAddressAsync() {
-    return getDestinationAddressNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (UByte[]) v.getValue().getValue());
+  public CompletableFuture<? extends UByte @Nullable []> readSourceAddressAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getSourceAddressNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}SourceAddress",
+                            false,
+                            UByte.class,
+                            1,
+                            null)),
+                v -> CompletableFuture.completedFuture((UByte @Nullable []) v)));
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeDestinationAddressAsync(UByte[] destinationAddress) {
-    DataValue value = DataValue.valueOnly(new Variant(destinationAddress));
-    return getDestinationAddressNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<StatusCode> writeSourceAddressAsync(UByte @Nullable [] value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getSourceAddressNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}SourceAddress",
+                        value,
+                        UByte.class,
+                        1,
+                        null)));
   }
 
   @Override
-  public BaseDataVariableTypeNode getDestinationAddressNode() throws UaException {
-    try {
-      return getDestinationAddressNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public UaVariableNode getDestinationAddressNode() throws UaException {
+    return ClientNodeSupport.await(getDestinationAddressNodeAsync());
   }
 
   @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getDestinationAddressNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "DestinationAddress",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
+  public CompletableFuture<? extends UaVariableNode> getDestinationAddressNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "DestinationAddress",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
   }
 
   @Override
-  public UByte[] getSourceAddress() throws UaException {
-    BaseDataVariableTypeNode node = getSourceAddressNode();
-    return (UByte[]) node.getValue().getValue().getValue();
+  public UByte @Nullable [] readDestinationAddress() throws UaException {
+    return ClientNodeSupport.await(readDestinationAddressAsync());
   }
 
   @Override
-  public void setSourceAddress(UByte[] value) throws UaException {
-    BaseDataVariableTypeNode node = getSourceAddressNode();
-    node.setValue(new Variant(value));
+  public void writeDestinationAddress(UByte @Nullable [] value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeDestinationAddressAsync(value)),
+        "http://opcfoundation.org/UA/}DestinationAddress");
   }
 
   @Override
-  public UByte[] readSourceAddress() throws UaException {
-    try {
-      return readSourceAddressAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends UByte @Nullable []> readDestinationAddressAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getDestinationAddressNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}DestinationAddress",
+                            true,
+                            UByte.class,
+                            1,
+                            null)),
+                v -> CompletableFuture.completedFuture((UByte @Nullable []) v)));
   }
 
   @Override
-  public void writeSourceAddress(UByte[] value) throws UaException {
-    try {
-      StatusCode statusCode = writeSourceAddressAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends UByte[]> readSourceAddressAsync() {
-    return getSourceAddressNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (UByte[]) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeSourceAddressAsync(UByte[] sourceAddress) {
-    DataValue value = DataValue.valueOnly(new Variant(sourceAddress));
-    return getSourceAddressNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getSourceAddressNode() throws UaException {
-    try {
-      return getSourceAddressNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getSourceAddressNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "SourceAddress", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
+  public CompletableFuture<StatusCode> writeDestinationAddressAsync(UByte @Nullable [] value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getDestinationAddressNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}DestinationAddress",
+                        value,
+                        UByte.class,
+                        1,
+                        null)));
   }
 }

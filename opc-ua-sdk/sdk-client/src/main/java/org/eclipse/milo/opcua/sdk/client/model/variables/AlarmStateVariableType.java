@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.variables;
 
 import java.util.concurrent.CompletableFuture;
@@ -17,493 +7,283 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.eclipse.milo.opcua.stack.core.types.structured.AlarmMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.ContentFilter;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/8.2">https://reference.opcfoundation.org/v105/Core/docs/Part9/8.2</a>
+ * Client API for the AlarmStateVariableType VariableType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/8.2">Model
+ *     documentation</a>
  */
 public interface AlarmStateVariableType extends BaseDataVariableType {
-  QualifiedProperty<UShort> HIGHEST_ACTIVE_SEVERITY =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "HighestActiveSeverity",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-          -1,
-          UShort.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 32244L);
 
-  QualifiedProperty<UShort> HIGHEST_UNACK_SEVERITY =
+  QualifiedProperty<UInteger> ActiveCount_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "HighestUnackSeverity",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-          -1,
-          UShort.class);
-
-  QualifiedProperty<UInteger> ACTIVE_COUNT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "ActiveCount",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
           -1,
           UInteger.class);
 
-  QualifiedProperty<UInteger> UNACKNOWLEDGED_COUNT =
+  QualifiedProperty<UInteger> UnconfirmedCount_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "UnacknowledgedCount",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
-
-  QualifiedProperty<UInteger> UNCONFIRMED_COUNT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "UnconfirmedCount",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
           -1,
           UInteger.class);
 
-  QualifiedProperty<ContentFilter> FILTER =
+  QualifiedProperty<UInteger> UnacknowledgedCount_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
+          "UnacknowledgedCount",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+          -1,
+          UInteger.class);
+
+  QualifiedProperty<UShort> HighestUnackSeverity_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "HighestUnackSeverity",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 5L),
+          -1,
+          UShort.class);
+
+  QualifiedProperty<UShort> HighestActiveSeverity_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "HighestActiveSeverity",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 5L),
+          -1,
+          UShort.class);
+
+  QualifiedProperty<ContentFilter> Filter_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
           "Filter",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=586"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 586L),
           -1,
           ContentFilter.class);
 
   /**
-   * Get the local value of the HighestActiveSeverity Node.
+   * Resolves the mandatory ActiveCount child, a PropertyType with DataType UInt32.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the HighestActiveSeverity Node.
-   * @throws UaException if an error occurs creating or getting the HighestActiveSeverity Node.
-   */
-  UShort getHighestActiveSeverity() throws UaException;
-
-  /**
-   * Set the local value of the HighestActiveSeverity Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the HighestActiveSeverity Node.
-   * @throws UaException if an error occurs creating or getting the HighestActiveSeverity Node.
-   */
-  void setHighestActiveSeverity(UShort value) throws UaException;
-
-  /**
-   * Read the value of the HighestActiveSeverity Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link UShort} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UShort readHighestActiveSeverity() throws UaException;
-
-  /**
-   * Write a new value for the HighestActiveSeverity Node to the server and update the local value
-   * if the operation succeeds.
-   *
-   * @param value the {@link UShort} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeHighestActiveSeverity(UShort value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readHighestActiveSeverity}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UShort> readHighestActiveSeverityAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeHighestActiveSeverity}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeHighestActiveSeverityAsync(UShort value);
-
-  /**
-   * Get the HighestActiveSeverity {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the HighestActiveSeverity {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getHighestActiveSeverityNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getHighestActiveSeverityNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getHighestActiveSeverityNodeAsync();
-
-  /**
-   * Get the local value of the HighestUnackSeverity Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the HighestUnackSeverity Node.
-   * @throws UaException if an error occurs creating or getting the HighestUnackSeverity Node.
-   */
-  UShort getHighestUnackSeverity() throws UaException;
-
-  /**
-   * Set the local value of the HighestUnackSeverity Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the HighestUnackSeverity Node.
-   * @throws UaException if an error occurs creating or getting the HighestUnackSeverity Node.
-   */
-  void setHighestUnackSeverity(UShort value) throws UaException;
-
-  /**
-   * Read the value of the HighestUnackSeverity Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link UShort} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UShort readHighestUnackSeverity() throws UaException;
-
-  /**
-   * Write a new value for the HighestUnackSeverity Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link UShort} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeHighestUnackSeverity(UShort value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readHighestUnackSeverity}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UShort> readHighestUnackSeverityAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeHighestUnackSeverity}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeHighestUnackSeverityAsync(UShort value);
-
-  /**
-   * Get the HighestUnackSeverity {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the HighestUnackSeverity {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getHighestUnackSeverityNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getHighestUnackSeverityNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getHighestUnackSeverityNodeAsync();
-
-  /**
-   * Get the local value of the ActiveCount Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ActiveCount Node.
-   * @throws UaException if an error occurs creating or getting the ActiveCount Node.
-   */
-  UInteger getActiveCount() throws UaException;
-
-  /**
-   * Set the local value of the ActiveCount Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ActiveCount Node.
-   * @throws UaException if an error occurs creating or getting the ActiveCount Node.
-   */
-  void setActiveCount(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the ActiveCount Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readActiveCount() throws UaException;
-
-  /**
-   * Write a new value for the ActiveCount Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeActiveCount(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readActiveCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readActiveCountAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeActiveCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeActiveCountAsync(UInteger value);
-
-  /**
-   * Get the ActiveCount {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ActiveCount {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getActiveCountNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getActiveCountNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getActiveCountNode()}. */
   CompletableFuture<? extends PropertyType> getActiveCountNodeAsync();
 
   /**
-   * Get the local value of the UnacknowledgedCount Node.
+   * Reads the Value of the ActiveCount child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the UnacknowledgedCount Node.
-   * @throws UaException if an error occurs creating or getting the UnacknowledgedCount Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UInteger getUnacknowledgedCount() throws UaException;
+  @Nullable UInteger readActiveCount() throws UaException;
 
   /**
-   * Set the local value of the UnacknowledgedCount Node.
+   * Writes the Value of the ActiveCount child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the UnacknowledgedCount Node.
-   * @throws UaException if an error occurs creating or getting the UnacknowledgedCount Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setUnacknowledgedCount(UInteger value) throws UaException;
+  void writeActiveCount(@Nullable UInteger value) throws UaException;
+
+  /** Asynchronous form of {@link #readActiveCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readActiveCountAsync();
+
+  /** Asynchronous form of {@link #writeActiveCount}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeActiveCountAsync(@Nullable UInteger value);
 
   /**
-   * Read the value of the UnacknowledgedCount Node from the server and update the local value if
-   * the operation succeeds.
+   * Resolves the mandatory UnconfirmedCount child, a PropertyType with DataType UInt32.
    *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readUnacknowledgedCount() throws UaException;
-
-  /**
-   * Write a new value for the UnacknowledgedCount Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeUnacknowledgedCount(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readUnacknowledgedCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readUnacknowledgedCountAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeUnacknowledgedCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeUnacknowledgedCountAsync(UInteger value);
-
-  /**
-   * Get the UnacknowledgedCount {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the UnacknowledgedCount {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getUnacknowledgedCountNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getUnacknowledgedCountNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getUnacknowledgedCountNodeAsync();
-
-  /**
-   * Get the local value of the UnconfirmedCount Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the UnconfirmedCount Node.
-   * @throws UaException if an error occurs creating or getting the UnconfirmedCount Node.
-   */
-  UInteger getUnconfirmedCount() throws UaException;
-
-  /**
-   * Set the local value of the UnconfirmedCount Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the UnconfirmedCount Node.
-   * @throws UaException if an error occurs creating or getting the UnconfirmedCount Node.
-   */
-  void setUnconfirmedCount(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the UnconfirmedCount Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readUnconfirmedCount() throws UaException;
-
-  /**
-   * Write a new value for the UnconfirmedCount Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeUnconfirmedCount(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readUnconfirmedCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readUnconfirmedCountAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeUnconfirmedCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeUnconfirmedCountAsync(UInteger value);
-
-  /**
-   * Get the UnconfirmedCount {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the UnconfirmedCount {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getUnconfirmedCountNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getUnconfirmedCountNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getUnconfirmedCountNode()}. */
   CompletableFuture<? extends PropertyType> getUnconfirmedCountNodeAsync();
 
   /**
-   * Get the local value of the Filter Node.
+   * Reads the Value of the UnconfirmedCount child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the Filter Node.
-   * @throws UaException if an error occurs creating or getting the Filter Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  ContentFilter getFilter() throws UaException;
+  @Nullable UInteger readUnconfirmedCount() throws UaException;
 
   /**
-   * Set the local value of the Filter Node.
+   * Writes the Value of the UnconfirmedCount child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the Filter Node.
-   * @throws UaException if an error occurs creating or getting the Filter Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setFilter(ContentFilter value) throws UaException;
+  void writeUnconfirmedCount(@Nullable UInteger value) throws UaException;
+
+  /** Asynchronous form of {@link #readUnconfirmedCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readUnconfirmedCountAsync();
+
+  /** Asynchronous form of {@link #writeUnconfirmedCount}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeUnconfirmedCountAsync(@Nullable UInteger value);
 
   /**
-   * Read the value of the Filter Node from the server and update the local value if the operation
-   * succeeds.
+   * Resolves the mandatory UnacknowledgedCount child, a PropertyType with DataType UInt32.
    *
-   * @return the {@link ContentFilter} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  ContentFilter readFilter() throws UaException;
+  PropertyType getUnacknowledgedCountNode() throws UaException;
+
+  /** Asynchronous form of {@link #getUnacknowledgedCountNode()}. */
+  CompletableFuture<? extends PropertyType> getUnacknowledgedCountNodeAsync();
 
   /**
-   * Write a new value for the Filter Node to the server and update the local value if the operation
-   * succeeds.
+   * Reads the Value of the UnacknowledgedCount child from the server.
    *
-   * @param value the {@link ContentFilter} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeFilter(ContentFilter value) throws UaException;
+  @Nullable UInteger readUnacknowledgedCount() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readFilter}.
+   * Writes the Value of the UnacknowledgedCount child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends ContentFilter> readFilterAsync();
+  void writeUnacknowledgedCount(@Nullable UInteger value) throws UaException;
+
+  /** Asynchronous form of {@link #readUnacknowledgedCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readUnacknowledgedCountAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeFilter}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * Asynchronous form of {@link #writeUnacknowledgedCount}; completes with the operation status.
    */
-  CompletableFuture<StatusCode> writeFilterAsync(ContentFilter value);
+  CompletableFuture<StatusCode> writeUnacknowledgedCountAsync(@Nullable UInteger value);
 
   /**
-   * Get the Filter {@link PropertyType} Node, or {@code null} if it does not exist.
+   * Resolves the mandatory HighestUnackSeverity child, a PropertyType with DataType UInt16.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getHighestUnackSeverityNode() throws UaException;
+
+  /** Asynchronous form of {@link #getHighestUnackSeverityNode()}. */
+  CompletableFuture<? extends PropertyType> getHighestUnackSeverityNodeAsync();
+
+  /**
+   * Reads the Value of the HighestUnackSeverity child from the server.
    *
-   * @return the Filter {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable UShort readHighestUnackSeverity() throws UaException;
+
+  /**
+   * Writes the Value of the HighestUnackSeverity child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeHighestUnackSeverity(@Nullable UShort value) throws UaException;
+
+  /** Asynchronous form of {@link #readHighestUnackSeverity()}. */
+  CompletableFuture<? extends @Nullable UShort> readHighestUnackSeverityAsync();
+
+  /**
+   * Asynchronous form of {@link #writeHighestUnackSeverity}; completes with the operation status.
+   */
+  CompletableFuture<StatusCode> writeHighestUnackSeverityAsync(@Nullable UShort value);
+
+  /**
+   * Resolves the mandatory HighestActiveSeverity child, a PropertyType with DataType UInt16.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getHighestActiveSeverityNode() throws UaException;
+
+  /** Asynchronous form of {@link #getHighestActiveSeverityNode()}. */
+  CompletableFuture<? extends PropertyType> getHighestActiveSeverityNodeAsync();
+
+  /**
+   * Reads the Value of the HighestActiveSeverity child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable UShort readHighestActiveSeverity() throws UaException;
+
+  /**
+   * Writes the Value of the HighestActiveSeverity child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeHighestActiveSeverity(@Nullable UShort value) throws UaException;
+
+  /** Asynchronous form of {@link #readHighestActiveSeverity()}. */
+  CompletableFuture<? extends @Nullable UShort> readHighestActiveSeverityAsync();
+
+  /**
+   * Asynchronous form of {@link #writeHighestActiveSeverity}; completes with the operation status.
+   */
+  CompletableFuture<StatusCode> writeHighestActiveSeverityAsync(@Nullable UShort value);
+
+  /**
+   * Resolves the mandatory Filter child, a PropertyType with DataType ContentFilter.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getFilterNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getFilterNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getFilterNode()}. */
   CompletableFuture<? extends PropertyType> getFilterNodeAsync();
+
+  /**
+   * Reads the Value of the Filter child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable ContentFilter readFilter() throws UaException;
+
+  /**
+   * Writes the Value of the Filter child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeFilter(@Nullable ContentFilter value) throws UaException;
+
+  /** Asynchronous form of {@link #readFilter()}. */
+  CompletableFuture<? extends @Nullable ContentFilter> readFilterAsync();
+
+  /** Asynchronous form of {@link #writeFilter}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeFilterAsync(@Nullable ContentFilter value);
+
+  /**
+   * Reads the Value of this node from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable AlarmMask readTypedValue() throws UaException;
+
+  /**
+   * Writes the Value of this node to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeTypedValue(@Nullable AlarmMask value) throws UaException;
+
+  /** Asynchronous form of {@link #readTypedValue()}. */
+  CompletableFuture<? extends @Nullable AlarmMask> readTypedValueAsync();
+
+  /** Asynchronous form of {@link #writeTypedValue}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeTypedValueAsync(@Nullable AlarmMask value);
 }

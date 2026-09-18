@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
@@ -17,1289 +7,687 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.18">https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.18</a>
+ * Client API for the LimitAlarmType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.18">Model
+ *     documentation</a>
  */
 public interface LimitAlarmType extends AlarmConditionType {
-  QualifiedProperty<Double> HIGH_HIGH_LIMIT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "HighHighLimit",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
-          -1,
-          Double.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2955L);
 
-  QualifiedProperty<Double> HIGH_LIMIT =
+  QualifiedProperty<Double> LowDeadband_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "HighLimit",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
-          -1,
-          Double.class);
-
-  QualifiedProperty<Double> LOW_LIMIT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "LowLimit",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
-          -1,
-          Double.class);
-
-  QualifiedProperty<Double> LOW_LOW_LIMIT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "LowLowLimit",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
-          -1,
-          Double.class);
-
-  QualifiedProperty<Double> BASE_HIGH_HIGH_LIMIT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "BaseHighHighLimit",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
-          -1,
-          Double.class);
-
-  QualifiedProperty<Double> BASE_HIGH_LIMIT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "BaseHighLimit",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
-          -1,
-          Double.class);
-
-  QualifiedProperty<Double> BASE_LOW_LIMIT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "BaseLowLimit",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
-          -1,
-          Double.class);
-
-  QualifiedProperty<Double> BASE_LOW_LOW_LIMIT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "BaseLowLowLimit",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
-          -1,
-          Double.class);
-
-  QualifiedProperty<UShort> SEVERITY_HIGH_HIGH =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "SeverityHighHigh",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-          -1,
-          UShort.class);
-
-  QualifiedProperty<UShort> SEVERITY_HIGH =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "SeverityHigh",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-          -1,
-          UShort.class);
-
-  QualifiedProperty<UShort> SEVERITY_LOW =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "SeverityLow",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-          -1,
-          UShort.class);
-
-  QualifiedProperty<UShort> SEVERITY_LOW_LOW =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "SeverityLowLow",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-          -1,
-          UShort.class);
-
-  QualifiedProperty<Double> HIGH_HIGH_DEADBAND =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "HighHighDeadband",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
-          -1,
-          Double.class);
-
-  QualifiedProperty<Double> HIGH_DEADBAND =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "HighDeadband",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
-          -1,
-          Double.class);
-
-  QualifiedProperty<Double> LOW_DEADBAND =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "LowDeadband",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 11L),
           -1,
           Double.class);
 
-  QualifiedProperty<Double> LOW_LOW_DEADBAND =
+  QualifiedProperty<Double> LowLowLimit_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
+          "LowLowLimit",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 11L),
+          -1,
+          Double.class);
+
+  QualifiedProperty<UShort> SeverityLow_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "SeverityLow",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 5L),
+          -1,
+          UShort.class);
+
+  QualifiedProperty<Double> BaseLowLimit_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "BaseLowLimit",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 11L),
+          -1,
+          Double.class);
+
+  QualifiedProperty<Double> HighDeadband_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "HighDeadband",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 11L),
+          -1,
+          Double.class);
+
+  QualifiedProperty<UShort> SeverityHigh_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "SeverityHigh",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 5L),
+          -1,
+          UShort.class);
+
+  QualifiedProperty<Double> BaseHighLimit_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "BaseHighLimit",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 11L),
+          -1,
+          Double.class);
+
+  QualifiedProperty<Double> HighHighLimit_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "HighHighLimit",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 11L),
+          -1,
+          Double.class);
+
+  QualifiedProperty<Double> LowLowDeadband_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
           "LowLowDeadband",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 11L),
+          -1,
+          Double.class);
+
+  QualifiedProperty<UShort> SeverityLowLow_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "SeverityLowLow",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 5L),
+          -1,
+          UShort.class);
+
+  QualifiedProperty<Double> BaseLowLowLimit_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "BaseLowLowLimit",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 11L),
+          -1,
+          Double.class);
+
+  QualifiedProperty<Double> HighHighDeadband_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "HighHighDeadband",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 11L),
+          -1,
+          Double.class);
+
+  QualifiedProperty<UShort> SeverityHighHigh_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "SeverityHighHigh",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 5L),
+          -1,
+          UShort.class);
+
+  QualifiedProperty<Double> BaseHighHighLimit_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "BaseHighHighLimit",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 11L),
+          -1,
+          Double.class);
+
+  QualifiedProperty<Double> LowLimit_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "LowLimit",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 11L),
+          -1,
+          Double.class);
+
+  QualifiedProperty<Double> HighLimit_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "HighLimit",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 11L),
           -1,
           Double.class);
 
   /**
-   * Get the local value of the HighHighLimit Node.
+   * Resolves the optional LowDeadband child, a PropertyType with DataType Double.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the HighHighLimit Node.
-   * @throws UaException if an error occurs creating or getting the HighHighLimit Node.
-   */
-  Double getHighHighLimit() throws UaException;
-
-  /**
-   * Set the local value of the HighHighLimit Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the HighHighLimit Node.
-   * @throws UaException if an error occurs creating or getting the HighHighLimit Node.
-   */
-  void setHighHighLimit(Double value) throws UaException;
-
-  /**
-   * Read the value of the HighHighLimit Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link Double} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Double readHighHighLimit() throws UaException;
-
-  /**
-   * Write a new value for the HighHighLimit Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Double} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeHighHighLimit(Double value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readHighHighLimit}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Double> readHighHighLimitAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeHighHighLimit}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeHighHighLimitAsync(Double value);
-
-  /**
-   * Get the HighHighLimit {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the HighHighLimit {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getHighHighLimitNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getHighHighLimitNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getHighHighLimitNodeAsync();
-
-  /**
-   * Get the local value of the HighLimit Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the HighLimit Node.
-   * @throws UaException if an error occurs creating or getting the HighLimit Node.
-   */
-  Double getHighLimit() throws UaException;
-
-  /**
-   * Set the local value of the HighLimit Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the HighLimit Node.
-   * @throws UaException if an error occurs creating or getting the HighLimit Node.
-   */
-  void setHighLimit(Double value) throws UaException;
-
-  /**
-   * Read the value of the HighLimit Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link Double} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Double readHighLimit() throws UaException;
-
-  /**
-   * Write a new value for the HighLimit Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Double} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeHighLimit(Double value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readHighLimit}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Double> readHighLimitAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeHighLimit}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeHighLimitAsync(Double value);
-
-  /**
-   * Get the HighLimit {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the HighLimit {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getHighLimitNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getHighLimitNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getHighLimitNodeAsync();
-
-  /**
-   * Get the local value of the LowLimit Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the LowLimit Node.
-   * @throws UaException if an error occurs creating or getting the LowLimit Node.
-   */
-  Double getLowLimit() throws UaException;
-
-  /**
-   * Set the local value of the LowLimit Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the LowLimit Node.
-   * @throws UaException if an error occurs creating or getting the LowLimit Node.
-   */
-  void setLowLimit(Double value) throws UaException;
-
-  /**
-   * Read the value of the LowLimit Node from the server and update the local value if the operation
-   * succeeds.
-   *
-   * @return the {@link Double} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  Double readLowLimit() throws UaException;
+  @Nullable PropertyType getLowDeadbandNode() throws UaException;
 
-  /**
-   * Write a new value for the LowLimit Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Double} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeLowLimit(Double value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readLowLimit}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Double> readLowLimitAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeLowLimit}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeLowLimitAsync(Double value);
-
-  /**
-   * Get the LowLimit {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the LowLimit {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getLowLimitNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getLowLimitNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getLowLimitNodeAsync();
-
-  /**
-   * Get the local value of the LowLowLimit Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the LowLowLimit Node.
-   * @throws UaException if an error occurs creating or getting the LowLowLimit Node.
-   */
-  Double getLowLowLimit() throws UaException;
-
-  /**
-   * Set the local value of the LowLowLimit Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the LowLowLimit Node.
-   * @throws UaException if an error occurs creating or getting the LowLowLimit Node.
-   */
-  void setLowLowLimit(Double value) throws UaException;
-
-  /**
-   * Read the value of the LowLowLimit Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link Double} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Double readLowLowLimit() throws UaException;
-
-  /**
-   * Write a new value for the LowLowLimit Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Double} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeLowLowLimit(Double value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readLowLowLimit}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Double> readLowLowLimitAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeLowLowLimit}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeLowLowLimitAsync(Double value);
-
-  /**
-   * Get the LowLowLimit {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the LowLowLimit {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getLowLowLimitNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getLowLowLimitNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getLowLowLimitNodeAsync();
-
-  /**
-   * Get the local value of the BaseHighHighLimit Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the BaseHighHighLimit Node.
-   * @throws UaException if an error occurs creating or getting the BaseHighHighLimit Node.
-   */
-  Double getBaseHighHighLimit() throws UaException;
+  /** Asynchronous form of {@link #getLowDeadbandNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getLowDeadbandNodeAsync();
 
   /**
-   * Set the local value of the BaseHighHighLimit Node.
+   * Reads the Value of the LowDeadband child from the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the BaseHighHighLimit Node.
-   * @throws UaException if an error occurs creating or getting the BaseHighHighLimit Node.
-   */
-  void setBaseHighHighLimit(Double value) throws UaException;
-
-  /**
-   * Read the value of the BaseHighHighLimit Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link Double} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  Double readBaseHighHighLimit() throws UaException;
+  @Nullable Double readLowDeadband() throws UaException;
 
   /**
-   * Write a new value for the BaseHighHighLimit Node to the server and update the local value if
-   * the operation succeeds.
+   * Writes the Value of the LowDeadband child to the server.
    *
-   * @param value the {@link Double} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeBaseHighHighLimit(Double value) throws UaException;
+  void writeLowDeadband(@Nullable Double value) throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #readBaseHighHighLimit}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Double> readBaseHighHighLimitAsync();
+  /** Asynchronous form of {@link #readLowDeadband()}. */
+  CompletableFuture<? extends @Nullable Double> readLowDeadbandAsync();
 
-  /**
-   * An asynchronous implementation of {@link #writeBaseHighHighLimit}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeBaseHighHighLimitAsync(Double value);
+  /** Asynchronous form of {@link #writeLowDeadband}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeLowDeadbandAsync(@Nullable Double value);
 
   /**
-   * Get the BaseHighHighLimit {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * Resolves the optional LowLowLimit child, a PropertyType with DataType Double.
    *
-   * @return the BaseHighHighLimit {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  PropertyType getBaseHighHighLimitNode() throws UaException;
+  @Nullable PropertyType getLowLowLimitNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getBaseHighHighLimitNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getBaseHighHighLimitNodeAsync();
+  /** Asynchronous form of {@link #getLowLowLimitNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getLowLowLimitNodeAsync();
 
   /**
-   * Get the local value of the BaseHighLimit Node.
+   * Reads the Value of the LowLowLimit child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the BaseHighLimit Node.
-   * @throws UaException if an error occurs creating or getting the BaseHighLimit Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  Double getBaseHighLimit() throws UaException;
+  @Nullable Double readLowLowLimit() throws UaException;
 
   /**
-   * Set the local value of the BaseHighLimit Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
+   * Writes the Value of the LowLowLimit child to the server.
    *
-   * @param value the local value to set for the BaseHighLimit Node.
-   * @throws UaException if an error occurs creating or getting the BaseHighLimit Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setBaseHighLimit(Double value) throws UaException;
+  void writeLowLowLimit(@Nullable Double value) throws UaException;
 
-  /**
-   * Read the value of the BaseHighLimit Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link Double} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Double readBaseHighLimit() throws UaException;
+  /** Asynchronous form of {@link #readLowLowLimit()}. */
+  CompletableFuture<? extends @Nullable Double> readLowLowLimitAsync();
 
-  /**
-   * Write a new value for the BaseHighLimit Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Double} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeBaseHighLimit(Double value) throws UaException;
+  /** Asynchronous form of {@link #writeLowLowLimit}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeLowLowLimitAsync(@Nullable Double value);
 
   /**
-   * An asynchronous implementation of {@link #readBaseHighLimit}.
+   * Resolves the optional SeverityLow child, a PropertyType with DataType UInt16.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  CompletableFuture<? extends Double> readBaseHighLimitAsync();
+  @Nullable PropertyType getSeverityLowNode() throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #writeBaseHighLimit}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeBaseHighLimitAsync(Double value);
+  /** Asynchronous form of {@link #getSeverityLowNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getSeverityLowNodeAsync();
 
   /**
-   * Get the BaseHighLimit {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * Reads the Value of the SeverityLow child from the server.
    *
-   * @return the BaseHighLimit {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  PropertyType getBaseHighLimitNode() throws UaException;
+  @Nullable UShort readSeverityLow() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getBaseHighLimitNode()}.
+   * Writes the Value of the SeverityLow child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends PropertyType> getBaseHighLimitNodeAsync();
+  void writeSeverityLow(@Nullable UShort value) throws UaException;
 
-  /**
-   * Get the local value of the BaseLowLimit Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the BaseLowLimit Node.
-   * @throws UaException if an error occurs creating or getting the BaseLowLimit Node.
-   */
-  Double getBaseLowLimit() throws UaException;
+  /** Asynchronous form of {@link #readSeverityLow()}. */
+  CompletableFuture<? extends @Nullable UShort> readSeverityLowAsync();
 
-  /**
-   * Set the local value of the BaseLowLimit Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the BaseLowLimit Node.
-   * @throws UaException if an error occurs creating or getting the BaseLowLimit Node.
-   */
-  void setBaseLowLimit(Double value) throws UaException;
+  /** Asynchronous form of {@link #writeSeverityLow}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeSeverityLowAsync(@Nullable UShort value);
 
   /**
-   * Read the value of the BaseLowLimit Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the optional BaseLowLimit child, a PropertyType with DataType Double.
    *
-   * @return the {@link Double} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  Double readBaseLowLimit() throws UaException;
+  @Nullable PropertyType getBaseLowLimitNode() throws UaException;
 
-  /**
-   * Write a new value for the BaseLowLimit Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Double} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeBaseLowLimit(Double value) throws UaException;
+  /** Asynchronous form of {@link #getBaseLowLimitNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getBaseLowLimitNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #readBaseLowLimit}.
+   * Reads the Value of the BaseLowLimit child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends Double> readBaseLowLimitAsync();
+  @Nullable Double readBaseLowLimit() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeBaseLowLimit}.
+   * Writes the Value of the BaseLowLimit child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeBaseLowLimitAsync(Double value);
+  void writeBaseLowLimit(@Nullable Double value) throws UaException;
 
-  /**
-   * Get the BaseLowLimit {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the BaseLowLimit {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getBaseLowLimitNode() throws UaException;
+  /** Asynchronous form of {@link #readBaseLowLimit()}. */
+  CompletableFuture<? extends @Nullable Double> readBaseLowLimitAsync();
 
-  /**
-   * Asynchronous implementation of {@link #getBaseLowLimitNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getBaseLowLimitNodeAsync();
+  /** Asynchronous form of {@link #writeBaseLowLimit}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeBaseLowLimitAsync(@Nullable Double value);
 
   /**
-   * Get the local value of the BaseLowLowLimit Node.
+   * Resolves the optional HighDeadband child, a PropertyType with DataType Double.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the BaseLowLowLimit Node.
-   * @throws UaException if an error occurs creating or getting the BaseLowLowLimit Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  Double getBaseLowLowLimit() throws UaException;
+  @Nullable PropertyType getHighDeadbandNode() throws UaException;
 
-  /**
-   * Set the local value of the BaseLowLowLimit Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the BaseLowLowLimit Node.
-   * @throws UaException if an error occurs creating or getting the BaseLowLowLimit Node.
-   */
-  void setBaseLowLowLimit(Double value) throws UaException;
+  /** Asynchronous form of {@link #getHighDeadbandNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getHighDeadbandNodeAsync();
 
   /**
-   * Read the value of the BaseLowLowLimit Node from the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the HighDeadband child from the server.
    *
-   * @return the {@link Double} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  Double readBaseLowLowLimit() throws UaException;
+  @Nullable Double readHighDeadband() throws UaException;
 
   /**
-   * Write a new value for the BaseLowLowLimit Node to the server and update the local value if the
-   * operation succeeds.
+   * Writes the Value of the HighDeadband child to the server.
    *
-   * @param value the {@link Double} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeBaseLowLowLimit(Double value) throws UaException;
+  void writeHighDeadband(@Nullable Double value) throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #readBaseLowLowLimit}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Double> readBaseLowLowLimitAsync();
+  /** Asynchronous form of {@link #readHighDeadband()}. */
+  CompletableFuture<? extends @Nullable Double> readHighDeadbandAsync();
 
-  /**
-   * An asynchronous implementation of {@link #writeBaseLowLowLimit}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeBaseLowLowLimitAsync(Double value);
+  /** Asynchronous form of {@link #writeHighDeadband}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeHighDeadbandAsync(@Nullable Double value);
 
   /**
-   * Get the BaseLowLowLimit {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * Resolves the optional SeverityHigh child, a PropertyType with DataType UInt16.
    *
-   * @return the BaseLowLowLimit {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  PropertyType getBaseLowLowLimitNode() throws UaException;
+  @Nullable PropertyType getSeverityHighNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getBaseLowLowLimitNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getBaseLowLowLimitNodeAsync();
+  /** Asynchronous form of {@link #getSeverityHighNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getSeverityHighNodeAsync();
 
   /**
-   * Get the local value of the SeverityHighHigh Node.
+   * Reads the Value of the SeverityHigh child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SeverityHighHigh Node.
-   * @throws UaException if an error occurs creating or getting the SeverityHighHigh Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UShort getSeverityHighHigh() throws UaException;
+  @Nullable UShort readSeverityHigh() throws UaException;
 
   /**
-   * Set the local value of the SeverityHighHigh Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
+   * Writes the Value of the SeverityHigh child to the server.
    *
-   * @param value the local value to set for the SeverityHighHigh Node.
-   * @throws UaException if an error occurs creating or getting the SeverityHighHigh Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setSeverityHighHigh(UShort value) throws UaException;
+  void writeSeverityHigh(@Nullable UShort value) throws UaException;
 
-  /**
-   * Read the value of the SeverityHighHigh Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link UShort} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UShort readSeverityHighHigh() throws UaException;
+  /** Asynchronous form of {@link #readSeverityHigh()}. */
+  CompletableFuture<? extends @Nullable UShort> readSeverityHighAsync();
 
-  /**
-   * Write a new value for the SeverityHighHigh Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link UShort} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeSeverityHighHigh(UShort value) throws UaException;
+  /** Asynchronous form of {@link #writeSeverityHigh}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeSeverityHighAsync(@Nullable UShort value);
 
   /**
-   * An asynchronous implementation of {@link #readSeverityHighHigh}.
+   * Resolves the optional BaseHighLimit child, a PropertyType with DataType Double.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  CompletableFuture<? extends UShort> readSeverityHighHighAsync();
+  @Nullable PropertyType getBaseHighLimitNode() throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #writeSeverityHighHigh}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeSeverityHighHighAsync(UShort value);
+  /** Asynchronous form of {@link #getBaseHighLimitNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getBaseHighLimitNodeAsync();
 
   /**
-   * Get the SeverityHighHigh {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * Reads the Value of the BaseHighLimit child from the server.
    *
-   * @return the SeverityHighHigh {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  PropertyType getSeverityHighHighNode() throws UaException;
+  @Nullable Double readBaseHighLimit() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getSeverityHighHighNode()}.
+   * Writes the Value of the BaseHighLimit child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends PropertyType> getSeverityHighHighNodeAsync();
+  void writeBaseHighLimit(@Nullable Double value) throws UaException;
 
-  /**
-   * Get the local value of the SeverityHigh Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SeverityHigh Node.
-   * @throws UaException if an error occurs creating or getting the SeverityHigh Node.
-   */
-  UShort getSeverityHigh() throws UaException;
+  /** Asynchronous form of {@link #readBaseHighLimit()}. */
+  CompletableFuture<? extends @Nullable Double> readBaseHighLimitAsync();
 
-  /**
-   * Set the local value of the SeverityHigh Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SeverityHigh Node.
-   * @throws UaException if an error occurs creating or getting the SeverityHigh Node.
-   */
-  void setSeverityHigh(UShort value) throws UaException;
+  /** Asynchronous form of {@link #writeBaseHighLimit}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeBaseHighLimitAsync(@Nullable Double value);
 
   /**
-   * Read the value of the SeverityHigh Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the optional HighHighLimit child, a PropertyType with DataType Double.
    *
-   * @return the {@link UShort} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  UShort readSeverityHigh() throws UaException;
+  @Nullable PropertyType getHighHighLimitNode() throws UaException;
 
-  /**
-   * Write a new value for the SeverityHigh Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link UShort} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeSeverityHigh(UShort value) throws UaException;
+  /** Asynchronous form of {@link #getHighHighLimitNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getHighHighLimitNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #readSeverityHigh}.
+   * Reads the Value of the HighHighLimit child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends UShort> readSeverityHighAsync();
+  @Nullable Double readHighHighLimit() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeSeverityHigh}.
+   * Writes the Value of the HighHighLimit child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeSeverityHighAsync(UShort value);
+  void writeHighHighLimit(@Nullable Double value) throws UaException;
 
-  /**
-   * Get the SeverityHigh {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SeverityHigh {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getSeverityHighNode() throws UaException;
+  /** Asynchronous form of {@link #readHighHighLimit()}. */
+  CompletableFuture<? extends @Nullable Double> readHighHighLimitAsync();
 
-  /**
-   * Asynchronous implementation of {@link #getSeverityHighNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getSeverityHighNodeAsync();
+  /** Asynchronous form of {@link #writeHighHighLimit}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeHighHighLimitAsync(@Nullable Double value);
 
   /**
-   * Get the local value of the SeverityLow Node.
+   * Resolves the optional LowLowDeadband child, a PropertyType with DataType Double.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SeverityLow Node.
-   * @throws UaException if an error occurs creating or getting the SeverityLow Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  UShort getSeverityLow() throws UaException;
+  @Nullable PropertyType getLowLowDeadbandNode() throws UaException;
 
-  /**
-   * Set the local value of the SeverityLow Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SeverityLow Node.
-   * @throws UaException if an error occurs creating or getting the SeverityLow Node.
-   */
-  void setSeverityLow(UShort value) throws UaException;
+  /** Asynchronous form of {@link #getLowLowDeadbandNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getLowLowDeadbandNodeAsync();
 
   /**
-   * Read the value of the SeverityLow Node from the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the LowLowDeadband child from the server.
    *
-   * @return the {@link UShort} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UShort readSeverityLow() throws UaException;
+  @Nullable Double readLowLowDeadband() throws UaException;
 
   /**
-   * Write a new value for the SeverityLow Node to the server and update the local value if the
-   * operation succeeds.
+   * Writes the Value of the LowLowDeadband child to the server.
    *
-   * @param value the {@link UShort} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeSeverityLow(UShort value) throws UaException;
+  void writeLowLowDeadband(@Nullable Double value) throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #readSeverityLow}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UShort> readSeverityLowAsync();
+  /** Asynchronous form of {@link #readLowLowDeadband()}. */
+  CompletableFuture<? extends @Nullable Double> readLowLowDeadbandAsync();
 
-  /**
-   * An asynchronous implementation of {@link #writeSeverityLow}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeSeverityLowAsync(UShort value);
+  /** Asynchronous form of {@link #writeLowLowDeadband}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeLowLowDeadbandAsync(@Nullable Double value);
 
   /**
-   * Get the SeverityLow {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * Resolves the optional SeverityLowLow child, a PropertyType with DataType UInt16.
    *
-   * @return the SeverityLow {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  PropertyType getSeverityLowNode() throws UaException;
+  @Nullable PropertyType getSeverityLowLowNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getSeverityLowNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getSeverityLowNodeAsync();
+  /** Asynchronous form of {@link #getSeverityLowLowNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getSeverityLowLowNodeAsync();
 
   /**
-   * Get the local value of the SeverityLowLow Node.
+   * Reads the Value of the SeverityLowLow child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SeverityLowLow Node.
-   * @throws UaException if an error occurs creating or getting the SeverityLowLow Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UShort getSeverityLowLow() throws UaException;
+  @Nullable UShort readSeverityLowLow() throws UaException;
 
   /**
-   * Set the local value of the SeverityLowLow Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
+   * Writes the Value of the SeverityLowLow child to the server.
    *
-   * @param value the local value to set for the SeverityLowLow Node.
-   * @throws UaException if an error occurs creating or getting the SeverityLowLow Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setSeverityLowLow(UShort value) throws UaException;
+  void writeSeverityLowLow(@Nullable UShort value) throws UaException;
 
-  /**
-   * Read the value of the SeverityLowLow Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link UShort} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UShort readSeverityLowLow() throws UaException;
+  /** Asynchronous form of {@link #readSeverityLowLow()}. */
+  CompletableFuture<? extends @Nullable UShort> readSeverityLowLowAsync();
 
-  /**
-   * Write a new value for the SeverityLowLow Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link UShort} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeSeverityLowLow(UShort value) throws UaException;
+  /** Asynchronous form of {@link #writeSeverityLowLow}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeSeverityLowLowAsync(@Nullable UShort value);
 
   /**
-   * An asynchronous implementation of {@link #readSeverityLowLow}.
+   * Resolves the optional BaseLowLowLimit child, a PropertyType with DataType Double.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  CompletableFuture<? extends UShort> readSeverityLowLowAsync();
+  @Nullable PropertyType getBaseLowLowLimitNode() throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #writeSeverityLowLow}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeSeverityLowLowAsync(UShort value);
+  /** Asynchronous form of {@link #getBaseLowLowLimitNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getBaseLowLowLimitNodeAsync();
 
   /**
-   * Get the SeverityLowLow {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * Reads the Value of the BaseLowLowLimit child from the server.
    *
-   * @return the SeverityLowLow {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  PropertyType getSeverityLowLowNode() throws UaException;
+  @Nullable Double readBaseLowLowLimit() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getSeverityLowLowNode()}.
+   * Writes the Value of the BaseLowLowLimit child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends PropertyType> getSeverityLowLowNodeAsync();
+  void writeBaseLowLowLimit(@Nullable Double value) throws UaException;
 
-  /**
-   * Get the local value of the HighHighDeadband Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the HighHighDeadband Node.
-   * @throws UaException if an error occurs creating or getting the HighHighDeadband Node.
-   */
-  Double getHighHighDeadband() throws UaException;
+  /** Asynchronous form of {@link #readBaseLowLowLimit()}. */
+  CompletableFuture<? extends @Nullable Double> readBaseLowLowLimitAsync();
 
-  /**
-   * Set the local value of the HighHighDeadband Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the HighHighDeadband Node.
-   * @throws UaException if an error occurs creating or getting the HighHighDeadband Node.
-   */
-  void setHighHighDeadband(Double value) throws UaException;
+  /** Asynchronous form of {@link #writeBaseLowLowLimit}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeBaseLowLowLimitAsync(@Nullable Double value);
 
   /**
-   * Read the value of the HighHighDeadband Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the optional HighHighDeadband child, a PropertyType with DataType Double.
    *
-   * @return the {@link Double} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  Double readHighHighDeadband() throws UaException;
+  @Nullable PropertyType getHighHighDeadbandNode() throws UaException;
 
-  /**
-   * Write a new value for the HighHighDeadband Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Double} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeHighHighDeadband(Double value) throws UaException;
+  /** Asynchronous form of {@link #getHighHighDeadbandNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getHighHighDeadbandNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #readHighHighDeadband}.
+   * Reads the Value of the HighHighDeadband child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends Double> readHighHighDeadbandAsync();
+  @Nullable Double readHighHighDeadband() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeHighHighDeadband}.
+   * Writes the Value of the HighHighDeadband child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeHighHighDeadbandAsync(Double value);
+  void writeHighHighDeadband(@Nullable Double value) throws UaException;
 
-  /**
-   * Get the HighHighDeadband {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the HighHighDeadband {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getHighHighDeadbandNode() throws UaException;
+  /** Asynchronous form of {@link #readHighHighDeadband()}. */
+  CompletableFuture<? extends @Nullable Double> readHighHighDeadbandAsync();
 
-  /**
-   * Asynchronous implementation of {@link #getHighHighDeadbandNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getHighHighDeadbandNodeAsync();
+  /** Asynchronous form of {@link #writeHighHighDeadband}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeHighHighDeadbandAsync(@Nullable Double value);
 
   /**
-   * Get the local value of the HighDeadband Node.
+   * Resolves the optional SeverityHighHigh child, a PropertyType with DataType UInt16.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the HighDeadband Node.
-   * @throws UaException if an error occurs creating or getting the HighDeadband Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  Double getHighDeadband() throws UaException;
+  @Nullable PropertyType getSeverityHighHighNode() throws UaException;
 
-  /**
-   * Set the local value of the HighDeadband Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the HighDeadband Node.
-   * @throws UaException if an error occurs creating or getting the HighDeadband Node.
-   */
-  void setHighDeadband(Double value) throws UaException;
+  /** Asynchronous form of {@link #getSeverityHighHighNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getSeverityHighHighNodeAsync();
 
   /**
-   * Read the value of the HighDeadband Node from the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the SeverityHighHigh child from the server.
    *
-   * @return the {@link Double} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  Double readHighDeadband() throws UaException;
+  @Nullable UShort readSeverityHighHigh() throws UaException;
 
   /**
-   * Write a new value for the HighDeadband Node to the server and update the local value if the
-   * operation succeeds.
+   * Writes the Value of the SeverityHighHigh child to the server.
    *
-   * @param value the {@link Double} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeHighDeadband(Double value) throws UaException;
+  void writeSeverityHighHigh(@Nullable UShort value) throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #readHighDeadband}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Double> readHighDeadbandAsync();
+  /** Asynchronous form of {@link #readSeverityHighHigh()}. */
+  CompletableFuture<? extends @Nullable UShort> readSeverityHighHighAsync();
 
-  /**
-   * An asynchronous implementation of {@link #writeHighDeadband}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeHighDeadbandAsync(Double value);
+  /** Asynchronous form of {@link #writeSeverityHighHigh}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeSeverityHighHighAsync(@Nullable UShort value);
 
   /**
-   * Get the HighDeadband {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * Resolves the optional BaseHighHighLimit child, a PropertyType with DataType Double.
    *
-   * @return the HighDeadband {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  PropertyType getHighDeadbandNode() throws UaException;
+  @Nullable PropertyType getBaseHighHighLimitNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getHighDeadbandNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getHighDeadbandNodeAsync();
+  /** Asynchronous form of {@link #getBaseHighHighLimitNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getBaseHighHighLimitNodeAsync();
 
   /**
-   * Get the local value of the LowDeadband Node.
+   * Reads the Value of the BaseHighHighLimit child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the LowDeadband Node.
-   * @throws UaException if an error occurs creating or getting the LowDeadband Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  Double getLowDeadband() throws UaException;
+  @Nullable Double readBaseHighHighLimit() throws UaException;
 
   /**
-   * Set the local value of the LowDeadband Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
+   * Writes the Value of the BaseHighHighLimit child to the server.
    *
-   * @param value the local value to set for the LowDeadband Node.
-   * @throws UaException if an error occurs creating or getting the LowDeadband Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setLowDeadband(Double value) throws UaException;
+  void writeBaseHighHighLimit(@Nullable Double value) throws UaException;
 
-  /**
-   * Read the value of the LowDeadband Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link Double} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Double readLowDeadband() throws UaException;
+  /** Asynchronous form of {@link #readBaseHighHighLimit()}. */
+  CompletableFuture<? extends @Nullable Double> readBaseHighHighLimitAsync();
 
-  /**
-   * Write a new value for the LowDeadband Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Double} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeLowDeadband(Double value) throws UaException;
+  /** Asynchronous form of {@link #writeBaseHighHighLimit}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeBaseHighHighLimitAsync(@Nullable Double value);
 
   /**
-   * An asynchronous implementation of {@link #readLowDeadband}.
+   * Resolves the optional LowLimit child, a PropertyType with DataType Double.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  CompletableFuture<? extends Double> readLowDeadbandAsync();
+  @Nullable PropertyType getLowLimitNode() throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #writeLowDeadband}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeLowDeadbandAsync(Double value);
+  /** Asynchronous form of {@link #getLowLimitNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getLowLimitNodeAsync();
 
   /**
-   * Get the LowDeadband {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * Reads the Value of the LowLimit child from the server.
    *
-   * @return the LowDeadband {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  PropertyType getLowDeadbandNode() throws UaException;
+  @Nullable Double readLowLimit() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getLowDeadbandNode()}.
+   * Writes the Value of the LowLimit child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends PropertyType> getLowDeadbandNodeAsync();
+  void writeLowLimit(@Nullable Double value) throws UaException;
 
-  /**
-   * Get the local value of the LowLowDeadband Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the LowLowDeadband Node.
-   * @throws UaException if an error occurs creating or getting the LowLowDeadband Node.
-   */
-  Double getLowLowDeadband() throws UaException;
+  /** Asynchronous form of {@link #readLowLimit()}. */
+  CompletableFuture<? extends @Nullable Double> readLowLimitAsync();
 
-  /**
-   * Set the local value of the LowLowDeadband Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the LowLowDeadband Node.
-   * @throws UaException if an error occurs creating or getting the LowLowDeadband Node.
-   */
-  void setLowLowDeadband(Double value) throws UaException;
+  /** Asynchronous form of {@link #writeLowLimit}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeLowLimitAsync(@Nullable Double value);
 
   /**
-   * Read the value of the LowLowDeadband Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the optional HighLimit child, a PropertyType with DataType Double.
    *
-   * @return the {@link Double} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  Double readLowLowDeadband() throws UaException;
+  @Nullable PropertyType getHighLimitNode() throws UaException;
 
-  /**
-   * Write a new value for the LowLowDeadband Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Double} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeLowLowDeadband(Double value) throws UaException;
+  /** Asynchronous form of {@link #getHighLimitNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getHighLimitNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #readLowLowDeadband}.
+   * Reads the Value of the HighLimit child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends Double> readLowLowDeadbandAsync();
+  @Nullable Double readHighLimit() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeLowLowDeadband}.
+   * Writes the Value of the HighLimit child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeLowLowDeadbandAsync(Double value);
+  void writeHighLimit(@Nullable Double value) throws UaException;
 
-  /**
-   * Get the LowLowDeadband {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the LowLowDeadband {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getLowLowDeadbandNode() throws UaException;
+  /** Asynchronous form of {@link #readHighLimit()}. */
+  CompletableFuture<? extends @Nullable Double> readHighLimitAsync();
 
-  /**
-   * Asynchronous implementation of {@link #getLowLowDeadbandNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getLowLowDeadbandNodeAsync();
+  /** Asynchronous form of {@link #writeHighLimit}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeHighLimitAsync(@Nullable Double value);
 }

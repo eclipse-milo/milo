@@ -1,567 +1,403 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallOptions;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallResult;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.client.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.eclipse.milo.opcua.stack.core.types.structured.DataSetWriterDataType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.6/#9.1.6.3">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.6/#9.1.6.3</a>
+ * Client API for the WriterGroupType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.6/#9.1.6.3">Model
+ *     documentation</a>
  */
 public interface WriterGroupType extends PubSubGroupType {
-  QualifiedProperty<UShort> WRITER_GROUP_ID =
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 17725L);
+
+  QualifiedProperty<Double> KeepAliveTime_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
+          "KeepAliveTime",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 290L),
+          -1,
+          Double.class);
+
+  QualifiedProperty<UShort> WriterGroupId_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
           "WriterGroupId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 5L),
           -1,
           UShort.class);
 
-  QualifiedProperty<Double> PUBLISHING_INTERVAL =
+  QualifiedProperty<String> HeaderLayoutUri_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "PublishingInterval",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
-          -1,
-          Double.class);
-
-  QualifiedProperty<Double> KEEP_ALIVE_TIME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "KeepAliveTime",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
-          -1,
-          Double.class);
-
-  QualifiedProperty<UByte> PRIORITY =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Priority",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=3"),
-          -1,
-          UByte.class);
-
-  QualifiedProperty<String[]> LOCALE_IDS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "LocaleIds",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=295"),
-          1,
-          String[].class);
-
-  QualifiedProperty<String> HEADER_LAYOUT_URI =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "HeaderLayoutUri",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
           -1,
           String.class);
 
-  /**
-   * Get the local value of the WriterGroupId Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the WriterGroupId Node.
-   * @throws UaException if an error occurs creating or getting the WriterGroupId Node.
-   */
-  UShort getWriterGroupId() throws UaException;
+  QualifiedProperty<Double> PublishingInterval_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "PublishingInterval",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 290L),
+          -1,
+          Double.class);
+
+  QualifiedProperty<UByte> Priority_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA, "Priority", ExpandedNodeId.of(Namespaces.OPC_UA, 3L), -1, UByte.class);
+
+  QualifiedProperty<String[]> LocaleIds_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "LocaleIds",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 295L),
+          1,
+          String[].class);
 
   /**
-   * Set the local value of the WriterGroupId Node.
+   * Resolves the optional Diagnostics child, a PubSubDiagnosticsWriterGroupType.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the WriterGroupId Node.
-   * @throws UaException if an error occurs creating or getting the WriterGroupId Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.11/#9.1.11.9">PubSubDiagnosticsWriterGroupType
+   *     documentation</a>
    */
-  void setWriterGroupId(UShort value) throws UaException;
+  @Nullable PubSubDiagnosticsWriterGroupType getDiagnosticsNode() throws UaException;
+
+  /** Asynchronous form of {@link #getDiagnosticsNode()}. */
+  CompletableFuture<? extends @Nullable PubSubDiagnosticsWriterGroupType> getDiagnosticsNodeAsync();
 
   /**
-   * Read the value of the WriterGroupId Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the mandatory KeepAliveTime child, a PropertyType with DataType Duration.
    *
-   * @return the {@link UShort} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UShort readWriterGroupId() throws UaException;
-
-  /**
-   * Write a new value for the WriterGroupId Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link UShort} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeWriterGroupId(UShort value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readWriterGroupId}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UShort> readWriterGroupIdAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeWriterGroupId}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeWriterGroupIdAsync(UShort value);
-
-  /**
-   * Get the WriterGroupId {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the WriterGroupId {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getWriterGroupIdNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getWriterGroupIdNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getWriterGroupIdNodeAsync();
-
-  /**
-   * Get the local value of the PublishingInterval Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the PublishingInterval Node.
-   * @throws UaException if an error occurs creating or getting the PublishingInterval Node.
-   */
-  Double getPublishingInterval() throws UaException;
-
-  /**
-   * Set the local value of the PublishingInterval Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the PublishingInterval Node.
-   * @throws UaException if an error occurs creating or getting the PublishingInterval Node.
-   */
-  void setPublishingInterval(Double value) throws UaException;
-
-  /**
-   * Read the value of the PublishingInterval Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link Double} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Double readPublishingInterval() throws UaException;
-
-  /**
-   * Write a new value for the PublishingInterval Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link Double} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writePublishingInterval(Double value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readPublishingInterval}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Double> readPublishingIntervalAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writePublishingInterval}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writePublishingIntervalAsync(Double value);
-
-  /**
-   * Get the PublishingInterval {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the PublishingInterval {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getPublishingIntervalNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getPublishingIntervalNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getPublishingIntervalNodeAsync();
-
-  /**
-   * Get the local value of the KeepAliveTime Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the KeepAliveTime Node.
-   * @throws UaException if an error occurs creating or getting the KeepAliveTime Node.
-   */
-  Double getKeepAliveTime() throws UaException;
-
-  /**
-   * Set the local value of the KeepAliveTime Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the KeepAliveTime Node.
-   * @throws UaException if an error occurs creating or getting the KeepAliveTime Node.
-   */
-  void setKeepAliveTime(Double value) throws UaException;
-
-  /**
-   * Read the value of the KeepAliveTime Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link Double} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Double readKeepAliveTime() throws UaException;
-
-  /**
-   * Write a new value for the KeepAliveTime Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Double} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeKeepAliveTime(Double value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readKeepAliveTime}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Double> readKeepAliveTimeAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeKeepAliveTime}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeKeepAliveTimeAsync(Double value);
-
-  /**
-   * Get the KeepAliveTime {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the KeepAliveTime {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getKeepAliveTimeNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getKeepAliveTimeNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getKeepAliveTimeNode()}. */
   CompletableFuture<? extends PropertyType> getKeepAliveTimeNodeAsync();
 
   /**
-   * Get the local value of the Priority Node.
+   * Reads the Value of the KeepAliveTime child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the Priority Node.
-   * @throws UaException if an error occurs creating or getting the Priority Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UByte getPriority() throws UaException;
+  @Nullable Double readKeepAliveTime() throws UaException;
 
   /**
-   * Set the local value of the Priority Node.
+   * Writes the Value of the KeepAliveTime child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the Priority Node.
-   * @throws UaException if an error occurs creating or getting the Priority Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setPriority(UByte value) throws UaException;
+  void writeKeepAliveTime(@Nullable Double value) throws UaException;
+
+  /** Asynchronous form of {@link #readKeepAliveTime()}. */
+  CompletableFuture<? extends @Nullable Double> readKeepAliveTimeAsync();
+
+  /** Asynchronous form of {@link #writeKeepAliveTime}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeKeepAliveTimeAsync(@Nullable Double value);
 
   /**
-   * Read the value of the Priority Node from the server and update the local value if the operation
-   * succeeds.
+   * Resolves the mandatory WriterGroupId child, a PropertyType with DataType UInt16.
    *
-   * @return the {@link UByte} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  UByte readPriority() throws UaException;
+  PropertyType getWriterGroupIdNode() throws UaException;
+
+  /** Asynchronous form of {@link #getWriterGroupIdNode()}. */
+  CompletableFuture<? extends PropertyType> getWriterGroupIdNodeAsync();
 
   /**
-   * Write a new value for the Priority Node to the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the WriterGroupId child from the server.
    *
-   * @param value the {@link UByte} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writePriority(UByte value) throws UaException;
+  @Nullable UShort readWriterGroupId() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readPriority}.
+   * Writes the Value of the WriterGroupId child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends UByte> readPriorityAsync();
+  void writeWriterGroupId(@Nullable UShort value) throws UaException;
+
+  /** Asynchronous form of {@link #readWriterGroupId()}. */
+  CompletableFuture<? extends @Nullable UShort> readWriterGroupIdAsync();
+
+  /** Asynchronous form of {@link #writeWriterGroupId}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeWriterGroupIdAsync(@Nullable UShort value);
 
   /**
-   * An asynchronous implementation of {@link #writePriority}.
+   * Resolves the mandatory HeaderLayoutUri child, a PropertyType with DataType String.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writePriorityAsync(UByte value);
-
-  /**
-   * Get the Priority {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the Priority {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getPriorityNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getPriorityNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getPriorityNodeAsync();
-
-  /**
-   * Get the local value of the LocaleIds Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the LocaleIds Node.
-   * @throws UaException if an error occurs creating or getting the LocaleIds Node.
-   */
-  String[] getLocaleIds() throws UaException;
-
-  /**
-   * Set the local value of the LocaleIds Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the LocaleIds Node.
-   * @throws UaException if an error occurs creating or getting the LocaleIds Node.
-   */
-  void setLocaleIds(String[] value) throws UaException;
-
-  /**
-   * Read the value of the LocaleIds Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link String[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String[] readLocaleIds() throws UaException;
-
-  /**
-   * Write a new value for the LocaleIds Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link String[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeLocaleIds(String[] value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readLocaleIds}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String[]> readLocaleIdsAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeLocaleIds}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeLocaleIdsAsync(String[] value);
-
-  /**
-   * Get the LocaleIds {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the LocaleIds {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getLocaleIdsNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getLocaleIdsNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getLocaleIdsNodeAsync();
-
-  /**
-   * Get the local value of the HeaderLayoutUri Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the HeaderLayoutUri Node.
-   * @throws UaException if an error occurs creating or getting the HeaderLayoutUri Node.
-   */
-  String getHeaderLayoutUri() throws UaException;
-
-  /**
-   * Set the local value of the HeaderLayoutUri Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the HeaderLayoutUri Node.
-   * @throws UaException if an error occurs creating or getting the HeaderLayoutUri Node.
-   */
-  void setHeaderLayoutUri(String value) throws UaException;
-
-  /**
-   * Read the value of the HeaderLayoutUri Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String readHeaderLayoutUri() throws UaException;
-
-  /**
-   * Write a new value for the HeaderLayoutUri Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeHeaderLayoutUri(String value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readHeaderLayoutUri}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String> readHeaderLayoutUriAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeHeaderLayoutUri}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeHeaderLayoutUriAsync(String value);
-
-  /**
-   * Get the HeaderLayoutUri {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the HeaderLayoutUri {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getHeaderLayoutUriNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getHeaderLayoutUriNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getHeaderLayoutUriNode()}. */
   CompletableFuture<? extends PropertyType> getHeaderLayoutUriNodeAsync();
 
   /**
-   * Get the TransportSettings {@link WriterGroupTransportType} Node, or {@code null} if it does not
-   * exist.
+   * Reads the Value of the HeaderLayoutUri child from the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the TransportSettings {@link WriterGroupTransportType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  WriterGroupTransportType getTransportSettingsNode() throws UaException;
+  @Nullable String readHeaderLayoutUri() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getTransportSettingsNode()}.
+   * Writes the Value of the HeaderLayoutUri child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the WriterGroupTransportType Node
-   *     or completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends WriterGroupTransportType> getTransportSettingsNodeAsync();
+  void writeHeaderLayoutUri(@Nullable String value) throws UaException;
+
+  /** Asynchronous form of {@link #readHeaderLayoutUri()}. */
+  CompletableFuture<? extends @Nullable String> readHeaderLayoutUriAsync();
+
+  /** Asynchronous form of {@link #writeHeaderLayoutUri}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeHeaderLayoutUriAsync(@Nullable String value);
 
   /**
-   * Get the MessageSettings {@link WriterGroupMessageType} Node, or {@code null} if it does not
-   * exist.
+   * Resolves the optional MessageSettings child, a WriterGroupMessageType.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MessageSettings {@link WriterGroupMessageType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.6/#9.1.6.8">WriterGroupMessageType
+   *     documentation</a>
    */
-  WriterGroupMessageType getMessageSettingsNode() throws UaException;
+  @Nullable WriterGroupMessageType getMessageSettingsNode() throws UaException;
+
+  /** Asynchronous form of {@link #getMessageSettingsNode()}. */
+  CompletableFuture<? extends @Nullable WriterGroupMessageType> getMessageSettingsNodeAsync();
 
   /**
-   * Asynchronous implementation of {@link #getMessageSettingsNode()}.
+   * Resolves the optional TransportSettings child, a WriterGroupTransportType.
    *
-   * @return a CompletableFuture that completes successfully with the WriterGroupMessageType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.6/#9.1.6.7">WriterGroupTransportType
+   *     documentation</a>
    */
-  CompletableFuture<? extends WriterGroupMessageType> getMessageSettingsNodeAsync();
+  @Nullable WriterGroupTransportType getTransportSettingsNode() throws UaException;
+
+  /** Asynchronous form of {@link #getTransportSettingsNode()}. */
+  CompletableFuture<? extends @Nullable WriterGroupTransportType> getTransportSettingsNodeAsync();
 
   /**
-   * Get the Diagnostics {@link PubSubDiagnosticsWriterGroupType} Node, or {@code null} if it does
-   * not exist.
+   * Resolves the mandatory PublishingInterval child, a PropertyType with DataType Duration.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the Diagnostics {@link PubSubDiagnosticsWriterGroupType} Node, or {@code null} if it
-   *     does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  PubSubDiagnosticsWriterGroupType getDiagnosticsNode() throws UaException;
+  PropertyType getPublishingIntervalNode() throws UaException;
+
+  /** Asynchronous form of {@link #getPublishingIntervalNode()}. */
+  CompletableFuture<? extends PropertyType> getPublishingIntervalNodeAsync();
 
   /**
-   * Asynchronous implementation of {@link #getDiagnosticsNode()}.
+   * Reads the Value of the PublishingInterval child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the
-   *     PubSubDiagnosticsWriterGroupType Node or completes exceptionally if an error occurs
-   *     creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends PubSubDiagnosticsWriterGroupType> getDiagnosticsNodeAsync();
+  @Nullable Double readPublishingInterval() throws UaException;
+
+  /**
+   * Writes the Value of the PublishingInterval child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writePublishingInterval(@Nullable Double value) throws UaException;
+
+  /** Asynchronous form of {@link #readPublishingInterval()}. */
+  CompletableFuture<? extends @Nullable Double> readPublishingIntervalAsync();
+
+  /** Asynchronous form of {@link #writePublishingInterval}; completes with the operation status. */
+  CompletableFuture<StatusCode> writePublishingIntervalAsync(@Nullable Double value);
+
+  /**
+   * Resolves the mandatory Priority child, a PropertyType with DataType Byte.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getPriorityNode() throws UaException;
+
+  /** Asynchronous form of {@link #getPriorityNode()}. */
+  CompletableFuture<? extends PropertyType> getPriorityNodeAsync();
+
+  /**
+   * Reads the Value of the Priority child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable UByte readPriority() throws UaException;
+
+  /**
+   * Writes the Value of the Priority child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writePriority(@Nullable UByte value) throws UaException;
+
+  /** Asynchronous form of {@link #readPriority()}. */
+  CompletableFuture<? extends @Nullable UByte> readPriorityAsync();
+
+  /** Asynchronous form of {@link #writePriority}; completes with the operation status. */
+  CompletableFuture<StatusCode> writePriorityAsync(@Nullable UByte value);
+
+  /**
+   * Resolves the mandatory LocaleIds child, a PropertyType with DataType LocaleId.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getLocaleIdsNode() throws UaException;
+
+  /** Asynchronous form of {@link #getLocaleIdsNode()}. */
+  CompletableFuture<? extends PropertyType> getLocaleIdsNodeAsync();
+
+  /**
+   * Reads the Value of the LocaleIds child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable String @Nullable [] readLocaleIds() throws UaException;
+
+  /**
+   * Writes the Value of the LocaleIds child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeLocaleIds(@Nullable String @Nullable [] value) throws UaException;
+
+  /** Asynchronous form of {@link #readLocaleIds()}. */
+  CompletableFuture<? extends @Nullable String @Nullable []> readLocaleIdsAsync();
+
+  /** Asynchronous form of {@link #writeLocaleIds}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeLocaleIdsAsync(@Nullable String @Nullable [] value);
+
+  /**
+   * Resolves the optional AddDataSetWriter Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.6/#9.1.6.4">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getAddDataSetWriterMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getAddDataSetWriterMethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getAddDataSetWriterMethodNodeAsync();
+
+  /**
+   * Calls the AddDataSetWriter Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.6/#9.1.6.4">Model
+   *     documentation</a>
+   */
+  @Nullable NodeId addDataSetWriter(@Nullable DataSetWriterDataType configuration)
+      throws UaException;
+
+  /**
+   * Calls the AddDataSetWriter Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<@Nullable NodeId> callAddDataSetWriter(
+      @Nullable DataSetWriterDataType configuration) throws UaException;
+
+  /**
+   * Calls the AddDataSetWriter Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<@Nullable NodeId> callAddDataSetWriterWith(
+      MethodCallOptions options, @Nullable DataSetWriterDataType configuration) throws UaException;
+
+  /** Asynchronous form of {@link #addDataSetWriter}. */
+  CompletableFuture<@Nullable NodeId> addDataSetWriterAsync(
+      @Nullable DataSetWriterDataType configuration);
+
+  /** Asynchronous form of {@link #callAddDataSetWriter}. */
+  CompletableFuture<MethodCallResult<@Nullable NodeId>> callAddDataSetWriterAsync(
+      @Nullable DataSetWriterDataType configuration);
+
+  /** Asynchronous form of {@link #callAddDataSetWriterWith}. */
+  CompletableFuture<MethodCallResult<@Nullable NodeId>> callAddDataSetWriterWithAsync(
+      MethodCallOptions options, @Nullable DataSetWriterDataType configuration);
+
+  /**
+   * Resolves the optional RemoveDataSetWriter Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.6/#9.1.6.5">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getRemoveDataSetWriterMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getRemoveDataSetWriterMethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getRemoveDataSetWriterMethodNodeAsync();
+
+  /**
+   * Calls the RemoveDataSetWriter Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.6/#9.1.6.5">Model
+   *     documentation</a>
+   */
+  void removeDataSetWriter(@Nullable NodeId dataSetWriterNodeId) throws UaException;
+
+  /**
+   * Calls the RemoveDataSetWriter Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callRemoveDataSetWriter(@Nullable NodeId dataSetWriterNodeId)
+      throws UaException;
+
+  /**
+   * Calls the RemoveDataSetWriter Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callRemoveDataSetWriterWith(
+      MethodCallOptions options, @Nullable NodeId dataSetWriterNodeId) throws UaException;
+
+  /** Asynchronous form of {@link #removeDataSetWriter}. */
+  CompletableFuture<Void> removeDataSetWriterAsync(@Nullable NodeId dataSetWriterNodeId);
+
+  /** Asynchronous form of {@link #callRemoveDataSetWriter}. */
+  CompletableFuture<MethodCallResult<Void>> callRemoveDataSetWriterAsync(
+      @Nullable NodeId dataSetWriterNodeId);
+
+  /** Asynchronous form of {@link #callRemoveDataSetWriterWith}. */
+  CompletableFuture<MethodCallResult<Void>> callRemoveDataSetWriterWithAsync(
+      MethodCallOptions options, @Nullable NodeId dataSetWriterNodeId);
 }

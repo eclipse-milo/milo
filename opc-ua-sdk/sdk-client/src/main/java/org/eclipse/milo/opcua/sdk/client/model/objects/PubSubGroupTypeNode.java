@@ -1,31 +1,15 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyTypeNode;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
@@ -34,7 +18,15 @@ import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.KeyValuePair;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link PubSubGroupType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.6/#9.1.6.2">Model
+ *     documentation</a>
+ */
 public class PubSubGroupTypeNode extends BaseObjectTypeNode implements PubSubGroupType {
   public PubSubGroupTypeNode(
       OpcUaClient client,
@@ -42,12 +34,12 @@ public class PubSubGroupTypeNode extends BaseObjectTypeNode implements PubSubGro
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         client,
@@ -65,419 +57,391 @@ public class PubSubGroupTypeNode extends BaseObjectTypeNode implements PubSubGro
   }
 
   @Override
-  public MessageSecurityMode getSecurityMode() throws UaException {
-    PropertyTypeNode node = getSecurityModeNode();
-    Object value = node.getValue().getValue().getValue();
-
-    if (value instanceof Integer) {
-      return MessageSecurityMode.from((Integer) value);
-    } else if (value instanceof MessageSecurityMode) {
-      return (MessageSecurityMode) value;
-    } else {
-      return null;
-    }
-  }
-
-  @Override
-  public void setSecurityMode(MessageSecurityMode value) throws UaException {
-    PropertyTypeNode node = getSecurityModeNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public MessageSecurityMode readSecurityMode() throws UaException {
-    try {
-      return readSecurityModeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeSecurityMode(MessageSecurityMode value) throws UaException {
-    try {
-      StatusCode statusCode = writeSecurityModeAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends MessageSecurityMode> readSecurityModeAsync() {
-    return getSecurityModeNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(
-            v -> {
-              Object value = v.getValue().getValue();
-              if (value instanceof Integer) {
-                return MessageSecurityMode.from((Integer) value);
-              } else {
-                return null;
-              }
-            });
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeSecurityModeAsync(MessageSecurityMode securityMode) {
-    DataValue value = DataValue.valueOnly(new Variant(securityMode));
-    return getSecurityModeNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
   public PropertyTypeNode getSecurityModeNode() throws UaException {
-    try {
-      return getSecurityModeNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getSecurityModeNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends PropertyTypeNode> getSecurityModeNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "SecurityMode", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "SecurityMode",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public String getSecurityGroupId() throws UaException {
-    PropertyTypeNode node = getSecurityGroupIdNode();
-    return (String) node.getValue().getValue().getValue();
+  public @Nullable MessageSecurityMode readSecurityMode() throws UaException {
+    return ClientNodeSupport.await(readSecurityModeAsync());
   }
 
   @Override
-  public void setSecurityGroupId(String value) throws UaException {
-    PropertyTypeNode node = getSecurityGroupIdNode();
-    node.setValue(new Variant(value));
+  public void writeSecurityMode(@Nullable MessageSecurityMode value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeSecurityModeAsync(value)),
+        "http://opcfoundation.org/UA/}SecurityMode");
   }
 
   @Override
-  public String readSecurityGroupId() throws UaException {
-    try {
-      return readSecurityGroupIdAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable MessageSecurityMode> readSecurityModeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getSecurityModeNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}SecurityMode",
+                            true,
+                            MessageSecurityMode.class,
+                            -1,
+                            MessageSecurityMode::from)),
+                v -> CompletableFuture.completedFuture((@Nullable MessageSecurityMode) v)));
   }
 
   @Override
-  public void writeSecurityGroupId(String value) throws UaException {
-    try {
-      StatusCode statusCode = writeSecurityGroupIdAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends String> readSecurityGroupIdAsync() {
-    return getSecurityGroupIdNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (String) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeSecurityGroupIdAsync(String securityGroupId) {
-    DataValue value = DataValue.valueOnly(new Variant(securityGroupId));
-    return getSecurityGroupIdNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public PropertyTypeNode getSecurityGroupIdNode() throws UaException {
-    try {
-      return getSecurityGroupIdNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends PropertyTypeNode> getSecurityGroupIdNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "SecurityGroupId", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
-  }
-
-  @Override
-  public EndpointDescription[] getSecurityKeyServices() throws UaException {
-    PropertyTypeNode node = getSecurityKeyServicesNode();
-    return cast(node.getValue().getValue().getValue(), EndpointDescription[].class);
-  }
-
-  @Override
-  public void setSecurityKeyServices(EndpointDescription[] value) throws UaException {
-    PropertyTypeNode node = getSecurityKeyServicesNode();
-    ExtensionObject[] encoded =
-        ExtensionObject.encodeArray(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
-  }
-
-  @Override
-  public EndpointDescription[] readSecurityKeyServices() throws UaException {
-    try {
-      return readSecurityKeyServicesAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeSecurityKeyServices(EndpointDescription[] value) throws UaException {
-    try {
-      StatusCode statusCode = writeSecurityKeyServicesAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends EndpointDescription[]> readSecurityKeyServicesAsync() {
-    return getSecurityKeyServicesNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), EndpointDescription[].class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeSecurityKeyServicesAsync(
-      EndpointDescription[] securityKeyServices) {
-    ExtensionObject[] encoded =
-        ExtensionObject.encodeArray(client.getStaticEncodingContext(), securityKeyServices);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getSecurityKeyServicesNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public PropertyTypeNode getSecurityKeyServicesNode() throws UaException {
-    try {
-      return getSecurityKeyServicesNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends PropertyTypeNode> getSecurityKeyServicesNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "SecurityKeyServices",
-            ExpandedNodeId.parse("i=46"),
-            false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
-  }
-
-  @Override
-  public UInteger getMaxNetworkMessageSize() throws UaException {
-    PropertyTypeNode node = getMaxNetworkMessageSizeNode();
-    return (UInteger) node.getValue().getValue().getValue();
-  }
-
-  @Override
-  public void setMaxNetworkMessageSize(UInteger value) throws UaException {
-    PropertyTypeNode node = getMaxNetworkMessageSizeNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public UInteger readMaxNetworkMessageSize() throws UaException {
-    try {
-      return readMaxNetworkMessageSizeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeMaxNetworkMessageSize(UInteger value) throws UaException {
-    try {
-      StatusCode statusCode = writeMaxNetworkMessageSizeAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends UInteger> readMaxNetworkMessageSizeAsync() {
-    return getMaxNetworkMessageSizeNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (UInteger) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeMaxNetworkMessageSizeAsync(
-      UInteger maxNetworkMessageSize) {
-    DataValue value = DataValue.valueOnly(new Variant(maxNetworkMessageSize));
-    return getMaxNetworkMessageSizeNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public PropertyTypeNode getMaxNetworkMessageSizeNode() throws UaException {
-    try {
-      return getMaxNetworkMessageSizeNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends PropertyTypeNode> getMaxNetworkMessageSizeNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "MaxNetworkMessageSize",
-            ExpandedNodeId.parse("i=46"),
-            false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
-  }
-
-  @Override
-  public KeyValuePair[] getGroupProperties() throws UaException {
-    PropertyTypeNode node = getGroupPropertiesNode();
-    return cast(node.getValue().getValue().getValue(), KeyValuePair[].class);
-  }
-
-  @Override
-  public void setGroupProperties(KeyValuePair[] value) throws UaException {
-    PropertyTypeNode node = getGroupPropertiesNode();
-    ExtensionObject[] encoded =
-        ExtensionObject.encodeArray(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
-  }
-
-  @Override
-  public KeyValuePair[] readGroupProperties() throws UaException {
-    try {
-      return readGroupPropertiesAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeGroupProperties(KeyValuePair[] value) throws UaException {
-    try {
-      StatusCode statusCode = writeGroupPropertiesAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends KeyValuePair[]> readGroupPropertiesAsync() {
-    return getGroupPropertiesNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), KeyValuePair[].class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeGroupPropertiesAsync(KeyValuePair[] groupProperties) {
-    ExtensionObject[] encoded =
-        ExtensionObject.encodeArray(client.getStaticEncodingContext(), groupProperties);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getGroupPropertiesNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<StatusCode> writeSecurityModeAsync(@Nullable MessageSecurityMode value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getSecurityModeNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}SecurityMode",
+                        value,
+                        MessageSecurityMode.class,
+                        -1,
+                        MessageSecurityMode::from)));
   }
 
   @Override
   public PropertyTypeNode getGroupPropertiesNode() throws UaException {
-    try {
-      return getGroupPropertiesNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getGroupPropertiesNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends PropertyTypeNode> getGroupPropertiesNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "GroupProperties", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "GroupProperties",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
+  }
+
+  @Override
+  public @Nullable KeyValuePair @Nullable [] readGroupProperties() throws UaException {
+    return ClientNodeSupport.await(readGroupPropertiesAsync());
+  }
+
+  @Override
+  public void writeGroupProperties(@Nullable KeyValuePair @Nullable [] value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeGroupPropertiesAsync(value)),
+        "http://opcfoundation.org/UA/}GroupProperties");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable KeyValuePair @Nullable []>
+      readGroupPropertiesAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getGroupPropertiesNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}GroupProperties",
+                            true,
+                            KeyValuePair.class,
+                            1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable KeyValuePair @Nullable []) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeGroupPropertiesAsync(
+      @Nullable KeyValuePair @Nullable [] value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getGroupPropertiesNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}GroupProperties",
+                        value,
+                        KeyValuePair.class,
+                        1,
+                        null)));
+  }
+
+  @Override
+  public @Nullable PropertyTypeNode getSecurityGroupIdNode() throws UaException {
+    return ClientNodeSupport.await(getSecurityGroupIdNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable PropertyTypeNode> getSecurityGroupIdNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "SecurityGroupId",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
+  }
+
+  @Override
+  public @Nullable String readSecurityGroupId() throws UaException {
+    return ClientNodeSupport.await(readSecurityGroupIdAsync());
+  }
+
+  @Override
+  public void writeSecurityGroupId(@Nullable String value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeSecurityGroupIdAsync(value)),
+        "http://opcfoundation.org/UA/}SecurityGroupId");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable String> readSecurityGroupIdAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getSecurityGroupIdNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}SecurityGroupId",
+                            false,
+                            String.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable String) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeSecurityGroupIdAsync(@Nullable String value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getSecurityGroupIdNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}SecurityGroupId",
+                        value,
+                        String.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public @Nullable PropertyTypeNode getSecurityKeyServicesNode() throws UaException {
+    return ClientNodeSupport.await(getSecurityKeyServicesNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable PropertyTypeNode> getSecurityKeyServicesNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "SecurityKeyServices",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
+  }
+
+  @Override
+  public @Nullable EndpointDescription @Nullable [] readSecurityKeyServices() throws UaException {
+    return ClientNodeSupport.await(readSecurityKeyServicesAsync());
+  }
+
+  @Override
+  public void writeSecurityKeyServices(@Nullable EndpointDescription @Nullable [] value)
+      throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeSecurityKeyServicesAsync(value)),
+        "http://opcfoundation.org/UA/}SecurityKeyServices");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable EndpointDescription @Nullable []>
+      readSecurityKeyServicesAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getSecurityKeyServicesNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}SecurityKeyServices",
+                            false,
+                            EndpointDescription.class,
+                            1,
+                            null)),
+                v ->
+                    CompletableFuture.completedFuture(
+                        (@Nullable EndpointDescription @Nullable []) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeSecurityKeyServicesAsync(
+      @Nullable EndpointDescription @Nullable [] value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getSecurityKeyServicesNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}SecurityKeyServices",
+                        value,
+                        EndpointDescription.class,
+                        1,
+                        null)));
+  }
+
+  @Override
+  public PropertyTypeNode getMaxNetworkMessageSizeNode() throws UaException {
+    return ClientNodeSupport.await(getMaxNetworkMessageSizeNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends PropertyTypeNode> getMaxNetworkMessageSizeNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "MaxNetworkMessageSize",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
+  }
+
+  @Override
+  public @Nullable UInteger readMaxNetworkMessageSize() throws UaException {
+    return ClientNodeSupport.await(readMaxNetworkMessageSizeAsync());
+  }
+
+  @Override
+  public void writeMaxNetworkMessageSize(@Nullable UInteger value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeMaxNetworkMessageSizeAsync(value)),
+        "http://opcfoundation.org/UA/}MaxNetworkMessageSize");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable UInteger> readMaxNetworkMessageSizeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getMaxNetworkMessageSizeNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}MaxNetworkMessageSize",
+                            true,
+                            UInteger.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable UInteger) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeMaxNetworkMessageSizeAsync(@Nullable UInteger value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getMaxNetworkMessageSizeNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}MaxNetworkMessageSize",
+                        value,
+                        UInteger.class,
+                        -1,
+                        null)));
   }
 
   @Override
   public PubSubStatusTypeNode getStatusNode() throws UaException {
-    try {
-      return getStatusNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getStatusNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends PubSubStatusTypeNode> getStatusNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Status", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (PubSubStatusTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "Status",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Object,
+                        PubSubStatusTypeNode.class)));
   }
 }

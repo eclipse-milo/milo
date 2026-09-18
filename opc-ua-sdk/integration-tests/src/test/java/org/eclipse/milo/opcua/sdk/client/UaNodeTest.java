@@ -21,6 +21,7 @@ import java.util.EnumSet;
 import java.util.List;
 import org.eclipse.milo.opcua.sdk.client.AddressSpace.BrowseOptions;
 import org.eclipse.milo.opcua.sdk.client.model.objects.ServerTypeNode;
+import org.eclipse.milo.opcua.sdk.client.model.variables.ServerStatusTypeNode;
 import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.client.nodes.UaVariableNode;
 import org.eclipse.milo.opcua.sdk.test.AbstractClientServerTest;
@@ -36,7 +37,6 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
-import org.eclipse.milo.opcua.stack.core.types.structured.BuildInfo;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescription;
@@ -191,13 +191,12 @@ public class UaNodeTest extends AbstractClientServerTest {
 
     ServerTypeNode serverNode = (ServerTypeNode) addressSpace.getNode(NodeIds.Server);
 
-    BuildInfo buildInfo1 = serverNode.getServerStatusNode().getBuildInfo();
-    assertNotNull(buildInfo1);
+    ServerStatusTypeNode serverStatusNode = serverNode.getServerStatusNode();
+    assertEquals(NodeIds.Server_ServerStatus, serverStatusNode.getNodeId());
 
-    BuildInfo buildInfo2 = serverNode.getServerStatusNode().readBuildInfo();
-    assertNotNull(buildInfo2);
-
-    assertEquals(buildInfo1, buildInfo2);
+    assertNotNull(serverStatusNode.readBuildInfo());
+    assertEquals(
+        NodeIds.Server_ServerStatus_BuildInfo, serverStatusNode.getBuildInfoNode().getNodeId());
   }
 
   @Test

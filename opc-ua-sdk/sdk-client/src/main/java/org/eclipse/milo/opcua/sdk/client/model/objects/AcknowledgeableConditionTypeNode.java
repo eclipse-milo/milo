@@ -1,24 +1,17 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallOptions;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallResult;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
 import org.eclipse.milo.opcua.sdk.client.model.variables.TwoStateVariableTypeNode;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
+import org.eclipse.milo.opcua.sdk.client.nodes.UaMethodNode;
+import org.eclipse.milo.opcua.sdk.core.model.methods.AcknowledgeableConditionTypeAcknowledge;
+import org.eclipse.milo.opcua.sdk.core.model.methods.AcknowledgeableConditionTypeConfirm;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
@@ -30,7 +23,15 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link AcknowledgeableConditionType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.7.2">Model
+ *     documentation</a>
+ */
 public class AcknowledgeableConditionTypeNode extends ConditionTypeNode
     implements AcknowledgeableConditionType {
   public AcknowledgeableConditionTypeNode(
@@ -39,12 +40,12 @@ public class AcknowledgeableConditionTypeNode extends ConditionTypeNode
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         client,
@@ -62,221 +63,329 @@ public class AcknowledgeableConditionTypeNode extends ConditionTypeNode
   }
 
   @Override
-  public LocalizedText getEnabledState() throws UaException {
-    TwoStateVariableTypeNode node = getEnabledStateNode();
-    return (LocalizedText) node.getValue().getValue().getValue();
-  }
-
-  @Override
-  public void setEnabledState(LocalizedText value) throws UaException {
-    TwoStateVariableTypeNode node = getEnabledStateNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public LocalizedText readEnabledState() throws UaException {
-    try {
-      return readEnabledStateAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeEnabledState(LocalizedText value) throws UaException {
-    try {
-      StatusCode statusCode = writeEnabledStateAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends LocalizedText> readEnabledStateAsync() {
-    return getEnabledStateNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (LocalizedText) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeEnabledStateAsync(LocalizedText enabledState) {
-    DataValue value = DataValue.valueOnly(new Variant(enabledState));
-    return getEnabledStateNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public TwoStateVariableTypeNode getEnabledStateNode() throws UaException {
-    try {
-      return getEnabledStateNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends TwoStateVariableTypeNode> getEnabledStateNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "EnabledState", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (TwoStateVariableTypeNode) node);
-  }
-
-  @Override
-  public LocalizedText getAckedState() throws UaException {
-    TwoStateVariableTypeNode node = getAckedStateNode();
-    return (LocalizedText) node.getValue().getValue().getValue();
-  }
-
-  @Override
-  public void setAckedState(LocalizedText value) throws UaException {
-    TwoStateVariableTypeNode node = getAckedStateNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public LocalizedText readAckedState() throws UaException {
-    try {
-      return readAckedStateAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeAckedState(LocalizedText value) throws UaException {
-    try {
-      StatusCode statusCode = writeAckedStateAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends LocalizedText> readAckedStateAsync() {
-    return getAckedStateNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (LocalizedText) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeAckedStateAsync(LocalizedText ackedState) {
-    DataValue value = DataValue.valueOnly(new Variant(ackedState));
-    return getAckedStateNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
   public TwoStateVariableTypeNode getAckedStateNode() throws UaException {
-    try {
-      return getAckedStateNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getAckedStateNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends TwoStateVariableTypeNode> getAckedStateNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "AckedState", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (TwoStateVariableTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "AckedState",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        TwoStateVariableTypeNode.class)));
   }
 
   @Override
-  public LocalizedText getConfirmedState() throws UaException {
-    TwoStateVariableTypeNode node = getConfirmedStateNode();
-    return (LocalizedText) node.getValue().getValue().getValue();
+  public @Nullable LocalizedText readAckedState() throws UaException {
+    return ClientNodeSupport.await(readAckedStateAsync());
   }
 
   @Override
-  public void setConfirmedState(LocalizedText value) throws UaException {
-    TwoStateVariableTypeNode node = getConfirmedStateNode();
-    node.setValue(new Variant(value));
+  public void writeAckedState(@Nullable LocalizedText value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeAckedStateAsync(value)),
+        "http://opcfoundation.org/UA/}AckedState");
   }
 
   @Override
-  public LocalizedText readConfirmedState() throws UaException {
-    try {
-      return readConfirmedStateAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable LocalizedText> readAckedStateAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getAckedStateNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}AckedState",
+                            true,
+                            LocalizedText.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable LocalizedText) v)));
   }
 
   @Override
-  public void writeConfirmedState(LocalizedText value) throws UaException {
-    try {
-      StatusCode statusCode = writeConfirmedStateAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<StatusCode> writeAckedStateAsync(@Nullable LocalizedText value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getAckedStateNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}AckedState",
+                        value,
+                        LocalizedText.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public CompletableFuture<? extends LocalizedText> readConfirmedStateAsync() {
-    return getConfirmedStateNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (LocalizedText) v.getValue().getValue());
+  public TwoStateVariableTypeNode getEnabledStateNode() throws UaException {
+    return ClientNodeSupport.await(getEnabledStateNodeAsync());
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeConfirmedStateAsync(LocalizedText confirmedState) {
-    DataValue value = DataValue.valueOnly(new Variant(confirmedState));
-    return getConfirmedStateNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<? extends TwoStateVariableTypeNode> getEnabledStateNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "EnabledState",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        TwoStateVariableTypeNode.class)));
   }
 
   @Override
-  public TwoStateVariableTypeNode getConfirmedStateNode() throws UaException {
-    try {
-      return getConfirmedStateNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable TwoStateVariableTypeNode getConfirmedStateNode() throws UaException {
+    return ClientNodeSupport.await(getConfirmedStateNodeAsync());
   }
 
   @Override
-  public CompletableFuture<? extends TwoStateVariableTypeNode> getConfirmedStateNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "ConfirmedState", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (TwoStateVariableTypeNode) node);
+  public CompletableFuture<? extends @Nullable TwoStateVariableTypeNode>
+      getConfirmedStateNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "ConfirmedState",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        TwoStateVariableTypeNode.class)));
+  }
+
+  @Override
+  public @Nullable LocalizedText readConfirmedState() throws UaException {
+    return ClientNodeSupport.await(readConfirmedStateAsync());
+  }
+
+  @Override
+  public void writeConfirmedState(@Nullable LocalizedText value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeConfirmedStateAsync(value)),
+        "http://opcfoundation.org/UA/}ConfirmedState");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable LocalizedText> readConfirmedStateAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getConfirmedStateNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}ConfirmedState",
+                            false,
+                            LocalizedText.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable LocalizedText) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeConfirmedStateAsync(@Nullable LocalizedText value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getConfirmedStateNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}ConfirmedState",
+                        value,
+                        LocalizedText.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public UaMethodNode getAcknowledgeMethodNode() throws UaException {
+    return ClientNodeSupport.await(getAcknowledgeMethodNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<UaMethodNode> getAcknowledgeMethodNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.mandatoryChild(
+                client,
+                this,
+                "http://opcfoundation.org/UA/",
+                "Acknowledge",
+                ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                NodeClass.Method,
+                UaMethodNode.class));
+  }
+
+  @Override
+  public void acknowledge(@Nullable ByteString eventId, @Nullable LocalizedText comment)
+      throws UaException {
+    ClientNodeSupport.await(acknowledgeAsync(eventId, comment));
+  }
+
+  @Override
+  public MethodCallResult<Void> callAcknowledge(
+      @Nullable ByteString eventId, @Nullable LocalizedText comment) throws UaException {
+    return ClientNodeSupport.await(callAcknowledgeAsync(eventId, comment));
+  }
+
+  @Override
+  public MethodCallResult<Void> callAcknowledgeWith(
+      MethodCallOptions options, @Nullable ByteString eventId, @Nullable LocalizedText comment)
+      throws UaException {
+    return ClientNodeSupport.await(callAcknowledgeWithAsync(options, eventId, comment));
+  }
+
+  @Override
+  public CompletableFuture<Void> acknowledgeAsync(
+      @Nullable ByteString eventId, @Nullable LocalizedText comment) {
+    return ClientNodeSupport.compose(
+        callAcknowledgeAsync(eventId, comment),
+        result ->
+            ClientNodeSupport.defer(() -> CompletableFuture.completedFuture(result.requireGood())));
+  }
+
+  @Override
+  public CompletableFuture<MethodCallResult<Void>> callAcknowledgeAsync(
+      @Nullable ByteString eventId, @Nullable LocalizedText comment) {
+    return callAcknowledgeWithAsync(MethodCallOptions.DEFAULT, eventId, comment);
+  }
+
+  @Override
+  public CompletableFuture<MethodCallResult<Void>> callAcknowledgeWithAsync(
+      MethodCallOptions options, @Nullable ByteString eventId, @Nullable LocalizedText comment) {
+    return ClientNodeSupport.defer(
+        () -> {
+          Variant[] inputs =
+              new AcknowledgeableConditionTypeAcknowledge.Inputs(eventId, comment)
+                  .toVariants(client.getStaticEncodingContext());
+          Variant[] suppliedInputs = inputs;
+          return ClientNodeSupport.compose(
+              getAcknowledgeMethodNodeAsync(),
+              node ->
+                  ClientNodeSupport.compose(
+                      ClientNodeSupport.call(client, this, node, suppliedInputs, options),
+                      result ->
+                          CompletableFuture.completedFuture(
+                              result.map(
+                                  values -> {
+                                    if (values == null || values.length != 0)
+                                      throw new UaException(
+                                          StatusCodes.Bad_DecodingError,
+                                          "expected no Method outputs");
+                                    return null;
+                                  }))));
+        });
+  }
+
+  @Override
+  public @Nullable UaMethodNode getConfirmMethodNode() throws UaException {
+    return ClientNodeSupport.await(getConfirmMethodNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<@Nullable UaMethodNode> getConfirmMethodNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.optionalChild(
+                client,
+                this,
+                "http://opcfoundation.org/UA/",
+                "Confirm",
+                ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                NodeClass.Method,
+                UaMethodNode.class));
+  }
+
+  @Override
+  public void confirm(@Nullable ByteString eventId, @Nullable LocalizedText comment)
+      throws UaException {
+    ClientNodeSupport.await(confirmAsync(eventId, comment));
+  }
+
+  @Override
+  public MethodCallResult<Void> callConfirm(
+      @Nullable ByteString eventId, @Nullable LocalizedText comment) throws UaException {
+    return ClientNodeSupport.await(callConfirmAsync(eventId, comment));
+  }
+
+  @Override
+  public MethodCallResult<Void> callConfirmWith(
+      MethodCallOptions options, @Nullable ByteString eventId, @Nullable LocalizedText comment)
+      throws UaException {
+    return ClientNodeSupport.await(callConfirmWithAsync(options, eventId, comment));
+  }
+
+  @Override
+  public CompletableFuture<Void> confirmAsync(
+      @Nullable ByteString eventId, @Nullable LocalizedText comment) {
+    return ClientNodeSupport.compose(
+        callConfirmAsync(eventId, comment),
+        result ->
+            ClientNodeSupport.defer(() -> CompletableFuture.completedFuture(result.requireGood())));
+  }
+
+  @Override
+  public CompletableFuture<MethodCallResult<Void>> callConfirmAsync(
+      @Nullable ByteString eventId, @Nullable LocalizedText comment) {
+    return callConfirmWithAsync(MethodCallOptions.DEFAULT, eventId, comment);
+  }
+
+  @Override
+  public CompletableFuture<MethodCallResult<Void>> callConfirmWithAsync(
+      MethodCallOptions options, @Nullable ByteString eventId, @Nullable LocalizedText comment) {
+    return ClientNodeSupport.defer(
+        () -> {
+          Variant[] inputs =
+              new AcknowledgeableConditionTypeConfirm.Inputs(eventId, comment)
+                  .toVariants(client.getStaticEncodingContext());
+          Variant[] suppliedInputs = inputs;
+          return ClientNodeSupport.compose(
+              getConfirmMethodNodeAsync(),
+              node ->
+                  ClientNodeSupport.compose(
+                      ClientNodeSupport.call(client, this, node, suppliedInputs, options),
+                      result ->
+                          CompletableFuture.completedFuture(
+                              result.map(
+                                  values -> {
+                                    if (values == null || values.length != 0)
+                                      throw new UaException(
+                                          StatusCodes.Bad_DecodingError,
+                                          "expected no Method outputs");
+                                    return null;
+                                  }))));
+        });
   }
 }

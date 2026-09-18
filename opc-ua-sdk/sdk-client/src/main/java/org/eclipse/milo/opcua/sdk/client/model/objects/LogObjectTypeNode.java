@@ -1,24 +1,18 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallOptions;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallResult;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyTypeNode;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
+import org.eclipse.milo.opcua.sdk.client.nodes.UaMethodNode;
+import org.eclipse.milo.opcua.sdk.core.model.methods.LogObjectTypeGetRecords;
+import org.eclipse.milo.opcua.sdk.core.model.methods.LogObjectTypeReleaseContinuationPoint;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
@@ -30,8 +24,17 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
+import org.eclipse.milo.opcua.stack.core.types.structured.LogRecordMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link LogObjectType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part26/5.2">Model
+ *     documentation</a>
+ */
 public class LogObjectTypeNode extends BaseObjectTypeNode implements LogObjectType {
   public LogObjectTypeNode(
       OpcUaClient client,
@@ -39,12 +42,12 @@ public class LogObjectTypeNode extends BaseObjectTypeNode implements LogObjectTy
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         client,
@@ -62,224 +65,451 @@ public class LogObjectTypeNode extends BaseObjectTypeNode implements LogObjectTy
   }
 
   @Override
-  public UInteger getMaxRecords() throws UaException {
-    PropertyTypeNode node = getMaxRecordsNode();
-    return (UInteger) node.getValue().getValue().getValue();
+  public @Nullable PropertyTypeNode getMaxRecordsNode() throws UaException {
+    return ClientNodeSupport.await(getMaxRecordsNodeAsync());
   }
 
   @Override
-  public void setMaxRecords(UInteger value) throws UaException {
-    PropertyTypeNode node = getMaxRecordsNode();
-    node.setValue(new Variant(value));
+  public CompletableFuture<? extends @Nullable PropertyTypeNode> getMaxRecordsNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "MaxRecords",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public UInteger readMaxRecords() throws UaException {
-    try {
-      return readMaxRecordsAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable UInteger readMaxRecords() throws UaException {
+    return ClientNodeSupport.await(readMaxRecordsAsync());
   }
 
   @Override
-  public void writeMaxRecords(UInteger value) throws UaException {
-    try {
-      StatusCode statusCode = writeMaxRecordsAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public void writeMaxRecords(@Nullable UInteger value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeMaxRecordsAsync(value)),
+        "http://opcfoundation.org/UA/}MaxRecords");
   }
 
   @Override
-  public CompletableFuture<? extends UInteger> readMaxRecordsAsync() {
-    return getMaxRecordsNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (UInteger) v.getValue().getValue());
+  public CompletableFuture<? extends @Nullable UInteger> readMaxRecordsAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getMaxRecordsNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}MaxRecords",
+                            false,
+                            UInteger.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable UInteger) v)));
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeMaxRecordsAsync(UInteger maxRecords) {
-    DataValue value = DataValue.valueOnly(new Variant(maxRecords));
-    return getMaxRecordsNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<StatusCode> writeMaxRecordsAsync(@Nullable UInteger value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getMaxRecordsNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}MaxRecords",
+                        value,
+                        UInteger.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public PropertyTypeNode getMaxRecordsNode() throws UaException {
-    try {
-      return getMaxRecordsNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable PropertyTypeNode getMinimumSeverityNode() throws UaException {
+    return ClientNodeSupport.await(getMinimumSeverityNodeAsync());
   }
 
   @Override
-  public CompletableFuture<? extends PropertyTypeNode> getMaxRecordsNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "MaxRecords", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+  public CompletableFuture<? extends @Nullable PropertyTypeNode> getMinimumSeverityNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "MinimumSeverity",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public Double getMaxStorageDuration() throws UaException {
-    PropertyTypeNode node = getMaxStorageDurationNode();
-    return (Double) node.getValue().getValue().getValue();
+  public @Nullable UShort readMinimumSeverity() throws UaException {
+    return ClientNodeSupport.await(readMinimumSeverityAsync());
   }
 
   @Override
-  public void setMaxStorageDuration(Double value) throws UaException {
-    PropertyTypeNode node = getMaxStorageDurationNode();
-    node.setValue(new Variant(value));
+  public void writeMinimumSeverity(@Nullable UShort value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeMinimumSeverityAsync(value)),
+        "http://opcfoundation.org/UA/}MinimumSeverity");
   }
 
   @Override
-  public Double readMaxStorageDuration() throws UaException {
-    try {
-      return readMaxStorageDurationAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable UShort> readMinimumSeverityAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getMinimumSeverityNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}MinimumSeverity",
+                            false,
+                            UShort.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable UShort) v)));
   }
 
   @Override
-  public void writeMaxStorageDuration(Double value) throws UaException {
-    try {
-      StatusCode statusCode = writeMaxStorageDurationAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<StatusCode> writeMinimumSeverityAsync(@Nullable UShort value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getMinimumSeverityNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}MinimumSeverity",
+                        value,
+                        UShort.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public CompletableFuture<? extends Double> readMaxStorageDurationAsync() {
-    return getMaxStorageDurationNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (Double) v.getValue().getValue());
+  public @Nullable PropertyTypeNode getMaxStorageDurationNode() throws UaException {
+    return ClientNodeSupport.await(getMaxStorageDurationNodeAsync());
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeMaxStorageDurationAsync(Double maxStorageDuration) {
-    DataValue value = DataValue.valueOnly(new Variant(maxStorageDuration));
-    return getMaxStorageDurationNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<? extends @Nullable PropertyTypeNode> getMaxStorageDurationNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "MaxStorageDuration",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public PropertyTypeNode getMaxStorageDurationNode() throws UaException {
-    try {
-      return getMaxStorageDurationNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable Double readMaxStorageDuration() throws UaException {
+    return ClientNodeSupport.await(readMaxStorageDurationAsync());
   }
 
   @Override
-  public CompletableFuture<? extends PropertyTypeNode> getMaxStorageDurationNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "MaxStorageDuration",
-            ExpandedNodeId.parse("i=46"),
-            false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+  public void writeMaxStorageDuration(@Nullable Double value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeMaxStorageDurationAsync(value)),
+        "http://opcfoundation.org/UA/}MaxStorageDuration");
   }
 
   @Override
-  public UShort getMinimumSeverity() throws UaException {
-    PropertyTypeNode node = getMinimumSeverityNode();
-    return (UShort) node.getValue().getValue().getValue();
+  public CompletableFuture<? extends @Nullable Double> readMaxStorageDurationAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getMaxStorageDurationNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}MaxStorageDuration",
+                            false,
+                            Double.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable Double) v)));
   }
 
   @Override
-  public void setMinimumSeverity(UShort value) throws UaException {
-    PropertyTypeNode node = getMinimumSeverityNode();
-    node.setValue(new Variant(value));
+  public CompletableFuture<StatusCode> writeMaxStorageDurationAsync(@Nullable Double value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getMaxStorageDurationNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}MaxStorageDuration",
+                        value,
+                        Double.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public UShort readMinimumSeverity() throws UaException {
-    try {
-      return readMinimumSeverityAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public UaMethodNode getGetRecordsMethodNode() throws UaException {
+    return ClientNodeSupport.await(getGetRecordsMethodNodeAsync());
   }
 
   @Override
-  public void writeMinimumSeverity(UShort value) throws UaException {
-    try {
-      StatusCode statusCode = writeMinimumSeverityAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<UaMethodNode> getGetRecordsMethodNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.mandatoryChild(
+                client,
+                this,
+                "http://opcfoundation.org/UA/",
+                "GetRecords",
+                ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                NodeClass.Method,
+                UaMethodNode.class));
   }
 
   @Override
-  public CompletableFuture<? extends UShort> readMinimumSeverityAsync() {
-    return getMinimumSeverityNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (UShort) v.getValue().getValue());
+  public LogObjectTypeGetRecords.Outputs getRecords(
+      @Nullable DateTime startTime,
+      @Nullable DateTime endTime,
+      @Nullable UInteger maxReturnRecords,
+      @Nullable UShort minimumSeverity,
+      @Nullable LogRecordMask requestMask,
+      @Nullable ByteString continuationPointIn)
+      throws UaException {
+    return ClientNodeSupport.await(
+        getRecordsAsync(
+            startTime,
+            endTime,
+            maxReturnRecords,
+            minimumSeverity,
+            requestMask,
+            continuationPointIn));
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeMinimumSeverityAsync(UShort minimumSeverity) {
-    DataValue value = DataValue.valueOnly(new Variant(minimumSeverity));
-    return getMinimumSeverityNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public MethodCallResult<LogObjectTypeGetRecords.Outputs> callGetRecords(
+      @Nullable DateTime startTime,
+      @Nullable DateTime endTime,
+      @Nullable UInteger maxReturnRecords,
+      @Nullable UShort minimumSeverity,
+      @Nullable LogRecordMask requestMask,
+      @Nullable ByteString continuationPointIn)
+      throws UaException {
+    return ClientNodeSupport.await(
+        callGetRecordsAsync(
+            startTime,
+            endTime,
+            maxReturnRecords,
+            minimumSeverity,
+            requestMask,
+            continuationPointIn));
   }
 
   @Override
-  public PropertyTypeNode getMinimumSeverityNode() throws UaException {
-    try {
-      return getMinimumSeverityNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public MethodCallResult<LogObjectTypeGetRecords.Outputs> callGetRecordsWith(
+      MethodCallOptions options,
+      @Nullable DateTime startTime,
+      @Nullable DateTime endTime,
+      @Nullable UInteger maxReturnRecords,
+      @Nullable UShort minimumSeverity,
+      @Nullable LogRecordMask requestMask,
+      @Nullable ByteString continuationPointIn)
+      throws UaException {
+    return ClientNodeSupport.await(
+        callGetRecordsWithAsync(
+            options,
+            startTime,
+            endTime,
+            maxReturnRecords,
+            minimumSeverity,
+            requestMask,
+            continuationPointIn));
   }
 
   @Override
-  public CompletableFuture<? extends PropertyTypeNode> getMinimumSeverityNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "MinimumSeverity", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+  public CompletableFuture<LogObjectTypeGetRecords.Outputs> getRecordsAsync(
+      @Nullable DateTime startTime,
+      @Nullable DateTime endTime,
+      @Nullable UInteger maxReturnRecords,
+      @Nullable UShort minimumSeverity,
+      @Nullable LogRecordMask requestMask,
+      @Nullable ByteString continuationPointIn) {
+    return ClientNodeSupport.compose(
+        callGetRecordsAsync(
+            startTime,
+            endTime,
+            maxReturnRecords,
+            minimumSeverity,
+            requestMask,
+            continuationPointIn),
+        result ->
+            ClientNodeSupport.defer(() -> CompletableFuture.completedFuture(result.requireGood())));
+  }
+
+  @Override
+  public CompletableFuture<MethodCallResult<LogObjectTypeGetRecords.Outputs>> callGetRecordsAsync(
+      @Nullable DateTime startTime,
+      @Nullable DateTime endTime,
+      @Nullable UInteger maxReturnRecords,
+      @Nullable UShort minimumSeverity,
+      @Nullable LogRecordMask requestMask,
+      @Nullable ByteString continuationPointIn) {
+    return callGetRecordsWithAsync(
+        MethodCallOptions.DEFAULT,
+        startTime,
+        endTime,
+        maxReturnRecords,
+        minimumSeverity,
+        requestMask,
+        continuationPointIn);
+  }
+
+  @Override
+  public CompletableFuture<MethodCallResult<LogObjectTypeGetRecords.Outputs>>
+      callGetRecordsWithAsync(
+          MethodCallOptions options,
+          @Nullable DateTime startTime,
+          @Nullable DateTime endTime,
+          @Nullable UInteger maxReturnRecords,
+          @Nullable UShort minimumSeverity,
+          @Nullable LogRecordMask requestMask,
+          @Nullable ByteString continuationPointIn) {
+    return ClientNodeSupport.defer(
+        () -> {
+          Variant[] inputs =
+              new LogObjectTypeGetRecords.Inputs(
+                      startTime,
+                      endTime,
+                      maxReturnRecords,
+                      minimumSeverity,
+                      requestMask,
+                      continuationPointIn)
+                  .toVariants(client.getStaticEncodingContext());
+          Variant[] suppliedInputs = inputs;
+          return ClientNodeSupport.compose(
+              getGetRecordsMethodNodeAsync(),
+              node ->
+                  ClientNodeSupport.compose(
+                      ClientNodeSupport.call(client, this, node, suppliedInputs, options),
+                      result ->
+                          CompletableFuture.completedFuture(
+                              result.map(
+                                  values -> {
+                                    return LogObjectTypeGetRecords.Outputs.fromVariants(
+                                        client.getStaticEncodingContext(), values);
+                                  }))));
+        });
+  }
+
+  @Override
+  public @Nullable UaMethodNode getReleaseContinuationPointMethodNode() throws UaException {
+    return ClientNodeSupport.await(getReleaseContinuationPointMethodNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<@Nullable UaMethodNode> getReleaseContinuationPointMethodNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.optionalChild(
+                client,
+                this,
+                "http://opcfoundation.org/UA/",
+                "ReleaseContinuationPoint",
+                ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                NodeClass.Method,
+                UaMethodNode.class));
+  }
+
+  @Override
+  public void releaseContinuationPoint(@Nullable ByteString continuationPointIn)
+      throws UaException {
+    ClientNodeSupport.await(releaseContinuationPointAsync(continuationPointIn));
+  }
+
+  @Override
+  public MethodCallResult<Void> callReleaseContinuationPoint(
+      @Nullable ByteString continuationPointIn) throws UaException {
+    return ClientNodeSupport.await(callReleaseContinuationPointAsync(continuationPointIn));
+  }
+
+  @Override
+  public MethodCallResult<Void> callReleaseContinuationPointWith(
+      MethodCallOptions options, @Nullable ByteString continuationPointIn) throws UaException {
+    return ClientNodeSupport.await(
+        callReleaseContinuationPointWithAsync(options, continuationPointIn));
+  }
+
+  @Override
+  public CompletableFuture<Void> releaseContinuationPointAsync(
+      @Nullable ByteString continuationPointIn) {
+    return ClientNodeSupport.compose(
+        callReleaseContinuationPointAsync(continuationPointIn),
+        result ->
+            ClientNodeSupport.defer(() -> CompletableFuture.completedFuture(result.requireGood())));
+  }
+
+  @Override
+  public CompletableFuture<MethodCallResult<Void>> callReleaseContinuationPointAsync(
+      @Nullable ByteString continuationPointIn) {
+    return callReleaseContinuationPointWithAsync(MethodCallOptions.DEFAULT, continuationPointIn);
+  }
+
+  @Override
+  public CompletableFuture<MethodCallResult<Void>> callReleaseContinuationPointWithAsync(
+      MethodCallOptions options, @Nullable ByteString continuationPointIn) {
+    return ClientNodeSupport.defer(
+        () -> {
+          Variant[] inputs =
+              new LogObjectTypeReleaseContinuationPoint.Inputs(continuationPointIn)
+                  .toVariants(client.getStaticEncodingContext());
+          Variant[] suppliedInputs = inputs;
+          return ClientNodeSupport.compose(
+              getReleaseContinuationPointMethodNodeAsync(),
+              node ->
+                  ClientNodeSupport.compose(
+                      ClientNodeSupport.call(client, this, node, suppliedInputs, options),
+                      result ->
+                          CompletableFuture.completedFuture(
+                              result.map(
+                                  values -> {
+                                    if (values == null || values.length != 0)
+                                      throw new UaException(
+                                          StatusCodes.Bad_DecodingError,
+                                          "expected no Method outputs");
+                                    return null;
+                                  }))));
+        });
   }
 }

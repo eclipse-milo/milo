@@ -1,30 +1,14 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.variables;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
@@ -32,7 +16,14 @@ import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelExType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SessionDiagnosticsDataType;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link SessionDiagnosticsArrayType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.13">Model
+ *     documentation</a>
+ */
 public class SessionDiagnosticsArrayTypeNode extends BaseDataVariableTypeNode
     implements SessionDiagnosticsArrayType {
   public SessionDiagnosticsArrayTypeNode(
@@ -41,21 +32,21 @@ public class SessionDiagnosticsArrayTypeNode extends BaseDataVariableTypeNode
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       DataValue value,
       NodeId dataType,
       Integer valueRank,
-      UInteger[] arrayDimensions,
+      UInteger @Nullable [] arrayDimensions,
       UByte accessLevel,
       UByte userAccessLevel,
       Double minimumSamplingInterval,
       Boolean historizing,
-      AccessLevelExType accessLevelEx) {
+      @Nullable AccessLevelExType accessLevelEx) {
     super(
         client,
         nodeId,
@@ -80,83 +71,55 @@ public class SessionDiagnosticsArrayTypeNode extends BaseDataVariableTypeNode
   }
 
   @Override
-  public SessionDiagnosticsDataType getSessionDiagnostics() throws UaException {
-    SessionDiagnosticsVariableTypeNode node = getSessionDiagnosticsNode();
-    return cast(node.getValue().getValue().getValue(), SessionDiagnosticsDataType.class);
+  public @Nullable SessionDiagnosticsDataType @Nullable [] readTypedValue() throws UaException {
+    return ClientNodeSupport.await(readTypedValueAsync());
   }
 
   @Override
-  public void setSessionDiagnostics(SessionDiagnosticsDataType value) throws UaException {
-    SessionDiagnosticsVariableTypeNode node = getSessionDiagnosticsNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
+  public void writeTypedValue(@Nullable SessionDiagnosticsDataType @Nullable [] value)
+      throws UaException {
+    ClientNodeSupport.good(ClientNodeSupport.await(writeTypedValueAsync(value)), "Value");
   }
 
   @Override
-  public SessionDiagnosticsDataType readSessionDiagnostics() throws UaException {
-    try {
-      return readSessionDiagnosticsAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable SessionDiagnosticsDataType @Nullable []>
+      readTypedValueAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    CompletableFuture.completedFuture(this),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "Value",
+                            true,
+                            SessionDiagnosticsDataType.class,
+                            1,
+                            null)),
+                v ->
+                    CompletableFuture.completedFuture(
+                        (@Nullable SessionDiagnosticsDataType @Nullable []) v)));
   }
 
   @Override
-  public void writeSessionDiagnostics(SessionDiagnosticsDataType value) throws UaException {
-    try {
-      StatusCode statusCode = writeSessionDiagnosticsAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends SessionDiagnosticsDataType> readSessionDiagnosticsAsync() {
-    return getSessionDiagnosticsNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), SessionDiagnosticsDataType.class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeSessionDiagnosticsAsync(
-      SessionDiagnosticsDataType sessionDiagnostics) {
-    ExtensionObject encoded =
-        ExtensionObject.encode(client.getStaticEncodingContext(), sessionDiagnostics);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getSessionDiagnosticsNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public SessionDiagnosticsVariableTypeNode getSessionDiagnosticsNode() throws UaException {
-    try {
-      return getSessionDiagnosticsNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends SessionDiagnosticsVariableTypeNode>
-      getSessionDiagnosticsNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "SessionDiagnostics",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (SessionDiagnosticsVariableTypeNode) node);
+  public CompletableFuture<StatusCode> writeTypedValueAsync(
+      @Nullable SessionDiagnosticsDataType @Nullable [] value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "Value",
+                        value,
+                        SessionDiagnosticsDataType.class,
+                        1,
+                        null)));
   }
 }

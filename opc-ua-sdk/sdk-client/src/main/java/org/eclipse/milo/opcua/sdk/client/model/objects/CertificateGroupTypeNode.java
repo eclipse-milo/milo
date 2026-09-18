@@ -1,24 +1,15 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallOptions;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallResult;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyTypeNode;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.sdk.client.nodes.UaMethodNode;
+import org.eclipse.milo.opcua.sdk.core.model.methods.CertificateGroupTypeGetRejectedList;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
@@ -30,7 +21,15 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link CertificateGroupType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.3/#7.8.3.1">Model
+ *     documentation</a>
+ */
 public class CertificateGroupTypeNode extends BaseObjectTypeNode implements CertificateGroupType {
   public CertificateGroupTypeNode(
       OpcUaClient client,
@@ -38,12 +37,12 @@ public class CertificateGroupTypeNode extends BaseObjectTypeNode implements Cert
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         client,
@@ -61,219 +60,285 @@ public class CertificateGroupTypeNode extends BaseObjectTypeNode implements Cert
   }
 
   @Override
-  public NodeId[] getCertificateTypes() throws UaException {
-    PropertyTypeNode node = getCertificateTypesNode();
-    return (NodeId[]) node.getValue().getValue().getValue();
-  }
-
-  @Override
-  public void setCertificateTypes(NodeId[] value) throws UaException {
-    PropertyTypeNode node = getCertificateTypesNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public NodeId[] readCertificateTypes() throws UaException {
-    try {
-      return readCertificateTypesAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeCertificateTypes(NodeId[] value) throws UaException {
-    try {
-      StatusCode statusCode = writeCertificateTypesAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends NodeId[]> readCertificateTypesAsync() {
-    return getCertificateTypesNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (NodeId[]) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeCertificateTypesAsync(NodeId[] certificateTypes) {
-    DataValue value = DataValue.valueOnly(new Variant(certificateTypes));
-    return getCertificateTypesNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
   public PropertyTypeNode getCertificateTypesNode() throws UaException {
-    try {
-      return getCertificateTypesNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getCertificateTypesNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends PropertyTypeNode> getCertificateTypesNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "CertificateTypes",
-            ExpandedNodeId.parse("i=46"),
-            false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "CertificateTypes",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public NodeId getPurpose() throws UaException {
-    PropertyTypeNode node = getPurposeNode();
-    return (NodeId) node.getValue().getValue().getValue();
+  public NodeId @Nullable [] readCertificateTypes() throws UaException {
+    return ClientNodeSupport.await(readCertificateTypesAsync());
   }
 
   @Override
-  public void setPurpose(NodeId value) throws UaException {
-    PropertyTypeNode node = getPurposeNode();
-    node.setValue(new Variant(value));
+  public void writeCertificateTypes(NodeId @Nullable [] value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeCertificateTypesAsync(value)),
+        "http://opcfoundation.org/UA/}CertificateTypes");
   }
 
   @Override
-  public NodeId readPurpose() throws UaException {
-    try {
-      return readPurposeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends NodeId @Nullable []> readCertificateTypesAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getCertificateTypesNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}CertificateTypes",
+                            true,
+                            NodeId.class,
+                            1,
+                            null)),
+                v -> CompletableFuture.completedFuture((NodeId @Nullable []) v)));
   }
 
   @Override
-  public void writePurpose(NodeId value) throws UaException {
-    try {
-      StatusCode statusCode = writePurposeAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<StatusCode> writeCertificateTypesAsync(NodeId @Nullable [] value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getCertificateTypesNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}CertificateTypes",
+                        value,
+                        NodeId.class,
+                        1,
+                        null)));
   }
 
   @Override
-  public CompletableFuture<? extends NodeId> readPurposeAsync() {
-    return getPurposeNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (NodeId) v.getValue().getValue());
+  public @Nullable CertificateExpirationAlarmTypeNode getCertificateExpiredNode()
+      throws UaException {
+    return ClientNodeSupport.await(getCertificateExpiredNodeAsync());
   }
 
   @Override
-  public CompletableFuture<StatusCode> writePurposeAsync(NodeId purpose) {
-    DataValue value = DataValue.valueOnly(new Variant(purpose));
-    return getPurposeNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<? extends @Nullable CertificateExpirationAlarmTypeNode>
+      getCertificateExpiredNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "CertificateExpired",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Object,
+                        CertificateExpirationAlarmTypeNode.class)));
   }
 
   @Override
-  public PropertyTypeNode getPurposeNode() throws UaException {
-    try {
-      return getPurposeNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable TrustListOutOfDateAlarmTypeNode getTrustListOutOfDateNode() throws UaException {
+    return ClientNodeSupport.await(getTrustListOutOfDateNodeAsync());
   }
 
   @Override
-  public CompletableFuture<? extends PropertyTypeNode> getPurposeNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Purpose", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+  public CompletableFuture<? extends @Nullable TrustListOutOfDateAlarmTypeNode>
+      getTrustListOutOfDateNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "TrustListOutOfDate",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Object,
+                        TrustListOutOfDateAlarmTypeNode.class)));
+  }
+
+  @Override
+  public @Nullable PropertyTypeNode getPurposeNode() throws UaException {
+    return ClientNodeSupport.await(getPurposeNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable PropertyTypeNode> getPurposeNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "Purpose",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
+  }
+
+  @Override
+  public @Nullable NodeId readPurpose() throws UaException {
+    return ClientNodeSupport.await(readPurposeAsync());
+  }
+
+  @Override
+  public void writePurpose(@Nullable NodeId value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writePurposeAsync(value)), "http://opcfoundation.org/UA/}Purpose");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable NodeId> readPurposeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getPurposeNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}Purpose",
+                            false,
+                            NodeId.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable NodeId) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writePurposeAsync(@Nullable NodeId value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getPurposeNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}Purpose",
+                        value,
+                        NodeId.class,
+                        -1,
+                        null)));
   }
 
   @Override
   public TrustListTypeNode getTrustListNode() throws UaException {
-    try {
-      return getTrustListNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getTrustListNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends TrustListTypeNode> getTrustListNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "TrustList", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (TrustListTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "TrustList",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Object,
+                        TrustListTypeNode.class)));
   }
 
   @Override
-  public CertificateExpirationAlarmTypeNode getCertificateExpiredNode() throws UaException {
-    try {
-      return getCertificateExpiredNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable UaMethodNode getGetRejectedListMethodNode() throws UaException {
+    return ClientNodeSupport.await(getGetRejectedListMethodNodeAsync());
   }
 
   @Override
-  public CompletableFuture<? extends CertificateExpirationAlarmTypeNode>
-      getCertificateExpiredNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "CertificateExpired",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (CertificateExpirationAlarmTypeNode) node);
+  public CompletableFuture<@Nullable UaMethodNode> getGetRejectedListMethodNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.optionalChild(
+                client,
+                this,
+                "http://opcfoundation.org/UA/",
+                "GetRejectedList",
+                ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                NodeClass.Method,
+                UaMethodNode.class));
   }
 
   @Override
-  public TrustListOutOfDateAlarmTypeNode getTrustListOutOfDateNode() throws UaException {
-    try {
-      return getTrustListOutOfDateNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public ByteString @Nullable [] getRejectedList() throws UaException {
+    return ClientNodeSupport.await(getRejectedListAsync());
   }
 
   @Override
-  public CompletableFuture<? extends TrustListOutOfDateAlarmTypeNode>
-      getTrustListOutOfDateNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "TrustListOutOfDate",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (TrustListOutOfDateAlarmTypeNode) node);
+  public MethodCallResult<ByteString @Nullable []> callGetRejectedList() throws UaException {
+    return ClientNodeSupport.await(callGetRejectedListAsync());
+  }
+
+  @Override
+  public MethodCallResult<ByteString @Nullable []> callGetRejectedListWith(
+      MethodCallOptions options) throws UaException {
+    return ClientNodeSupport.await(callGetRejectedListWithAsync(options));
+  }
+
+  @Override
+  public CompletableFuture<ByteString @Nullable []> getRejectedListAsync() {
+    return ClientNodeSupport.compose(
+        callGetRejectedListAsync(),
+        result ->
+            ClientNodeSupport.defer(() -> CompletableFuture.completedFuture(result.requireGood())));
+  }
+
+  @Override
+  public CompletableFuture<MethodCallResult<ByteString @Nullable []>> callGetRejectedListAsync() {
+    return callGetRejectedListWithAsync(MethodCallOptions.DEFAULT);
+  }
+
+  @Override
+  public CompletableFuture<MethodCallResult<ByteString @Nullable []>> callGetRejectedListWithAsync(
+      MethodCallOptions options) {
+    return ClientNodeSupport.defer(
+        () -> {
+          Variant[] inputs = new Variant[0];
+          Variant[] suppliedInputs = inputs;
+          return ClientNodeSupport.compose(
+              getGetRejectedListMethodNodeAsync(),
+              node ->
+                  ClientNodeSupport.compose(
+                      ClientNodeSupport.call(client, this, node, suppliedInputs, options),
+                      result ->
+                          CompletableFuture.completedFuture(
+                              result.map(
+                                  values -> {
+                                    return CertificateGroupTypeGetRejectedList.Outputs.fromVariants(
+                                            client.getStaticEncodingContext(), values)
+                                        .certificates();
+                                  }))));
+        });
   }
 }

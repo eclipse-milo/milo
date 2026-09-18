@@ -1,36 +1,29 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
-import org.eclipse.milo.opcua.sdk.client.model.variables.BaseDataVariableTypeNode;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
+import org.eclipse.milo.opcua.sdk.client.nodes.UaVariableNode;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link LldpRemoteStatisticsType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.5.4">Model
+ *     documentation</a>
+ */
 public class LldpRemoteStatisticsTypeNode extends BaseObjectTypeNode
     implements LldpRemoteStatisticsType {
   public LldpRemoteStatisticsTypeNode(
@@ -39,12 +32,12 @@ public class LldpRemoteStatisticsTypeNode extends BaseObjectTypeNode
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         client,
@@ -62,367 +55,362 @@ public class LldpRemoteStatisticsTypeNode extends BaseObjectTypeNode
   }
 
   @Override
-  public UInteger getLastChangeTime() throws UaException {
-    BaseDataVariableTypeNode node = getLastChangeTimeNode();
-    return (UInteger) node.getValue().getValue().getValue();
+  public UaVariableNode getRemoteDropsNode() throws UaException {
+    return ClientNodeSupport.await(getRemoteDropsNodeAsync());
   }
 
   @Override
-  public void setLastChangeTime(UInteger value) throws UaException {
-    BaseDataVariableTypeNode node = getLastChangeTimeNode();
-    node.setValue(new Variant(value));
+  public CompletableFuture<? extends UaVariableNode> getRemoteDropsNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "RemoteDrops",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
   }
 
   @Override
-  public UInteger readLastChangeTime() throws UaException {
-    try {
-      return readLastChangeTimeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable UInteger readRemoteDrops() throws UaException {
+    return ClientNodeSupport.await(readRemoteDropsAsync());
   }
 
   @Override
-  public void writeLastChangeTime(UInteger value) throws UaException {
-    try {
-      StatusCode statusCode = writeLastChangeTimeAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public void writeRemoteDrops(@Nullable UInteger value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeRemoteDropsAsync(value)),
+        "http://opcfoundation.org/UA/}RemoteDrops");
   }
 
   @Override
-  public CompletableFuture<? extends UInteger> readLastChangeTimeAsync() {
-    return getLastChangeTimeNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (UInteger) v.getValue().getValue());
+  public CompletableFuture<? extends @Nullable UInteger> readRemoteDropsAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getRemoteDropsNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}RemoteDrops",
+                            true,
+                            UInteger.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable UInteger) v)));
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeLastChangeTimeAsync(UInteger lastChangeTime) {
-    DataValue value = DataValue.valueOnly(new Variant(lastChangeTime));
-    return getLastChangeTimeNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<StatusCode> writeRemoteDropsAsync(@Nullable UInteger value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getRemoteDropsNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}RemoteDrops",
+                        value,
+                        UInteger.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public BaseDataVariableTypeNode getLastChangeTimeNode() throws UaException {
-    try {
-      return getLastChangeTimeNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public UaVariableNode getRemoteAgeoutsNode() throws UaException {
+    return ClientNodeSupport.await(getRemoteAgeoutsNodeAsync());
   }
 
   @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getLastChangeTimeNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "LastChangeTime", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
+  public CompletableFuture<? extends UaVariableNode> getRemoteAgeoutsNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "RemoteAgeouts",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
   }
 
   @Override
-  public UInteger getRemoteInserts() throws UaException {
-    BaseDataVariableTypeNode node = getRemoteInsertsNode();
-    return (UInteger) node.getValue().getValue().getValue();
+  public @Nullable UInteger readRemoteAgeouts() throws UaException {
+    return ClientNodeSupport.await(readRemoteAgeoutsAsync());
   }
 
   @Override
-  public void setRemoteInserts(UInteger value) throws UaException {
-    BaseDataVariableTypeNode node = getRemoteInsertsNode();
-    node.setValue(new Variant(value));
+  public void writeRemoteAgeouts(@Nullable UInteger value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeRemoteAgeoutsAsync(value)),
+        "http://opcfoundation.org/UA/}RemoteAgeouts");
   }
 
   @Override
-  public UInteger readRemoteInserts() throws UaException {
-    try {
-      return readRemoteInsertsAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable UInteger> readRemoteAgeoutsAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getRemoteAgeoutsNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}RemoteAgeouts",
+                            true,
+                            UInteger.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable UInteger) v)));
   }
 
   @Override
-  public void writeRemoteInserts(UInteger value) throws UaException {
-    try {
-      StatusCode statusCode = writeRemoteInsertsAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<StatusCode> writeRemoteAgeoutsAsync(@Nullable UInteger value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getRemoteAgeoutsNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}RemoteAgeouts",
+                        value,
+                        UInteger.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public CompletableFuture<? extends UInteger> readRemoteInsertsAsync() {
-    return getRemoteInsertsNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (UInteger) v.getValue().getValue());
+  public UaVariableNode getRemoteDeletesNode() throws UaException {
+    return ClientNodeSupport.await(getRemoteDeletesNodeAsync());
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeRemoteInsertsAsync(UInteger remoteInserts) {
-    DataValue value = DataValue.valueOnly(new Variant(remoteInserts));
-    return getRemoteInsertsNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<? extends UaVariableNode> getRemoteDeletesNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "RemoteDeletes",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
   }
 
   @Override
-  public BaseDataVariableTypeNode getRemoteInsertsNode() throws UaException {
-    try {
-      return getRemoteInsertsNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable UInteger readRemoteDeletes() throws UaException {
+    return ClientNodeSupport.await(readRemoteDeletesAsync());
   }
 
   @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getRemoteInsertsNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "RemoteInserts", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
+  public void writeRemoteDeletes(@Nullable UInteger value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeRemoteDeletesAsync(value)),
+        "http://opcfoundation.org/UA/}RemoteDeletes");
   }
 
   @Override
-  public UInteger getRemoteDeletes() throws UaException {
-    BaseDataVariableTypeNode node = getRemoteDeletesNode();
-    return (UInteger) node.getValue().getValue().getValue();
+  public CompletableFuture<? extends @Nullable UInteger> readRemoteDeletesAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getRemoteDeletesNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}RemoteDeletes",
+                            true,
+                            UInteger.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable UInteger) v)));
   }
 
   @Override
-  public void setRemoteDeletes(UInteger value) throws UaException {
-    BaseDataVariableTypeNode node = getRemoteDeletesNode();
-    node.setValue(new Variant(value));
+  public CompletableFuture<StatusCode> writeRemoteDeletesAsync(@Nullable UInteger value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getRemoteDeletesNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}RemoteDeletes",
+                        value,
+                        UInteger.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public UInteger readRemoteDeletes() throws UaException {
-    try {
-      return readRemoteDeletesAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public UaVariableNode getRemoteInsertsNode() throws UaException {
+    return ClientNodeSupport.await(getRemoteInsertsNodeAsync());
   }
 
   @Override
-  public void writeRemoteDeletes(UInteger value) throws UaException {
-    try {
-      StatusCode statusCode = writeRemoteDeletesAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends UaVariableNode> getRemoteInsertsNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "RemoteInserts",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
   }
 
   @Override
-  public CompletableFuture<? extends UInteger> readRemoteDeletesAsync() {
-    return getRemoteDeletesNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (UInteger) v.getValue().getValue());
+  public @Nullable UInteger readRemoteInserts() throws UaException {
+    return ClientNodeSupport.await(readRemoteInsertsAsync());
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeRemoteDeletesAsync(UInteger remoteDeletes) {
-    DataValue value = DataValue.valueOnly(new Variant(remoteDeletes));
-    return getRemoteDeletesNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public void writeRemoteInserts(@Nullable UInteger value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeRemoteInsertsAsync(value)),
+        "http://opcfoundation.org/UA/}RemoteInserts");
   }
 
   @Override
-  public BaseDataVariableTypeNode getRemoteDeletesNode() throws UaException {
-    try {
-      return getRemoteDeletesNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable UInteger> readRemoteInsertsAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getRemoteInsertsNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}RemoteInserts",
+                            true,
+                            UInteger.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable UInteger) v)));
   }
 
   @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getRemoteDeletesNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "RemoteDeletes", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
+  public CompletableFuture<StatusCode> writeRemoteInsertsAsync(@Nullable UInteger value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getRemoteInsertsNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}RemoteInserts",
+                        value,
+                        UInteger.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public UInteger getRemoteDrops() throws UaException {
-    BaseDataVariableTypeNode node = getRemoteDropsNode();
-    return (UInteger) node.getValue().getValue().getValue();
+  public UaVariableNode getLastChangeTimeNode() throws UaException {
+    return ClientNodeSupport.await(getLastChangeTimeNodeAsync());
   }
 
   @Override
-  public void setRemoteDrops(UInteger value) throws UaException {
-    BaseDataVariableTypeNode node = getRemoteDropsNode();
-    node.setValue(new Variant(value));
+  public CompletableFuture<? extends UaVariableNode> getLastChangeTimeNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "LastChangeTime",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
   }
 
   @Override
-  public UInteger readRemoteDrops() throws UaException {
-    try {
-      return readRemoteDropsAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable UInteger readLastChangeTime() throws UaException {
+    return ClientNodeSupport.await(readLastChangeTimeAsync());
   }
 
   @Override
-  public void writeRemoteDrops(UInteger value) throws UaException {
-    try {
-      StatusCode statusCode = writeRemoteDropsAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public void writeLastChangeTime(@Nullable UInteger value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeLastChangeTimeAsync(value)),
+        "http://opcfoundation.org/UA/}LastChangeTime");
   }
 
   @Override
-  public CompletableFuture<? extends UInteger> readRemoteDropsAsync() {
-    return getRemoteDropsNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (UInteger) v.getValue().getValue());
+  public CompletableFuture<? extends @Nullable UInteger> readLastChangeTimeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getLastChangeTimeNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}LastChangeTime",
+                            true,
+                            UInteger.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable UInteger) v)));
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeRemoteDropsAsync(UInteger remoteDrops) {
-    DataValue value = DataValue.valueOnly(new Variant(remoteDrops));
-    return getRemoteDropsNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getRemoteDropsNode() throws UaException {
-    try {
-      return getRemoteDropsNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getRemoteDropsNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "RemoteDrops", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
-  }
-
-  @Override
-  public UInteger getRemoteAgeouts() throws UaException {
-    BaseDataVariableTypeNode node = getRemoteAgeoutsNode();
-    return (UInteger) node.getValue().getValue().getValue();
-  }
-
-  @Override
-  public void setRemoteAgeouts(UInteger value) throws UaException {
-    BaseDataVariableTypeNode node = getRemoteAgeoutsNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public UInteger readRemoteAgeouts() throws UaException {
-    try {
-      return readRemoteAgeoutsAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeRemoteAgeouts(UInteger value) throws UaException {
-    try {
-      StatusCode statusCode = writeRemoteAgeoutsAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends UInteger> readRemoteAgeoutsAsync() {
-    return getRemoteAgeoutsNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (UInteger) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeRemoteAgeoutsAsync(UInteger remoteAgeouts) {
-    DataValue value = DataValue.valueOnly(new Variant(remoteAgeouts));
-    return getRemoteAgeoutsNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getRemoteAgeoutsNode() throws UaException {
-    try {
-      return getRemoteAgeoutsNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getRemoteAgeoutsNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "RemoteAgeouts", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
+  public CompletableFuture<StatusCode> writeLastChangeTimeAsync(@Nullable UInteger value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getLastChangeTimeNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}LastChangeTime",
+                        value,
+                        UInteger.class,
+                        -1,
+                        null)));
   }
 }

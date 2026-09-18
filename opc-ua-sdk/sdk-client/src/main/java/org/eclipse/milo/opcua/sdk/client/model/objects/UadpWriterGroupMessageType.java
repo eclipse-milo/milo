@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
@@ -19,412 +9,224 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.DataSetOrderingType;
 import org.eclipse.milo.opcua.stack.core.types.structured.UadpNetworkMessageContentMask;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.2.1/#9.2.1.1">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.2.1/#9.2.1.1</a>
+ * Client API for the UadpWriterGroupMessageType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.2.1/#9.2.1.1">Model
+ *     documentation</a>
  */
 public interface UadpWriterGroupMessageType extends WriterGroupMessageType {
-  QualifiedProperty<UInteger> GROUP_VERSION =
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 21105L);
+
+  QualifiedProperty<UInteger> GroupVersion_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "GroupVersion",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=20998"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 20998L),
           -1,
           UInteger.class);
 
-  QualifiedProperty<DataSetOrderingType> DATA_SET_ORDERING =
+  QualifiedProperty<Double> SamplingOffset_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "DataSetOrdering",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=20408"),
-          -1,
-          DataSetOrderingType.class);
-
-  QualifiedProperty<UadpNetworkMessageContentMask> NETWORK_MESSAGE_CONTENT_MASK =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "NetworkMessageContentMask",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15642"),
-          -1,
-          UadpNetworkMessageContentMask.class);
-
-  QualifiedProperty<Double> SAMPLING_OFFSET =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "SamplingOffset",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 290L),
           -1,
           Double.class);
 
-  QualifiedProperty<Double[]> PUBLISHING_OFFSET =
+  QualifiedProperty<DataSetOrderingType> DataSetOrdering_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
+          "DataSetOrdering",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 20408L),
+          -1,
+          DataSetOrderingType.class);
+
+  QualifiedProperty<Double[]> PublishingOffset_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
           "PublishingOffset",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 290L),
           1,
           Double[].class);
 
-  /**
-   * Get the local value of the GroupVersion Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the GroupVersion Node.
-   * @throws UaException if an error occurs creating or getting the GroupVersion Node.
-   */
-  UInteger getGroupVersion() throws UaException;
+  QualifiedProperty<UadpNetworkMessageContentMask> NetworkMessageContentMask_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "NetworkMessageContentMask",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 15642L),
+          -1,
+          UadpNetworkMessageContentMask.class);
 
   /**
-   * Set the local value of the GroupVersion Node.
+   * Resolves the mandatory GroupVersion child, a PropertyType with DataType VersionTime.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the GroupVersion Node.
-   * @throws UaException if an error occurs creating or getting the GroupVersion Node.
-   */
-  void setGroupVersion(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the GroupVersion Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readGroupVersion() throws UaException;
-
-  /**
-   * Write a new value for the GroupVersion Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeGroupVersion(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readGroupVersion}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readGroupVersionAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeGroupVersion}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeGroupVersionAsync(UInteger value);
-
-  /**
-   * Get the GroupVersion {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the GroupVersion {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getGroupVersionNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getGroupVersionNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getGroupVersionNode()}. */
   CompletableFuture<? extends PropertyType> getGroupVersionNodeAsync();
 
   /**
-   * Get the local value of the DataSetOrdering Node.
+   * Reads the Value of the GroupVersion child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the DataSetOrdering Node.
-   * @throws UaException if an error occurs creating or getting the DataSetOrdering Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  DataSetOrderingType getDataSetOrdering() throws UaException;
+  @Nullable UInteger readGroupVersion() throws UaException;
 
   /**
-   * Set the local value of the DataSetOrdering Node.
+   * Writes the Value of the GroupVersion child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the DataSetOrdering Node.
-   * @throws UaException if an error occurs creating or getting the DataSetOrdering Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setDataSetOrdering(DataSetOrderingType value) throws UaException;
+  void writeGroupVersion(@Nullable UInteger value) throws UaException;
+
+  /** Asynchronous form of {@link #readGroupVersion()}. */
+  CompletableFuture<? extends @Nullable UInteger> readGroupVersionAsync();
+
+  /** Asynchronous form of {@link #writeGroupVersion}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeGroupVersionAsync(@Nullable UInteger value);
 
   /**
-   * Read the value of the DataSetOrdering Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the optional SamplingOffset child, a PropertyType with DataType Duration.
    *
-   * @return the {@link DataSetOrderingType} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  DataSetOrderingType readDataSetOrdering() throws UaException;
+  @Nullable PropertyType getSamplingOffsetNode() throws UaException;
+
+  /** Asynchronous form of {@link #getSamplingOffsetNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getSamplingOffsetNodeAsync();
 
   /**
-   * Write a new value for the DataSetOrdering Node to the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the SamplingOffset child from the server.
    *
-   * @param value the {@link DataSetOrderingType} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeDataSetOrdering(DataSetOrderingType value) throws UaException;
+  @Nullable Double readSamplingOffset() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readDataSetOrdering}.
+   * Writes the Value of the SamplingOffset child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends DataSetOrderingType> readDataSetOrderingAsync();
+  void writeSamplingOffset(@Nullable Double value) throws UaException;
+
+  /** Asynchronous form of {@link #readSamplingOffset()}. */
+  CompletableFuture<? extends @Nullable Double> readSamplingOffsetAsync();
+
+  /** Asynchronous form of {@link #writeSamplingOffset}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeSamplingOffsetAsync(@Nullable Double value);
 
   /**
-   * An asynchronous implementation of {@link #writeDataSetOrdering}.
+   * Resolves the mandatory DataSetOrdering child, a PropertyType with DataType DataSetOrderingType.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeDataSetOrderingAsync(DataSetOrderingType value);
-
-  /**
-   * Get the DataSetOrdering {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the DataSetOrdering {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getDataSetOrderingNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getDataSetOrderingNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getDataSetOrderingNode()}. */
   CompletableFuture<? extends PropertyType> getDataSetOrderingNodeAsync();
 
   /**
-   * Get the local value of the NetworkMessageContentMask Node.
+   * Reads the Value of the DataSetOrdering child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the NetworkMessageContentMask Node.
-   * @throws UaException if an error occurs creating or getting the NetworkMessageContentMask Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UadpNetworkMessageContentMask getNetworkMessageContentMask() throws UaException;
+  @Nullable DataSetOrderingType readDataSetOrdering() throws UaException;
 
   /**
-   * Set the local value of the NetworkMessageContentMask Node.
+   * Writes the Value of the DataSetOrdering child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the NetworkMessageContentMask Node.
-   * @throws UaException if an error occurs creating or getting the NetworkMessageContentMask Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setNetworkMessageContentMask(UadpNetworkMessageContentMask value) throws UaException;
+  void writeDataSetOrdering(@Nullable DataSetOrderingType value) throws UaException;
+
+  /** Asynchronous form of {@link #readDataSetOrdering()}. */
+  CompletableFuture<? extends @Nullable DataSetOrderingType> readDataSetOrderingAsync();
+
+  /** Asynchronous form of {@link #writeDataSetOrdering}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeDataSetOrderingAsync(@Nullable DataSetOrderingType value);
 
   /**
-   * Read the value of the NetworkMessageContentMask Node from the server and update the local value
-   * if the operation succeeds.
+   * Resolves the mandatory PublishingOffset child, a PropertyType with DataType Duration.
    *
-   * @return the {@link UadpNetworkMessageContentMask} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UadpNetworkMessageContentMask readNetworkMessageContentMask() throws UaException;
-
-  /**
-   * Write a new value for the NetworkMessageContentMask Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link UadpNetworkMessageContentMask} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeNetworkMessageContentMask(UadpNetworkMessageContentMask value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readNetworkMessageContentMask}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UadpNetworkMessageContentMask> readNetworkMessageContentMaskAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeNetworkMessageContentMask}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeNetworkMessageContentMaskAsync(
-      UadpNetworkMessageContentMask value);
-
-  /**
-   * Get the NetworkMessageContentMask {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the NetworkMessageContentMask {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getNetworkMessageContentMaskNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getNetworkMessageContentMaskNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getNetworkMessageContentMaskNodeAsync();
-
-  /**
-   * Get the local value of the SamplingOffset Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SamplingOffset Node.
-   * @throws UaException if an error occurs creating or getting the SamplingOffset Node.
-   */
-  Double getSamplingOffset() throws UaException;
-
-  /**
-   * Set the local value of the SamplingOffset Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SamplingOffset Node.
-   * @throws UaException if an error occurs creating or getting the SamplingOffset Node.
-   */
-  void setSamplingOffset(Double value) throws UaException;
-
-  /**
-   * Read the value of the SamplingOffset Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link Double} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Double readSamplingOffset() throws UaException;
-
-  /**
-   * Write a new value for the SamplingOffset Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Double} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeSamplingOffset(Double value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readSamplingOffset}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Double> readSamplingOffsetAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeSamplingOffset}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeSamplingOffsetAsync(Double value);
-
-  /**
-   * Get the SamplingOffset {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SamplingOffset {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getSamplingOffsetNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getSamplingOffsetNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getSamplingOffsetNodeAsync();
-
-  /**
-   * Get the local value of the PublishingOffset Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the PublishingOffset Node.
-   * @throws UaException if an error occurs creating or getting the PublishingOffset Node.
-   */
-  Double[] getPublishingOffset() throws UaException;
-
-  /**
-   * Set the local value of the PublishingOffset Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the PublishingOffset Node.
-   * @throws UaException if an error occurs creating or getting the PublishingOffset Node.
-   */
-  void setPublishingOffset(Double[] value) throws UaException;
-
-  /**
-   * Read the value of the PublishingOffset Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link Double[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Double[] readPublishingOffset() throws UaException;
-
-  /**
-   * Write a new value for the PublishingOffset Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Double[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writePublishingOffset(Double[] value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readPublishingOffset}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Double[]> readPublishingOffsetAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writePublishingOffset}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writePublishingOffsetAsync(Double[] value);
-
-  /**
-   * Get the PublishingOffset {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the PublishingOffset {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getPublishingOffsetNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getPublishingOffsetNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getPublishingOffsetNode()}. */
   CompletableFuture<? extends PropertyType> getPublishingOffsetNodeAsync();
+
+  /**
+   * Reads the Value of the PublishingOffset child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  Double @Nullable [] readPublishingOffset() throws UaException;
+
+  /**
+   * Writes the Value of the PublishingOffset child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writePublishingOffset(Double @Nullable [] value) throws UaException;
+
+  /** Asynchronous form of {@link #readPublishingOffset()}. */
+  CompletableFuture<? extends Double @Nullable []> readPublishingOffsetAsync();
+
+  /** Asynchronous form of {@link #writePublishingOffset}; completes with the operation status. */
+  CompletableFuture<StatusCode> writePublishingOffsetAsync(Double @Nullable [] value);
+
+  /**
+   * Resolves the mandatory NetworkMessageContentMask child, a PropertyType with DataType
+   * UadpNetworkMessageContentMask.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getNetworkMessageContentMaskNode() throws UaException;
+
+  /** Asynchronous form of {@link #getNetworkMessageContentMaskNode()}. */
+  CompletableFuture<? extends PropertyType> getNetworkMessageContentMaskNodeAsync();
+
+  /**
+   * Reads the Value of the NetworkMessageContentMask child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable UadpNetworkMessageContentMask readNetworkMessageContentMask() throws UaException;
+
+  /**
+   * Writes the Value of the NetworkMessageContentMask child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeNetworkMessageContentMask(@Nullable UadpNetworkMessageContentMask value)
+      throws UaException;
+
+  /** Asynchronous form of {@link #readNetworkMessageContentMask()}. */
+  CompletableFuture<? extends @Nullable UadpNetworkMessageContentMask>
+      readNetworkMessageContentMaskAsync();
+
+  /**
+   * Asynchronous form of {@link #writeNetworkMessageContentMask}; completes with the operation
+   * status.
+   */
+  CompletableFuture<StatusCode> writeNetworkMessageContentMaskAsync(
+      @Nullable UadpNetworkMessageContentMask value);
 }

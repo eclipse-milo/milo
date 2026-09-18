@@ -1,30 +1,14 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.variables;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
@@ -32,7 +16,14 @@ import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelExType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SamplingIntervalDiagnosticsDataType;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link SamplingIntervalDiagnosticsArrayType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.9">Model
+ *     documentation</a>
+ */
 public class SamplingIntervalDiagnosticsArrayTypeNode extends BaseDataVariableTypeNode
     implements SamplingIntervalDiagnosticsArrayType {
   public SamplingIntervalDiagnosticsArrayTypeNode(
@@ -41,21 +32,21 @@ public class SamplingIntervalDiagnosticsArrayTypeNode extends BaseDataVariableTy
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       DataValue value,
       NodeId dataType,
       Integer valueRank,
-      UInteger[] arrayDimensions,
+      UInteger @Nullable [] arrayDimensions,
       UByte accessLevel,
       UByte userAccessLevel,
       Double minimumSamplingInterval,
       Boolean historizing,
-      AccessLevelExType accessLevelEx) {
+      @Nullable AccessLevelExType accessLevelEx) {
     super(
         client,
         nodeId,
@@ -80,84 +71,56 @@ public class SamplingIntervalDiagnosticsArrayTypeNode extends BaseDataVariableTy
   }
 
   @Override
-  public SamplingIntervalDiagnosticsDataType getSamplingIntervalDiagnostics() throws UaException {
-    SamplingIntervalDiagnosticsTypeNode node = getSamplingIntervalDiagnosticsNode();
-    return cast(node.getValue().getValue().getValue(), SamplingIntervalDiagnosticsDataType.class);
-  }
-
-  @Override
-  public void setSamplingIntervalDiagnostics(SamplingIntervalDiagnosticsDataType value)
+  public @Nullable SamplingIntervalDiagnosticsDataType @Nullable [] readTypedValue()
       throws UaException {
-    SamplingIntervalDiagnosticsTypeNode node = getSamplingIntervalDiagnosticsNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
+    return ClientNodeSupport.await(readTypedValueAsync());
   }
 
   @Override
-  public SamplingIntervalDiagnosticsDataType readSamplingIntervalDiagnostics() throws UaException {
-    try {
-      return readSamplingIntervalDiagnosticsAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeSamplingIntervalDiagnostics(SamplingIntervalDiagnosticsDataType value)
+  public void writeTypedValue(@Nullable SamplingIntervalDiagnosticsDataType @Nullable [] value)
       throws UaException {
-    try {
-      writeSamplingIntervalDiagnosticsAsync(value).get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    ClientNodeSupport.good(ClientNodeSupport.await(writeTypedValueAsync(value)), "Value");
   }
 
   @Override
-  public CompletableFuture<? extends SamplingIntervalDiagnosticsDataType>
-      readSamplingIntervalDiagnosticsAsync() {
-    return getSamplingIntervalDiagnosticsNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), SamplingIntervalDiagnosticsDataType.class));
+  public CompletableFuture<? extends @Nullable SamplingIntervalDiagnosticsDataType @Nullable []>
+      readTypedValueAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    CompletableFuture.completedFuture(this),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "Value",
+                            true,
+                            SamplingIntervalDiagnosticsDataType.class,
+                            1,
+                            null)),
+                v ->
+                    CompletableFuture.completedFuture(
+                        (@Nullable SamplingIntervalDiagnosticsDataType @Nullable []) v)));
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeSamplingIntervalDiagnosticsAsync(
-      SamplingIntervalDiagnosticsDataType samplingIntervalDiagnostics) {
-    ExtensionObject encoded =
-        ExtensionObject.encode(client.getStaticEncodingContext(), samplingIntervalDiagnostics);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getSamplingIntervalDiagnosticsNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public SamplingIntervalDiagnosticsTypeNode getSamplingIntervalDiagnosticsNode()
-      throws UaException {
-    try {
-      return getSamplingIntervalDiagnosticsNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends SamplingIntervalDiagnosticsTypeNode>
-      getSamplingIntervalDiagnosticsNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "SamplingIntervalDiagnostics",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (SamplingIntervalDiagnosticsTypeNode) node);
+  public CompletableFuture<StatusCode> writeTypedValueAsync(
+      @Nullable SamplingIntervalDiagnosticsDataType @Nullable [] value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "Value",
+                        value,
+                        SamplingIntervalDiagnosticsDataType.class,
+                        1,
+                        null)));
   }
 }

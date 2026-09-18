@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
@@ -17,251 +7,146 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.structured.LinearConversionDataType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part8/6.4.2/#6.4.2.4">https://reference.opcfoundation.org/v105/Core/docs/Part8/6.4.2/#6.4.2.4</a>
+ * Client API for the AlternativeUnitType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part8/6.4.2/#6.4.2.4">Model
+ *     documentation</a>
  */
 public interface AlternativeUnitType extends UnitType {
-  QualifiedProperty<LinearConversionDataType> LINEAR_CONVERSION =
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 32467L);
+
+  QualifiedProperty<LinearConversionDataType> LinearConversion_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "LinearConversion",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=32435"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 32435L),
           -1,
           LinearConversionDataType.class);
 
-  QualifiedProperty<String> MATH_ML_CONVERSION =
+  QualifiedProperty<String> MathMLConversion_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "MathMLConversion",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
           -1,
           String.class);
 
-  QualifiedProperty<String> MATH_ML_INVERSE_CONVERSION =
+  QualifiedProperty<String> MathMLInverseConversion_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "MathMLInverseConversion",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
           -1,
           String.class);
 
   /**
-   * Get the local value of the LinearConversion Node.
+   * Resolves the optional LinearConversion child, a PropertyType with DataType
+   * LinearConversionDataType.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the LinearConversion Node.
-   * @throws UaException if an error occurs creating or getting the LinearConversion Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  LinearConversionDataType getLinearConversion() throws UaException;
+  @Nullable PropertyType getLinearConversionNode() throws UaException;
+
+  /** Asynchronous form of {@link #getLinearConversionNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getLinearConversionNodeAsync();
 
   /**
-   * Set the local value of the LinearConversion Node.
+   * Reads the Value of the LinearConversion child from the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the LinearConversion Node.
-   * @throws UaException if an error occurs creating or getting the LinearConversion Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setLinearConversion(LinearConversionDataType value) throws UaException;
+  @Nullable LinearConversionDataType readLinearConversion() throws UaException;
 
   /**
-   * Read the value of the LinearConversion Node from the server and update the local value if the
-   * operation succeeds.
+   * Writes the Value of the LinearConversion child to the server.
    *
-   * @return the {@link LinearConversionDataType} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  LinearConversionDataType readLinearConversion() throws UaException;
+  void writeLinearConversion(@Nullable LinearConversionDataType value) throws UaException;
+
+  /** Asynchronous form of {@link #readLinearConversion()}. */
+  CompletableFuture<? extends @Nullable LinearConversionDataType> readLinearConversionAsync();
+
+  /** Asynchronous form of {@link #writeLinearConversion}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeLinearConversionAsync(
+      @Nullable LinearConversionDataType value);
 
   /**
-   * Write a new value for the LinearConversion Node to the server and update the local value if the
-   * operation succeeds.
+   * Resolves the optional MathMLConversion child, a PropertyType with DataType String.
    *
-   * @param value the {@link LinearConversionDataType} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  void writeLinearConversion(LinearConversionDataType value) throws UaException;
+  @Nullable PropertyType getMathMLConversionNode() throws UaException;
+
+  /** Asynchronous form of {@link #getMathMLConversionNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getMathMLConversionNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #readLinearConversion}.
+   * Reads the Value of the MathMLConversion child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends LinearConversionDataType> readLinearConversionAsync();
+  @Nullable String readMathMLConversion() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeLinearConversion}.
+   * Writes the Value of the MathMLConversion child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeLinearConversionAsync(LinearConversionDataType value);
+  void writeMathMLConversion(@Nullable String value) throws UaException;
+
+  /** Asynchronous form of {@link #readMathMLConversion()}. */
+  CompletableFuture<? extends @Nullable String> readMathMLConversionAsync();
+
+  /** Asynchronous form of {@link #writeMathMLConversion}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeMathMLConversionAsync(@Nullable String value);
 
   /**
-   * Get the LinearConversion {@link PropertyType} Node, or {@code null} if it does not exist.
+   * Resolves the optional MathMLInverseConversion child, a PropertyType with DataType String.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the LinearConversion {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  PropertyType getLinearConversionNode() throws UaException;
+  @Nullable PropertyType getMathMLInverseConversionNode() throws UaException;
+
+  /** Asynchronous form of {@link #getMathMLInverseConversionNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getMathMLInverseConversionNodeAsync();
 
   /**
-   * Asynchronous implementation of {@link #getLinearConversionNode()}.
+   * Reads the Value of the MathMLInverseConversion child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends PropertyType> getLinearConversionNodeAsync();
+  @Nullable String readMathMLInverseConversion() throws UaException;
 
   /**
-   * Get the local value of the MathMLConversion Node.
+   * Writes the Value of the MathMLInverseConversion child to the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MathMLConversion Node.
-   * @throws UaException if an error occurs creating or getting the MathMLConversion Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  String getMathMlConversion() throws UaException;
+  void writeMathMLInverseConversion(@Nullable String value) throws UaException;
+
+  /** Asynchronous form of {@link #readMathMLInverseConversion()}. */
+  CompletableFuture<? extends @Nullable String> readMathMLInverseConversionAsync();
 
   /**
-   * Set the local value of the MathMLConversion Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MathMLConversion Node.
-   * @throws UaException if an error occurs creating or getting the MathMLConversion Node.
+   * Asynchronous form of {@link #writeMathMLInverseConversion}; completes with the operation
+   * status.
    */
-  void setMathMlConversion(String value) throws UaException;
-
-  /**
-   * Read the value of the MathMLConversion Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String readMathMlConversion() throws UaException;
-
-  /**
-   * Write a new value for the MathMLConversion Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMathMlConversion(String value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readMathMlConversion}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String> readMathMlConversionAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeMathMlConversion}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMathMlConversionAsync(String value);
-
-  /**
-   * Get the MathMLConversion {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MathMLConversion {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getMathMlConversionNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getMathMlConversionNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getMathMlConversionNodeAsync();
-
-  /**
-   * Get the local value of the MathMLInverseConversion Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MathMLInverseConversion Node.
-   * @throws UaException if an error occurs creating or getting the MathMLInverseConversion Node.
-   */
-  String getMathMlInverseConversion() throws UaException;
-
-  /**
-   * Set the local value of the MathMLInverseConversion Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MathMLInverseConversion Node.
-   * @throws UaException if an error occurs creating or getting the MathMLInverseConversion Node.
-   */
-  void setMathMlInverseConversion(String value) throws UaException;
-
-  /**
-   * Read the value of the MathMLInverseConversion Node from the server and update the local value
-   * if the operation succeeds.
-   *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String readMathMlInverseConversion() throws UaException;
-
-  /**
-   * Write a new value for the MathMLInverseConversion Node to the server and update the local value
-   * if the operation succeeds.
-   *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMathMlInverseConversion(String value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readMathMlInverseConversion}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String> readMathMlInverseConversionAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeMathMlInverseConversion}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMathMlInverseConversionAsync(String value);
-
-  /**
-   * Get the MathMLInverseConversion {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MathMLInverseConversion {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getMathMlInverseConversionNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getMathMlInverseConversionNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getMathMlInverseConversionNodeAsync();
+  CompletableFuture<StatusCode> writeMathMLInverseConversionAsync(@Nullable String value);
 }

@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
@@ -19,652 +9,343 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.20">https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.20</a>
+ * Client API for the ApplicationConfigurationFileType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.20">Model
+ *     documentation</a>
  */
 public interface ApplicationConfigurationFileType extends ConfigurationFileType {
-  QualifiedProperty<String[]> AVAILABLE_NETWORKS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "AvailableNetworks",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          1,
-          String[].class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 15550L);
 
-  QualifiedProperty<String> AVAILABLE_PORTS =
+  QualifiedProperty<UShort> MaxEndpoints_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
+          "MaxEndpoints",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 5L),
+          -1,
+          UShort.class);
+
+  QualifiedProperty<String> AvailablePorts_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
           "AvailablePorts",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=291"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 291L),
           -1,
           String.class);
 
-  QualifiedProperty<UShort> MAX_ENDPOINTS =
+  QualifiedProperty<UserTokenPolicy[]> UserTokenTypes_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxEndpoints",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-          -1,
-          UShort.class);
-
-  QualifiedProperty<UShort> MAX_CERTIFICATE_GROUPS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxCertificateGroups",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-          -1,
-          UShort.class);
-
-  QualifiedProperty<String[]> SECURITY_POLICY_URIS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "SecurityPolicyUris",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=23751"),
-          1,
-          String[].class);
-
-  QualifiedProperty<UserTokenPolicy[]> USER_TOKEN_TYPES =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "UserTokenTypes",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=304"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 304L),
           1,
           UserTokenPolicy[].class);
 
-  QualifiedProperty<NodeId[]> CERTIFICATE_TYPES =
+  QualifiedProperty<NodeId[]> CertificateTypes_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "CertificateTypes",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 17L),
           1,
           NodeId[].class);
 
-  QualifiedProperty<NodeId[]> CERTIFICATE_GROUP_PURPOSES =
+  QualifiedProperty<String[]> AvailableNetworks_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
+          "AvailableNetworks",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+          1,
+          String[].class);
+
+  QualifiedProperty<String[]> SecurityPolicyUris_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "SecurityPolicyUris",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 23751L),
+          1,
+          String[].class);
+
+  QualifiedProperty<UShort> MaxCertificateGroups_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "MaxCertificateGroups",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 5L),
+          -1,
+          UShort.class);
+
+  QualifiedProperty<NodeId[]> CertificateGroupPurposes_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
           "CertificateGroupPurposes",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 17L),
           1,
           NodeId[].class);
 
   /**
-   * Get the local value of the AvailableNetworks Node.
+   * Resolves the mandatory MaxEndpoints child, a PropertyType with DataType UInt16.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the AvailableNetworks Node.
-   * @throws UaException if an error occurs creating or getting the AvailableNetworks Node.
-   */
-  String[] getAvailableNetworks() throws UaException;
-
-  /**
-   * Set the local value of the AvailableNetworks Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the AvailableNetworks Node.
-   * @throws UaException if an error occurs creating or getting the AvailableNetworks Node.
-   */
-  void setAvailableNetworks(String[] value) throws UaException;
-
-  /**
-   * Read the value of the AvailableNetworks Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link String[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String[] readAvailableNetworks() throws UaException;
-
-  /**
-   * Write a new value for the AvailableNetworks Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link String[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeAvailableNetworks(String[] value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readAvailableNetworks}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String[]> readAvailableNetworksAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeAvailableNetworks}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeAvailableNetworksAsync(String[] value);
-
-  /**
-   * Get the AvailableNetworks {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the AvailableNetworks {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getAvailableNetworksNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getAvailableNetworksNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getAvailableNetworksNodeAsync();
-
-  /**
-   * Get the local value of the AvailablePorts Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the AvailablePorts Node.
-   * @throws UaException if an error occurs creating or getting the AvailablePorts Node.
-   */
-  String getAvailablePorts() throws UaException;
-
-  /**
-   * Set the local value of the AvailablePorts Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the AvailablePorts Node.
-   * @throws UaException if an error occurs creating or getting the AvailablePorts Node.
-   */
-  void setAvailablePorts(String value) throws UaException;
-
-  /**
-   * Read the value of the AvailablePorts Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String readAvailablePorts() throws UaException;
-
-  /**
-   * Write a new value for the AvailablePorts Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeAvailablePorts(String value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readAvailablePorts}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String> readAvailablePortsAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeAvailablePorts}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeAvailablePortsAsync(String value);
-
-  /**
-   * Get the AvailablePorts {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the AvailablePorts {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getAvailablePortsNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getAvailablePortsNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getAvailablePortsNodeAsync();
-
-  /**
-   * Get the local value of the MaxEndpoints Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaxEndpoints Node.
-   * @throws UaException if an error occurs creating or getting the MaxEndpoints Node.
-   */
-  UShort getMaxEndpoints() throws UaException;
-
-  /**
-   * Set the local value of the MaxEndpoints Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaxEndpoints Node.
-   * @throws UaException if an error occurs creating or getting the MaxEndpoints Node.
-   */
-  void setMaxEndpoints(UShort value) throws UaException;
-
-  /**
-   * Read the value of the MaxEndpoints Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link UShort} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UShort readMaxEndpoints() throws UaException;
-
-  /**
-   * Write a new value for the MaxEndpoints Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link UShort} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMaxEndpoints(UShort value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readMaxEndpoints}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UShort> readMaxEndpointsAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeMaxEndpoints}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMaxEndpointsAsync(UShort value);
-
-  /**
-   * Get the MaxEndpoints {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaxEndpoints {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getMaxEndpointsNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getMaxEndpointsNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getMaxEndpointsNode()}. */
   CompletableFuture<? extends PropertyType> getMaxEndpointsNodeAsync();
 
   /**
-   * Get the local value of the MaxCertificateGroups Node.
+   * Reads the Value of the MaxEndpoints child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaxCertificateGroups Node.
-   * @throws UaException if an error occurs creating or getting the MaxCertificateGroups Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UShort getMaxCertificateGroups() throws UaException;
+  @Nullable UShort readMaxEndpoints() throws UaException;
 
   /**
-   * Set the local value of the MaxCertificateGroups Node.
+   * Writes the Value of the MaxEndpoints child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaxCertificateGroups Node.
-   * @throws UaException if an error occurs creating or getting the MaxCertificateGroups Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setMaxCertificateGroups(UShort value) throws UaException;
+  void writeMaxEndpoints(@Nullable UShort value) throws UaException;
+
+  /** Asynchronous form of {@link #readMaxEndpoints()}. */
+  CompletableFuture<? extends @Nullable UShort> readMaxEndpointsAsync();
+
+  /** Asynchronous form of {@link #writeMaxEndpoints}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeMaxEndpointsAsync(@Nullable UShort value);
 
   /**
-   * Read the value of the MaxCertificateGroups Node from the server and update the local value if
-   * the operation succeeds.
+   * Resolves the mandatory AvailablePorts child, a PropertyType with DataType NumericRange.
    *
-   * @return the {@link UShort} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  UShort readMaxCertificateGroups() throws UaException;
+  PropertyType getAvailablePortsNode() throws UaException;
+
+  /** Asynchronous form of {@link #getAvailablePortsNode()}. */
+  CompletableFuture<? extends PropertyType> getAvailablePortsNodeAsync();
 
   /**
-   * Write a new value for the MaxCertificateGroups Node to the server and update the local value if
-   * the operation succeeds.
+   * Reads the Value of the AvailablePorts child from the server.
    *
-   * @param value the {@link UShort} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeMaxCertificateGroups(UShort value) throws UaException;
+  @Nullable String readAvailablePorts() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readMaxCertificateGroups}.
+   * Writes the Value of the AvailablePorts child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends UShort> readMaxCertificateGroupsAsync();
+  void writeAvailablePorts(@Nullable String value) throws UaException;
+
+  /** Asynchronous form of {@link #readAvailablePorts()}. */
+  CompletableFuture<? extends @Nullable String> readAvailablePortsAsync();
+
+  /** Asynchronous form of {@link #writeAvailablePorts}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeAvailablePortsAsync(@Nullable String value);
 
   /**
-   * An asynchronous implementation of {@link #writeMaxCertificateGroups}.
+   * Resolves the mandatory UserTokenTypes child, a PropertyType with DataType UserTokenPolicy.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMaxCertificateGroupsAsync(UShort value);
-
-  /**
-   * Get the MaxCertificateGroups {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaxCertificateGroups {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getMaxCertificateGroupsNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getMaxCertificateGroupsNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getMaxCertificateGroupsNodeAsync();
-
-  /**
-   * Get the local value of the SecurityPolicyUris Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SecurityPolicyUris Node.
-   * @throws UaException if an error occurs creating or getting the SecurityPolicyUris Node.
-   */
-  String[] getSecurityPolicyUris() throws UaException;
-
-  /**
-   * Set the local value of the SecurityPolicyUris Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SecurityPolicyUris Node.
-   * @throws UaException if an error occurs creating or getting the SecurityPolicyUris Node.
-   */
-  void setSecurityPolicyUris(String[] value) throws UaException;
-
-  /**
-   * Read the value of the SecurityPolicyUris Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link String[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String[] readSecurityPolicyUris() throws UaException;
-
-  /**
-   * Write a new value for the SecurityPolicyUris Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link String[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeSecurityPolicyUris(String[] value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readSecurityPolicyUris}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String[]> readSecurityPolicyUrisAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeSecurityPolicyUris}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeSecurityPolicyUrisAsync(String[] value);
-
-  /**
-   * Get the SecurityPolicyUris {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SecurityPolicyUris {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getSecurityPolicyUrisNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getSecurityPolicyUrisNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getSecurityPolicyUrisNodeAsync();
-
-  /**
-   * Get the local value of the UserTokenTypes Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the UserTokenTypes Node.
-   * @throws UaException if an error occurs creating or getting the UserTokenTypes Node.
-   */
-  UserTokenPolicy[] getUserTokenTypes() throws UaException;
-
-  /**
-   * Set the local value of the UserTokenTypes Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the UserTokenTypes Node.
-   * @throws UaException if an error occurs creating or getting the UserTokenTypes Node.
-   */
-  void setUserTokenTypes(UserTokenPolicy[] value) throws UaException;
-
-  /**
-   * Read the value of the UserTokenTypes Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link UserTokenPolicy[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UserTokenPolicy[] readUserTokenTypes() throws UaException;
-
-  /**
-   * Write a new value for the UserTokenTypes Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link UserTokenPolicy[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeUserTokenTypes(UserTokenPolicy[] value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readUserTokenTypes}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UserTokenPolicy[]> readUserTokenTypesAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeUserTokenTypes}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeUserTokenTypesAsync(UserTokenPolicy[] value);
-
-  /**
-   * Get the UserTokenTypes {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the UserTokenTypes {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getUserTokenTypesNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getUserTokenTypesNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getUserTokenTypesNode()}. */
   CompletableFuture<? extends PropertyType> getUserTokenTypesNodeAsync();
 
   /**
-   * Get the local value of the CertificateTypes Node.
+   * Reads the Value of the UserTokenTypes child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the CertificateTypes Node.
-   * @throws UaException if an error occurs creating or getting the CertificateTypes Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  NodeId[] getCertificateTypes() throws UaException;
+  @Nullable UserTokenPolicy @Nullable [] readUserTokenTypes() throws UaException;
 
   /**
-   * Set the local value of the CertificateTypes Node.
+   * Writes the Value of the UserTokenTypes child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the CertificateTypes Node.
-   * @throws UaException if an error occurs creating or getting the CertificateTypes Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setCertificateTypes(NodeId[] value) throws UaException;
+  void writeUserTokenTypes(@Nullable UserTokenPolicy @Nullable [] value) throws UaException;
+
+  /** Asynchronous form of {@link #readUserTokenTypes()}. */
+  CompletableFuture<? extends @Nullable UserTokenPolicy @Nullable []> readUserTokenTypesAsync();
+
+  /** Asynchronous form of {@link #writeUserTokenTypes}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeUserTokenTypesAsync(
+      @Nullable UserTokenPolicy @Nullable [] value);
 
   /**
-   * Read the value of the CertificateTypes Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the mandatory CertificateTypes child, a PropertyType with DataType NodeId.
    *
-   * @return the {@link NodeId[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  NodeId[] readCertificateTypes() throws UaException;
-
-  /**
-   * Write a new value for the CertificateTypes Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link NodeId[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeCertificateTypes(NodeId[] value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readCertificateTypes}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends NodeId[]> readCertificateTypesAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeCertificateTypes}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeCertificateTypesAsync(NodeId[] value);
-
-  /**
-   * Get the CertificateTypes {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the CertificateTypes {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getCertificateTypesNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getCertificateTypesNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getCertificateTypesNode()}. */
   CompletableFuture<? extends PropertyType> getCertificateTypesNodeAsync();
 
   /**
-   * Get the local value of the CertificateGroupPurposes Node.
+   * Reads the Value of the CertificateTypes child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the CertificateGroupPurposes Node.
-   * @throws UaException if an error occurs creating or getting the CertificateGroupPurposes Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  NodeId[] getCertificateGroupPurposes() throws UaException;
+  NodeId @Nullable [] readCertificateTypes() throws UaException;
 
   /**
-   * Set the local value of the CertificateGroupPurposes Node.
+   * Writes the Value of the CertificateTypes child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the CertificateGroupPurposes Node.
-   * @throws UaException if an error occurs creating or getting the CertificateGroupPurposes Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setCertificateGroupPurposes(NodeId[] value) throws UaException;
+  void writeCertificateTypes(NodeId @Nullable [] value) throws UaException;
+
+  /** Asynchronous form of {@link #readCertificateTypes()}. */
+  CompletableFuture<? extends NodeId @Nullable []> readCertificateTypesAsync();
+
+  /** Asynchronous form of {@link #writeCertificateTypes}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeCertificateTypesAsync(NodeId @Nullable [] value);
 
   /**
-   * Read the value of the CertificateGroupPurposes Node from the server and update the local value
-   * if the operation succeeds.
+   * Resolves the mandatory AvailableNetworks child, a PropertyType with DataType String.
    *
-   * @return the {@link NodeId[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  NodeId[] readCertificateGroupPurposes() throws UaException;
+  PropertyType getAvailableNetworksNode() throws UaException;
+
+  /** Asynchronous form of {@link #getAvailableNetworksNode()}. */
+  CompletableFuture<? extends PropertyType> getAvailableNetworksNodeAsync();
 
   /**
-   * Write a new value for the CertificateGroupPurposes Node to the server and update the local
-   * value if the operation succeeds.
+   * Reads the Value of the AvailableNetworks child from the server.
    *
-   * @param value the {@link NodeId[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeCertificateGroupPurposes(NodeId[] value) throws UaException;
+  @Nullable String @Nullable [] readAvailableNetworks() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readCertificateGroupPurposes}.
+   * Writes the Value of the AvailableNetworks child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends NodeId[]> readCertificateGroupPurposesAsync();
+  void writeAvailableNetworks(@Nullable String @Nullable [] value) throws UaException;
+
+  /** Asynchronous form of {@link #readAvailableNetworks()}. */
+  CompletableFuture<? extends @Nullable String @Nullable []> readAvailableNetworksAsync();
+
+  /** Asynchronous form of {@link #writeAvailableNetworks}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeAvailableNetworksAsync(@Nullable String @Nullable [] value);
 
   /**
-   * An asynchronous implementation of {@link #writeCertificateGroupPurposes}.
+   * Resolves the mandatory SecurityPolicyUris child, a PropertyType with DataType UriString.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  CompletableFuture<StatusCode> writeCertificateGroupPurposesAsync(NodeId[] value);
+  PropertyType getSecurityPolicyUrisNode() throws UaException;
+
+  /** Asynchronous form of {@link #getSecurityPolicyUrisNode()}. */
+  CompletableFuture<? extends PropertyType> getSecurityPolicyUrisNodeAsync();
 
   /**
-   * Get the CertificateGroupPurposes {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
+   * Reads the Value of the SecurityPolicyUris child from the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable String @Nullable [] readSecurityPolicyUris() throws UaException;
+
+  /**
+   * Writes the Value of the SecurityPolicyUris child to the server.
    *
-   * @return the CertificateGroupPurposes {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeSecurityPolicyUris(@Nullable String @Nullable [] value) throws UaException;
+
+  /** Asynchronous form of {@link #readSecurityPolicyUris()}. */
+  CompletableFuture<? extends @Nullable String @Nullable []> readSecurityPolicyUrisAsync();
+
+  /** Asynchronous form of {@link #writeSecurityPolicyUris}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeSecurityPolicyUrisAsync(@Nullable String @Nullable [] value);
+
+  /**
+   * Resolves the mandatory MaxCertificateGroups child, a PropertyType with DataType UInt16.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getMaxCertificateGroupsNode() throws UaException;
+
+  /** Asynchronous form of {@link #getMaxCertificateGroupsNode()}. */
+  CompletableFuture<? extends PropertyType> getMaxCertificateGroupsNodeAsync();
+
+  /**
+   * Reads the Value of the MaxCertificateGroups child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable UShort readMaxCertificateGroups() throws UaException;
+
+  /**
+   * Writes the Value of the MaxCertificateGroups child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeMaxCertificateGroups(@Nullable UShort value) throws UaException;
+
+  /** Asynchronous form of {@link #readMaxCertificateGroups()}. */
+  CompletableFuture<? extends @Nullable UShort> readMaxCertificateGroupsAsync();
+
+  /**
+   * Asynchronous form of {@link #writeMaxCertificateGroups}; completes with the operation status.
+   */
+  CompletableFuture<StatusCode> writeMaxCertificateGroupsAsync(@Nullable UShort value);
+
+  /**
+   * Resolves the mandatory CertificateGroupPurposes child, a PropertyType with DataType NodeId.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.6">Model
+   *     documentation</a>
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getCertificateGroupPurposesNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getCertificateGroupPurposesNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getCertificateGroupPurposesNode()}. */
   CompletableFuture<? extends PropertyType> getCertificateGroupPurposesNodeAsync();
+
+  /**
+   * Reads the Value of the CertificateGroupPurposes child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  NodeId @Nullable [] readCertificateGroupPurposes() throws UaException;
+
+  /**
+   * Writes the Value of the CertificateGroupPurposes child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeCertificateGroupPurposes(NodeId @Nullable [] value) throws UaException;
+
+  /** Asynchronous form of {@link #readCertificateGroupPurposes()}. */
+  CompletableFuture<? extends NodeId @Nullable []> readCertificateGroupPurposesAsync();
+
+  /**
+   * Asynchronous form of {@link #writeCertificateGroupPurposes}; completes with the operation
+   * status.
+   */
+  CompletableFuture<StatusCode> writeCertificateGroupPurposesAsync(NodeId @Nullable [] value);
 }

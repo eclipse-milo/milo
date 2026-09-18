@@ -1,56 +1,41 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
+import org.eclipse.milo.opcua.sdk.core.nodes.ObjectNode;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.11/#9.1.11.9">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.11/#9.1.11.9</a>
+ * Client API for the PubSubDiagnosticsWriterGroupType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.11/#9.1.11.9">Model
+ *     documentation</a>
  */
 public interface PubSubDiagnosticsWriterGroupType extends PubSubDiagnosticsType {
-  /**
-   * Get the Counters {@link BaseObjectType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the Counters {@link BaseObjectType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseObjectType getCountersNode() throws UaException;
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 19834L);
 
   /**
-   * Asynchronous implementation of {@link #getCountersNode()}.
+   * Resolves the mandatory LiveValues child, a BaseObjectType.
    *
-   * @return a CompletableFuture that completes successfully with the BaseObjectType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.2">BaseObjectType
+   *     documentation</a>
    */
-  CompletableFuture<? extends BaseObjectType> getCountersNodeAsync();
+  ObjectNode getLiveValuesNode() throws UaException;
+
+  /** Asynchronous form of {@link #getLiveValuesNode()}. */
+  CompletableFuture<? extends ObjectNode> getLiveValuesNodeAsync();
 
   /**
-   * Get the LiveValues {@link BaseObjectType} Node, or {@code null} if it does not exist.
+   * Resolves the mandatory Counters child, a BaseObjectType.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the LiveValues {@link BaseObjectType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.2">BaseObjectType
+   *     documentation</a>
    */
-  BaseObjectType getLiveValuesNode() throws UaException;
+  ObjectNode getCountersNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getLiveValuesNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseObjectType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseObjectType> getLiveValuesNodeAsync();
+  /** Asynchronous form of {@link #getCountersNode()}. */
+  CompletableFuture<? extends ObjectNode> getCountersNodeAsync();
 }

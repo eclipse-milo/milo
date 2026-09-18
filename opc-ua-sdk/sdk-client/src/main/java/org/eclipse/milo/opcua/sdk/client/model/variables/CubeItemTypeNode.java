@@ -1,25 +1,11 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.variables;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -32,7 +18,15 @@ import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelExType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AxisInformation;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link CubeItemType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.4/#5.3.4.5">Model
+ *     documentation</a>
+ */
 public class CubeItemTypeNode extends ArrayItemTypeNode implements CubeItemType {
   public CubeItemTypeNode(
       OpcUaClient client,
@@ -40,21 +34,21 @@ public class CubeItemTypeNode extends ArrayItemTypeNode implements CubeItemType 
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       DataValue value,
       NodeId dataType,
       Integer valueRank,
-      UInteger[] arrayDimensions,
+      UInteger @Nullable [] arrayDimensions,
       UByte accessLevel,
       UByte userAccessLevel,
       Double minimumSamplingInterval,
       Boolean historizing,
-      AccessLevelExType accessLevelEx) {
+      @Nullable AccessLevelExType accessLevelEx) {
     super(
         client,
         nodeId,
@@ -79,230 +73,252 @@ public class CubeItemTypeNode extends ArrayItemTypeNode implements CubeItemType 
   }
 
   @Override
-  public AxisInformation getXAxisDefinition() throws UaException {
-    PropertyTypeNode node = getXAxisDefinitionNode();
-    return cast(node.getValue().getValue().getValue(), AxisInformation.class);
-  }
-
-  @Override
-  public void setXAxisDefinition(AxisInformation value) throws UaException {
-    PropertyTypeNode node = getXAxisDefinitionNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
-  }
-
-  @Override
-  public AxisInformation readXAxisDefinition() throws UaException {
-    try {
-      return readXAxisDefinitionAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeXAxisDefinition(AxisInformation value) throws UaException {
-    try {
-      StatusCode statusCode = writeXAxisDefinitionAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends AxisInformation> readXAxisDefinitionAsync() {
-    return getXAxisDefinitionNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), AxisInformation.class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeXAxisDefinitionAsync(AxisInformation xAxisDefinition) {
-    ExtensionObject encoded =
-        ExtensionObject.encode(client.getStaticEncodingContext(), xAxisDefinition);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getXAxisDefinitionNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
   public PropertyTypeNode getXAxisDefinitionNode() throws UaException {
-    try {
-      return getXAxisDefinitionNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getXAxisDefinitionNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends PropertyTypeNode> getXAxisDefinitionNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "XAxisDefinition", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "XAxisDefinition",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public AxisInformation getYAxisDefinition() throws UaException {
-    PropertyTypeNode node = getYAxisDefinitionNode();
-    return cast(node.getValue().getValue().getValue(), AxisInformation.class);
+  public @Nullable AxisInformation readXAxisDefinition() throws UaException {
+    return ClientNodeSupport.await(readXAxisDefinitionAsync());
   }
 
   @Override
-  public void setYAxisDefinition(AxisInformation value) throws UaException {
-    PropertyTypeNode node = getYAxisDefinitionNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
+  public void writeXAxisDefinition(@Nullable AxisInformation value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeXAxisDefinitionAsync(value)),
+        "http://opcfoundation.org/UA/}XAxisDefinition");
   }
 
   @Override
-  public AxisInformation readYAxisDefinition() throws UaException {
-    try {
-      return readYAxisDefinitionAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable AxisInformation> readXAxisDefinitionAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getXAxisDefinitionNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}XAxisDefinition",
+                            true,
+                            AxisInformation.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable AxisInformation) v)));
   }
 
   @Override
-  public void writeYAxisDefinition(AxisInformation value) throws UaException {
-    try {
-      StatusCode statusCode = writeYAxisDefinitionAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends AxisInformation> readYAxisDefinitionAsync() {
-    return getYAxisDefinitionNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), AxisInformation.class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeYAxisDefinitionAsync(AxisInformation yAxisDefinition) {
-    ExtensionObject encoded =
-        ExtensionObject.encode(client.getStaticEncodingContext(), yAxisDefinition);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getYAxisDefinitionNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<StatusCode> writeXAxisDefinitionAsync(@Nullable AxisInformation value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getXAxisDefinitionNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}XAxisDefinition",
+                        value,
+                        AxisInformation.class,
+                        -1,
+                        null)));
   }
 
   @Override
   public PropertyTypeNode getYAxisDefinitionNode() throws UaException {
-    try {
-      return getYAxisDefinitionNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getYAxisDefinitionNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends PropertyTypeNode> getYAxisDefinitionNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "YAxisDefinition", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "YAxisDefinition",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public AxisInformation getZAxisDefinition() throws UaException {
-    PropertyTypeNode node = getZAxisDefinitionNode();
-    return cast(node.getValue().getValue().getValue(), AxisInformation.class);
+  public @Nullable AxisInformation readYAxisDefinition() throws UaException {
+    return ClientNodeSupport.await(readYAxisDefinitionAsync());
   }
 
   @Override
-  public void setZAxisDefinition(AxisInformation value) throws UaException {
-    PropertyTypeNode node = getZAxisDefinitionNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
+  public void writeYAxisDefinition(@Nullable AxisInformation value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeYAxisDefinitionAsync(value)),
+        "http://opcfoundation.org/UA/}YAxisDefinition");
   }
 
   @Override
-  public AxisInformation readZAxisDefinition() throws UaException {
-    try {
-      return readZAxisDefinitionAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable AxisInformation> readYAxisDefinitionAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getYAxisDefinitionNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}YAxisDefinition",
+                            true,
+                            AxisInformation.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable AxisInformation) v)));
   }
 
   @Override
-  public void writeZAxisDefinition(AxisInformation value) throws UaException {
-    try {
-      StatusCode statusCode = writeZAxisDefinitionAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends AxisInformation> readZAxisDefinitionAsync() {
-    return getZAxisDefinitionNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), AxisInformation.class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeZAxisDefinitionAsync(AxisInformation zAxisDefinition) {
-    ExtensionObject encoded =
-        ExtensionObject.encode(client.getStaticEncodingContext(), zAxisDefinition);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getZAxisDefinitionNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<StatusCode> writeYAxisDefinitionAsync(@Nullable AxisInformation value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getYAxisDefinitionNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}YAxisDefinition",
+                        value,
+                        AxisInformation.class,
+                        -1,
+                        null)));
   }
 
   @Override
   public PropertyTypeNode getZAxisDefinitionNode() throws UaException {
-    try {
-      return getZAxisDefinitionNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getZAxisDefinitionNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends PropertyTypeNode> getZAxisDefinitionNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "ZAxisDefinition", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "ZAxisDefinition",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
+  }
+
+  @Override
+  public @Nullable AxisInformation readZAxisDefinition() throws UaException {
+    return ClientNodeSupport.await(readZAxisDefinitionAsync());
+  }
+
+  @Override
+  public void writeZAxisDefinition(@Nullable AxisInformation value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeZAxisDefinitionAsync(value)),
+        "http://opcfoundation.org/UA/}ZAxisDefinition");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable AxisInformation> readZAxisDefinitionAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getZAxisDefinitionNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}ZAxisDefinition",
+                            true,
+                            AxisInformation.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable AxisInformation) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeZAxisDefinitionAsync(@Nullable AxisInformation value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getZAxisDefinitionNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}ZAxisDefinition",
+                        value,
+                        AxisInformation.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public @Nullable Variant readTypedValue() throws UaException {
+    return ClientNodeSupport.await(readTypedValueAsync());
+  }
+
+  @Override
+  public void writeTypedValue(@Nullable Variant value) throws UaException {
+    ClientNodeSupport.good(ClientNodeSupport.await(writeTypedValueAsync(value)), "Value");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable Variant> readTypedValueAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    CompletableFuture.completedFuture(this),
+                    n ->
+                        ClientNodeSupport.read(
+                            client, n, this, "Value", true, Variant.class, 3, null)),
+                v -> CompletableFuture.completedFuture((@Nullable Variant) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeTypedValueAsync(@Nullable Variant value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                n ->
+                    ClientNodeSupport.write(
+                        client, n, this, "Value", value, Variant.class, 3, null)));
   }
 }

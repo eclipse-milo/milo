@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
@@ -17,490 +7,255 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.3">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.3</a>
+ * Client API for the AuditEventType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.3">Model
+ *     documentation</a>
  */
 public interface AuditEventType extends BaseEventType {
-  QualifiedProperty<DateTime> ACTION_TIME_STAMP =
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2052L);
+
+  QualifiedProperty<String> ClientUserId_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
+          "ClientUserId",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+          -1,
+          String.class);
+
+  QualifiedProperty<DateTime> ActionTimeStamp_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
           "ActionTimeStamp",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 294L),
           -1,
           DateTime.class);
 
-  QualifiedProperty<Boolean> STATUS =
+  QualifiedProperty<String> ClientAuditEntryId_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Status",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
-
-  QualifiedProperty<String> SERVER_ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ServerId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
-
-  QualifiedProperty<String> CLIENT_AUDIT_ENTRY_ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "ClientAuditEntryId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
           -1,
           String.class);
 
-  QualifiedProperty<String> CLIENT_USER_ID =
+  QualifiedProperty<String> ClientApplicationUri_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ClientUserId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
-
-  QualifiedProperty<String> CLIENT_APPLICATION_URI =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "ClientApplicationUri",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+          -1,
+          String.class);
+
+  QualifiedProperty<Boolean> Status_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA, "Status", ExpandedNodeId.of(Namespaces.OPC_UA, 1L), -1, Boolean.class);
+
+  QualifiedProperty<String> ServerId_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "ServerId",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
           -1,
           String.class);
 
   /**
-   * Get the local value of the ActionTimeStamp Node.
+   * Resolves the mandatory ClientUserId child, a PropertyType with DataType String.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ActionTimeStamp Node.
-   * @throws UaException if an error occurs creating or getting the ActionTimeStamp Node.
-   */
-  DateTime getActionTimeStamp() throws UaException;
-
-  /**
-   * Set the local value of the ActionTimeStamp Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ActionTimeStamp Node.
-   * @throws UaException if an error occurs creating or getting the ActionTimeStamp Node.
-   */
-  void setActionTimeStamp(DateTime value) throws UaException;
-
-  /**
-   * Read the value of the ActionTimeStamp Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link DateTime} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  DateTime readActionTimeStamp() throws UaException;
-
-  /**
-   * Write a new value for the ActionTimeStamp Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link DateTime} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeActionTimeStamp(DateTime value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readActionTimeStamp}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends DateTime> readActionTimeStampAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeActionTimeStamp}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeActionTimeStampAsync(DateTime value);
-
-  /**
-   * Get the ActionTimeStamp {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ActionTimeStamp {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getActionTimeStampNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getActionTimeStampNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getActionTimeStampNodeAsync();
-
-  /**
-   * Get the local value of the Status Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the Status Node.
-   * @throws UaException if an error occurs creating or getting the Status Node.
-   */
-  Boolean getStatus() throws UaException;
-
-  /**
-   * Set the local value of the Status Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the Status Node.
-   * @throws UaException if an error occurs creating or getting the Status Node.
-   */
-  void setStatus(Boolean value) throws UaException;
-
-  /**
-   * Read the value of the Status Node from the server and update the local value if the operation
-   * succeeds.
-   *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Boolean readStatus() throws UaException;
-
-  /**
-   * Write a new value for the Status Node to the server and update the local value if the operation
-   * succeeds.
-   *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeStatus(Boolean value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readStatus}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Boolean> readStatusAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeStatus}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeStatusAsync(Boolean value);
-
-  /**
-   * Get the Status {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the Status {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getStatusNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getStatusNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getStatusNodeAsync();
-
-  /**
-   * Get the local value of the ServerId Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ServerId Node.
-   * @throws UaException if an error occurs creating or getting the ServerId Node.
-   */
-  String getServerId() throws UaException;
-
-  /**
-   * Set the local value of the ServerId Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ServerId Node.
-   * @throws UaException if an error occurs creating or getting the ServerId Node.
-   */
-  void setServerId(String value) throws UaException;
-
-  /**
-   * Read the value of the ServerId Node from the server and update the local value if the operation
-   * succeeds.
-   *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String readServerId() throws UaException;
-
-  /**
-   * Write a new value for the ServerId Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeServerId(String value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readServerId}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String> readServerIdAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeServerId}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeServerIdAsync(String value);
-
-  /**
-   * Get the ServerId {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ServerId {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getServerIdNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getServerIdNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getServerIdNodeAsync();
-
-  /**
-   * Get the local value of the ClientAuditEntryId Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ClientAuditEntryId Node.
-   * @throws UaException if an error occurs creating or getting the ClientAuditEntryId Node.
-   */
-  String getClientAuditEntryId() throws UaException;
-
-  /**
-   * Set the local value of the ClientAuditEntryId Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ClientAuditEntryId Node.
-   * @throws UaException if an error occurs creating or getting the ClientAuditEntryId Node.
-   */
-  void setClientAuditEntryId(String value) throws UaException;
-
-  /**
-   * Read the value of the ClientAuditEntryId Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String readClientAuditEntryId() throws UaException;
-
-  /**
-   * Write a new value for the ClientAuditEntryId Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeClientAuditEntryId(String value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readClientAuditEntryId}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String> readClientAuditEntryIdAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeClientAuditEntryId}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeClientAuditEntryIdAsync(String value);
-
-  /**
-   * Get the ClientAuditEntryId {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ClientAuditEntryId {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getClientAuditEntryIdNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getClientAuditEntryIdNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getClientAuditEntryIdNodeAsync();
-
-  /**
-   * Get the local value of the ClientUserId Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ClientUserId Node.
-   * @throws UaException if an error occurs creating or getting the ClientUserId Node.
-   */
-  String getClientUserId() throws UaException;
-
-  /**
-   * Set the local value of the ClientUserId Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ClientUserId Node.
-   * @throws UaException if an error occurs creating or getting the ClientUserId Node.
-   */
-  void setClientUserId(String value) throws UaException;
-
-  /**
-   * Read the value of the ClientUserId Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String readClientUserId() throws UaException;
-
-  /**
-   * Write a new value for the ClientUserId Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeClientUserId(String value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readClientUserId}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String> readClientUserIdAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeClientUserId}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeClientUserIdAsync(String value);
-
-  /**
-   * Get the ClientUserId {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ClientUserId {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getClientUserIdNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getClientUserIdNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getClientUserIdNode()}. */
   CompletableFuture<? extends PropertyType> getClientUserIdNodeAsync();
 
   /**
-   * Get the local value of the ClientApplicationUri Node.
+   * Reads the Value of the ClientUserId child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ClientApplicationUri Node.
-   * @throws UaException if an error occurs creating or getting the ClientApplicationUri Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  String getClientApplicationUri() throws UaException;
+  @Nullable String readClientUserId() throws UaException;
 
   /**
-   * Set the local value of the ClientApplicationUri Node.
+   * Writes the Value of the ClientUserId child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ClientApplicationUri Node.
-   * @throws UaException if an error occurs creating or getting the ClientApplicationUri Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setClientApplicationUri(String value) throws UaException;
+  void writeClientUserId(@Nullable String value) throws UaException;
+
+  /** Asynchronous form of {@link #readClientUserId()}. */
+  CompletableFuture<? extends @Nullable String> readClientUserIdAsync();
+
+  /** Asynchronous form of {@link #writeClientUserId}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeClientUserIdAsync(@Nullable String value);
 
   /**
-   * Read the value of the ClientApplicationUri Node from the server and update the local value if
-   * the operation succeeds.
+   * Resolves the mandatory ActionTimeStamp child, a PropertyType with DataType UtcTime.
    *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  String readClientApplicationUri() throws UaException;
+  PropertyType getActionTimeStampNode() throws UaException;
+
+  /** Asynchronous form of {@link #getActionTimeStampNode()}. */
+  CompletableFuture<? extends PropertyType> getActionTimeStampNodeAsync();
 
   /**
-   * Write a new value for the ClientApplicationUri Node to the server and update the local value if
-   * the operation succeeds.
+   * Reads the Value of the ActionTimeStamp child from the server.
    *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeClientApplicationUri(String value) throws UaException;
+  @Nullable DateTime readActionTimeStamp() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readClientApplicationUri}.
+   * Writes the Value of the ActionTimeStamp child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends String> readClientApplicationUriAsync();
+  void writeActionTimeStamp(@Nullable DateTime value) throws UaException;
+
+  /** Asynchronous form of {@link #readActionTimeStamp()}. */
+  CompletableFuture<? extends @Nullable DateTime> readActionTimeStampAsync();
+
+  /** Asynchronous form of {@link #writeActionTimeStamp}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeActionTimeStampAsync(@Nullable DateTime value);
 
   /**
-   * An asynchronous implementation of {@link #writeClientApplicationUri}.
+   * Resolves the mandatory ClientAuditEntryId child, a PropertyType with DataType String.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  CompletableFuture<StatusCode> writeClientApplicationUriAsync(String value);
+  PropertyType getClientAuditEntryIdNode() throws UaException;
+
+  /** Asynchronous form of {@link #getClientAuditEntryIdNode()}. */
+  CompletableFuture<? extends PropertyType> getClientAuditEntryIdNodeAsync();
 
   /**
-   * Get the ClientApplicationUri {@link PropertyType} Node, or {@code null} if it does not exist.
+   * Reads the Value of the ClientAuditEntryId child from the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ClientApplicationUri {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  PropertyType getClientApplicationUriNode() throws UaException;
+  @Nullable String readClientAuditEntryId() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getClientApplicationUriNode()}.
+   * Writes the Value of the ClientAuditEntryId child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends PropertyType> getClientApplicationUriNodeAsync();
+  void writeClientAuditEntryId(@Nullable String value) throws UaException;
+
+  /** Asynchronous form of {@link #readClientAuditEntryId()}. */
+  CompletableFuture<? extends @Nullable String> readClientAuditEntryIdAsync();
+
+  /** Asynchronous form of {@link #writeClientAuditEntryId}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeClientAuditEntryIdAsync(@Nullable String value);
+
+  /**
+   * Resolves the optional ClientApplicationUri child, a PropertyType with DataType String.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyType getClientApplicationUriNode() throws UaException;
+
+  /** Asynchronous form of {@link #getClientApplicationUriNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getClientApplicationUriNodeAsync();
+
+  /**
+   * Reads the Value of the ClientApplicationUri child from the server.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable String readClientApplicationUri() throws UaException;
+
+  /**
+   * Writes the Value of the ClientApplicationUri child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeClientApplicationUri(@Nullable String value) throws UaException;
+
+  /** Asynchronous form of {@link #readClientApplicationUri()}. */
+  CompletableFuture<? extends @Nullable String> readClientApplicationUriAsync();
+
+  /**
+   * Asynchronous form of {@link #writeClientApplicationUri}; completes with the operation status.
+   */
+  CompletableFuture<StatusCode> writeClientApplicationUriAsync(@Nullable String value);
+
+  /**
+   * Resolves the mandatory Status child, a PropertyType with DataType Boolean.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getStatusNode() throws UaException;
+
+  /** Asynchronous form of {@link #getStatusNode()}. */
+  CompletableFuture<? extends PropertyType> getStatusNodeAsync();
+
+  /**
+   * Reads the Value of the Status child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable Boolean readStatus() throws UaException;
+
+  /**
+   * Writes the Value of the Status child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeStatus(@Nullable Boolean value) throws UaException;
+
+  /** Asynchronous form of {@link #readStatus()}. */
+  CompletableFuture<? extends @Nullable Boolean> readStatusAsync();
+
+  /** Asynchronous form of {@link #writeStatus}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeStatusAsync(@Nullable Boolean value);
+
+  /**
+   * Resolves the mandatory ServerId child, a PropertyType with DataType String.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getServerIdNode() throws UaException;
+
+  /** Asynchronous form of {@link #getServerIdNode()}. */
+  CompletableFuture<? extends PropertyType> getServerIdNodeAsync();
+
+  /**
+   * Reads the Value of the ServerId child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable String readServerId() throws UaException;
+
+  /**
+   * Writes the Value of the ServerId child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeServerId(@Nullable String value) throws UaException;
+
+  /** Asynchronous form of {@link #readServerId()}. */
+  CompletableFuture<? extends @Nullable String> readServerIdAsync();
+
+  /** Asynchronous form of {@link #writeServerId}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeServerIdAsync(@Nullable String value);
 }

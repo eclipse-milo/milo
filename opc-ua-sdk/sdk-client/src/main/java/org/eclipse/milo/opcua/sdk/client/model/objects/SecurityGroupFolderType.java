@@ -1,108 +1,301 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallOptions;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallResult;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.client.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
+import org.eclipse.milo.opcua.sdk.core.model.methods.SecurityGroupFolderTypeAddSecurityGroup;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/8.5.1">https://reference.opcfoundation.org/v105/Core/docs/Part14/8.5.1</a>
+ * Client API for the SecurityGroupFolderType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/8.5.1">Model
+ *     documentation</a>
  */
 public interface SecurityGroupFolderType extends FolderType {
-  QualifiedProperty<String[]> SUPPORTED_SECURITY_POLICY_URIS =
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 15452L);
+
+  QualifiedProperty<String[]> SupportedSecurityPolicyUris_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "SupportedSecurityPolicyUris",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
           1,
           String[].class);
 
   /**
-   * Get the local value of the SupportedSecurityPolicyUris Node.
+   * Resolves the optional SupportedSecurityPolicyUris child, a PropertyType with DataType String.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SupportedSecurityPolicyUris Node.
-   * @throws UaException if an error occurs creating or getting the SupportedSecurityPolicyUris
-   *     Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  String[] getSupportedSecurityPolicyUris() throws UaException;
+  @Nullable PropertyType getSupportedSecurityPolicyUrisNode() throws UaException;
+
+  /** Asynchronous form of {@link #getSupportedSecurityPolicyUrisNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getSupportedSecurityPolicyUrisNodeAsync();
 
   /**
-   * Set the local value of the SupportedSecurityPolicyUris Node.
+   * Reads the Value of the SupportedSecurityPolicyUris child from the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SupportedSecurityPolicyUris Node.
-   * @throws UaException if an error occurs creating or getting the SupportedSecurityPolicyUris
-   *     Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setSupportedSecurityPolicyUris(String[] value) throws UaException;
+  @Nullable String @Nullable [] readSupportedSecurityPolicyUris() throws UaException;
 
   /**
-   * Read the value of the SupportedSecurityPolicyUris Node from the server and update the local
-   * value if the operation succeeds.
+   * Writes the Value of the SupportedSecurityPolicyUris child to the server.
    *
-   * @return the {@link String[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  String[] readSupportedSecurityPolicyUris() throws UaException;
+  void writeSupportedSecurityPolicyUris(@Nullable String @Nullable [] value) throws UaException;
+
+  /** Asynchronous form of {@link #readSupportedSecurityPolicyUris()}. */
+  CompletableFuture<? extends @Nullable String @Nullable []> readSupportedSecurityPolicyUrisAsync();
 
   /**
-   * Write a new value for the SupportedSecurityPolicyUris Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link String[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * Asynchronous form of {@link #writeSupportedSecurityPolicyUris}; completes with the operation
+   * status.
    */
-  void writeSupportedSecurityPolicyUris(String[] value) throws UaException;
+  CompletableFuture<StatusCode> writeSupportedSecurityPolicyUrisAsync(
+      @Nullable String @Nullable [] value);
 
   /**
-   * An asynchronous implementation of {@link #readSupportedSecurityPolicyUris}.
+   * Resolves the mandatory AddSecurityGroup Method node.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/8.5.2">Model
+   *     documentation</a>
    */
-  CompletableFuture<? extends String[]> readSupportedSecurityPolicyUrisAsync();
+  UaMethodNode getAddSecurityGroupMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getAddSecurityGroupMethodNode()}. */
+  CompletableFuture<UaMethodNode> getAddSecurityGroupMethodNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeSupportedSecurityPolicyUris}.
+   * Calls the AddSecurityGroup Method and returns its outputs; requires a Good result.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/8.5.2">Model
+   *     documentation</a>
    */
-  CompletableFuture<StatusCode> writeSupportedSecurityPolicyUrisAsync(String[] value);
+  SecurityGroupFolderTypeAddSecurityGroup.Outputs addSecurityGroup(
+      @Nullable String securityGroupName,
+      @Nullable Double keyLifetime,
+      @Nullable String securityPolicyUri,
+      @Nullable UInteger maxFutureKeyCount,
+      @Nullable UInteger maxPastKeyCount)
+      throws UaException;
 
   /**
-   * Get the SupportedSecurityPolicyUris {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
+   * Calls the AddSecurityGroup Method and returns the complete result, including a Bad status.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SupportedSecurityPolicyUris {@link PropertyType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, transport or conversion fails.
    */
-  PropertyType getSupportedSecurityPolicyUrisNode() throws UaException;
+  MethodCallResult<SecurityGroupFolderTypeAddSecurityGroup.Outputs> callAddSecurityGroup(
+      @Nullable String securityGroupName,
+      @Nullable Double keyLifetime,
+      @Nullable String securityPolicyUri,
+      @Nullable UInteger maxFutureKeyCount,
+      @Nullable UInteger maxPastKeyCount)
+      throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getSupportedSecurityPolicyUrisNode()}.
+   * Calls the AddSecurityGroup Method with explicit options and returns the complete result.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, transport or conversion fails.
    */
-  CompletableFuture<? extends PropertyType> getSupportedSecurityPolicyUrisNodeAsync();
+  MethodCallResult<SecurityGroupFolderTypeAddSecurityGroup.Outputs> callAddSecurityGroupWith(
+      MethodCallOptions options,
+      @Nullable String securityGroupName,
+      @Nullable Double keyLifetime,
+      @Nullable String securityPolicyUri,
+      @Nullable UInteger maxFutureKeyCount,
+      @Nullable UInteger maxPastKeyCount)
+      throws UaException;
+
+  /** Asynchronous form of {@link #addSecurityGroup}. */
+  CompletableFuture<SecurityGroupFolderTypeAddSecurityGroup.Outputs> addSecurityGroupAsync(
+      @Nullable String securityGroupName,
+      @Nullable Double keyLifetime,
+      @Nullable String securityPolicyUri,
+      @Nullable UInteger maxFutureKeyCount,
+      @Nullable UInteger maxPastKeyCount);
+
+  /** Asynchronous form of {@link #callAddSecurityGroup}. */
+  CompletableFuture<MethodCallResult<SecurityGroupFolderTypeAddSecurityGroup.Outputs>>
+      callAddSecurityGroupAsync(
+          @Nullable String securityGroupName,
+          @Nullable Double keyLifetime,
+          @Nullable String securityPolicyUri,
+          @Nullable UInteger maxFutureKeyCount,
+          @Nullable UInteger maxPastKeyCount);
+
+  /** Asynchronous form of {@link #callAddSecurityGroupWith}. */
+  CompletableFuture<MethodCallResult<SecurityGroupFolderTypeAddSecurityGroup.Outputs>>
+      callAddSecurityGroupWithAsync(
+          MethodCallOptions options,
+          @Nullable String securityGroupName,
+          @Nullable Double keyLifetime,
+          @Nullable String securityPolicyUri,
+          @Nullable UInteger maxFutureKeyCount,
+          @Nullable UInteger maxPastKeyCount);
+
+  /**
+   * Resolves the optional AddSecurityGroupFolder Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/8.5.4">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getAddSecurityGroupFolderMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getAddSecurityGroupFolderMethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getAddSecurityGroupFolderMethodNodeAsync();
+
+  /**
+   * Calls the AddSecurityGroupFolder Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/8.5.4">Model
+   *     documentation</a>
+   */
+  @Nullable NodeId addSecurityGroupFolder(@Nullable String name) throws UaException;
+
+  /**
+   * Calls the AddSecurityGroupFolder Method and returns the complete result, including a Bad
+   * status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<@Nullable NodeId> callAddSecurityGroupFolder(@Nullable String name)
+      throws UaException;
+
+  /**
+   * Calls the AddSecurityGroupFolder Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<@Nullable NodeId> callAddSecurityGroupFolderWith(
+      MethodCallOptions options, @Nullable String name) throws UaException;
+
+  /** Asynchronous form of {@link #addSecurityGroupFolder}. */
+  CompletableFuture<@Nullable NodeId> addSecurityGroupFolderAsync(@Nullable String name);
+
+  /** Asynchronous form of {@link #callAddSecurityGroupFolder}. */
+  CompletableFuture<MethodCallResult<@Nullable NodeId>> callAddSecurityGroupFolderAsync(
+      @Nullable String name);
+
+  /** Asynchronous form of {@link #callAddSecurityGroupFolderWith}. */
+  CompletableFuture<MethodCallResult<@Nullable NodeId>> callAddSecurityGroupFolderWithAsync(
+      MethodCallOptions options, @Nullable String name);
+
+  /**
+   * Resolves the mandatory RemoveSecurityGroup Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/8.5.3">Model
+   *     documentation</a>
+   */
+  UaMethodNode getRemoveSecurityGroupMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getRemoveSecurityGroupMethodNode()}. */
+  CompletableFuture<UaMethodNode> getRemoveSecurityGroupMethodNodeAsync();
+
+  /**
+   * Calls the RemoveSecurityGroup Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/8.5.3">Model
+   *     documentation</a>
+   */
+  void removeSecurityGroup(@Nullable NodeId securityGroupNodeId) throws UaException;
+
+  /**
+   * Calls the RemoveSecurityGroup Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callRemoveSecurityGroup(@Nullable NodeId securityGroupNodeId)
+      throws UaException;
+
+  /**
+   * Calls the RemoveSecurityGroup Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callRemoveSecurityGroupWith(
+      MethodCallOptions options, @Nullable NodeId securityGroupNodeId) throws UaException;
+
+  /** Asynchronous form of {@link #removeSecurityGroup}. */
+  CompletableFuture<Void> removeSecurityGroupAsync(@Nullable NodeId securityGroupNodeId);
+
+  /** Asynchronous form of {@link #callRemoveSecurityGroup}. */
+  CompletableFuture<MethodCallResult<Void>> callRemoveSecurityGroupAsync(
+      @Nullable NodeId securityGroupNodeId);
+
+  /** Asynchronous form of {@link #callRemoveSecurityGroupWith}. */
+  CompletableFuture<MethodCallResult<Void>> callRemoveSecurityGroupWithAsync(
+      MethodCallOptions options, @Nullable NodeId securityGroupNodeId);
+
+  /**
+   * Resolves the optional RemoveSecurityGroupFolder Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/8.5.5">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getRemoveSecurityGroupFolderMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getRemoveSecurityGroupFolderMethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getRemoveSecurityGroupFolderMethodNodeAsync();
+
+  /**
+   * Calls the RemoveSecurityGroupFolder Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/8.5.5">Model
+   *     documentation</a>
+   */
+  void removeSecurityGroupFolder(@Nullable NodeId securityGroupFolderNodeId) throws UaException;
+
+  /**
+   * Calls the RemoveSecurityGroupFolder Method and returns the complete result, including a Bad
+   * status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callRemoveSecurityGroupFolder(@Nullable NodeId securityGroupFolderNodeId)
+      throws UaException;
+
+  /**
+   * Calls the RemoveSecurityGroupFolder Method with explicit options and returns the complete
+   * result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callRemoveSecurityGroupFolderWith(
+      MethodCallOptions options, @Nullable NodeId securityGroupFolderNodeId) throws UaException;
+
+  /** Asynchronous form of {@link #removeSecurityGroupFolder}. */
+  CompletableFuture<Void> removeSecurityGroupFolderAsync(
+      @Nullable NodeId securityGroupFolderNodeId);
+
+  /** Asynchronous form of {@link #callRemoveSecurityGroupFolder}. */
+  CompletableFuture<MethodCallResult<Void>> callRemoveSecurityGroupFolderAsync(
+      @Nullable NodeId securityGroupFolderNodeId);
+
+  /** Asynchronous form of {@link #callRemoveSecurityGroupFolderWith}. */
+  CompletableFuture<MethodCallResult<Void>> callRemoveSecurityGroupFolderWithAsync(
+      MethodCallOptions options, @Nullable NodeId securityGroupFolderNodeId);
 }

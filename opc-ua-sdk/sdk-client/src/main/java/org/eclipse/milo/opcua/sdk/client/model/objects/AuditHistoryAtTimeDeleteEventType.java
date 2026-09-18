@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
@@ -18,169 +8,95 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.8.7">https://reference.opcfoundation.org/v105/Core/docs/Part11/5.8.7</a>
+ * Client API for the AuditHistoryAtTimeDeleteEventType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.8.7">Model
+ *     documentation</a>
  */
 public interface AuditHistoryAtTimeDeleteEventType extends AuditHistoryDeleteEventType {
-  QualifiedProperty<DateTime[]> REQ_TIMES =
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 3019L);
+
+  QualifiedProperty<DateTime[]> ReqTimes_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "ReqTimes",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 294L),
           1,
           DateTime[].class);
 
-  QualifiedProperty<DataValue[]> OLD_VALUES =
+  QualifiedProperty<DataValue[]> OldValues_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "OldValues",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=23"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 23L),
           1,
           DataValue[].class);
 
   /**
-   * Get the local value of the ReqTimes Node.
+   * Resolves the mandatory ReqTimes child, a PropertyType with DataType UtcTime.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ReqTimes Node.
-   * @throws UaException if an error occurs creating or getting the ReqTimes Node.
-   */
-  DateTime[] getReqTimes() throws UaException;
-
-  /**
-   * Set the local value of the ReqTimes Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ReqTimes Node.
-   * @throws UaException if an error occurs creating or getting the ReqTimes Node.
-   */
-  void setReqTimes(DateTime[] value) throws UaException;
-
-  /**
-   * Read the value of the ReqTimes Node from the server and update the local value if the operation
-   * succeeds.
-   *
-   * @return the {@link DateTime[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  DateTime[] readReqTimes() throws UaException;
-
-  /**
-   * Write a new value for the ReqTimes Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link DateTime[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeReqTimes(DateTime[] value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readReqTimes}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends DateTime[]> readReqTimesAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeReqTimes}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeReqTimesAsync(DateTime[] value);
-
-  /**
-   * Get the ReqTimes {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ReqTimes {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getReqTimesNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getReqTimesNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getReqTimesNode()}. */
   CompletableFuture<? extends PropertyType> getReqTimesNodeAsync();
 
   /**
-   * Get the local value of the OldValues Node.
+   * Reads the Value of the ReqTimes child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the OldValues Node.
-   * @throws UaException if an error occurs creating or getting the OldValues Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  DataValue[] getOldValues() throws UaException;
+  DateTime @Nullable [] readReqTimes() throws UaException;
 
   /**
-   * Set the local value of the OldValues Node.
+   * Writes the Value of the ReqTimes child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the OldValues Node.
-   * @throws UaException if an error occurs creating or getting the OldValues Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setOldValues(DataValue[] value) throws UaException;
+  void writeReqTimes(DateTime @Nullable [] value) throws UaException;
+
+  /** Asynchronous form of {@link #readReqTimes()}. */
+  CompletableFuture<? extends DateTime @Nullable []> readReqTimesAsync();
+
+  /** Asynchronous form of {@link #writeReqTimes}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeReqTimesAsync(DateTime @Nullable [] value);
 
   /**
-   * Read the value of the OldValues Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the mandatory OldValues child, a PropertyType with DataType DataValue.
    *
-   * @return the {@link DataValue[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  DataValue[] readOldValues() throws UaException;
-
-  /**
-   * Write a new value for the OldValues Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link DataValue[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeOldValues(DataValue[] value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readOldValues}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends DataValue[]> readOldValuesAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeOldValues}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeOldValuesAsync(DataValue[] value);
-
-  /**
-   * Get the OldValues {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the OldValues {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getOldValuesNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getOldValuesNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getOldValuesNode()}. */
   CompletableFuture<? extends PropertyType> getOldValuesNodeAsync();
+
+  /**
+   * Reads the Value of the OldValues child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  DataValue @Nullable [] readOldValues() throws UaException;
+
+  /**
+   * Writes the Value of the OldValues child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeOldValues(DataValue @Nullable [] value) throws UaException;
+
+  /** Asynchronous form of {@link #readOldValues()}. */
+  CompletableFuture<? extends DataValue @Nullable []> readOldValuesAsync();
+
+  /** Asynchronous form of {@link #writeOldValues}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeOldValuesAsync(DataValue @Nullable [] value);
 }

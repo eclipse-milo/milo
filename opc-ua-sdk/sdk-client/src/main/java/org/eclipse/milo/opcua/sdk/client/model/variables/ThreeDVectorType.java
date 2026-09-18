@@ -1,237 +1,139 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.variables;
 
 import java.util.concurrent.CompletableFuture;
+import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.types.structured.ThreeDVector;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.22">https://reference.opcfoundation.org/v105/Core/docs/Part5/7.22</a>
+ * Client API for the 3DVectorType VariableType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.22">Model
+ *     documentation</a>
  */
 public interface ThreeDVectorType extends VectorType {
-  /**
-   * Get the local value of the X Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the X Node.
-   * @throws UaException if an error occurs creating or getting the X Node.
-   */
-  Double getX() throws UaException;
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 17716L);
 
   /**
-   * Set the local value of the X Node.
+   * Resolves the mandatory X child, a BaseDataVariableType with DataType Double.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the X Node.
-   * @throws UaException if an error occurs creating or getting the X Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  void setX(Double value) throws UaException;
+  VariableNode getXNode() throws UaException;
+
+  /** Asynchronous form of {@link #getXNode()}. */
+  CompletableFuture<? extends VariableNode> getXNodeAsync();
 
   /**
-   * Read the value of the X Node from the server and update the local value if the operation
-   * succeeds.
+   * Reads the Value of the X child from the server.
    *
-   * @return the {@link Double} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  Double readX() throws UaException;
+  @Nullable Double readX() throws UaException;
 
   /**
-   * Write a new value for the X Node to the server and update the local value if the operation
-   * succeeds.
+   * Writes the Value of the X child to the server.
    *
-   * @param value the {@link Double} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeX(Double value) throws UaException;
+  void writeX(@Nullable Double value) throws UaException;
+
+  /** Asynchronous form of {@link #readX()}. */
+  CompletableFuture<? extends @Nullable Double> readXAsync();
+
+  /** Asynchronous form of {@link #writeX}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeXAsync(@Nullable Double value);
 
   /**
-   * An asynchronous implementation of {@link #readX}.
+   * Resolves the mandatory Y child, a BaseDataVariableType with DataType Double.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  CompletableFuture<? extends Double> readXAsync();
+  VariableNode getYNode() throws UaException;
+
+  /** Asynchronous form of {@link #getYNode()}. */
+  CompletableFuture<? extends VariableNode> getYNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeX}.
+   * Reads the Value of the Y child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeXAsync(Double value);
+  @Nullable Double readY() throws UaException;
 
   /**
-   * Get the X {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
+   * Writes the Value of the Y child to the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the X {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  BaseDataVariableType getXNode() throws UaException;
+  void writeY(@Nullable Double value) throws UaException;
+
+  /** Asynchronous form of {@link #readY()}. */
+  CompletableFuture<? extends @Nullable Double> readYAsync();
+
+  /** Asynchronous form of {@link #writeY}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeYAsync(@Nullable Double value);
 
   /**
-   * Asynchronous implementation of {@link #getXNode()}.
+   * Resolves the mandatory Z child, a BaseDataVariableType with DataType Double.
    *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  CompletableFuture<? extends BaseDataVariableType> getXNodeAsync();
+  VariableNode getZNode() throws UaException;
+
+  /** Asynchronous form of {@link #getZNode()}. */
+  CompletableFuture<? extends VariableNode> getZNodeAsync();
 
   /**
-   * Get the local value of the Y Node.
+   * Reads the Value of the Z child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the Y Node.
-   * @throws UaException if an error occurs creating or getting the Y Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  Double getY() throws UaException;
+  @Nullable Double readZ() throws UaException;
 
   /**
-   * Set the local value of the Y Node.
+   * Writes the Value of the Z child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the Y Node.
-   * @throws UaException if an error occurs creating or getting the Y Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setY(Double value) throws UaException;
+  void writeZ(@Nullable Double value) throws UaException;
+
+  /** Asynchronous form of {@link #readZ()}. */
+  CompletableFuture<? extends @Nullable Double> readZAsync();
+
+  /** Asynchronous form of {@link #writeZ}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeZAsync(@Nullable Double value);
 
   /**
-   * Read the value of the Y Node from the server and update the local value if the operation
-   * succeeds.
+   * Reads the Value of this node from the server.
    *
-   * @return the {@link Double} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  Double readY() throws UaException;
+  @Nullable ThreeDVector readThreeDVectorValue() throws UaException;
 
   /**
-   * Write a new value for the Y Node to the server and update the local value if the operation
-   * succeeds.
+   * Writes the Value of this node to the server.
    *
-   * @param value the {@link Double} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeY(Double value) throws UaException;
+  void writeThreeDVectorValue(@Nullable ThreeDVector value) throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #readY}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Double> readYAsync();
+  /** Asynchronous form of {@link #readThreeDVectorValue()}. */
+  CompletableFuture<? extends @Nullable ThreeDVector> readThreeDVectorValueAsync();
 
-  /**
-   * An asynchronous implementation of {@link #writeY}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeYAsync(Double value);
-
-  /**
-   * Get the Y {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the Y {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getYNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getYNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getYNodeAsync();
-
-  /**
-   * Get the local value of the Z Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the Z Node.
-   * @throws UaException if an error occurs creating or getting the Z Node.
-   */
-  Double getZ() throws UaException;
-
-  /**
-   * Set the local value of the Z Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the Z Node.
-   * @throws UaException if an error occurs creating or getting the Z Node.
-   */
-  void setZ(Double value) throws UaException;
-
-  /**
-   * Read the value of the Z Node from the server and update the local value if the operation
-   * succeeds.
-   *
-   * @return the {@link Double} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Double readZ() throws UaException;
-
-  /**
-   * Write a new value for the Z Node to the server and update the local value if the operation
-   * succeeds.
-   *
-   * @param value the {@link Double} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeZ(Double value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readZ}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Double> readZAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeZ}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeZAsync(Double value);
-
-  /**
-   * Get the Z {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the Z {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getZNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getZNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getZNodeAsync();
+  /** Asynchronous form of {@link #writeThreeDVectorValue}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeThreeDVectorValueAsync(@Nullable ThreeDVector value);
 }

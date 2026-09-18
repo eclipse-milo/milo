@@ -57,7 +57,7 @@ public class UaVariableNodeTest extends AbstractClientServerTest {
         (AnalogItemTypeNode)
             client.getAddressSpace().getVariableNode(NodeId.parse("ns=2;s=TestAnalogValue"));
 
-    assertNotNull(analogNode.getEuRange());
+    assertNotNull(analogNode.readEURange());
   }
 
   @Test

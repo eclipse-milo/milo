@@ -1,589 +1,602 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallOptions;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallResult;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.client.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.2.1">https://reference.opcfoundation.org/v105/Core/docs/Part20/4.2.1</a>
+ * Client API for the FileType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.2.1">Model
+ *     documentation</a>
  */
 public interface FileType extends BaseObjectType {
-  QualifiedProperty<ULong> SIZE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Size",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=9"),
-          -1,
-          ULong.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 11575L);
 
-  QualifiedProperty<Boolean> WRITABLE =
+  QualifiedProperty<Boolean> UserWritable_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Writable",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
-
-  QualifiedProperty<Boolean> USER_WRITABLE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "UserWritable",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
           -1,
           Boolean.class);
 
-  QualifiedProperty<UShort> OPEN_COUNT =
+  QualifiedProperty<DateTime> LastModifiedTime_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "OpenCount",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-          -1,
-          UShort.class);
-
-  QualifiedProperty<String> MIME_TYPE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MimeType",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
-
-  QualifiedProperty<UInteger> MAX_BYTE_STRING_LENGTH =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxByteStringLength",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
-
-  QualifiedProperty<DateTime> LAST_MODIFIED_TIME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "LastModifiedTime",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=13"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 13L),
           -1,
           DateTime.class);
 
-  /**
-   * Get the local value of the Size Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the Size Node.
-   * @throws UaException if an error occurs creating or getting the Size Node.
-   */
-  ULong getSize() throws UaException;
+  QualifiedProperty<UInteger> MaxByteStringLength_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "MaxByteStringLength",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+          -1,
+          UInteger.class);
+
+  QualifiedProperty<ULong> Size_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA, "Size", ExpandedNodeId.of(Namespaces.OPC_UA, 9L), -1, ULong.class);
+
+  QualifiedProperty<String> MimeType_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "MimeType",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+          -1,
+          String.class);
+
+  QualifiedProperty<Boolean> Writable_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "Writable",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+          -1,
+          Boolean.class);
+
+  QualifiedProperty<UShort> OpenCount_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "OpenCount",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 5L),
+          -1,
+          UShort.class);
 
   /**
-   * Set the local value of the Size Node.
+   * Resolves the mandatory UserWritable child, a PropertyType with DataType Boolean.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the Size Node.
-   * @throws UaException if an error occurs creating or getting the Size Node.
-   */
-  void setSize(ULong value) throws UaException;
-
-  /**
-   * Read the value of the Size Node from the server and update the local value if the operation
-   * succeeds.
-   *
-   * @return the {@link ULong} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  ULong readSize() throws UaException;
-
-  /**
-   * Write a new value for the Size Node to the server and update the local value if the operation
-   * succeeds.
-   *
-   * @param value the {@link ULong} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeSize(ULong value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readSize}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends ULong> readSizeAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeSize}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeSizeAsync(ULong value);
-
-  /**
-   * Get the Size {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the Size {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getSizeNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getSizeNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getSizeNodeAsync();
-
-  /**
-   * Get the local value of the Writable Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the Writable Node.
-   * @throws UaException if an error occurs creating or getting the Writable Node.
-   */
-  Boolean getWritable() throws UaException;
-
-  /**
-   * Set the local value of the Writable Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the Writable Node.
-   * @throws UaException if an error occurs creating or getting the Writable Node.
-   */
-  void setWritable(Boolean value) throws UaException;
-
-  /**
-   * Read the value of the Writable Node from the server and update the local value if the operation
-   * succeeds.
-   *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Boolean readWritable() throws UaException;
-
-  /**
-   * Write a new value for the Writable Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeWritable(Boolean value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readWritable}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Boolean> readWritableAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeWritable}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeWritableAsync(Boolean value);
-
-  /**
-   * Get the Writable {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the Writable {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getWritableNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getWritableNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getWritableNodeAsync();
-
-  /**
-   * Get the local value of the UserWritable Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the UserWritable Node.
-   * @throws UaException if an error occurs creating or getting the UserWritable Node.
-   */
-  Boolean getUserWritable() throws UaException;
-
-  /**
-   * Set the local value of the UserWritable Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the UserWritable Node.
-   * @throws UaException if an error occurs creating or getting the UserWritable Node.
-   */
-  void setUserWritable(Boolean value) throws UaException;
-
-  /**
-   * Read the value of the UserWritable Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Boolean readUserWritable() throws UaException;
-
-  /**
-   * Write a new value for the UserWritable Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeUserWritable(Boolean value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readUserWritable}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Boolean> readUserWritableAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeUserWritable}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeUserWritableAsync(Boolean value);
-
-  /**
-   * Get the UserWritable {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the UserWritable {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getUserWritableNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getUserWritableNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getUserWritableNode()}. */
   CompletableFuture<? extends PropertyType> getUserWritableNodeAsync();
 
   /**
-   * Get the local value of the OpenCount Node.
+   * Reads the Value of the UserWritable child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the OpenCount Node.
-   * @throws UaException if an error occurs creating or getting the OpenCount Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UShort getOpenCount() throws UaException;
+  @Nullable Boolean readUserWritable() throws UaException;
 
   /**
-   * Set the local value of the OpenCount Node.
+   * Writes the Value of the UserWritable child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the OpenCount Node.
-   * @throws UaException if an error occurs creating or getting the OpenCount Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setOpenCount(UShort value) throws UaException;
+  void writeUserWritable(@Nullable Boolean value) throws UaException;
+
+  /** Asynchronous form of {@link #readUserWritable()}. */
+  CompletableFuture<? extends @Nullable Boolean> readUserWritableAsync();
+
+  /** Asynchronous form of {@link #writeUserWritable}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeUserWritableAsync(@Nullable Boolean value);
 
   /**
-   * Read the value of the OpenCount Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the optional LastModifiedTime child, a PropertyType with DataType DateTime.
    *
-   * @return the {@link UShort} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  UShort readOpenCount() throws UaException;
+  @Nullable PropertyType getLastModifiedTimeNode() throws UaException;
+
+  /** Asynchronous form of {@link #getLastModifiedTimeNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getLastModifiedTimeNodeAsync();
 
   /**
-   * Write a new value for the OpenCount Node to the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the LastModifiedTime child from the server.
    *
-   * @param value the {@link UShort} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeOpenCount(UShort value) throws UaException;
+  @Nullable DateTime readLastModifiedTime() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readOpenCount}.
+   * Writes the Value of the LastModifiedTime child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends UShort> readOpenCountAsync();
+  void writeLastModifiedTime(@Nullable DateTime value) throws UaException;
+
+  /** Asynchronous form of {@link #readLastModifiedTime()}. */
+  CompletableFuture<? extends @Nullable DateTime> readLastModifiedTimeAsync();
+
+  /** Asynchronous form of {@link #writeLastModifiedTime}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeLastModifiedTimeAsync(@Nullable DateTime value);
 
   /**
-   * An asynchronous implementation of {@link #writeOpenCount}.
+   * Resolves the optional MaxByteStringLength child, a PropertyType with DataType UInt32.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  CompletableFuture<StatusCode> writeOpenCountAsync(UShort value);
+  @Nullable PropertyType getMaxByteStringLengthNode() throws UaException;
+
+  /** Asynchronous form of {@link #getMaxByteStringLengthNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getMaxByteStringLengthNodeAsync();
 
   /**
-   * Get the OpenCount {@link PropertyType} Node, or {@code null} if it does not exist.
+   * Reads the Value of the MaxByteStringLength child from the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable UInteger readMaxByteStringLength() throws UaException;
+
+  /**
+   * Writes the Value of the MaxByteStringLength child to the server.
    *
-   * @return the OpenCount {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeMaxByteStringLength(@Nullable UInteger value) throws UaException;
+
+  /** Asynchronous form of {@link #readMaxByteStringLength()}. */
+  CompletableFuture<? extends @Nullable UInteger> readMaxByteStringLengthAsync();
+
+  /**
+   * Asynchronous form of {@link #writeMaxByteStringLength}; completes with the operation status.
+   */
+  CompletableFuture<StatusCode> writeMaxByteStringLengthAsync(@Nullable UInteger value);
+
+  /**
+   * Resolves the mandatory Size child, a PropertyType with DataType UInt64.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getSizeNode() throws UaException;
+
+  /** Asynchronous form of {@link #getSizeNode()}. */
+  CompletableFuture<? extends PropertyType> getSizeNodeAsync();
+
+  /**
+   * Reads the Value of the Size child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable ULong readSize() throws UaException;
+
+  /**
+   * Writes the Value of the Size child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeSize(@Nullable ULong value) throws UaException;
+
+  /** Asynchronous form of {@link #readSize()}. */
+  CompletableFuture<? extends @Nullable ULong> readSizeAsync();
+
+  /** Asynchronous form of {@link #writeSize}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeSizeAsync(@Nullable ULong value);
+
+  /**
+   * Resolves the optional MimeType child, a PropertyType with DataType String.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyType getMimeTypeNode() throws UaException;
+
+  /** Asynchronous form of {@link #getMimeTypeNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getMimeTypeNodeAsync();
+
+  /**
+   * Reads the Value of the MimeType child from the server.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable String readMimeType() throws UaException;
+
+  /**
+   * Writes the Value of the MimeType child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeMimeType(@Nullable String value) throws UaException;
+
+  /** Asynchronous form of {@link #readMimeType()}. */
+  CompletableFuture<? extends @Nullable String> readMimeTypeAsync();
+
+  /** Asynchronous form of {@link #writeMimeType}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeMimeTypeAsync(@Nullable String value);
+
+  /**
+   * Resolves the mandatory Writable child, a PropertyType with DataType Boolean.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getWritableNode() throws UaException;
+
+  /** Asynchronous form of {@link #getWritableNode()}. */
+  CompletableFuture<? extends PropertyType> getWritableNodeAsync();
+
+  /**
+   * Reads the Value of the Writable child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable Boolean readWritable() throws UaException;
+
+  /**
+   * Writes the Value of the Writable child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeWritable(@Nullable Boolean value) throws UaException;
+
+  /** Asynchronous form of {@link #readWritable()}. */
+  CompletableFuture<? extends @Nullable Boolean> readWritableAsync();
+
+  /** Asynchronous form of {@link #writeWritable}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeWritableAsync(@Nullable Boolean value);
+
+  /**
+   * Resolves the mandatory OpenCount child, a PropertyType with DataType UInt16.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getOpenCountNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getOpenCountNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getOpenCountNode()}. */
   CompletableFuture<? extends PropertyType> getOpenCountNodeAsync();
 
   /**
-   * Get the local value of the MimeType Node.
+   * Reads the Value of the OpenCount child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MimeType Node.
-   * @throws UaException if an error occurs creating or getting the MimeType Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  String getMimeType() throws UaException;
+  @Nullable UShort readOpenCount() throws UaException;
 
   /**
-   * Set the local value of the MimeType Node.
+   * Writes the Value of the OpenCount child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MimeType Node.
-   * @throws UaException if an error occurs creating or getting the MimeType Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setMimeType(String value) throws UaException;
+  void writeOpenCount(@Nullable UShort value) throws UaException;
+
+  /** Asynchronous form of {@link #readOpenCount()}. */
+  CompletableFuture<? extends @Nullable UShort> readOpenCountAsync();
+
+  /** Asynchronous form of {@link #writeOpenCount}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeOpenCountAsync(@Nullable UShort value);
 
   /**
-   * Read the value of the MimeType Node from the server and update the local value if the operation
-   * succeeds.
+   * Resolves the mandatory Close Method node.
    *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.2.3">Model
+   *     documentation</a>
    */
-  String readMimeType() throws UaException;
+  UaMethodNode getCloseMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getCloseMethodNode()}. */
+  CompletableFuture<UaMethodNode> getCloseMethodNodeAsync();
 
   /**
-   * Write a new value for the MimeType Node to the server and update the local value if the
-   * operation succeeds.
+   * Calls the Close Method and returns its outputs; requires a Good result.
    *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.2.3">Model
+   *     documentation</a>
    */
-  void writeMimeType(String value) throws UaException;
+  void close(@Nullable UInteger fileHandle) throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readMimeType}.
+   * Calls the Close Method and returns the complete result, including a Bad status.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, transport or conversion fails.
    */
-  CompletableFuture<? extends String> readMimeTypeAsync();
+  MethodCallResult<Void> callClose(@Nullable UInteger fileHandle) throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeMimeType}.
+   * Calls the Close Method with explicit options and returns the complete result.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, transport or conversion fails.
    */
-  CompletableFuture<StatusCode> writeMimeTypeAsync(String value);
+  MethodCallResult<Void> callCloseWith(MethodCallOptions options, @Nullable UInteger fileHandle)
+      throws UaException;
+
+  /** Asynchronous form of {@link #close}. */
+  CompletableFuture<Void> closeAsync(@Nullable UInteger fileHandle);
+
+  /** Asynchronous form of {@link #callClose}. */
+  CompletableFuture<MethodCallResult<Void>> callCloseAsync(@Nullable UInteger fileHandle);
+
+  /** Asynchronous form of {@link #callCloseWith}. */
+  CompletableFuture<MethodCallResult<Void>> callCloseWithAsync(
+      MethodCallOptions options, @Nullable UInteger fileHandle);
 
   /**
-   * Get the MimeType {@link PropertyType} Node, or {@code null} if it does not exist.
+   * Resolves the mandatory GetPosition Method node.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MimeType {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.2.6">Model
+   *     documentation</a>
    */
-  PropertyType getMimeTypeNode() throws UaException;
+  UaMethodNode getGetPositionMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getGetPositionMethodNode()}. */
+  CompletableFuture<UaMethodNode> getGetPositionMethodNodeAsync();
 
   /**
-   * Asynchronous implementation of {@link #getMimeTypeNode()}.
+   * Calls the GetPosition Method and returns its outputs; requires a Good result.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.2.6">Model
+   *     documentation</a>
    */
-  CompletableFuture<? extends PropertyType> getMimeTypeNodeAsync();
+  @Nullable ULong getPosition(@Nullable UInteger fileHandle) throws UaException;
 
   /**
-   * Get the local value of the MaxByteStringLength Node.
+   * Calls the GetPosition Method and returns the complete result, including a Bad status.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaxByteStringLength Node.
-   * @throws UaException if an error occurs creating or getting the MaxByteStringLength Node.
+   * @throws UaException if lookup, transport or conversion fails.
    */
-  UInteger getMaxByteStringLength() throws UaException;
+  MethodCallResult<@Nullable ULong> callGetPosition(@Nullable UInteger fileHandle)
+      throws UaException;
 
   /**
-   * Set the local value of the MaxByteStringLength Node.
+   * Calls the GetPosition Method with explicit options and returns the complete result.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaxByteStringLength Node.
-   * @throws UaException if an error occurs creating or getting the MaxByteStringLength Node.
+   * @throws UaException if lookup, transport or conversion fails.
    */
-  void setMaxByteStringLength(UInteger value) throws UaException;
+  MethodCallResult<@Nullable ULong> callGetPositionWith(
+      MethodCallOptions options, @Nullable UInteger fileHandle) throws UaException;
+
+  /** Asynchronous form of {@link #getPosition}. */
+  CompletableFuture<@Nullable ULong> getPositionAsync(@Nullable UInteger fileHandle);
+
+  /** Asynchronous form of {@link #callGetPosition}. */
+  CompletableFuture<MethodCallResult<@Nullable ULong>> callGetPositionAsync(
+      @Nullable UInteger fileHandle);
+
+  /** Asynchronous form of {@link #callGetPositionWith}. */
+  CompletableFuture<MethodCallResult<@Nullable ULong>> callGetPositionWithAsync(
+      MethodCallOptions options, @Nullable UInteger fileHandle);
 
   /**
-   * Read the value of the MaxByteStringLength Node from the server and update the local value if
-   * the operation succeeds.
+   * Resolves the mandatory Open Method node.
    *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.2.2">Model
+   *     documentation</a>
    */
-  UInteger readMaxByteStringLength() throws UaException;
+  UaMethodNode getOpenMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getOpenMethodNode()}. */
+  CompletableFuture<UaMethodNode> getOpenMethodNodeAsync();
 
   /**
-   * Write a new value for the MaxByteStringLength Node to the server and update the local value if
-   * the operation succeeds.
+   * Calls the Open Method and returns its outputs; requires a Good result.
    *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.2.2">Model
+   *     documentation</a>
    */
-  void writeMaxByteStringLength(UInteger value) throws UaException;
+  @Nullable UInteger open(@Nullable UByte mode) throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readMaxByteStringLength}.
+   * Calls the Open Method and returns the complete result, including a Bad status.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, transport or conversion fails.
    */
-  CompletableFuture<? extends UInteger> readMaxByteStringLengthAsync();
+  MethodCallResult<@Nullable UInteger> callOpen(@Nullable UByte mode) throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeMaxByteStringLength}.
+   * Calls the Open Method with explicit options and returns the complete result.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, transport or conversion fails.
    */
-  CompletableFuture<StatusCode> writeMaxByteStringLengthAsync(UInteger value);
+  MethodCallResult<@Nullable UInteger> callOpenWith(MethodCallOptions options, @Nullable UByte mode)
+      throws UaException;
+
+  /** Asynchronous form of {@link #open}. */
+  CompletableFuture<@Nullable UInteger> openAsync(@Nullable UByte mode);
+
+  /** Asynchronous form of {@link #callOpen}. */
+  CompletableFuture<MethodCallResult<@Nullable UInteger>> callOpenAsync(@Nullable UByte mode);
+
+  /** Asynchronous form of {@link #callOpenWith}. */
+  CompletableFuture<MethodCallResult<@Nullable UInteger>> callOpenWithAsync(
+      MethodCallOptions options, @Nullable UByte mode);
 
   /**
-   * Get the MaxByteStringLength {@link PropertyType} Node, or {@code null} if it does not exist.
+   * Resolves the mandatory Read Method node.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaxByteStringLength {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.2.4">Model
+   *     documentation</a>
    */
-  PropertyType getMaxByteStringLengthNode() throws UaException;
+  UaMethodNode getReadMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getReadMethodNode()}. */
+  CompletableFuture<UaMethodNode> getReadMethodNodeAsync();
 
   /**
-   * Asynchronous implementation of {@link #getMaxByteStringLengthNode()}.
+   * Calls the Read Method and returns its outputs; requires a Good result.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.2.4">Model
+   *     documentation</a>
    */
-  CompletableFuture<? extends PropertyType> getMaxByteStringLengthNodeAsync();
+  @Nullable ByteString read(@Nullable UInteger fileHandle, @Nullable Integer length)
+      throws UaException;
 
   /**
-   * Get the local value of the LastModifiedTime Node.
+   * Calls the Read Method and returns the complete result, including a Bad status.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the LastModifiedTime Node.
-   * @throws UaException if an error occurs creating or getting the LastModifiedTime Node.
+   * @throws UaException if lookup, transport or conversion fails.
    */
-  DateTime getLastModifiedTime() throws UaException;
+  MethodCallResult<@Nullable ByteString> callRead(
+      @Nullable UInteger fileHandle, @Nullable Integer length) throws UaException;
 
   /**
-   * Set the local value of the LastModifiedTime Node.
+   * Calls the Read Method with explicit options and returns the complete result.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the LastModifiedTime Node.
-   * @throws UaException if an error occurs creating or getting the LastModifiedTime Node.
+   * @throws UaException if lookup, transport or conversion fails.
    */
-  void setLastModifiedTime(DateTime value) throws UaException;
+  MethodCallResult<@Nullable ByteString> callReadWith(
+      MethodCallOptions options, @Nullable UInteger fileHandle, @Nullable Integer length)
+      throws UaException;
+
+  /** Asynchronous form of {@link #read}. */
+  CompletableFuture<@Nullable ByteString> readAsync(
+      @Nullable UInteger fileHandle, @Nullable Integer length);
+
+  /** Asynchronous form of {@link #callRead}. */
+  CompletableFuture<MethodCallResult<@Nullable ByteString>> callReadAsync(
+      @Nullable UInteger fileHandle, @Nullable Integer length);
+
+  /** Asynchronous form of {@link #callReadWith}. */
+  CompletableFuture<MethodCallResult<@Nullable ByteString>> callReadWithAsync(
+      MethodCallOptions options, @Nullable UInteger fileHandle, @Nullable Integer length);
 
   /**
-   * Read the value of the LastModifiedTime Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the mandatory SetPosition Method node.
    *
-   * @return the {@link DateTime} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.2.7">Model
+   *     documentation</a>
    */
-  DateTime readLastModifiedTime() throws UaException;
+  UaMethodNode getSetPositionMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getSetPositionMethodNode()}. */
+  CompletableFuture<UaMethodNode> getSetPositionMethodNodeAsync();
 
   /**
-   * Write a new value for the LastModifiedTime Node to the server and update the local value if the
-   * operation succeeds.
+   * Calls the SetPosition Method and returns its outputs; requires a Good result.
    *
-   * @param value the {@link DateTime} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.2.7">Model
+   *     documentation</a>
    */
-  void writeLastModifiedTime(DateTime value) throws UaException;
+  void setPosition(@Nullable UInteger fileHandle, @Nullable ULong position) throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readLastModifiedTime}.
+   * Calls the SetPosition Method and returns the complete result, including a Bad status.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, transport or conversion fails.
    */
-  CompletableFuture<? extends DateTime> readLastModifiedTimeAsync();
+  MethodCallResult<Void> callSetPosition(@Nullable UInteger fileHandle, @Nullable ULong position)
+      throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeLastModifiedTime}.
+   * Calls the SetPosition Method with explicit options and returns the complete result.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, transport or conversion fails.
    */
-  CompletableFuture<StatusCode> writeLastModifiedTimeAsync(DateTime value);
+  MethodCallResult<Void> callSetPositionWith(
+      MethodCallOptions options, @Nullable UInteger fileHandle, @Nullable ULong position)
+      throws UaException;
+
+  /** Asynchronous form of {@link #setPosition}. */
+  CompletableFuture<Void> setPositionAsync(@Nullable UInteger fileHandle, @Nullable ULong position);
+
+  /** Asynchronous form of {@link #callSetPosition}. */
+  CompletableFuture<MethodCallResult<Void>> callSetPositionAsync(
+      @Nullable UInteger fileHandle, @Nullable ULong position);
+
+  /** Asynchronous form of {@link #callSetPositionWith}. */
+  CompletableFuture<MethodCallResult<Void>> callSetPositionWithAsync(
+      MethodCallOptions options, @Nullable UInteger fileHandle, @Nullable ULong position);
 
   /**
-   * Get the LastModifiedTime {@link PropertyType} Node, or {@code null} if it does not exist.
+   * Resolves the mandatory Write Method node.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the LastModifiedTime {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.2.5">Model
+   *     documentation</a>
    */
-  PropertyType getLastModifiedTimeNode() throws UaException;
+  UaMethodNode getWriteMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getWriteMethodNode()}. */
+  CompletableFuture<UaMethodNode> getWriteMethodNodeAsync();
 
   /**
-   * Asynchronous implementation of {@link #getLastModifiedTimeNode()}.
+   * Calls the Write Method and returns its outputs; requires a Good result.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.2.5">Model
+   *     documentation</a>
    */
-  CompletableFuture<? extends PropertyType> getLastModifiedTimeNodeAsync();
+  void write(@Nullable UInteger fileHandle, @Nullable ByteString data) throws UaException;
+
+  /**
+   * Calls the Write Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callWrite(@Nullable UInteger fileHandle, @Nullable ByteString data)
+      throws UaException;
+
+  /**
+   * Calls the Write Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callWriteWith(
+      MethodCallOptions options, @Nullable UInteger fileHandle, @Nullable ByteString data)
+      throws UaException;
+
+  /** Asynchronous form of {@link #write}. */
+  CompletableFuture<Void> writeAsync(@Nullable UInteger fileHandle, @Nullable ByteString data);
+
+  /** Asynchronous form of {@link #callWrite}. */
+  CompletableFuture<MethodCallResult<Void>> callWriteAsync(
+      @Nullable UInteger fileHandle, @Nullable ByteString data);
+
+  /** Asynchronous form of {@link #callWriteWith}. */
+  CompletableFuture<MethodCallResult<Void>> callWriteWithAsync(
+      MethodCallOptions options, @Nullable UInteger fileHandle, @Nullable ByteString data);
 }

@@ -1,20 +1,8 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
@@ -25,7 +13,15 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link LldpInformationType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.5.3">Model
+ *     documentation</a>
+ */
 public class LldpInformationTypeNode extends BaseObjectTypeNode implements LldpInformationType {
   public LldpInformationTypeNode(
       OpcUaClient client,
@@ -33,12 +29,12 @@ public class LldpInformationTypeNode extends BaseObjectTypeNode implements LldpI
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         client,
@@ -56,65 +52,69 @@ public class LldpInformationTypeNode extends BaseObjectTypeNode implements LldpI
   }
 
   @Override
-  public LldpRemoteStatisticsTypeNode getRemoteStatisticsNode() throws UaException {
-    try {
-      return getRemoteStatisticsNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends LldpRemoteStatisticsTypeNode> getRemoteStatisticsNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "RemoteStatistics",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (LldpRemoteStatisticsTypeNode) node);
-  }
-
-  @Override
   public LldpLocalSystemTypeNode getLocalSystemDataNode() throws UaException {
-    try {
-      return getLocalSystemDataNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getLocalSystemDataNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends LldpLocalSystemTypeNode> getLocalSystemDataNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "LocalSystemData", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (LldpLocalSystemTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "LocalSystemData",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Object,
+                        LldpLocalSystemTypeNode.class)));
+  }
+
+  @Override
+  public @Nullable LldpRemoteStatisticsTypeNode getRemoteStatisticsNode() throws UaException {
+    return ClientNodeSupport.await(getRemoteStatisticsNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable LldpRemoteStatisticsTypeNode>
+      getRemoteStatisticsNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "RemoteStatistics",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Object,
+                        LldpRemoteStatisticsTypeNode.class)));
   }
 
   @Override
   public FolderTypeNode getPortsNode() throws UaException {
-    try {
-      return getPortsNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getPortsNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends FolderTypeNode> getPortsNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Ports", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (FolderTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "Ports",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Object,
+                        FolderTypeNode.class)));
   }
 }

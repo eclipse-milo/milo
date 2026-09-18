@@ -1,240 +1,120 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
-import org.eclipse.milo.opcua.sdk.client.model.variables.BaseDataVariableType;
+import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.6">https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.6</a>
+ * Client API for the ISrClassType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.6">Model
+ *     documentation</a>
  */
 public interface ISrClassType extends BaseInterfaceType {
-  /**
-   * Get the local value of the Id Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the Id Node.
-   * @throws UaException if an error occurs creating or getting the Id Node.
-   */
-  UByte getId() throws UaException;
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 24169L);
 
   /**
-   * Set the local value of the Id Node.
+   * Resolves the mandatory Id child, a BaseDataVariableType with DataType Byte.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the Id Node.
-   * @throws UaException if an error occurs creating or getting the Id Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  void setId(UByte value) throws UaException;
+  VariableNode getIdNode() throws UaException;
+
+  /** Asynchronous form of {@link #getIdNode()}. */
+  CompletableFuture<? extends VariableNode> getIdNodeAsync();
 
   /**
-   * Read the value of the Id Node from the server and update the local value if the operation
-   * succeeds.
+   * Reads the Value of the Id child from the server.
    *
-   * @return the {@link UByte} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UByte readId() throws UaException;
+  @Nullable UByte readId() throws UaException;
 
   /**
-   * Write a new value for the Id Node to the server and update the local value if the operation
-   * succeeds.
+   * Writes the Value of the Id child to the server.
    *
-   * @param value the {@link UByte} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeId(UByte value) throws UaException;
+  void writeId(@Nullable UByte value) throws UaException;
+
+  /** Asynchronous form of {@link #readId()}. */
+  CompletableFuture<? extends @Nullable UByte> readIdAsync();
+
+  /** Asynchronous form of {@link #writeId}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeIdAsync(@Nullable UByte value);
 
   /**
-   * An asynchronous implementation of {@link #readId}.
+   * Resolves the mandatory Vid child, a BaseDataVariableType with DataType UInt16.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  CompletableFuture<? extends UByte> readIdAsync();
+  VariableNode getVidNode() throws UaException;
+
+  /** Asynchronous form of {@link #getVidNode()}. */
+  CompletableFuture<? extends VariableNode> getVidNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeId}.
+   * Reads the Value of the Vid child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeIdAsync(UByte value);
+  @Nullable UShort readVid() throws UaException;
 
   /**
-   * Get the Id {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
+   * Writes the Value of the Vid child to the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the Id {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  BaseDataVariableType getIdNode() throws UaException;
+  void writeVid(@Nullable UShort value) throws UaException;
+
+  /** Asynchronous form of {@link #readVid()}. */
+  CompletableFuture<? extends @Nullable UShort> readVidAsync();
+
+  /** Asynchronous form of {@link #writeVid}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeVidAsync(@Nullable UShort value);
 
   /**
-   * Asynchronous implementation of {@link #getIdNode()}.
+   * Resolves the mandatory Priority child, a BaseDataVariableType with DataType Byte.
    *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  CompletableFuture<? extends BaseDataVariableType> getIdNodeAsync();
+  VariableNode getPriorityNode() throws UaException;
+
+  /** Asynchronous form of {@link #getPriorityNode()}. */
+  CompletableFuture<? extends VariableNode> getPriorityNodeAsync();
 
   /**
-   * Get the local value of the Priority Node.
+   * Reads the Value of the Priority child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the Priority Node.
-   * @throws UaException if an error occurs creating or getting the Priority Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UByte getPriority() throws UaException;
+  @Nullable UByte readPriority() throws UaException;
 
   /**
-   * Set the local value of the Priority Node.
+   * Writes the Value of the Priority child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the Priority Node.
-   * @throws UaException if an error occurs creating or getting the Priority Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setPriority(UByte value) throws UaException;
+  void writePriority(@Nullable UByte value) throws UaException;
 
-  /**
-   * Read the value of the Priority Node from the server and update the local value if the operation
-   * succeeds.
-   *
-   * @return the {@link UByte} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UByte readPriority() throws UaException;
+  /** Asynchronous form of {@link #readPriority()}. */
+  CompletableFuture<? extends @Nullable UByte> readPriorityAsync();
 
-  /**
-   * Write a new value for the Priority Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link UByte} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writePriority(UByte value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readPriority}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UByte> readPriorityAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writePriority}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writePriorityAsync(UByte value);
-
-  /**
-   * Get the Priority {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the Priority {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getPriorityNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getPriorityNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getPriorityNodeAsync();
-
-  /**
-   * Get the local value of the Vid Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the Vid Node.
-   * @throws UaException if an error occurs creating or getting the Vid Node.
-   */
-  UShort getVid() throws UaException;
-
-  /**
-   * Set the local value of the Vid Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the Vid Node.
-   * @throws UaException if an error occurs creating or getting the Vid Node.
-   */
-  void setVid(UShort value) throws UaException;
-
-  /**
-   * Read the value of the Vid Node from the server and update the local value if the operation
-   * succeeds.
-   *
-   * @return the {@link UShort} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UShort readVid() throws UaException;
-
-  /**
-   * Write a new value for the Vid Node to the server and update the local value if the operation
-   * succeeds.
-   *
-   * @param value the {@link UShort} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeVid(UShort value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readVid}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UShort> readVidAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeVid}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeVidAsync(UShort value);
-
-  /**
-   * Get the Vid {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the Vid {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getVidNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getVidNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getVidNodeAsync();
+  /** Asynchronous form of {@link #writePriority}; completes with the operation status. */
+  CompletableFuture<StatusCode> writePriorityAsync(@Nullable UByte value);
 }

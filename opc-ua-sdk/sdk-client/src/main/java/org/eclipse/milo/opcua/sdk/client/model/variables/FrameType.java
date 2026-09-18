@@ -1,404 +1,232 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.variables;
 
 import java.util.concurrent.CompletableFuture;
 import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
+import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.structured.CartesianCoordinates;
+import org.eclipse.milo.opcua.stack.core.types.structured.Frame;
 import org.eclipse.milo.opcua.stack.core.types.structured.Orientation;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.27">https://reference.opcfoundation.org/v105/Core/docs/Part5/7.27</a>
+ * Client API for the FrameType VariableType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.27">Model
+ *     documentation</a>
  */
 public interface FrameType extends BaseDataVariableType {
-  QualifiedProperty<Boolean> CONSTANT =
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 18786L);
+
+  QualifiedProperty<Boolean> Constant_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "Constant",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
           -1,
           Boolean.class);
 
-  QualifiedProperty<Boolean> FIXED_BASE =
+  QualifiedProperty<Boolean> FixedBase_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "FixedBase",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
           -1,
           Boolean.class);
 
   /**
-   * Get the local value of the Constant Node.
+   * Resolves the mandatory Orientation child, a OrientationType with DataType Orientation.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the Constant Node.
-   * @throws UaException if an error occurs creating or getting the Constant Node.
-   */
-  Boolean getConstant() throws UaException;
-
-  /**
-   * Set the local value of the Constant Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the Constant Node.
-   * @throws UaException if an error occurs creating or getting the Constant Node.
-   */
-  void setConstant(Boolean value) throws UaException;
-
-  /**
-   * Read the value of the Constant Node from the server and update the local value if the operation
-   * succeeds.
-   *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Boolean readConstant() throws UaException;
-
-  /**
-   * Write a new value for the Constant Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeConstant(Boolean value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readConstant}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Boolean> readConstantAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeConstant}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeConstantAsync(Boolean value);
-
-  /**
-   * Get the Constant {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the Constant {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getConstantNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getConstantNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getConstantNodeAsync();
-
-  /**
-   * Get the local value of the FixedBase Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the FixedBase Node.
-   * @throws UaException if an error occurs creating or getting the FixedBase Node.
-   */
-  Boolean getFixedBase() throws UaException;
-
-  /**
-   * Set the local value of the FixedBase Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the FixedBase Node.
-   * @throws UaException if an error occurs creating or getting the FixedBase Node.
-   */
-  void setFixedBase(Boolean value) throws UaException;
-
-  /**
-   * Read the value of the FixedBase Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Boolean readFixedBase() throws UaException;
-
-  /**
-   * Write a new value for the FixedBase Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeFixedBase(Boolean value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readFixedBase}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Boolean> readFixedBaseAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeFixedBase}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeFixedBaseAsync(Boolean value);
-
-  /**
-   * Get the FixedBase {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the FixedBase {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getFixedBaseNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getFixedBaseNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getFixedBaseNodeAsync();
-
-  /**
-   * Get the local value of the CartesianCoordinates Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the CartesianCoordinates Node.
-   * @throws UaException if an error occurs creating or getting the CartesianCoordinates Node.
-   */
-  CartesianCoordinates getCartesianCoordinates() throws UaException;
-
-  /**
-   * Set the local value of the CartesianCoordinates Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the CartesianCoordinates Node.
-   * @throws UaException if an error occurs creating or getting the CartesianCoordinates Node.
-   */
-  void setCartesianCoordinates(CartesianCoordinates value) throws UaException;
-
-  /**
-   * Read the value of the CartesianCoordinates Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link CartesianCoordinates} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  CartesianCoordinates readCartesianCoordinates() throws UaException;
-
-  /**
-   * Write a new value for the CartesianCoordinates Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link CartesianCoordinates} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeCartesianCoordinates(CartesianCoordinates value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readCartesianCoordinates}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends CartesianCoordinates> readCartesianCoordinatesAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeCartesianCoordinates}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeCartesianCoordinatesAsync(CartesianCoordinates value);
-
-  /**
-   * Get the CartesianCoordinates {@link CartesianCoordinatesType} Node, or {@code null} if it does
-   * not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the CartesianCoordinates {@link CartesianCoordinatesType} Node, or {@code null} if it
-   *     does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  CartesianCoordinatesType getCartesianCoordinatesNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getCartesianCoordinatesNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the CartesianCoordinatesType Node
-   *     or completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends CartesianCoordinatesType> getCartesianCoordinatesNodeAsync();
-
-  /**
-   * Get the local value of the Orientation Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the Orientation Node.
-   * @throws UaException if an error occurs creating or getting the Orientation Node.
-   */
-  Orientation getOrientation() throws UaException;
-
-  /**
-   * Set the local value of the Orientation Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the Orientation Node.
-   * @throws UaException if an error occurs creating or getting the Orientation Node.
-   */
-  void setOrientation(Orientation value) throws UaException;
-
-  /**
-   * Read the value of the Orientation Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link Orientation} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Orientation readOrientation() throws UaException;
-
-  /**
-   * Write a new value for the Orientation Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Orientation} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeOrientation(Orientation value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readOrientation}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Orientation> readOrientationAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeOrientation}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeOrientationAsync(Orientation value);
-
-  /**
-   * Get the Orientation {@link OrientationType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the Orientation {@link OrientationType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.25">OrientationType
+   *     documentation</a>
    */
   OrientationType getOrientationNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getOrientationNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the OrientationType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getOrientationNode()}. */
   CompletableFuture<? extends OrientationType> getOrientationNodeAsync();
 
   /**
-   * Get the local value of the BaseFrame Node.
+   * Reads the Value of the Orientation child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the BaseFrame Node.
-   * @throws UaException if an error occurs creating or getting the BaseFrame Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  NodeId getBaseFrame() throws UaException;
+  @Nullable Orientation readOrientation() throws UaException;
 
   /**
-   * Set the local value of the BaseFrame Node.
+   * Writes the Value of the Orientation child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the BaseFrame Node.
-   * @throws UaException if an error occurs creating or getting the BaseFrame Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setBaseFrame(NodeId value) throws UaException;
+  void writeOrientation(@Nullable Orientation value) throws UaException;
+
+  /** Asynchronous form of {@link #readOrientation()}. */
+  CompletableFuture<? extends @Nullable Orientation> readOrientationAsync();
+
+  /** Asynchronous form of {@link #writeOrientation}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeOrientationAsync(@Nullable Orientation value);
 
   /**
-   * Read the value of the BaseFrame Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the mandatory CartesianCoordinates child, a CartesianCoordinatesType with DataType
+   * CartesianCoordinates.
    *
-   * @return the {@link NodeId} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.23">CartesianCoordinatesType
+   *     documentation</a>
    */
-  NodeId readBaseFrame() throws UaException;
+  CartesianCoordinatesType getCartesianCoordinatesNode() throws UaException;
+
+  /** Asynchronous form of {@link #getCartesianCoordinatesNode()}. */
+  CompletableFuture<? extends CartesianCoordinatesType> getCartesianCoordinatesNodeAsync();
 
   /**
-   * Write a new value for the BaseFrame Node to the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the CartesianCoordinates child from the server.
    *
-   * @param value the {@link NodeId} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeBaseFrame(NodeId value) throws UaException;
+  @Nullable CartesianCoordinates readCartesianCoordinates() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readBaseFrame}.
+   * Writes the Value of the CartesianCoordinates child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends NodeId> readBaseFrameAsync();
+  void writeCartesianCoordinates(@Nullable CartesianCoordinates value) throws UaException;
+
+  /** Asynchronous form of {@link #readCartesianCoordinates()}. */
+  CompletableFuture<? extends @Nullable CartesianCoordinates> readCartesianCoordinatesAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeBaseFrame}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * Asynchronous form of {@link #writeCartesianCoordinates}; completes with the operation status.
    */
-  CompletableFuture<StatusCode> writeBaseFrameAsync(NodeId value);
+  CompletableFuture<StatusCode> writeCartesianCoordinatesAsync(
+      @Nullable CartesianCoordinates value);
 
   /**
-   * Get the BaseFrame {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
+   * Resolves the optional Constant child, a PropertyType with DataType Boolean.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the BaseFrame {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  BaseDataVariableType getBaseFrameNode() throws UaException;
+  @Nullable PropertyType getConstantNode() throws UaException;
+
+  /** Asynchronous form of {@link #getConstantNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getConstantNodeAsync();
 
   /**
-   * Asynchronous implementation of {@link #getBaseFrameNode()}.
+   * Reads the Value of the Constant child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends BaseDataVariableType> getBaseFrameNodeAsync();
+  @Nullable Boolean readConstant() throws UaException;
+
+  /**
+   * Writes the Value of the Constant child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeConstant(@Nullable Boolean value) throws UaException;
+
+  /** Asynchronous form of {@link #readConstant()}. */
+  CompletableFuture<? extends @Nullable Boolean> readConstantAsync();
+
+  /** Asynchronous form of {@link #writeConstant}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeConstantAsync(@Nullable Boolean value);
+
+  /**
+   * Resolves the optional BaseFrame child, a BaseDataVariableType with DataType NodeId.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  @Nullable VariableNode getBaseFrameNode() throws UaException;
+
+  /** Asynchronous form of {@link #getBaseFrameNode()}. */
+  CompletableFuture<? extends @Nullable VariableNode> getBaseFrameNodeAsync();
+
+  /**
+   * Reads the Value of the BaseFrame child from the server.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable NodeId readBaseFrame() throws UaException;
+
+  /**
+   * Writes the Value of the BaseFrame child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeBaseFrame(@Nullable NodeId value) throws UaException;
+
+  /** Asynchronous form of {@link #readBaseFrame()}. */
+  CompletableFuture<? extends @Nullable NodeId> readBaseFrameAsync();
+
+  /** Asynchronous form of {@link #writeBaseFrame}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeBaseFrameAsync(@Nullable NodeId value);
+
+  /**
+   * Resolves the optional FixedBase child, a PropertyType with DataType Boolean.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyType getFixedBaseNode() throws UaException;
+
+  /** Asynchronous form of {@link #getFixedBaseNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getFixedBaseNodeAsync();
+
+  /**
+   * Reads the Value of the FixedBase child from the server.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable Boolean readFixedBase() throws UaException;
+
+  /**
+   * Writes the Value of the FixedBase child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeFixedBase(@Nullable Boolean value) throws UaException;
+
+  /** Asynchronous form of {@link #readFixedBase()}. */
+  CompletableFuture<? extends @Nullable Boolean> readFixedBaseAsync();
+
+  /** Asynchronous form of {@link #writeFixedBase}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeFixedBaseAsync(@Nullable Boolean value);
+
+  /**
+   * Reads the Value of this node from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable Frame readTypedValue() throws UaException;
+
+  /**
+   * Writes the Value of this node to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeTypedValue(@Nullable Frame value) throws UaException;
+
+  /** Asynchronous form of {@link #readTypedValue()}. */
+  CompletableFuture<? extends @Nullable Frame> readTypedValueAsync();
+
+  /** Asynchronous form of {@link #writeTypedValue}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeTypedValueAsync(@Nullable Frame value);
 }

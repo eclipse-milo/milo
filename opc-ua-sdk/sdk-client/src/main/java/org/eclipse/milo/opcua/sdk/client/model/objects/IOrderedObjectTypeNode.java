@@ -1,24 +1,10 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyTypeNode;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
@@ -30,7 +16,15 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link IOrderedObjectType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.11">Model
+ *     documentation</a>
+ */
 public class IOrderedObjectTypeNode extends BaseInterfaceTypeNode implements IOrderedObjectType {
   public IOrderedObjectTypeNode(
       OpcUaClient client,
@@ -38,12 +32,12 @@ public class IOrderedObjectTypeNode extends BaseInterfaceTypeNode implements IOr
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         client,
@@ -61,75 +55,74 @@ public class IOrderedObjectTypeNode extends BaseInterfaceTypeNode implements IOr
   }
 
   @Override
-  public Variant getNumberInList() throws UaException {
-    PropertyTypeNode node = getNumberInListNode();
-    return (Variant) node.getValue().getValue().getValue();
-  }
-
-  @Override
-  public void setNumberInList(Variant value) throws UaException {
-    PropertyTypeNode node = getNumberInListNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public Variant readNumberInList() throws UaException {
-    try {
-      return readNumberInListAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeNumberInList(Variant value) throws UaException {
-    try {
-      StatusCode statusCode = writeNumberInListAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends Variant> readNumberInListAsync() {
-    return getNumberInListNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (Variant) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeNumberInListAsync(Variant numberInList) {
-    DataValue value = DataValue.valueOnly(new Variant(numberInList));
-    return getNumberInListNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
   public PropertyTypeNode getNumberInListNode() throws UaException {
-    try {
-      return getNumberInListNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getNumberInListNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends PropertyTypeNode> getNumberInListNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "NumberInList", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "NumberInList",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
+  }
+
+  @Override
+  public @Nullable Variant readNumberInList() throws UaException {
+    return ClientNodeSupport.await(readNumberInListAsync());
+  }
+
+  @Override
+  public void writeNumberInList(@Nullable Variant value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeNumberInListAsync(value)),
+        "http://opcfoundation.org/UA/}NumberInList");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable Variant> readNumberInListAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getNumberInListNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}NumberInList",
+                            true,
+                            Variant.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable Variant) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeNumberInListAsync(@Nullable Variant value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getNumberInListNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}NumberInList",
+                        value,
+                        Variant.class,
+                        -1,
+                        null)));
   }
 }

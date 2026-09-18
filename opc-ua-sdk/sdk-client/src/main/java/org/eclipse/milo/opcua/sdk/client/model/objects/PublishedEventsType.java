@@ -1,268 +1,225 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallOptions;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallResult;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.client.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.types.structured.ConfigurationVersionDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ContentFilter;
 import org.eclipse.milo.opcua.stack.core.types.structured.SimpleAttributeOperand;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.4.1">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.4.1</a>
+ * Client API for the PublishedEventsType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.4.1">Model
+ *     documentation</a>
  */
 public interface PublishedEventsType extends PublishedDataSetType {
-  QualifiedProperty<NodeId> PUB_SUB_EVENT_NOTIFIER =
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 14572L);
+
+  QualifiedProperty<NodeId> EventNotifier__PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "EventNotifier",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 17L),
           -1,
           NodeId.class);
 
-  QualifiedProperty<SimpleAttributeOperand[]> SELECTED_FIELDS =
+  QualifiedProperty<SimpleAttributeOperand[]> SelectedFields_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "SelectedFields",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=601"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 601L),
           1,
           SimpleAttributeOperand[].class);
 
-  QualifiedProperty<ContentFilter> FILTER =
+  QualifiedProperty<ContentFilter> Filter_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "Filter",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=586"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 586L),
           -1,
           ContentFilter.class);
 
   /**
-   * Get the local value of the PubSubEventNotifier Node.
+   * Resolves the mandatory EventNotifier child, a PropertyType with DataType NodeId.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the PubSubEventNotifier Node.
-   * @throws UaException if an error occurs creating or getting the PubSubEventNotifier Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  NodeId getPubSubEventNotifier() throws UaException;
+  PropertyType getEventNotifier_Node() throws UaException;
+
+  /** Asynchronous form of {@link #getEventNotifier_Node()}. */
+  CompletableFuture<? extends PropertyType> getEventNotifier_NodeAsync();
 
   /**
-   * Set the local value of the PubSubEventNotifier Node.
+   * Reads the Value of the EventNotifier child from the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the PubSubEventNotifier Node.
-   * @throws UaException if an error occurs creating or getting the PubSubEventNotifier Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setPubSubEventNotifier(NodeId value) throws UaException;
+  @Nullable NodeId readEventNotifier_() throws UaException;
 
   /**
-   * Read the value of the PubSubEventNotifier Node from the server and update the local value if
-   * the operation succeeds.
+   * Writes the Value of the EventNotifier child to the server.
    *
-   * @return the {@link NodeId} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  NodeId readPubSubEventNotifier() throws UaException;
+  void writeEventNotifier_(@Nullable NodeId value) throws UaException;
+
+  /** Asynchronous form of {@link #readEventNotifier_()}. */
+  CompletableFuture<? extends @Nullable NodeId> readEventNotifier_Async();
+
+  /** Asynchronous form of {@link #writeEventNotifier_}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeEventNotifier_Async(@Nullable NodeId value);
 
   /**
-   * Write a new value for the PubSubEventNotifier Node to the server and update the local value if
-   * the operation succeeds.
+   * Resolves the mandatory SelectedFields child, a PropertyType with DataType
+   * SimpleAttributeOperand.
    *
-   * @param value the {@link NodeId} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writePubSubEventNotifier(NodeId value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readPubSubEventNotifier}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends NodeId> readPubSubEventNotifierAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writePubSubEventNotifier}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writePubSubEventNotifierAsync(NodeId value);
-
-  /**
-   * Get the PubSubEventNotifier {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the PubSubEventNotifier {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getPubSubEventNotifierNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getPubSubEventNotifierNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getPubSubEventNotifierNodeAsync();
-
-  /**
-   * Get the local value of the SelectedFields Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SelectedFields Node.
-   * @throws UaException if an error occurs creating or getting the SelectedFields Node.
-   */
-  SimpleAttributeOperand[] getSelectedFields() throws UaException;
-
-  /**
-   * Set the local value of the SelectedFields Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SelectedFields Node.
-   * @throws UaException if an error occurs creating or getting the SelectedFields Node.
-   */
-  void setSelectedFields(SimpleAttributeOperand[] value) throws UaException;
-
-  /**
-   * Read the value of the SelectedFields Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link SimpleAttributeOperand[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  SimpleAttributeOperand[] readSelectedFields() throws UaException;
-
-  /**
-   * Write a new value for the SelectedFields Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link SimpleAttributeOperand[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeSelectedFields(SimpleAttributeOperand[] value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readSelectedFields}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends SimpleAttributeOperand[]> readSelectedFieldsAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeSelectedFields}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeSelectedFieldsAsync(SimpleAttributeOperand[] value);
-
-  /**
-   * Get the SelectedFields {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SelectedFields {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getSelectedFieldsNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getSelectedFieldsNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getSelectedFieldsNode()}. */
   CompletableFuture<? extends PropertyType> getSelectedFieldsNodeAsync();
 
   /**
-   * Get the local value of the Filter Node.
+   * Reads the Value of the SelectedFields child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the Filter Node.
-   * @throws UaException if an error occurs creating or getting the Filter Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  ContentFilter getFilter() throws UaException;
+  @Nullable SimpleAttributeOperand @Nullable [] readSelectedFields() throws UaException;
 
   /**
-   * Set the local value of the Filter Node.
+   * Writes the Value of the SelectedFields child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the Filter Node.
-   * @throws UaException if an error occurs creating or getting the Filter Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setFilter(ContentFilter value) throws UaException;
+  void writeSelectedFields(@Nullable SimpleAttributeOperand @Nullable [] value) throws UaException;
+
+  /** Asynchronous form of {@link #readSelectedFields()}. */
+  CompletableFuture<? extends @Nullable SimpleAttributeOperand @Nullable []>
+      readSelectedFieldsAsync();
+
+  /** Asynchronous form of {@link #writeSelectedFields}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeSelectedFieldsAsync(
+      @Nullable SimpleAttributeOperand @Nullable [] value);
 
   /**
-   * Read the value of the Filter Node from the server and update the local value if the operation
-   * succeeds.
+   * Resolves the mandatory Filter child, a PropertyType with DataType ContentFilter.
    *
-   * @return the {@link ContentFilter} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  ContentFilter readFilter() throws UaException;
-
-  /**
-   * Write a new value for the Filter Node to the server and update the local value if the operation
-   * succeeds.
-   *
-   * @param value the {@link ContentFilter} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeFilter(ContentFilter value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readFilter}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends ContentFilter> readFilterAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeFilter}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeFilterAsync(ContentFilter value);
-
-  /**
-   * Get the Filter {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the Filter {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getFilterNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getFilterNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getFilterNode()}. */
   CompletableFuture<? extends PropertyType> getFilterNodeAsync();
+
+  /**
+   * Reads the Value of the Filter child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable ContentFilter readFilter() throws UaException;
+
+  /**
+   * Writes the Value of the Filter child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeFilter(@Nullable ContentFilter value) throws UaException;
+
+  /** Asynchronous form of {@link #readFilter()}. */
+  CompletableFuture<? extends @Nullable ContentFilter> readFilterAsync();
+
+  /** Asynchronous form of {@link #writeFilter}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeFilterAsync(@Nullable ContentFilter value);
+
+  /**
+   * Resolves the optional ModifyFieldSelection Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.4.2">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getModifyFieldSelectionMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getModifyFieldSelectionMethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getModifyFieldSelectionMethodNodeAsync();
+
+  /**
+   * Calls the ModifyFieldSelection Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.4.2">Model
+   *     documentation</a>
+   */
+  @Nullable ConfigurationVersionDataType modifyFieldSelection(
+      @Nullable ConfigurationVersionDataType configurationVersion,
+      @Nullable String @Nullable [] fieldNameAliases,
+      Boolean @Nullable [] promotedFields,
+      @Nullable SimpleAttributeOperand @Nullable [] selectedFields)
+      throws UaException;
+
+  /**
+   * Calls the ModifyFieldSelection Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<@Nullable ConfigurationVersionDataType> callModifyFieldSelection(
+      @Nullable ConfigurationVersionDataType configurationVersion,
+      @Nullable String @Nullable [] fieldNameAliases,
+      Boolean @Nullable [] promotedFields,
+      @Nullable SimpleAttributeOperand @Nullable [] selectedFields)
+      throws UaException;
+
+  /**
+   * Calls the ModifyFieldSelection Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<@Nullable ConfigurationVersionDataType> callModifyFieldSelectionWith(
+      MethodCallOptions options,
+      @Nullable ConfigurationVersionDataType configurationVersion,
+      @Nullable String @Nullable [] fieldNameAliases,
+      Boolean @Nullable [] promotedFields,
+      @Nullable SimpleAttributeOperand @Nullable [] selectedFields)
+      throws UaException;
+
+  /** Asynchronous form of {@link #modifyFieldSelection}. */
+  CompletableFuture<@Nullable ConfigurationVersionDataType> modifyFieldSelectionAsync(
+      @Nullable ConfigurationVersionDataType configurationVersion,
+      @Nullable String @Nullable [] fieldNameAliases,
+      Boolean @Nullable [] promotedFields,
+      @Nullable SimpleAttributeOperand @Nullable [] selectedFields);
+
+  /** Asynchronous form of {@link #callModifyFieldSelection}. */
+  CompletableFuture<MethodCallResult<@Nullable ConfigurationVersionDataType>>
+      callModifyFieldSelectionAsync(
+          @Nullable ConfigurationVersionDataType configurationVersion,
+          @Nullable String @Nullable [] fieldNameAliases,
+          Boolean @Nullable [] promotedFields,
+          @Nullable SimpleAttributeOperand @Nullable [] selectedFields);
+
+  /** Asynchronous form of {@link #callModifyFieldSelectionWith}. */
+  CompletableFuture<MethodCallResult<@Nullable ConfigurationVersionDataType>>
+      callModifyFieldSelectionWithAsync(
+          MethodCallOptions options,
+          @Nullable ConfigurationVersionDataType configurationVersion,
+          @Nullable String @Nullable [] fieldNameAliases,
+          Boolean @Nullable [] promotedFields,
+          @Nullable SimpleAttributeOperand @Nullable [] selectedFields);
 }

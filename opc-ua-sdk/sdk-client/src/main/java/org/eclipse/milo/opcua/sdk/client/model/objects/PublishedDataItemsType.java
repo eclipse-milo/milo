@@ -1,105 +1,210 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallOptions;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallResult;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.client.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
+import org.eclipse.milo.opcua.sdk.core.model.methods.PublishedDataItemsTypeAddVariables;
+import org.eclipse.milo.opcua.sdk.core.model.methods.PublishedDataItemsTypeRemoveVariables;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.structured.ConfigurationVersionDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedVariableDataType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.3.1">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.3.1</a>
+ * Client API for the PublishedDataItemsType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.3.1">Model
+ *     documentation</a>
  */
 public interface PublishedDataItemsType extends PublishedDataSetType {
-  QualifiedProperty<PublishedVariableDataType[]> PUBLISHED_DATA =
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 14534L);
+
+  QualifiedProperty<PublishedVariableDataType[]> PublishedData_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "PublishedData",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14273"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 14273L),
           1,
           PublishedVariableDataType[].class);
 
   /**
-   * Get the local value of the PublishedData Node.
+   * Resolves the mandatory PublishedData child, a PropertyType with DataType
+   * PublishedVariableDataType.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the PublishedData Node.
-   * @throws UaException if an error occurs creating or getting the PublishedData Node.
-   */
-  PublishedVariableDataType[] getPublishedData() throws UaException;
-
-  /**
-   * Set the local value of the PublishedData Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the PublishedData Node.
-   * @throws UaException if an error occurs creating or getting the PublishedData Node.
-   */
-  void setPublishedData(PublishedVariableDataType[] value) throws UaException;
-
-  /**
-   * Read the value of the PublishedData Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link PublishedVariableDataType[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  PublishedVariableDataType[] readPublishedData() throws UaException;
-
-  /**
-   * Write a new value for the PublishedData Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link PublishedVariableDataType[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writePublishedData(PublishedVariableDataType[] value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readPublishedData}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends PublishedVariableDataType[]> readPublishedDataAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writePublishedData}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writePublishedDataAsync(PublishedVariableDataType[] value);
-
-  /**
-   * Get the PublishedData {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the PublishedData {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getPublishedDataNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getPublishedDataNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getPublishedDataNode()}. */
   CompletableFuture<? extends PropertyType> getPublishedDataNodeAsync();
+
+  /**
+   * Reads the Value of the PublishedData child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable PublishedVariableDataType @Nullable [] readPublishedData() throws UaException;
+
+  /**
+   * Writes the Value of the PublishedData child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writePublishedData(@Nullable PublishedVariableDataType @Nullable [] value)
+      throws UaException;
+
+  /** Asynchronous form of {@link #readPublishedData()}. */
+  CompletableFuture<? extends @Nullable PublishedVariableDataType @Nullable []>
+      readPublishedDataAsync();
+
+  /** Asynchronous form of {@link #writePublishedData}; completes with the operation status. */
+  CompletableFuture<StatusCode> writePublishedDataAsync(
+      @Nullable PublishedVariableDataType @Nullable [] value);
+
+  /**
+   * Resolves the optional AddVariables Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.3.2">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getAddVariablesMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getAddVariablesMethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getAddVariablesMethodNodeAsync();
+
+  /**
+   * Calls the AddVariables Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.3.2">Model
+   *     documentation</a>
+   */
+  PublishedDataItemsTypeAddVariables.Outputs addVariables(
+      @Nullable ConfigurationVersionDataType configurationVersion,
+      @Nullable String @Nullable [] fieldNameAliases,
+      Boolean @Nullable [] promotedFields,
+      @Nullable PublishedVariableDataType @Nullable [] variablesToAdd)
+      throws UaException;
+
+  /**
+   * Calls the AddVariables Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<PublishedDataItemsTypeAddVariables.Outputs> callAddVariables(
+      @Nullable ConfigurationVersionDataType configurationVersion,
+      @Nullable String @Nullable [] fieldNameAliases,
+      Boolean @Nullable [] promotedFields,
+      @Nullable PublishedVariableDataType @Nullable [] variablesToAdd)
+      throws UaException;
+
+  /**
+   * Calls the AddVariables Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<PublishedDataItemsTypeAddVariables.Outputs> callAddVariablesWith(
+      MethodCallOptions options,
+      @Nullable ConfigurationVersionDataType configurationVersion,
+      @Nullable String @Nullable [] fieldNameAliases,
+      Boolean @Nullable [] promotedFields,
+      @Nullable PublishedVariableDataType @Nullable [] variablesToAdd)
+      throws UaException;
+
+  /** Asynchronous form of {@link #addVariables}. */
+  CompletableFuture<PublishedDataItemsTypeAddVariables.Outputs> addVariablesAsync(
+      @Nullable ConfigurationVersionDataType configurationVersion,
+      @Nullable String @Nullable [] fieldNameAliases,
+      Boolean @Nullable [] promotedFields,
+      @Nullable PublishedVariableDataType @Nullable [] variablesToAdd);
+
+  /** Asynchronous form of {@link #callAddVariables}. */
+  CompletableFuture<MethodCallResult<PublishedDataItemsTypeAddVariables.Outputs>>
+      callAddVariablesAsync(
+          @Nullable ConfigurationVersionDataType configurationVersion,
+          @Nullable String @Nullable [] fieldNameAliases,
+          Boolean @Nullable [] promotedFields,
+          @Nullable PublishedVariableDataType @Nullable [] variablesToAdd);
+
+  /** Asynchronous form of {@link #callAddVariablesWith}. */
+  CompletableFuture<MethodCallResult<PublishedDataItemsTypeAddVariables.Outputs>>
+      callAddVariablesWithAsync(
+          MethodCallOptions options,
+          @Nullable ConfigurationVersionDataType configurationVersion,
+          @Nullable String @Nullable [] fieldNameAliases,
+          Boolean @Nullable [] promotedFields,
+          @Nullable PublishedVariableDataType @Nullable [] variablesToAdd);
+
+  /**
+   * Resolves the optional RemoveVariables Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.3.3">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getRemoveVariablesMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getRemoveVariablesMethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getRemoveVariablesMethodNodeAsync();
+
+  /**
+   * Calls the RemoveVariables Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.3.3">Model
+   *     documentation</a>
+   */
+  PublishedDataItemsTypeRemoveVariables.Outputs removeVariables(
+      @Nullable ConfigurationVersionDataType configurationVersion,
+      UInteger @Nullable [] variablesToRemove)
+      throws UaException;
+
+  /**
+   * Calls the RemoveVariables Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<PublishedDataItemsTypeRemoveVariables.Outputs> callRemoveVariables(
+      @Nullable ConfigurationVersionDataType configurationVersion,
+      UInteger @Nullable [] variablesToRemove)
+      throws UaException;
+
+  /**
+   * Calls the RemoveVariables Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<PublishedDataItemsTypeRemoveVariables.Outputs> callRemoveVariablesWith(
+      MethodCallOptions options,
+      @Nullable ConfigurationVersionDataType configurationVersion,
+      UInteger @Nullable [] variablesToRemove)
+      throws UaException;
+
+  /** Asynchronous form of {@link #removeVariables}. */
+  CompletableFuture<PublishedDataItemsTypeRemoveVariables.Outputs> removeVariablesAsync(
+      @Nullable ConfigurationVersionDataType configurationVersion,
+      UInteger @Nullable [] variablesToRemove);
+
+  /** Asynchronous form of {@link #callRemoveVariables}. */
+  CompletableFuture<MethodCallResult<PublishedDataItemsTypeRemoveVariables.Outputs>>
+      callRemoveVariablesAsync(
+          @Nullable ConfigurationVersionDataType configurationVersion,
+          UInteger @Nullable [] variablesToRemove);
+
+  /** Asynchronous form of {@link #callRemoveVariablesWith}. */
+  CompletableFuture<MethodCallResult<PublishedDataItemsTypeRemoveVariables.Outputs>>
+      callRemoveVariablesWithAsync(
+          MethodCallOptions options,
+          @Nullable ConfigurationVersionDataType configurationVersion,
+          UInteger @Nullable [] variablesToRemove);
 }

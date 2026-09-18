@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
@@ -19,934 +9,516 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ExceptionDeviationFormat;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.2.2">https://reference.opcfoundation.org/v105/Core/docs/Part11/5.2.2</a>
+ * Client API for the HistoricalDataConfigurationType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.2.2">Model
+ *     documentation</a>
  */
 public interface HistoricalDataConfigurationType extends BaseObjectType {
-  QualifiedProperty<Boolean> STEPPED =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Stepped",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2318L);
 
-  QualifiedProperty<String> DEFINITION =
+  QualifiedProperty<String> Definition_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "Definition",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
           -1,
           String.class);
 
-  QualifiedProperty<Double> MAX_TIME_INTERVAL =
+  QualifiedProperty<DateTime> StartOfArchive_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxTimeInterval",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
-          -1,
-          Double.class);
-
-  QualifiedProperty<Double> MIN_TIME_INTERVAL =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MinTimeInterval",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
-          -1,
-          Double.class);
-
-  QualifiedProperty<Double> EXCEPTION_DEVIATION =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ExceptionDeviation",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
-          -1,
-          Double.class);
-
-  QualifiedProperty<ExceptionDeviationFormat> EXCEPTION_DEVIATION_FORMAT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ExceptionDeviationFormat",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=890"),
-          -1,
-          ExceptionDeviationFormat.class);
-
-  QualifiedProperty<DateTime> START_OF_ARCHIVE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "StartOfArchive",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 294L),
           -1,
           DateTime.class);
 
-  QualifiedProperty<DateTime> START_OF_ONLINE_ARCHIVE =
+  QualifiedProperty<Double> MaxTimeInterval_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "StartOfOnlineArchive",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
-          -1,
-          DateTime.class);
-
-  QualifiedProperty<Boolean> SERVER_TIMESTAMP_SUPPORTED =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ServerTimestampSupported",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
-
-  QualifiedProperty<Double> MAX_TIME_STORED_VALUES =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxTimeStoredValues",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
+          Namespaces.OPC_UA,
+          "MaxTimeInterval",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 290L),
           -1,
           Double.class);
 
-  QualifiedProperty<UInteger> MAX_COUNT_STORED_VALUES =
+  QualifiedProperty<Double> MinTimeInterval_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
+          "MinTimeInterval",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 290L),
+          -1,
+          Double.class);
+
+  QualifiedProperty<Double> ExceptionDeviation_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "ExceptionDeviation",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 11L),
+          -1,
+          Double.class);
+
+  QualifiedProperty<Double> MaxTimeStoredValues_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "MaxTimeStoredValues",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 290L),
+          -1,
+          Double.class);
+
+  QualifiedProperty<UInteger> MaxCountStoredValues_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
           "MaxCountStoredValues",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
           -1,
           UInteger.class);
 
-  /**
-   * Get the local value of the Stepped Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the Stepped Node.
-   * @throws UaException if an error occurs creating or getting the Stepped Node.
-   */
-  Boolean getStepped() throws UaException;
-
-  /**
-   * Set the local value of the Stepped Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the Stepped Node.
-   * @throws UaException if an error occurs creating or getting the Stepped Node.
-   */
-  void setStepped(Boolean value) throws UaException;
-
-  /**
-   * Read the value of the Stepped Node from the server and update the local value if the operation
-   * succeeds.
-   *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Boolean readStepped() throws UaException;
-
-  /**
-   * Write a new value for the Stepped Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeStepped(Boolean value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readStepped}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Boolean> readSteppedAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeStepped}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeSteppedAsync(Boolean value);
-
-  /**
-   * Get the Stepped {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the Stepped {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getSteppedNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getSteppedNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getSteppedNodeAsync();
-
-  /**
-   * Get the local value of the Definition Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the Definition Node.
-   * @throws UaException if an error occurs creating or getting the Definition Node.
-   */
-  String getDefinition() throws UaException;
-
-  /**
-   * Set the local value of the Definition Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the Definition Node.
-   * @throws UaException if an error occurs creating or getting the Definition Node.
-   */
-  void setDefinition(String value) throws UaException;
-
-  /**
-   * Read the value of the Definition Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String readDefinition() throws UaException;
-
-  /**
-   * Write a new value for the Definition Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeDefinition(String value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readDefinition}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String> readDefinitionAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeDefinition}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeDefinitionAsync(String value);
-
-  /**
-   * Get the Definition {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the Definition {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getDefinitionNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getDefinitionNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getDefinitionNodeAsync();
-
-  /**
-   * Get the local value of the MaxTimeInterval Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaxTimeInterval Node.
-   * @throws UaException if an error occurs creating or getting the MaxTimeInterval Node.
-   */
-  Double getMaxTimeInterval() throws UaException;
-
-  /**
-   * Set the local value of the MaxTimeInterval Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaxTimeInterval Node.
-   * @throws UaException if an error occurs creating or getting the MaxTimeInterval Node.
-   */
-  void setMaxTimeInterval(Double value) throws UaException;
-
-  /**
-   * Read the value of the MaxTimeInterval Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link Double} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Double readMaxTimeInterval() throws UaException;
-
-  /**
-   * Write a new value for the MaxTimeInterval Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Double} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMaxTimeInterval(Double value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readMaxTimeInterval}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Double> readMaxTimeIntervalAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeMaxTimeInterval}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMaxTimeIntervalAsync(Double value);
-
-  /**
-   * Get the MaxTimeInterval {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaxTimeInterval {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getMaxTimeIntervalNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getMaxTimeIntervalNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getMaxTimeIntervalNodeAsync();
-
-  /**
-   * Get the local value of the MinTimeInterval Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MinTimeInterval Node.
-   * @throws UaException if an error occurs creating or getting the MinTimeInterval Node.
-   */
-  Double getMinTimeInterval() throws UaException;
-
-  /**
-   * Set the local value of the MinTimeInterval Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MinTimeInterval Node.
-   * @throws UaException if an error occurs creating or getting the MinTimeInterval Node.
-   */
-  void setMinTimeInterval(Double value) throws UaException;
-
-  /**
-   * Read the value of the MinTimeInterval Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link Double} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Double readMinTimeInterval() throws UaException;
-
-  /**
-   * Write a new value for the MinTimeInterval Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Double} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMinTimeInterval(Double value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readMinTimeInterval}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Double> readMinTimeIntervalAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeMinTimeInterval}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMinTimeIntervalAsync(Double value);
-
-  /**
-   * Get the MinTimeInterval {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MinTimeInterval {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getMinTimeIntervalNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getMinTimeIntervalNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getMinTimeIntervalNodeAsync();
-
-  /**
-   * Get the local value of the ExceptionDeviation Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ExceptionDeviation Node.
-   * @throws UaException if an error occurs creating or getting the ExceptionDeviation Node.
-   */
-  Double getExceptionDeviation() throws UaException;
-
-  /**
-   * Set the local value of the ExceptionDeviation Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ExceptionDeviation Node.
-   * @throws UaException if an error occurs creating or getting the ExceptionDeviation Node.
-   */
-  void setExceptionDeviation(Double value) throws UaException;
-
-  /**
-   * Read the value of the ExceptionDeviation Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link Double} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Double readExceptionDeviation() throws UaException;
+  QualifiedProperty<DateTime> StartOfOnlineArchive_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "StartOfOnlineArchive",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 294L),
+          -1,
+          DateTime.class);
 
-  /**
-   * Write a new value for the ExceptionDeviation Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link Double} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeExceptionDeviation(Double value) throws UaException;
+  QualifiedProperty<ExceptionDeviationFormat> ExceptionDeviationFormat_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "ExceptionDeviationFormat",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 890L),
+          -1,
+          ExceptionDeviationFormat.class);
 
-  /**
-   * An asynchronous implementation of {@link #readExceptionDeviation}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Double> readExceptionDeviationAsync();
+  QualifiedProperty<Boolean> ServerTimestampSupported_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "ServerTimestampSupported",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+          -1,
+          Boolean.class);
 
-  /**
-   * An asynchronous implementation of {@link #writeExceptionDeviation}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeExceptionDeviationAsync(Double value);
+  QualifiedProperty<Boolean> Stepped_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "Stepped",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+          -1,
+          Boolean.class);
 
   /**
-   * Get the ExceptionDeviation {@link PropertyType} Node, or {@code null} if it does not exist.
+   * Resolves the optional Definition child, a PropertyType with DataType String.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ExceptionDeviation {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  PropertyType getExceptionDeviationNode() throws UaException;
+  @Nullable PropertyType getDefinitionNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getExceptionDeviationNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getExceptionDeviationNodeAsync();
+  /** Asynchronous form of {@link #getDefinitionNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getDefinitionNodeAsync();
 
   /**
-   * Get the local value of the ExceptionDeviationFormat Node.
+   * Reads the Value of the Definition child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ExceptionDeviationFormat Node.
-   * @throws UaException if an error occurs creating or getting the ExceptionDeviationFormat Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  ExceptionDeviationFormat getExceptionDeviationFormat() throws UaException;
+  @Nullable String readDefinition() throws UaException;
 
   /**
-   * Set the local value of the ExceptionDeviationFormat Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
+   * Writes the Value of the Definition child to the server.
    *
-   * @param value the local value to set for the ExceptionDeviationFormat Node.
-   * @throws UaException if an error occurs creating or getting the ExceptionDeviationFormat Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setExceptionDeviationFormat(ExceptionDeviationFormat value) throws UaException;
+  void writeDefinition(@Nullable String value) throws UaException;
 
-  /**
-   * Read the value of the ExceptionDeviationFormat Node from the server and update the local value
-   * if the operation succeeds.
-   *
-   * @return the {@link ExceptionDeviationFormat} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  ExceptionDeviationFormat readExceptionDeviationFormat() throws UaException;
+  /** Asynchronous form of {@link #readDefinition()}. */
+  CompletableFuture<? extends @Nullable String> readDefinitionAsync();
 
-  /**
-   * Write a new value for the ExceptionDeviationFormat Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link ExceptionDeviationFormat} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeExceptionDeviationFormat(ExceptionDeviationFormat value) throws UaException;
+  /** Asynchronous form of {@link #writeDefinition}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeDefinitionAsync(@Nullable String value);
 
   /**
-   * An asynchronous implementation of {@link #readExceptionDeviationFormat}.
+   * Resolves the optional StartOfArchive child, a PropertyType with DataType UtcTime.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  CompletableFuture<? extends ExceptionDeviationFormat> readExceptionDeviationFormatAsync();
+  @Nullable PropertyType getStartOfArchiveNode() throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #writeExceptionDeviationFormat}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeExceptionDeviationFormatAsync(ExceptionDeviationFormat value);
+  /** Asynchronous form of {@link #getStartOfArchiveNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getStartOfArchiveNodeAsync();
 
   /**
-   * Get the ExceptionDeviationFormat {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * Reads the Value of the StartOfArchive child from the server.
    *
-   * @return the ExceptionDeviationFormat {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  PropertyType getExceptionDeviationFormatNode() throws UaException;
+  @Nullable DateTime readStartOfArchive() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getExceptionDeviationFormatNode()}.
+   * Writes the Value of the StartOfArchive child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends PropertyType> getExceptionDeviationFormatNodeAsync();
+  void writeStartOfArchive(@Nullable DateTime value) throws UaException;
 
-  /**
-   * Get the local value of the StartOfArchive Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the StartOfArchive Node.
-   * @throws UaException if an error occurs creating or getting the StartOfArchive Node.
-   */
-  DateTime getStartOfArchive() throws UaException;
+  /** Asynchronous form of {@link #readStartOfArchive()}. */
+  CompletableFuture<? extends @Nullable DateTime> readStartOfArchiveAsync();
 
-  /**
-   * Set the local value of the StartOfArchive Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the StartOfArchive Node.
-   * @throws UaException if an error occurs creating or getting the StartOfArchive Node.
-   */
-  void setStartOfArchive(DateTime value) throws UaException;
+  /** Asynchronous form of {@link #writeStartOfArchive}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeStartOfArchiveAsync(@Nullable DateTime value);
 
   /**
-   * Read the value of the StartOfArchive Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the optional MaxTimeInterval child, a PropertyType with DataType Duration.
    *
-   * @return the {@link DateTime} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  DateTime readStartOfArchive() throws UaException;
+  @Nullable PropertyType getMaxTimeIntervalNode() throws UaException;
 
-  /**
-   * Write a new value for the StartOfArchive Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link DateTime} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeStartOfArchive(DateTime value) throws UaException;
+  /** Asynchronous form of {@link #getMaxTimeIntervalNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getMaxTimeIntervalNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #readStartOfArchive}.
+   * Reads the Value of the MaxTimeInterval child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends DateTime> readStartOfArchiveAsync();
+  @Nullable Double readMaxTimeInterval() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeStartOfArchive}.
+   * Writes the Value of the MaxTimeInterval child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeStartOfArchiveAsync(DateTime value);
+  void writeMaxTimeInterval(@Nullable Double value) throws UaException;
 
-  /**
-   * Get the StartOfArchive {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the StartOfArchive {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getStartOfArchiveNode() throws UaException;
+  /** Asynchronous form of {@link #readMaxTimeInterval()}. */
+  CompletableFuture<? extends @Nullable Double> readMaxTimeIntervalAsync();
 
-  /**
-   * Asynchronous implementation of {@link #getStartOfArchiveNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getStartOfArchiveNodeAsync();
+  /** Asynchronous form of {@link #writeMaxTimeInterval}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeMaxTimeIntervalAsync(@Nullable Double value);
 
   /**
-   * Get the local value of the StartOfOnlineArchive Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
+   * Resolves the optional MinTimeInterval child, a PropertyType with DataType Duration.
    *
-   * @return the local value of the StartOfOnlineArchive Node.
-   * @throws UaException if an error occurs creating or getting the StartOfOnlineArchive Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  DateTime getStartOfOnlineArchive() throws UaException;
+  @Nullable PropertyType getMinTimeIntervalNode() throws UaException;
 
-  /**
-   * Set the local value of the StartOfOnlineArchive Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the StartOfOnlineArchive Node.
-   * @throws UaException if an error occurs creating or getting the StartOfOnlineArchive Node.
-   */
-  void setStartOfOnlineArchive(DateTime value) throws UaException;
+  /** Asynchronous form of {@link #getMinTimeIntervalNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getMinTimeIntervalNodeAsync();
 
   /**
-   * Read the value of the StartOfOnlineArchive Node from the server and update the local value if
-   * the operation succeeds.
+   * Reads the Value of the MinTimeInterval child from the server.
    *
-   * @return the {@link DateTime} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  DateTime readStartOfOnlineArchive() throws UaException;
+  @Nullable Double readMinTimeInterval() throws UaException;
 
   /**
-   * Write a new value for the StartOfOnlineArchive Node to the server and update the local value if
-   * the operation succeeds.
+   * Writes the Value of the MinTimeInterval child to the server.
    *
-   * @param value the {@link DateTime} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeStartOfOnlineArchive(DateTime value) throws UaException;
+  void writeMinTimeInterval(@Nullable Double value) throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #readStartOfOnlineArchive}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends DateTime> readStartOfOnlineArchiveAsync();
+  /** Asynchronous form of {@link #readMinTimeInterval()}. */
+  CompletableFuture<? extends @Nullable Double> readMinTimeIntervalAsync();
 
-  /**
-   * An asynchronous implementation of {@link #writeStartOfOnlineArchive}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeStartOfOnlineArchiveAsync(DateTime value);
+  /** Asynchronous form of {@link #writeMinTimeInterval}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeMinTimeIntervalAsync(@Nullable Double value);
 
   /**
-   * Get the StartOfOnlineArchive {@link PropertyType} Node, or {@code null} if it does not exist.
+   * Resolves the optional AggregateFunctions child, a FolderType.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the StartOfOnlineArchive {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.6">FolderType
+   *     documentation</a>
    */
-  PropertyType getStartOfOnlineArchiveNode() throws UaException;
+  @Nullable FolderType getAggregateFunctionsNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getStartOfOnlineArchiveNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getStartOfOnlineArchiveNodeAsync();
+  /** Asynchronous form of {@link #getAggregateFunctionsNode()}. */
+  CompletableFuture<? extends @Nullable FolderType> getAggregateFunctionsNodeAsync();
 
   /**
-   * Get the local value of the ServerTimestampSupported Node.
+   * Resolves the optional ExceptionDeviation child, a PropertyType with DataType Double.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ServerTimestampSupported Node.
-   * @throws UaException if an error occurs creating or getting the ServerTimestampSupported Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  Boolean getServerTimestampSupported() throws UaException;
+  @Nullable PropertyType getExceptionDeviationNode() throws UaException;
 
-  /**
-   * Set the local value of the ServerTimestampSupported Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ServerTimestampSupported Node.
-   * @throws UaException if an error occurs creating or getting the ServerTimestampSupported Node.
-   */
-  void setServerTimestampSupported(Boolean value) throws UaException;
+  /** Asynchronous form of {@link #getExceptionDeviationNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getExceptionDeviationNodeAsync();
 
   /**
-   * Read the value of the ServerTimestampSupported Node from the server and update the local value
-   * if the operation succeeds.
+   * Reads the Value of the ExceptionDeviation child from the server.
    *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  Boolean readServerTimestampSupported() throws UaException;
+  @Nullable Double readExceptionDeviation() throws UaException;
 
   /**
-   * Write a new value for the ServerTimestampSupported Node to the server and update the local
-   * value if the operation succeeds.
+   * Writes the Value of the ExceptionDeviation child to the server.
    *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeServerTimestampSupported(Boolean value) throws UaException;
+  void writeExceptionDeviation(@Nullable Double value) throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #readServerTimestampSupported}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Boolean> readServerTimestampSupportedAsync();
+  /** Asynchronous form of {@link #readExceptionDeviation()}. */
+  CompletableFuture<? extends @Nullable Double> readExceptionDeviationAsync();
 
-  /**
-   * An asynchronous implementation of {@link #writeServerTimestampSupported}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeServerTimestampSupportedAsync(Boolean value);
+  /** Asynchronous form of {@link #writeExceptionDeviation}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeExceptionDeviationAsync(@Nullable Double value);
 
   /**
-   * Get the ServerTimestampSupported {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * Resolves the optional MaxTimeStoredValues child, a PropertyType with DataType Duration.
    *
-   * @return the ServerTimestampSupported {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  PropertyType getServerTimestampSupportedNode() throws UaException;
+  @Nullable PropertyType getMaxTimeStoredValuesNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getServerTimestampSupportedNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getServerTimestampSupportedNodeAsync();
+  /** Asynchronous form of {@link #getMaxTimeStoredValuesNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getMaxTimeStoredValuesNodeAsync();
 
   /**
-   * Get the local value of the MaxTimeStoredValues Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
+   * Reads the Value of the MaxTimeStoredValues child from the server.
    *
-   * @return the local value of the MaxTimeStoredValues Node.
-   * @throws UaException if an error occurs creating or getting the MaxTimeStoredValues Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  Double getMaxTimeStoredValues() throws UaException;
+  @Nullable Double readMaxTimeStoredValues() throws UaException;
 
   /**
-   * Set the local value of the MaxTimeStoredValues Node.
+   * Writes the Value of the MaxTimeStoredValues child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaxTimeStoredValues Node.
-   * @throws UaException if an error occurs creating or getting the MaxTimeStoredValues Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setMaxTimeStoredValues(Double value) throws UaException;
+  void writeMaxTimeStoredValues(@Nullable Double value) throws UaException;
 
-  /**
-   * Read the value of the MaxTimeStoredValues Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link Double} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Double readMaxTimeStoredValues() throws UaException;
+  /** Asynchronous form of {@link #readMaxTimeStoredValues()}. */
+  CompletableFuture<? extends @Nullable Double> readMaxTimeStoredValuesAsync();
 
   /**
-   * Write a new value for the MaxTimeStoredValues Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link Double} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * Asynchronous form of {@link #writeMaxTimeStoredValues}; completes with the operation status.
    */
-  void writeMaxTimeStoredValues(Double value) throws UaException;
+  CompletableFuture<StatusCode> writeMaxTimeStoredValuesAsync(@Nullable Double value);
 
   /**
-   * An asynchronous implementation of {@link #readMaxTimeStoredValues}.
+   * Resolves the optional MaxCountStoredValues child, a PropertyType with DataType UInt32.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  CompletableFuture<? extends Double> readMaxTimeStoredValuesAsync();
+  @Nullable PropertyType getMaxCountStoredValuesNode() throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #writeMaxTimeStoredValues}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMaxTimeStoredValuesAsync(Double value);
+  /** Asynchronous form of {@link #getMaxCountStoredValuesNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getMaxCountStoredValuesNodeAsync();
 
   /**
-   * Get the MaxTimeStoredValues {@link PropertyType} Node, or {@code null} if it does not exist.
+   * Reads the Value of the MaxCountStoredValues child from the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaxTimeStoredValues {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  PropertyType getMaxTimeStoredValuesNode() throws UaException;
+  @Nullable UInteger readMaxCountStoredValues() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getMaxTimeStoredValuesNode()}.
+   * Writes the Value of the MaxCountStoredValues child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends PropertyType> getMaxTimeStoredValuesNodeAsync();
+  void writeMaxCountStoredValues(@Nullable UInteger value) throws UaException;
 
-  /**
-   * Get the local value of the MaxCountStoredValues Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaxCountStoredValues Node.
-   * @throws UaException if an error occurs creating or getting the MaxCountStoredValues Node.
-   */
-  UInteger getMaxCountStoredValues() throws UaException;
+  /** Asynchronous form of {@link #readMaxCountStoredValues()}. */
+  CompletableFuture<? extends @Nullable UInteger> readMaxCountStoredValuesAsync();
 
   /**
-   * Set the local value of the MaxCountStoredValues Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaxCountStoredValues Node.
-   * @throws UaException if an error occurs creating or getting the MaxCountStoredValues Node.
+   * Asynchronous form of {@link #writeMaxCountStoredValues}; completes with the operation status.
    */
-  void setMaxCountStoredValues(UInteger value) throws UaException;
+  CompletableFuture<StatusCode> writeMaxCountStoredValuesAsync(@Nullable UInteger value);
 
   /**
-   * Read the value of the MaxCountStoredValues Node from the server and update the local value if
-   * the operation succeeds.
+   * Resolves the optional StartOfOnlineArchive child, a PropertyType with DataType UtcTime.
    *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  UInteger readMaxCountStoredValues() throws UaException;
+  @Nullable PropertyType getStartOfOnlineArchiveNode() throws UaException;
 
-  /**
-   * Write a new value for the MaxCountStoredValues Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMaxCountStoredValues(UInteger value) throws UaException;
+  /** Asynchronous form of {@link #getStartOfOnlineArchiveNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getStartOfOnlineArchiveNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #readMaxCountStoredValues}.
+   * Reads the Value of the StartOfOnlineArchive child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends UInteger> readMaxCountStoredValuesAsync();
+  @Nullable DateTime readStartOfOnlineArchive() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeMaxCountStoredValues}.
+   * Writes the Value of the StartOfOnlineArchive child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeMaxCountStoredValuesAsync(UInteger value);
+  void writeStartOfOnlineArchive(@Nullable DateTime value) throws UaException;
 
-  /**
-   * Get the MaxCountStoredValues {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaxCountStoredValues {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getMaxCountStoredValuesNode() throws UaException;
+  /** Asynchronous form of {@link #readStartOfOnlineArchive()}. */
+  CompletableFuture<? extends @Nullable DateTime> readStartOfOnlineArchiveAsync();
 
   /**
-   * Asynchronous implementation of {@link #getMaxCountStoredValuesNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * Asynchronous form of {@link #writeStartOfOnlineArchive}; completes with the operation status.
    */
-  CompletableFuture<? extends PropertyType> getMaxCountStoredValuesNodeAsync();
+  CompletableFuture<StatusCode> writeStartOfOnlineArchiveAsync(@Nullable DateTime value);
 
   /**
-   * Get the AggregateConfiguration {@link AggregateConfigurationType} Node, or {@code null} if it
-   * does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * Resolves the mandatory AggregateConfiguration child, a AggregateConfigurationType.
    *
-   * @return the AggregateConfiguration {@link AggregateConfigurationType} Node, or {@code null} if
-   *     it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part13/4.2.1/#4.2.1.2">AggregateConfigurationType
+   *     documentation</a>
    */
   AggregateConfigurationType getAggregateConfigurationNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getAggregateConfigurationNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the AggregateConfigurationType
-   *     Node or completes exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getAggregateConfigurationNode()}. */
   CompletableFuture<? extends AggregateConfigurationType> getAggregateConfigurationNodeAsync();
 
   /**
-   * Get the AggregateFunctions {@link FolderType} Node, or {@code null} if it does not exist.
+   * Resolves the optional ExceptionDeviationFormat child, a PropertyType with DataType
+   * ExceptionDeviationFormat.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the AggregateFunctions {@link FolderType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  FolderType getAggregateFunctionsNode() throws UaException;
+  @Nullable PropertyType getExceptionDeviationFormatNode() throws UaException;
+
+  /** Asynchronous form of {@link #getExceptionDeviationFormatNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getExceptionDeviationFormatNodeAsync();
 
   /**
-   * Asynchronous implementation of {@link #getAggregateFunctionsNode()}.
+   * Reads the Value of the ExceptionDeviationFormat child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the FolderType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends FolderType> getAggregateFunctionsNodeAsync();
+  @Nullable ExceptionDeviationFormat readExceptionDeviationFormat() throws UaException;
+
+  /**
+   * Writes the Value of the ExceptionDeviationFormat child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeExceptionDeviationFormat(@Nullable ExceptionDeviationFormat value) throws UaException;
+
+  /** Asynchronous form of {@link #readExceptionDeviationFormat()}. */
+  CompletableFuture<? extends @Nullable ExceptionDeviationFormat>
+      readExceptionDeviationFormatAsync();
+
+  /**
+   * Asynchronous form of {@link #writeExceptionDeviationFormat}; completes with the operation
+   * status.
+   */
+  CompletableFuture<StatusCode> writeExceptionDeviationFormatAsync(
+      @Nullable ExceptionDeviationFormat value);
+
+  /**
+   * Resolves the optional ServerTimestampSupported child, a PropertyType with DataType Boolean.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyType getServerTimestampSupportedNode() throws UaException;
+
+  /** Asynchronous form of {@link #getServerTimestampSupportedNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getServerTimestampSupportedNodeAsync();
+
+  /**
+   * Reads the Value of the ServerTimestampSupported child from the server.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable Boolean readServerTimestampSupported() throws UaException;
+
+  /**
+   * Writes the Value of the ServerTimestampSupported child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeServerTimestampSupported(@Nullable Boolean value) throws UaException;
+
+  /** Asynchronous form of {@link #readServerTimestampSupported()}. */
+  CompletableFuture<? extends @Nullable Boolean> readServerTimestampSupportedAsync();
+
+  /**
+   * Asynchronous form of {@link #writeServerTimestampSupported}; completes with the operation
+   * status.
+   */
+  CompletableFuture<StatusCode> writeServerTimestampSupportedAsync(@Nullable Boolean value);
+
+  /**
+   * Resolves the mandatory Stepped child, a PropertyType with DataType Boolean.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getSteppedNode() throws UaException;
+
+  /** Asynchronous form of {@link #getSteppedNode()}. */
+  CompletableFuture<? extends PropertyType> getSteppedNodeAsync();
+
+  /**
+   * Reads the Value of the Stepped child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable Boolean readStepped() throws UaException;
+
+  /**
+   * Writes the Value of the Stepped child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeStepped(@Nullable Boolean value) throws UaException;
+
+  /** Asynchronous form of {@link #readStepped()}. */
+  CompletableFuture<? extends @Nullable Boolean> readSteppedAsync();
+
+  /** Asynchronous form of {@link #writeStepped}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeSteppedAsync(@Nullable Boolean value);
 }

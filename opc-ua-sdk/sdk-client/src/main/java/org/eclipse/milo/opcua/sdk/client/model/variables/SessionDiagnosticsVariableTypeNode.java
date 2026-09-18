@@ -1,31 +1,17 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.variables;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
+import org.eclipse.milo.opcua.sdk.client.nodes.UaVariableNode;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
@@ -34,7 +20,16 @@ import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ServiceCounterDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.SessionDiagnosticsDataType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link SessionDiagnosticsVariableType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.14">Model
+ *     documentation</a>
+ */
 public class SessionDiagnosticsVariableTypeNode extends BaseDataVariableTypeNode
     implements SessionDiagnosticsVariableType {
   public SessionDiagnosticsVariableTypeNode(
@@ -43,21 +38,21 @@ public class SessionDiagnosticsVariableTypeNode extends BaseDataVariableTypeNode
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       DataValue value,
       NodeId dataType,
       Integer valueRank,
-      UInteger[] arrayDimensions,
+      UInteger @Nullable [] arrayDimensions,
       UByte accessLevel,
       UByte userAccessLevel,
       Double minimumSamplingInterval,
       Boolean historizing,
-      AccessLevelExType accessLevelEx) {
+      @Nullable AccessLevelExType accessLevelEx) {
     super(
         client,
         nodeId,
@@ -82,3360 +77,3210 @@ public class SessionDiagnosticsVariableTypeNode extends BaseDataVariableTypeNode
   }
 
   @Override
-  public NodeId getSessionId() throws UaException {
-    BaseDataVariableTypeNode node = getSessionIdNode();
-    return (NodeId) node.getValue().getValue().getValue();
+  public UaVariableNode getWriteCountNode() throws UaException {
+    return ClientNodeSupport.await(getWriteCountNodeAsync());
   }
 
   @Override
-  public void setSessionId(NodeId value) throws UaException {
-    BaseDataVariableTypeNode node = getSessionIdNode();
-    node.setValue(new Variant(value));
+  public CompletableFuture<? extends UaVariableNode> getWriteCountNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "WriteCount",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
   }
 
+  @Override
+  public @Nullable ServiceCounterDataType readWriteCount() throws UaException {
+    return ClientNodeSupport.await(readWriteCountAsync());
+  }
+
   @Override
-  public NodeId readSessionId() throws UaException {
-    try {
-      return readSessionIdAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public void writeWriteCount(@Nullable ServiceCounterDataType value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeWriteCountAsync(value)),
+        "http://opcfoundation.org/UA/}WriteCount");
   }
 
-  @Override
-  public void writeSessionId(NodeId value) throws UaException {
-    try {
-      StatusCode statusCode = writeSessionIdAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends NodeId> readSessionIdAsync() {
-    return getSessionIdNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (NodeId) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeSessionIdAsync(NodeId sessionId) {
-    DataValue value = DataValue.valueOnly(new Variant(sessionId));
-    return getSessionIdNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getSessionIdNode() throws UaException {
-    try {
-      return getSessionIdNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getSessionIdNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "SessionId", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
-  }
-
-  @Override
-  public String getSessionName() throws UaException {
-    BaseDataVariableTypeNode node = getSessionNameNode();
-    return (String) node.getValue().getValue().getValue();
-  }
-
-  @Override
-  public void setSessionName(String value) throws UaException {
-    BaseDataVariableTypeNode node = getSessionNameNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public String readSessionName() throws UaException {
-    try {
-      return readSessionNameAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeSessionName(String value) throws UaException {
-    try {
-      StatusCode statusCode = writeSessionNameAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends String> readSessionNameAsync() {
-    return getSessionNameNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (String) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeSessionNameAsync(String sessionName) {
-    DataValue value = DataValue.valueOnly(new Variant(sessionName));
-    return getSessionNameNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getSessionNameNode() throws UaException {
-    try {
-      return getSessionNameNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getSessionNameNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "SessionName", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
-  }
-
-  @Override
-  public ApplicationDescription getClientDescription() throws UaException {
-    BaseDataVariableTypeNode node = getClientDescriptionNode();
-    return cast(node.getValue().getValue().getValue(), ApplicationDescription.class);
-  }
-
-  @Override
-  public void setClientDescription(ApplicationDescription value) throws UaException {
-    BaseDataVariableTypeNode node = getClientDescriptionNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
-  }
-
-  @Override
-  public ApplicationDescription readClientDescription() throws UaException {
-    try {
-      return readClientDescriptionAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeClientDescription(ApplicationDescription value) throws UaException {
-    try {
-      StatusCode statusCode = writeClientDescriptionAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends ApplicationDescription> readClientDescriptionAsync() {
-    return getClientDescriptionNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), ApplicationDescription.class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeClientDescriptionAsync(
-      ApplicationDescription clientDescription) {
-    ExtensionObject encoded =
-        ExtensionObject.encode(client.getStaticEncodingContext(), clientDescription);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getClientDescriptionNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getClientDescriptionNode() throws UaException {
-    try {
-      return getClientDescriptionNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getClientDescriptionNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "ClientDescription",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
-  }
-
-  @Override
-  public String getServerUri() throws UaException {
-    BaseDataVariableTypeNode node = getServerUriNode();
-    return (String) node.getValue().getValue().getValue();
-  }
-
-  @Override
-  public void setServerUri(String value) throws UaException {
-    BaseDataVariableTypeNode node = getServerUriNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public String readServerUri() throws UaException {
-    try {
-      return readServerUriAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeServerUri(String value) throws UaException {
-    try {
-      StatusCode statusCode = writeServerUriAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends String> readServerUriAsync() {
-    return getServerUriNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (String) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeServerUriAsync(String serverUri) {
-    DataValue value = DataValue.valueOnly(new Variant(serverUri));
-    return getServerUriNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getServerUriNode() throws UaException {
-    try {
-      return getServerUriNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getServerUriNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "ServerUri", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
-  }
-
-  @Override
-  public String getEndpointUrl() throws UaException {
-    BaseDataVariableTypeNode node = getEndpointUrlNode();
-    return (String) node.getValue().getValue().getValue();
-  }
-
-  @Override
-  public void setEndpointUrl(String value) throws UaException {
-    BaseDataVariableTypeNode node = getEndpointUrlNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public String readEndpointUrl() throws UaException {
-    try {
-      return readEndpointUrlAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeEndpointUrl(String value) throws UaException {
-    try {
-      StatusCode statusCode = writeEndpointUrlAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends String> readEndpointUrlAsync() {
-    return getEndpointUrlNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (String) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeEndpointUrlAsync(String endpointUrl) {
-    DataValue value = DataValue.valueOnly(new Variant(endpointUrl));
-    return getEndpointUrlNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getEndpointUrlNode() throws UaException {
-    try {
-      return getEndpointUrlNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getEndpointUrlNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "EndpointUrl", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
-  }
-
-  @Override
-  public String[] getLocaleIds() throws UaException {
-    BaseDataVariableTypeNode node = getLocaleIdsNode();
-    return (String[]) node.getValue().getValue().getValue();
-  }
-
-  @Override
-  public void setLocaleIds(String[] value) throws UaException {
-    BaseDataVariableTypeNode node = getLocaleIdsNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public String[] readLocaleIds() throws UaException {
-    try {
-      return readLocaleIdsAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeLocaleIds(String[] value) throws UaException {
-    try {
-      StatusCode statusCode = writeLocaleIdsAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends String[]> readLocaleIdsAsync() {
-    return getLocaleIdsNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (String[]) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeLocaleIdsAsync(String[] localeIds) {
-    DataValue value = DataValue.valueOnly(new Variant(localeIds));
-    return getLocaleIdsNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getLocaleIdsNode() throws UaException {
-    try {
-      return getLocaleIdsNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getLocaleIdsNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "LocaleIds", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
-  }
-
-  @Override
-  public Double getActualSessionTimeout() throws UaException {
-    BaseDataVariableTypeNode node = getActualSessionTimeoutNode();
-    return (Double) node.getValue().getValue().getValue();
-  }
-
-  @Override
-  public void setActualSessionTimeout(Double value) throws UaException {
-    BaseDataVariableTypeNode node = getActualSessionTimeoutNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public Double readActualSessionTimeout() throws UaException {
-    try {
-      return readActualSessionTimeoutAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeActualSessionTimeout(Double value) throws UaException {
-    try {
-      StatusCode statusCode = writeActualSessionTimeoutAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends Double> readActualSessionTimeoutAsync() {
-    return getActualSessionTimeoutNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (Double) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeActualSessionTimeoutAsync(Double actualSessionTimeout) {
-    DataValue value = DataValue.valueOnly(new Variant(actualSessionTimeout));
-    return getActualSessionTimeoutNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getActualSessionTimeoutNode() throws UaException {
-    try {
-      return getActualSessionTimeoutNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getActualSessionTimeoutNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "ActualSessionTimeout",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
-  }
-
-  @Override
-  public UInteger getMaxResponseMessageSize() throws UaException {
-    BaseDataVariableTypeNode node = getMaxResponseMessageSizeNode();
-    return (UInteger) node.getValue().getValue().getValue();
-  }
-
-  @Override
-  public void setMaxResponseMessageSize(UInteger value) throws UaException {
-    BaseDataVariableTypeNode node = getMaxResponseMessageSizeNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public UInteger readMaxResponseMessageSize() throws UaException {
-    try {
-      return readMaxResponseMessageSizeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeMaxResponseMessageSize(UInteger value) throws UaException {
-    try {
-      StatusCode statusCode = writeMaxResponseMessageSizeAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends UInteger> readMaxResponseMessageSizeAsync() {
-    return getMaxResponseMessageSizeNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (UInteger) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeMaxResponseMessageSizeAsync(
-      UInteger maxResponseMessageSize) {
-    DataValue value = DataValue.valueOnly(new Variant(maxResponseMessageSize));
-    return getMaxResponseMessageSizeNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getMaxResponseMessageSizeNode() throws UaException {
-    try {
-      return getMaxResponseMessageSizeNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode>
-      getMaxResponseMessageSizeNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "MaxResponseMessageSize",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
-  }
-
-  @Override
-  public DateTime getClientConnectionTime() throws UaException {
-    BaseDataVariableTypeNode node = getClientConnectionTimeNode();
-    return (DateTime) node.getValue().getValue().getValue();
-  }
-
-  @Override
-  public void setClientConnectionTime(DateTime value) throws UaException {
-    BaseDataVariableTypeNode node = getClientConnectionTimeNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public DateTime readClientConnectionTime() throws UaException {
-    try {
-      return readClientConnectionTimeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeClientConnectionTime(DateTime value) throws UaException {
-    try {
-      StatusCode statusCode = writeClientConnectionTimeAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends DateTime> readClientConnectionTimeAsync() {
-    return getClientConnectionTimeNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (DateTime) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeClientConnectionTimeAsync(
-      DateTime clientConnectionTime) {
-    DataValue value = DataValue.valueOnly(new Variant(clientConnectionTime));
-    return getClientConnectionTimeNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getClientConnectionTimeNode() throws UaException {
-    try {
-      return getClientConnectionTimeNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getClientConnectionTimeNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "ClientConnectionTime",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
-  }
-
-  @Override
-  public DateTime getClientLastContactTime() throws UaException {
-    BaseDataVariableTypeNode node = getClientLastContactTimeNode();
-    return (DateTime) node.getValue().getValue().getValue();
-  }
-
-  @Override
-  public void setClientLastContactTime(DateTime value) throws UaException {
-    BaseDataVariableTypeNode node = getClientLastContactTimeNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public DateTime readClientLastContactTime() throws UaException {
-    try {
-      return readClientLastContactTimeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeClientLastContactTime(DateTime value) throws UaException {
-    try {
-      StatusCode statusCode = writeClientLastContactTimeAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends DateTime> readClientLastContactTimeAsync() {
-    return getClientLastContactTimeNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (DateTime) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeClientLastContactTimeAsync(
-      DateTime clientLastContactTime) {
-    DataValue value = DataValue.valueOnly(new Variant(clientLastContactTime));
-    return getClientLastContactTimeNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getClientLastContactTimeNode() throws UaException {
-    try {
-      return getClientLastContactTimeNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getClientLastContactTimeNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "ClientLastContactTime",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
-  }
-
-  @Override
-  public UInteger getCurrentSubscriptionsCount() throws UaException {
-    BaseDataVariableTypeNode node = getCurrentSubscriptionsCountNode();
-    return (UInteger) node.getValue().getValue().getValue();
-  }
-
-  @Override
-  public void setCurrentSubscriptionsCount(UInteger value) throws UaException {
-    BaseDataVariableTypeNode node = getCurrentSubscriptionsCountNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public UInteger readCurrentSubscriptionsCount() throws UaException {
-    try {
-      return readCurrentSubscriptionsCountAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeCurrentSubscriptionsCount(UInteger value) throws UaException {
-    try {
-      StatusCode statusCode = writeCurrentSubscriptionsCountAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends UInteger> readCurrentSubscriptionsCountAsync() {
-    return getCurrentSubscriptionsCountNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (UInteger) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeCurrentSubscriptionsCountAsync(
-      UInteger currentSubscriptionsCount) {
-    DataValue value = DataValue.valueOnly(new Variant(currentSubscriptionsCount));
-    return getCurrentSubscriptionsCountNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getCurrentSubscriptionsCountNode() throws UaException {
-    try {
-      return getCurrentSubscriptionsCountNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode>
-      getCurrentSubscriptionsCountNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "CurrentSubscriptionsCount",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
-  }
-
-  @Override
-  public UInteger getCurrentMonitoredItemsCount() throws UaException {
-    BaseDataVariableTypeNode node = getCurrentMonitoredItemsCountNode();
-    return (UInteger) node.getValue().getValue().getValue();
-  }
-
-  @Override
-  public void setCurrentMonitoredItemsCount(UInteger value) throws UaException {
-    BaseDataVariableTypeNode node = getCurrentMonitoredItemsCountNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public UInteger readCurrentMonitoredItemsCount() throws UaException {
-    try {
-      return readCurrentMonitoredItemsCountAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeCurrentMonitoredItemsCount(UInteger value) throws UaException {
-    try {
-      StatusCode statusCode = writeCurrentMonitoredItemsCountAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends UInteger> readCurrentMonitoredItemsCountAsync() {
-    return getCurrentMonitoredItemsCountNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (UInteger) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeCurrentMonitoredItemsCountAsync(
-      UInteger currentMonitoredItemsCount) {
-    DataValue value = DataValue.valueOnly(new Variant(currentMonitoredItemsCount));
-    return getCurrentMonitoredItemsCountNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getCurrentMonitoredItemsCountNode() throws UaException {
-    try {
-      return getCurrentMonitoredItemsCountNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode>
-      getCurrentMonitoredItemsCountNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "CurrentMonitoredItemsCount",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
-  }
-
-  @Override
-  public UInteger getCurrentPublishRequestsInQueue() throws UaException {
-    BaseDataVariableTypeNode node = getCurrentPublishRequestsInQueueNode();
-    return (UInteger) node.getValue().getValue().getValue();
-  }
-
-  @Override
-  public void setCurrentPublishRequestsInQueue(UInteger value) throws UaException {
-    BaseDataVariableTypeNode node = getCurrentPublishRequestsInQueueNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public UInteger readCurrentPublishRequestsInQueue() throws UaException {
-    try {
-      return readCurrentPublishRequestsInQueueAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeCurrentPublishRequestsInQueue(UInteger value) throws UaException {
-    try {
-      StatusCode statusCode = writeCurrentPublishRequestsInQueueAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends UInteger> readCurrentPublishRequestsInQueueAsync() {
-    return getCurrentPublishRequestsInQueueNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (UInteger) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeCurrentPublishRequestsInQueueAsync(
-      UInteger currentPublishRequestsInQueue) {
-    DataValue value = DataValue.valueOnly(new Variant(currentPublishRequestsInQueue));
-    return getCurrentPublishRequestsInQueueNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getCurrentPublishRequestsInQueueNode() throws UaException {
-    try {
-      return getCurrentPublishRequestsInQueueNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode>
-      getCurrentPublishRequestsInQueueNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "CurrentPublishRequestsInQueue",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
-  }
-
-  @Override
-  public ServiceCounterDataType getTotalRequestCount() throws UaException {
-    BaseDataVariableTypeNode node = getTotalRequestCountNode();
-    return cast(node.getValue().getValue().getValue(), ServiceCounterDataType.class);
-  }
-
-  @Override
-  public void setTotalRequestCount(ServiceCounterDataType value) throws UaException {
-    BaseDataVariableTypeNode node = getTotalRequestCountNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
-  }
-
-  @Override
-  public ServiceCounterDataType readTotalRequestCount() throws UaException {
-    try {
-      return readTotalRequestCountAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeTotalRequestCount(ServiceCounterDataType value) throws UaException {
-    try {
-      StatusCode statusCode = writeTotalRequestCountAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends ServiceCounterDataType> readTotalRequestCountAsync() {
-    return getTotalRequestCountNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), ServiceCounterDataType.class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeTotalRequestCountAsync(
-      ServiceCounterDataType totalRequestCount) {
-    ExtensionObject encoded =
-        ExtensionObject.encode(client.getStaticEncodingContext(), totalRequestCount);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getTotalRequestCountNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getTotalRequestCountNode() throws UaException {
-    try {
-      return getTotalRequestCountNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getTotalRequestCountNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "TotalRequestCount",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
-  }
-
-  @Override
-  public UInteger getUnauthorizedRequestCount() throws UaException {
-    BaseDataVariableTypeNode node = getUnauthorizedRequestCountNode();
-    return (UInteger) node.getValue().getValue().getValue();
-  }
-
-  @Override
-  public void setUnauthorizedRequestCount(UInteger value) throws UaException {
-    BaseDataVariableTypeNode node = getUnauthorizedRequestCountNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public UInteger readUnauthorizedRequestCount() throws UaException {
-    try {
-      return readUnauthorizedRequestCountAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeUnauthorizedRequestCount(UInteger value) throws UaException {
-    try {
-      StatusCode statusCode = writeUnauthorizedRequestCountAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends UInteger> readUnauthorizedRequestCountAsync() {
-    return getUnauthorizedRequestCountNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (UInteger) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeUnauthorizedRequestCountAsync(
-      UInteger unauthorizedRequestCount) {
-    DataValue value = DataValue.valueOnly(new Variant(unauthorizedRequestCount));
-    return getUnauthorizedRequestCountNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getUnauthorizedRequestCountNode() throws UaException {
-    try {
-      return getUnauthorizedRequestCountNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode>
-      getUnauthorizedRequestCountNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "UnauthorizedRequestCount",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
-  }
-
-  @Override
-  public ServiceCounterDataType getReadCount() throws UaException {
-    BaseDataVariableTypeNode node = getReadCountNode();
-    return cast(node.getValue().getValue().getValue(), ServiceCounterDataType.class);
-  }
-
-  @Override
-  public void setReadCount(ServiceCounterDataType value) throws UaException {
-    BaseDataVariableTypeNode node = getReadCountNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
-  }
-
-  @Override
-  public ServiceCounterDataType readReadCount() throws UaException {
-    try {
-      return readReadCountAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeReadCount(ServiceCounterDataType value) throws UaException {
-    try {
-      StatusCode statusCode = writeReadCountAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends ServiceCounterDataType> readReadCountAsync() {
-    return getReadCountNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), ServiceCounterDataType.class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeReadCountAsync(ServiceCounterDataType readCount) {
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), readCount);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getReadCountNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getReadCountNode() throws UaException {
-    try {
-      return getReadCountNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getReadCountNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "ReadCount", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
-  }
-
-  @Override
-  public ServiceCounterDataType getHistoryReadCount() throws UaException {
-    BaseDataVariableTypeNode node = getHistoryReadCountNode();
-    return cast(node.getValue().getValue().getValue(), ServiceCounterDataType.class);
-  }
-
-  @Override
-  public void setHistoryReadCount(ServiceCounterDataType value) throws UaException {
-    BaseDataVariableTypeNode node = getHistoryReadCountNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
-  }
-
-  @Override
-  public ServiceCounterDataType readHistoryReadCount() throws UaException {
-    try {
-      return readHistoryReadCountAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeHistoryReadCount(ServiceCounterDataType value) throws UaException {
-    try {
-      StatusCode statusCode = writeHistoryReadCountAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends ServiceCounterDataType> readHistoryReadCountAsync() {
-    return getHistoryReadCountNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), ServiceCounterDataType.class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeHistoryReadCountAsync(
-      ServiceCounterDataType historyReadCount) {
-    ExtensionObject encoded =
-        ExtensionObject.encode(client.getStaticEncodingContext(), historyReadCount);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getHistoryReadCountNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getHistoryReadCountNode() throws UaException {
-    try {
-      return getHistoryReadCountNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getHistoryReadCountNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "HistoryReadCount",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
-  }
-
-  @Override
-  public ServiceCounterDataType getWriteCount() throws UaException {
-    BaseDataVariableTypeNode node = getWriteCountNode();
-    return cast(node.getValue().getValue().getValue(), ServiceCounterDataType.class);
-  }
-
-  @Override
-  public void setWriteCount(ServiceCounterDataType value) throws UaException {
-    BaseDataVariableTypeNode node = getWriteCountNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
-  }
-
-  @Override
-  public ServiceCounterDataType readWriteCount() throws UaException {
-    try {
-      return readWriteCountAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeWriteCount(ServiceCounterDataType value) throws UaException {
-    try {
-      StatusCode statusCode = writeWriteCountAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends ServiceCounterDataType> readWriteCountAsync() {
-    return getWriteCountNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), ServiceCounterDataType.class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeWriteCountAsync(ServiceCounterDataType writeCount) {
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), writeCount);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getWriteCountNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getWriteCountNode() throws UaException {
-    try {
-      return getWriteCountNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getWriteCountNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "WriteCount", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
-  }
-
-  @Override
-  public ServiceCounterDataType getHistoryUpdateCount() throws UaException {
-    BaseDataVariableTypeNode node = getHistoryUpdateCountNode();
-    return cast(node.getValue().getValue().getValue(), ServiceCounterDataType.class);
-  }
-
-  @Override
-  public void setHistoryUpdateCount(ServiceCounterDataType value) throws UaException {
-    BaseDataVariableTypeNode node = getHistoryUpdateCountNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
-  }
-
-  @Override
-  public ServiceCounterDataType readHistoryUpdateCount() throws UaException {
-    try {
-      return readHistoryUpdateCountAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeHistoryUpdateCount(ServiceCounterDataType value) throws UaException {
-    try {
-      StatusCode statusCode = writeHistoryUpdateCountAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends ServiceCounterDataType> readHistoryUpdateCountAsync() {
-    return getHistoryUpdateCountNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), ServiceCounterDataType.class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeHistoryUpdateCountAsync(
-      ServiceCounterDataType historyUpdateCount) {
-    ExtensionObject encoded =
-        ExtensionObject.encode(client.getStaticEncodingContext(), historyUpdateCount);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getHistoryUpdateCountNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getHistoryUpdateCountNode() throws UaException {
-    try {
-      return getHistoryUpdateCountNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getHistoryUpdateCountNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "HistoryUpdateCount",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
-  }
-
-  @Override
-  public ServiceCounterDataType getCallCount() throws UaException {
-    BaseDataVariableTypeNode node = getCallCountNode();
-    return cast(node.getValue().getValue().getValue(), ServiceCounterDataType.class);
-  }
-
-  @Override
-  public void setCallCount(ServiceCounterDataType value) throws UaException {
-    BaseDataVariableTypeNode node = getCallCountNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
-  }
-
-  @Override
-  public ServiceCounterDataType readCallCount() throws UaException {
-    try {
-      return readCallCountAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeCallCount(ServiceCounterDataType value) throws UaException {
-    try {
-      StatusCode statusCode = writeCallCountAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends ServiceCounterDataType> readCallCountAsync() {
-    return getCallCountNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), ServiceCounterDataType.class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeCallCountAsync(ServiceCounterDataType callCount) {
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), callCount);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getCallCountNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getCallCountNode() throws UaException {
-    try {
-      return getCallCountNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getCallCountNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "CallCount", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
-  }
-
-  @Override
-  public ServiceCounterDataType getCreateMonitoredItemsCount() throws UaException {
-    BaseDataVariableTypeNode node = getCreateMonitoredItemsCountNode();
-    return cast(node.getValue().getValue().getValue(), ServiceCounterDataType.class);
-  }
-
-  @Override
-  public void setCreateMonitoredItemsCount(ServiceCounterDataType value) throws UaException {
-    BaseDataVariableTypeNode node = getCreateMonitoredItemsCountNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
-  }
-
-  @Override
-  public ServiceCounterDataType readCreateMonitoredItemsCount() throws UaException {
-    try {
-      return readCreateMonitoredItemsCountAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeCreateMonitoredItemsCount(ServiceCounterDataType value) throws UaException {
-    try {
-      StatusCode statusCode = writeCreateMonitoredItemsCountAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends ServiceCounterDataType> readCreateMonitoredItemsCountAsync() {
-    return getCreateMonitoredItemsCountNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), ServiceCounterDataType.class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeCreateMonitoredItemsCountAsync(
-      ServiceCounterDataType createMonitoredItemsCount) {
-    ExtensionObject encoded =
-        ExtensionObject.encode(client.getStaticEncodingContext(), createMonitoredItemsCount);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getCreateMonitoredItemsCountNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getCreateMonitoredItemsCountNode() throws UaException {
-    try {
-      return getCreateMonitoredItemsCountNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode>
-      getCreateMonitoredItemsCountNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "CreateMonitoredItemsCount",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
-  }
-
-  @Override
-  public ServiceCounterDataType getModifyMonitoredItemsCount() throws UaException {
-    BaseDataVariableTypeNode node = getModifyMonitoredItemsCountNode();
-    return cast(node.getValue().getValue().getValue(), ServiceCounterDataType.class);
-  }
-
-  @Override
-  public void setModifyMonitoredItemsCount(ServiceCounterDataType value) throws UaException {
-    BaseDataVariableTypeNode node = getModifyMonitoredItemsCountNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
-  }
-
-  @Override
-  public ServiceCounterDataType readModifyMonitoredItemsCount() throws UaException {
-    try {
-      return readModifyMonitoredItemsCountAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeModifyMonitoredItemsCount(ServiceCounterDataType value) throws UaException {
-    try {
-      StatusCode statusCode = writeModifyMonitoredItemsCountAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  @Override
+  public CompletableFuture<? extends @Nullable ServiceCounterDataType> readWriteCountAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getWriteCountNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}WriteCount",
+                            true,
+                            ServiceCounterDataType.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable ServiceCounterDataType) v)));
   }
 
   @Override
-  public CompletableFuture<? extends ServiceCounterDataType> readModifyMonitoredItemsCountAsync() {
-    return getModifyMonitoredItemsCountNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), ServiceCounterDataType.class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeModifyMonitoredItemsCountAsync(
-      ServiceCounterDataType modifyMonitoredItemsCount) {
-    ExtensionObject encoded =
-        ExtensionObject.encode(client.getStaticEncodingContext(), modifyMonitoredItemsCount);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getModifyMonitoredItemsCountNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getModifyMonitoredItemsCountNode() throws UaException {
-    try {
-      return getModifyMonitoredItemsCountNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode>
-      getModifyMonitoredItemsCountNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "ModifyMonitoredItemsCount",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
-  }
-
-  @Override
-  public ServiceCounterDataType getSetMonitoringModeCount() throws UaException {
-    BaseDataVariableTypeNode node = getSetMonitoringModeCountNode();
-    return cast(node.getValue().getValue().getValue(), ServiceCounterDataType.class);
-  }
-
-  @Override
-  public void setSetMonitoringModeCount(ServiceCounterDataType value) throws UaException {
-    BaseDataVariableTypeNode node = getSetMonitoringModeCountNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
-  }
-
-  @Override
-  public ServiceCounterDataType readSetMonitoringModeCount() throws UaException {
-    try {
-      return readSetMonitoringModeCountAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeSetMonitoringModeCount(ServiceCounterDataType value) throws UaException {
-    try {
-      StatusCode statusCode = writeSetMonitoringModeCountAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends ServiceCounterDataType> readSetMonitoringModeCountAsync() {
-    return getSetMonitoringModeCountNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), ServiceCounterDataType.class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeSetMonitoringModeCountAsync(
-      ServiceCounterDataType setMonitoringModeCount) {
-    ExtensionObject encoded =
-        ExtensionObject.encode(client.getStaticEncodingContext(), setMonitoringModeCount);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getSetMonitoringModeCountNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getSetMonitoringModeCountNode() throws UaException {
-    try {
-      return getSetMonitoringModeCountNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode>
-      getSetMonitoringModeCountNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "SetMonitoringModeCount",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
-  }
-
-  @Override
-  public ServiceCounterDataType getSetTriggeringCount() throws UaException {
-    BaseDataVariableTypeNode node = getSetTriggeringCountNode();
-    return cast(node.getValue().getValue().getValue(), ServiceCounterDataType.class);
-  }
-
-  @Override
-  public void setSetTriggeringCount(ServiceCounterDataType value) throws UaException {
-    BaseDataVariableTypeNode node = getSetTriggeringCountNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
-  }
-
-  @Override
-  public ServiceCounterDataType readSetTriggeringCount() throws UaException {
-    try {
-      return readSetTriggeringCountAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeSetTriggeringCount(ServiceCounterDataType value) throws UaException {
-    try {
-      StatusCode statusCode = writeSetTriggeringCountAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends ServiceCounterDataType> readSetTriggeringCountAsync() {
-    return getSetTriggeringCountNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), ServiceCounterDataType.class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeSetTriggeringCountAsync(
-      ServiceCounterDataType setTriggeringCount) {
-    ExtensionObject encoded =
-        ExtensionObject.encode(client.getStaticEncodingContext(), setTriggeringCount);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getSetTriggeringCountNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getSetTriggeringCountNode() throws UaException {
-    try {
-      return getSetTriggeringCountNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getSetTriggeringCountNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "SetTriggeringCount",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
-  }
-
-  @Override
-  public ServiceCounterDataType getDeleteMonitoredItemsCount() throws UaException {
-    BaseDataVariableTypeNode node = getDeleteMonitoredItemsCountNode();
-    return cast(node.getValue().getValue().getValue(), ServiceCounterDataType.class);
-  }
-
-  @Override
-  public void setDeleteMonitoredItemsCount(ServiceCounterDataType value) throws UaException {
-    BaseDataVariableTypeNode node = getDeleteMonitoredItemsCountNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
-  }
-
-  @Override
-  public ServiceCounterDataType readDeleteMonitoredItemsCount() throws UaException {
-    try {
-      return readDeleteMonitoredItemsCountAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeDeleteMonitoredItemsCount(ServiceCounterDataType value) throws UaException {
-    try {
-      StatusCode statusCode = writeDeleteMonitoredItemsCountAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends ServiceCounterDataType> readDeleteMonitoredItemsCountAsync() {
-    return getDeleteMonitoredItemsCountNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), ServiceCounterDataType.class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeDeleteMonitoredItemsCountAsync(
-      ServiceCounterDataType deleteMonitoredItemsCount) {
-    ExtensionObject encoded =
-        ExtensionObject.encode(client.getStaticEncodingContext(), deleteMonitoredItemsCount);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getDeleteMonitoredItemsCountNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getDeleteMonitoredItemsCountNode() throws UaException {
-    try {
-      return getDeleteMonitoredItemsCountNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode>
-      getDeleteMonitoredItemsCountNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "DeleteMonitoredItemsCount",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
-  }
-
-  @Override
-  public ServiceCounterDataType getCreateSubscriptionCount() throws UaException {
-    BaseDataVariableTypeNode node = getCreateSubscriptionCountNode();
-    return cast(node.getValue().getValue().getValue(), ServiceCounterDataType.class);
-  }
-
-  @Override
-  public void setCreateSubscriptionCount(ServiceCounterDataType value) throws UaException {
-    BaseDataVariableTypeNode node = getCreateSubscriptionCountNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
-  }
-
-  @Override
-  public ServiceCounterDataType readCreateSubscriptionCount() throws UaException {
-    try {
-      return readCreateSubscriptionCountAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeCreateSubscriptionCount(ServiceCounterDataType value) throws UaException {
-    try {
-      StatusCode statusCode = writeCreateSubscriptionCountAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends ServiceCounterDataType> readCreateSubscriptionCountAsync() {
-    return getCreateSubscriptionCountNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), ServiceCounterDataType.class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeCreateSubscriptionCountAsync(
-      ServiceCounterDataType createSubscriptionCount) {
-    ExtensionObject encoded =
-        ExtensionObject.encode(client.getStaticEncodingContext(), createSubscriptionCount);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getCreateSubscriptionCountNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getCreateSubscriptionCountNode() throws UaException {
-    try {
-      return getCreateSubscriptionCountNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode>
-      getCreateSubscriptionCountNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "CreateSubscriptionCount",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
-  }
-
-  @Override
-  public ServiceCounterDataType getModifySubscriptionCount() throws UaException {
-    BaseDataVariableTypeNode node = getModifySubscriptionCountNode();
-    return cast(node.getValue().getValue().getValue(), ServiceCounterDataType.class);
-  }
-
-  @Override
-  public void setModifySubscriptionCount(ServiceCounterDataType value) throws UaException {
-    BaseDataVariableTypeNode node = getModifySubscriptionCountNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
-  }
-
-  @Override
-  public ServiceCounterDataType readModifySubscriptionCount() throws UaException {
-    try {
-      return readModifySubscriptionCountAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeModifySubscriptionCount(ServiceCounterDataType value) throws UaException {
-    try {
-      StatusCode statusCode = writeModifySubscriptionCountAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends ServiceCounterDataType> readModifySubscriptionCountAsync() {
-    return getModifySubscriptionCountNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), ServiceCounterDataType.class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeModifySubscriptionCountAsync(
-      ServiceCounterDataType modifySubscriptionCount) {
-    ExtensionObject encoded =
-        ExtensionObject.encode(client.getStaticEncodingContext(), modifySubscriptionCount);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getModifySubscriptionCountNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getModifySubscriptionCountNode() throws UaException {
-    try {
-      return getModifySubscriptionCountNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode>
-      getModifySubscriptionCountNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "ModifySubscriptionCount",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
-  }
-
-  @Override
-  public ServiceCounterDataType getSetPublishingModeCount() throws UaException {
-    BaseDataVariableTypeNode node = getSetPublishingModeCountNode();
-    return cast(node.getValue().getValue().getValue(), ServiceCounterDataType.class);
-  }
-
-  @Override
-  public void setSetPublishingModeCount(ServiceCounterDataType value) throws UaException {
-    BaseDataVariableTypeNode node = getSetPublishingModeCountNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
-  }
-
-  @Override
-  public ServiceCounterDataType readSetPublishingModeCount() throws UaException {
-    try {
-      return readSetPublishingModeCountAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeSetPublishingModeCount(ServiceCounterDataType value) throws UaException {
-    try {
-      StatusCode statusCode = writeSetPublishingModeCountAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends ServiceCounterDataType> readSetPublishingModeCountAsync() {
-    return getSetPublishingModeCountNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), ServiceCounterDataType.class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeSetPublishingModeCountAsync(
-      ServiceCounterDataType setPublishingModeCount) {
-    ExtensionObject encoded =
-        ExtensionObject.encode(client.getStaticEncodingContext(), setPublishingModeCount);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getSetPublishingModeCountNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getSetPublishingModeCountNode() throws UaException {
-    try {
-      return getSetPublishingModeCountNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode>
-      getSetPublishingModeCountNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "SetPublishingModeCount",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
-  }
-
-  @Override
-  public ServiceCounterDataType getPublishCount() throws UaException {
-    BaseDataVariableTypeNode node = getPublishCountNode();
-    return cast(node.getValue().getValue().getValue(), ServiceCounterDataType.class);
-  }
-
-  @Override
-  public void setPublishCount(ServiceCounterDataType value) throws UaException {
-    BaseDataVariableTypeNode node = getPublishCountNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
-  }
-
-  @Override
-  public ServiceCounterDataType readPublishCount() throws UaException {
-    try {
-      return readPublishCountAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writePublishCount(ServiceCounterDataType value) throws UaException {
-    try {
-      StatusCode statusCode = writePublishCountAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends ServiceCounterDataType> readPublishCountAsync() {
-    return getPublishCountNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), ServiceCounterDataType.class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writePublishCountAsync(ServiceCounterDataType publishCount) {
-    ExtensionObject encoded =
-        ExtensionObject.encode(client.getStaticEncodingContext(), publishCount);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getPublishCountNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getPublishCountNode() throws UaException {
-    try {
-      return getPublishCountNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getPublishCountNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "PublishCount", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
-  }
-
-  @Override
-  public ServiceCounterDataType getRepublishCount() throws UaException {
-    BaseDataVariableTypeNode node = getRepublishCountNode();
-    return cast(node.getValue().getValue().getValue(), ServiceCounterDataType.class);
-  }
-
-  @Override
-  public void setRepublishCount(ServiceCounterDataType value) throws UaException {
-    BaseDataVariableTypeNode node = getRepublishCountNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
-  }
-
-  @Override
-  public ServiceCounterDataType readRepublishCount() throws UaException {
-    try {
-      return readRepublishCountAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeRepublishCount(ServiceCounterDataType value) throws UaException {
-    try {
-      StatusCode statusCode = writeRepublishCountAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends ServiceCounterDataType> readRepublishCountAsync() {
-    return getRepublishCountNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), ServiceCounterDataType.class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeRepublishCountAsync(
-      ServiceCounterDataType republishCount) {
-    ExtensionObject encoded =
-        ExtensionObject.encode(client.getStaticEncodingContext(), republishCount);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getRepublishCountNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getRepublishCountNode() throws UaException {
-    try {
-      return getRepublishCountNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getRepublishCountNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "RepublishCount", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
-  }
-
-  @Override
-  public ServiceCounterDataType getTransferSubscriptionsCount() throws UaException {
-    BaseDataVariableTypeNode node = getTransferSubscriptionsCountNode();
-    return cast(node.getValue().getValue().getValue(), ServiceCounterDataType.class);
-  }
-
-  @Override
-  public void setTransferSubscriptionsCount(ServiceCounterDataType value) throws UaException {
-    BaseDataVariableTypeNode node = getTransferSubscriptionsCountNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
-  }
-
-  @Override
-  public ServiceCounterDataType readTransferSubscriptionsCount() throws UaException {
-    try {
-      return readTransferSubscriptionsCountAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeTransferSubscriptionsCount(ServiceCounterDataType value) throws UaException {
-    try {
-      StatusCode statusCode = writeTransferSubscriptionsCountAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends ServiceCounterDataType> readTransferSubscriptionsCountAsync() {
-    return getTransferSubscriptionsCountNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), ServiceCounterDataType.class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeTransferSubscriptionsCountAsync(
-      ServiceCounterDataType transferSubscriptionsCount) {
-    ExtensionObject encoded =
-        ExtensionObject.encode(client.getStaticEncodingContext(), transferSubscriptionsCount);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getTransferSubscriptionsCountNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getTransferSubscriptionsCountNode() throws UaException {
-    try {
-      return getTransferSubscriptionsCountNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode>
-      getTransferSubscriptionsCountNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "TransferSubscriptionsCount",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
-  }
-
-  @Override
-  public ServiceCounterDataType getDeleteSubscriptionsCount() throws UaException {
-    BaseDataVariableTypeNode node = getDeleteSubscriptionsCountNode();
-    return cast(node.getValue().getValue().getValue(), ServiceCounterDataType.class);
-  }
-
-  @Override
-  public void setDeleteSubscriptionsCount(ServiceCounterDataType value) throws UaException {
-    BaseDataVariableTypeNode node = getDeleteSubscriptionsCountNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
-  }
-
-  @Override
-  public ServiceCounterDataType readDeleteSubscriptionsCount() throws UaException {
-    try {
-      return readDeleteSubscriptionsCountAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeDeleteSubscriptionsCount(ServiceCounterDataType value) throws UaException {
-    try {
-      StatusCode statusCode = writeDeleteSubscriptionsCountAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends ServiceCounterDataType> readDeleteSubscriptionsCountAsync() {
-    return getDeleteSubscriptionsCountNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), ServiceCounterDataType.class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeDeleteSubscriptionsCountAsync(
-      ServiceCounterDataType deleteSubscriptionsCount) {
-    ExtensionObject encoded =
-        ExtensionObject.encode(client.getStaticEncodingContext(), deleteSubscriptionsCount);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getDeleteSubscriptionsCountNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getDeleteSubscriptionsCountNode() throws UaException {
-    try {
-      return getDeleteSubscriptionsCountNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode>
-      getDeleteSubscriptionsCountNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "DeleteSubscriptionsCount",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
-  }
-
-  @Override
-  public ServiceCounterDataType getAddNodesCount() throws UaException {
-    BaseDataVariableTypeNode node = getAddNodesCountNode();
-    return cast(node.getValue().getValue().getValue(), ServiceCounterDataType.class);
-  }
-
-  @Override
-  public void setAddNodesCount(ServiceCounterDataType value) throws UaException {
-    BaseDataVariableTypeNode node = getAddNodesCountNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
-  }
+  public CompletableFuture<StatusCode> writeWriteCountAsync(
+      @Nullable ServiceCounterDataType value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getWriteCountNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}WriteCount",
+                        value,
+                        ServiceCounterDataType.class,
+                        -1,
+                        null)));
+  }
 
   @Override
-  public ServiceCounterDataType readAddNodesCount() throws UaException {
-    try {
-      return readAddNodesCountAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public UaVariableNode getBrowseCountNode() throws UaException {
+    return ClientNodeSupport.await(getBrowseCountNodeAsync());
   }
 
   @Override
-  public void writeAddNodesCount(ServiceCounterDataType value) throws UaException {
-    try {
-      StatusCode statusCode = writeAddNodesCountAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends UaVariableNode> getBrowseCountNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "BrowseCount",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
   }
-
+
+  @Override
+  public @Nullable ServiceCounterDataType readBrowseCount() throws UaException {
+    return ClientNodeSupport.await(readBrowseCountAsync());
+  }
+
   @Override
-  public CompletableFuture<? extends ServiceCounterDataType> readAddNodesCountAsync() {
-    return getAddNodesCountNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), ServiceCounterDataType.class));
+  public void writeBrowseCount(@Nullable ServiceCounterDataType value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeBrowseCountAsync(value)),
+        "http://opcfoundation.org/UA/}BrowseCount");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable ServiceCounterDataType> readBrowseCountAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getBrowseCountNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}BrowseCount",
+                            true,
+                            ServiceCounterDataType.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable ServiceCounterDataType) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeBrowseCountAsync(
+      @Nullable ServiceCounterDataType value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getBrowseCountNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}BrowseCount",
+                        value,
+                        ServiceCounterDataType.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public UaVariableNode getEndpointUrlNode() throws UaException {
+    return ClientNodeSupport.await(getEndpointUrlNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends UaVariableNode> getEndpointUrlNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "EndpointUrl",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
+  }
+
+  @Override
+  public @Nullable String readEndpointUrl() throws UaException {
+    return ClientNodeSupport.await(readEndpointUrlAsync());
+  }
+
+  @Override
+  public void writeEndpointUrl(@Nullable String value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeEndpointUrlAsync(value)),
+        "http://opcfoundation.org/UA/}EndpointUrl");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable String> readEndpointUrlAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getEndpointUrlNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}EndpointUrl",
+                            true,
+                            String.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable String) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeEndpointUrlAsync(@Nullable String value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getEndpointUrlNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}EndpointUrl",
+                        value,
+                        String.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public UaVariableNode getSessionNameNode() throws UaException {
+    return ClientNodeSupport.await(getSessionNameNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends UaVariableNode> getSessionNameNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "SessionName",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
+  }
+
+  @Override
+  public @Nullable String readSessionName() throws UaException {
+    return ClientNodeSupport.await(readSessionNameAsync());
+  }
+
+  @Override
+  public void writeSessionName(@Nullable String value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeSessionNameAsync(value)),
+        "http://opcfoundation.org/UA/}SessionName");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable String> readSessionNameAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getSessionNameNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}SessionName",
+                            true,
+                            String.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable String) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeSessionNameAsync(@Nullable String value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getSessionNameNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}SessionName",
+                        value,
+                        String.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public UaVariableNode getPublishCountNode() throws UaException {
+    return ClientNodeSupport.await(getPublishCountNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends UaVariableNode> getPublishCountNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "PublishCount",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
+  }
+
+  @Override
+  public @Nullable ServiceCounterDataType readPublishCount() throws UaException {
+    return ClientNodeSupport.await(readPublishCountAsync());
+  }
+
+  @Override
+  public void writePublishCount(@Nullable ServiceCounterDataType value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writePublishCountAsync(value)),
+        "http://opcfoundation.org/UA/}PublishCount");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable ServiceCounterDataType> readPublishCountAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getPublishCountNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}PublishCount",
+                            true,
+                            ServiceCounterDataType.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable ServiceCounterDataType) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writePublishCountAsync(
+      @Nullable ServiceCounterDataType value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getPublishCountNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}PublishCount",
+                        value,
+                        ServiceCounterDataType.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public UaVariableNode getAddNodesCountNode() throws UaException {
+    return ClientNodeSupport.await(getAddNodesCountNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends UaVariableNode> getAddNodesCountNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "AddNodesCount",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
+  }
+
+  @Override
+  public @Nullable ServiceCounterDataType readAddNodesCount() throws UaException {
+    return ClientNodeSupport.await(readAddNodesCountAsync());
+  }
+
+  @Override
+  public void writeAddNodesCount(@Nullable ServiceCounterDataType value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeAddNodesCountAsync(value)),
+        "http://opcfoundation.org/UA/}AddNodesCount");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable ServiceCounterDataType> readAddNodesCountAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getAddNodesCountNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}AddNodesCount",
+                            true,
+                            ServiceCounterDataType.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable ServiceCounterDataType) v)));
   }
 
   @Override
   public CompletableFuture<StatusCode> writeAddNodesCountAsync(
-      ServiceCounterDataType addNodesCount) {
-    ExtensionObject encoded =
-        ExtensionObject.encode(client.getStaticEncodingContext(), addNodesCount);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getAddNodesCountNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+      @Nullable ServiceCounterDataType value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getAddNodesCountNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}AddNodesCount",
+                        value,
+                        ServiceCounterDataType.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public BaseDataVariableTypeNode getAddNodesCountNode() throws UaException {
-    try {
-      return getAddNodesCountNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public UaVariableNode getQueryNextCountNode() throws UaException {
+    return ClientNodeSupport.await(getQueryNextCountNodeAsync());
   }
 
   @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getAddNodesCountNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "AddNodesCount", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
+  public CompletableFuture<? extends UaVariableNode> getQueryNextCountNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "QueryNextCount",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
   }
 
   @Override
-  public ServiceCounterDataType getAddReferencesCount() throws UaException {
-    BaseDataVariableTypeNode node = getAddReferencesCountNode();
-    return cast(node.getValue().getValue().getValue(), ServiceCounterDataType.class);
+  public @Nullable ServiceCounterDataType readQueryNextCount() throws UaException {
+    return ClientNodeSupport.await(readQueryNextCountAsync());
   }
 
   @Override
-  public void setAddReferencesCount(ServiceCounterDataType value) throws UaException {
-    BaseDataVariableTypeNode node = getAddReferencesCountNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
+  public void writeQueryNextCount(@Nullable ServiceCounterDataType value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeQueryNextCountAsync(value)),
+        "http://opcfoundation.org/UA/}QueryNextCount");
   }
 
   @Override
-  public ServiceCounterDataType readAddReferencesCount() throws UaException {
-    try {
-      return readAddReferencesCountAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeAddReferencesCount(ServiceCounterDataType value) throws UaException {
-    try {
-      StatusCode statusCode = writeAddReferencesCountAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends ServiceCounterDataType> readAddReferencesCountAsync() {
-    return getAddReferencesCountNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), ServiceCounterDataType.class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeAddReferencesCountAsync(
-      ServiceCounterDataType addReferencesCount) {
-    ExtensionObject encoded =
-        ExtensionObject.encode(client.getStaticEncodingContext(), addReferencesCount);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getAddReferencesCountNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getAddReferencesCountNode() throws UaException {
-    try {
-      return getAddReferencesCountNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getAddReferencesCountNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "AddReferencesCount",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
-  }
-
-  @Override
-  public ServiceCounterDataType getDeleteNodesCount() throws UaException {
-    BaseDataVariableTypeNode node = getDeleteNodesCountNode();
-    return cast(node.getValue().getValue().getValue(), ServiceCounterDataType.class);
-  }
-
-  @Override
-  public void setDeleteNodesCount(ServiceCounterDataType value) throws UaException {
-    BaseDataVariableTypeNode node = getDeleteNodesCountNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
-  }
-
-  @Override
-  public ServiceCounterDataType readDeleteNodesCount() throws UaException {
-    try {
-      return readDeleteNodesCountAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeDeleteNodesCount(ServiceCounterDataType value) throws UaException {
-    try {
-      StatusCode statusCode = writeDeleteNodesCountAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends ServiceCounterDataType> readDeleteNodesCountAsync() {
-    return getDeleteNodesCountNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), ServiceCounterDataType.class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeDeleteNodesCountAsync(
-      ServiceCounterDataType deleteNodesCount) {
-    ExtensionObject encoded =
-        ExtensionObject.encode(client.getStaticEncodingContext(), deleteNodesCount);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getDeleteNodesCountNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getDeleteNodesCountNode() throws UaException {
-    try {
-      return getDeleteNodesCountNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getDeleteNodesCountNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "DeleteNodesCount",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
-  }
-
-  @Override
-  public ServiceCounterDataType getDeleteReferencesCount() throws UaException {
-    BaseDataVariableTypeNode node = getDeleteReferencesCountNode();
-    return cast(node.getValue().getValue().getValue(), ServiceCounterDataType.class);
-  }
-
-  @Override
-  public void setDeleteReferencesCount(ServiceCounterDataType value) throws UaException {
-    BaseDataVariableTypeNode node = getDeleteReferencesCountNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
-  }
-
-  @Override
-  public ServiceCounterDataType readDeleteReferencesCount() throws UaException {
-    try {
-      return readDeleteReferencesCountAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeDeleteReferencesCount(ServiceCounterDataType value) throws UaException {
-    try {
-      StatusCode statusCode = writeDeleteReferencesCountAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends ServiceCounterDataType> readDeleteReferencesCountAsync() {
-    return getDeleteReferencesCountNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), ServiceCounterDataType.class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeDeleteReferencesCountAsync(
-      ServiceCounterDataType deleteReferencesCount) {
-    ExtensionObject encoded =
-        ExtensionObject.encode(client.getStaticEncodingContext(), deleteReferencesCount);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getDeleteReferencesCountNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getDeleteReferencesCountNode() throws UaException {
-    try {
-      return getDeleteReferencesCountNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getDeleteReferencesCountNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "DeleteReferencesCount",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
-  }
-
-  @Override
-  public ServiceCounterDataType getBrowseCount() throws UaException {
-    BaseDataVariableTypeNode node = getBrowseCountNode();
-    return cast(node.getValue().getValue().getValue(), ServiceCounterDataType.class);
-  }
-
-  @Override
-  public void setBrowseCount(ServiceCounterDataType value) throws UaException {
-    BaseDataVariableTypeNode node = getBrowseCountNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
-  }
-
-  @Override
-  public ServiceCounterDataType readBrowseCount() throws UaException {
-    try {
-      return readBrowseCountAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeBrowseCount(ServiceCounterDataType value) throws UaException {
-    try {
-      StatusCode statusCode = writeBrowseCountAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends ServiceCounterDataType> readBrowseCountAsync() {
-    return getBrowseCountNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), ServiceCounterDataType.class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeBrowseCountAsync(ServiceCounterDataType browseCount) {
-    ExtensionObject encoded =
-        ExtensionObject.encode(client.getStaticEncodingContext(), browseCount);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getBrowseCountNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getBrowseCountNode() throws UaException {
-    try {
-      return getBrowseCountNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getBrowseCountNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "BrowseCount", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
-  }
-
-  @Override
-  public ServiceCounterDataType getBrowseNextCount() throws UaException {
-    BaseDataVariableTypeNode node = getBrowseNextCountNode();
-    return cast(node.getValue().getValue().getValue(), ServiceCounterDataType.class);
-  }
-
-  @Override
-  public void setBrowseNextCount(ServiceCounterDataType value) throws UaException {
-    BaseDataVariableTypeNode node = getBrowseNextCountNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
-  }
-
-  @Override
-  public ServiceCounterDataType readBrowseNextCount() throws UaException {
-    try {
-      return readBrowseNextCountAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeBrowseNextCount(ServiceCounterDataType value) throws UaException {
-    try {
-      StatusCode statusCode = writeBrowseNextCountAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends ServiceCounterDataType> readBrowseNextCountAsync() {
-    return getBrowseNextCountNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), ServiceCounterDataType.class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeBrowseNextCountAsync(
-      ServiceCounterDataType browseNextCount) {
-    ExtensionObject encoded =
-        ExtensionObject.encode(client.getStaticEncodingContext(), browseNextCount);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getBrowseNextCountNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getBrowseNextCountNode() throws UaException {
-    try {
-      return getBrowseNextCountNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getBrowseNextCountNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "BrowseNextCount", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
-  }
-
-  @Override
-  public ServiceCounterDataType getTranslateBrowsePathsToNodeIdsCount() throws UaException {
-    BaseDataVariableTypeNode node = getTranslateBrowsePathsToNodeIdsCountNode();
-    return cast(node.getValue().getValue().getValue(), ServiceCounterDataType.class);
-  }
-
-  @Override
-  public void setTranslateBrowsePathsToNodeIdsCount(ServiceCounterDataType value)
-      throws UaException {
-    BaseDataVariableTypeNode node = getTranslateBrowsePathsToNodeIdsCountNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
-  }
-
-  @Override
-  public ServiceCounterDataType readTranslateBrowsePathsToNodeIdsCount() throws UaException {
-    try {
-      return readTranslateBrowsePathsToNodeIdsCountAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeTranslateBrowsePathsToNodeIdsCount(ServiceCounterDataType value)
-      throws UaException {
-    try {
-      writeTranslateBrowsePathsToNodeIdsCountAsync(value).get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends ServiceCounterDataType>
-      readTranslateBrowsePathsToNodeIdsCountAsync() {
-    return getTranslateBrowsePathsToNodeIdsCountNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), ServiceCounterDataType.class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeTranslateBrowsePathsToNodeIdsCountAsync(
-      ServiceCounterDataType translateBrowsePathsToNodeIdsCount) {
-    ExtensionObject encoded =
-        ExtensionObject.encode(
-            client.getStaticEncodingContext(), translateBrowsePathsToNodeIdsCount);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getTranslateBrowsePathsToNodeIdsCountNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getTranslateBrowsePathsToNodeIdsCountNode() throws UaException {
-    try {
-      return getTranslateBrowsePathsToNodeIdsCountNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode>
-      getTranslateBrowsePathsToNodeIdsCountNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "TranslateBrowsePathsToNodeIdsCount",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
-  }
-
-  @Override
-  public ServiceCounterDataType getQueryFirstCount() throws UaException {
-    BaseDataVariableTypeNode node = getQueryFirstCountNode();
-    return cast(node.getValue().getValue().getValue(), ServiceCounterDataType.class);
-  }
-
-  @Override
-  public void setQueryFirstCount(ServiceCounterDataType value) throws UaException {
-    BaseDataVariableTypeNode node = getQueryFirstCountNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
-  }
-
-  @Override
-  public ServiceCounterDataType readQueryFirstCount() throws UaException {
-    try {
-      return readQueryFirstCountAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeQueryFirstCount(ServiceCounterDataType value) throws UaException {
-    try {
-      StatusCode statusCode = writeQueryFirstCountAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends ServiceCounterDataType> readQueryFirstCountAsync() {
-    return getQueryFirstCountNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), ServiceCounterDataType.class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeQueryFirstCountAsync(
-      ServiceCounterDataType queryFirstCount) {
-    ExtensionObject encoded =
-        ExtensionObject.encode(client.getStaticEncodingContext(), queryFirstCount);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getQueryFirstCountNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getQueryFirstCountNode() throws UaException {
-    try {
-      return getQueryFirstCountNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getQueryFirstCountNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "QueryFirstCount", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
-  }
-
-  @Override
-  public ServiceCounterDataType getQueryNextCount() throws UaException {
-    BaseDataVariableTypeNode node = getQueryNextCountNode();
-    return cast(node.getValue().getValue().getValue(), ServiceCounterDataType.class);
-  }
-
-  @Override
-  public void setQueryNextCount(ServiceCounterDataType value) throws UaException {
-    BaseDataVariableTypeNode node = getQueryNextCountNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
-  }
-
-  @Override
-  public ServiceCounterDataType readQueryNextCount() throws UaException {
-    try {
-      return readQueryNextCountAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeQueryNextCount(ServiceCounterDataType value) throws UaException {
-    try {
-      StatusCode statusCode = writeQueryNextCountAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends ServiceCounterDataType> readQueryNextCountAsync() {
-    return getQueryNextCountNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), ServiceCounterDataType.class));
+  public CompletableFuture<? extends @Nullable ServiceCounterDataType> readQueryNextCountAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getQueryNextCountNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}QueryNextCount",
+                            true,
+                            ServiceCounterDataType.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable ServiceCounterDataType) v)));
   }
 
   @Override
   public CompletableFuture<StatusCode> writeQueryNextCountAsync(
-      ServiceCounterDataType queryNextCount) {
-    ExtensionObject encoded =
-        ExtensionObject.encode(client.getStaticEncodingContext(), queryNextCount);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getQueryNextCountNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+      @Nullable ServiceCounterDataType value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getQueryNextCountNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}QueryNextCount",
+                        value,
+                        ServiceCounterDataType.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public BaseDataVariableTypeNode getQueryNextCountNode() throws UaException {
-    try {
-      return getQueryNextCountNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public UaVariableNode getRepublishCountNode() throws UaException {
+    return ClientNodeSupport.await(getRepublishCountNodeAsync());
   }
 
   @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getQueryNextCountNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "QueryNextCount", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
+  public CompletableFuture<? extends UaVariableNode> getRepublishCountNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "RepublishCount",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
   }
 
   @Override
-  public ServiceCounterDataType getRegisterNodesCount() throws UaException {
-    BaseDataVariableTypeNode node = getRegisterNodesCountNode();
-    return cast(node.getValue().getValue().getValue(), ServiceCounterDataType.class);
+  public @Nullable ServiceCounterDataType readRepublishCount() throws UaException {
+    return ClientNodeSupport.await(readRepublishCountAsync());
   }
 
   @Override
-  public void setRegisterNodesCount(ServiceCounterDataType value) throws UaException {
-    BaseDataVariableTypeNode node = getRegisterNodesCountNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
+  public void writeRepublishCount(@Nullable ServiceCounterDataType value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeRepublishCountAsync(value)),
+        "http://opcfoundation.org/UA/}RepublishCount");
   }
 
   @Override
-  public ServiceCounterDataType readRegisterNodesCount() throws UaException {
-    try {
-      return readRegisterNodesCountAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable ServiceCounterDataType> readRepublishCountAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getRepublishCountNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}RepublishCount",
+                            true,
+                            ServiceCounterDataType.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable ServiceCounterDataType) v)));
   }
 
   @Override
-  public void writeRegisterNodesCount(ServiceCounterDataType value) throws UaException {
-    try {
-      StatusCode statusCode = writeRegisterNodesCountAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<StatusCode> writeRepublishCountAsync(
+      @Nullable ServiceCounterDataType value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getRepublishCountNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}RepublishCount",
+                        value,
+                        ServiceCounterDataType.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public CompletableFuture<? extends ServiceCounterDataType> readRegisterNodesCountAsync() {
-    return getRegisterNodesCountNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), ServiceCounterDataType.class));
+  public UaVariableNode getBrowseNextCountNode() throws UaException {
+    return ClientNodeSupport.await(getBrowseNextCountNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends UaVariableNode> getBrowseNextCountNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "BrowseNextCount",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
+  }
+
+  @Override
+  public @Nullable ServiceCounterDataType readBrowseNextCount() throws UaException {
+    return ClientNodeSupport.await(readBrowseNextCountAsync());
+  }
+
+  @Override
+  public void writeBrowseNextCount(@Nullable ServiceCounterDataType value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeBrowseNextCountAsync(value)),
+        "http://opcfoundation.org/UA/}BrowseNextCount");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable ServiceCounterDataType> readBrowseNextCountAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getBrowseNextCountNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}BrowseNextCount",
+                            true,
+                            ServiceCounterDataType.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable ServiceCounterDataType) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeBrowseNextCountAsync(
+      @Nullable ServiceCounterDataType value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getBrowseNextCountNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}BrowseNextCount",
+                        value,
+                        ServiceCounterDataType.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public UaVariableNode getQueryFirstCountNode() throws UaException {
+    return ClientNodeSupport.await(getQueryFirstCountNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends UaVariableNode> getQueryFirstCountNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "QueryFirstCount",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
+  }
+
+  @Override
+  public @Nullable ServiceCounterDataType readQueryFirstCount() throws UaException {
+    return ClientNodeSupport.await(readQueryFirstCountAsync());
+  }
+
+  @Override
+  public void writeQueryFirstCount(@Nullable ServiceCounterDataType value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeQueryFirstCountAsync(value)),
+        "http://opcfoundation.org/UA/}QueryFirstCount");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable ServiceCounterDataType> readQueryFirstCountAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getQueryFirstCountNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}QueryFirstCount",
+                            true,
+                            ServiceCounterDataType.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable ServiceCounterDataType) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeQueryFirstCountAsync(
+      @Nullable ServiceCounterDataType value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getQueryFirstCountNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}QueryFirstCount",
+                        value,
+                        ServiceCounterDataType.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public UaVariableNode getDeleteNodesCountNode() throws UaException {
+    return ClientNodeSupport.await(getDeleteNodesCountNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends UaVariableNode> getDeleteNodesCountNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "DeleteNodesCount",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
+  }
+
+  @Override
+  public @Nullable ServiceCounterDataType readDeleteNodesCount() throws UaException {
+    return ClientNodeSupport.await(readDeleteNodesCountAsync());
+  }
+
+  @Override
+  public void writeDeleteNodesCount(@Nullable ServiceCounterDataType value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeDeleteNodesCountAsync(value)),
+        "http://opcfoundation.org/UA/}DeleteNodesCount");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable ServiceCounterDataType> readDeleteNodesCountAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getDeleteNodesCountNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}DeleteNodesCount",
+                            true,
+                            ServiceCounterDataType.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable ServiceCounterDataType) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeDeleteNodesCountAsync(
+      @Nullable ServiceCounterDataType value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getDeleteNodesCountNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}DeleteNodesCount",
+                        value,
+                        ServiceCounterDataType.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public UaVariableNode getHistoryReadCountNode() throws UaException {
+    return ClientNodeSupport.await(getHistoryReadCountNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends UaVariableNode> getHistoryReadCountNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "HistoryReadCount",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
+  }
+
+  @Override
+  public @Nullable ServiceCounterDataType readHistoryReadCount() throws UaException {
+    return ClientNodeSupport.await(readHistoryReadCountAsync());
+  }
+
+  @Override
+  public void writeHistoryReadCount(@Nullable ServiceCounterDataType value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeHistoryReadCountAsync(value)),
+        "http://opcfoundation.org/UA/}HistoryReadCount");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable ServiceCounterDataType> readHistoryReadCountAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getHistoryReadCountNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}HistoryReadCount",
+                            true,
+                            ServiceCounterDataType.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable ServiceCounterDataType) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeHistoryReadCountAsync(
+      @Nullable ServiceCounterDataType value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getHistoryReadCountNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}HistoryReadCount",
+                        value,
+                        ServiceCounterDataType.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public UaVariableNode getClientDescriptionNode() throws UaException {
+    return ClientNodeSupport.await(getClientDescriptionNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends UaVariableNode> getClientDescriptionNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "ClientDescription",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
+  }
+
+  @Override
+  public @Nullable ApplicationDescription readClientDescription() throws UaException {
+    return ClientNodeSupport.await(readClientDescriptionAsync());
+  }
+
+  @Override
+  public void writeClientDescription(@Nullable ApplicationDescription value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeClientDescriptionAsync(value)),
+        "http://opcfoundation.org/UA/}ClientDescription");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable ApplicationDescription>
+      readClientDescriptionAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getClientDescriptionNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}ClientDescription",
+                            true,
+                            ApplicationDescription.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable ApplicationDescription) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeClientDescriptionAsync(
+      @Nullable ApplicationDescription value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getClientDescriptionNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}ClientDescription",
+                        value,
+                        ApplicationDescription.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public UaVariableNode getTotalRequestCountNode() throws UaException {
+    return ClientNodeSupport.await(getTotalRequestCountNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends UaVariableNode> getTotalRequestCountNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "TotalRequestCount",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
+  }
+
+  @Override
+  public @Nullable ServiceCounterDataType readTotalRequestCount() throws UaException {
+    return ClientNodeSupport.await(readTotalRequestCountAsync());
+  }
+
+  @Override
+  public void writeTotalRequestCount(@Nullable ServiceCounterDataType value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeTotalRequestCountAsync(value)),
+        "http://opcfoundation.org/UA/}TotalRequestCount");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable ServiceCounterDataType>
+      readTotalRequestCountAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getTotalRequestCountNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}TotalRequestCount",
+                            true,
+                            ServiceCounterDataType.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable ServiceCounterDataType) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeTotalRequestCountAsync(
+      @Nullable ServiceCounterDataType value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getTotalRequestCountNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}TotalRequestCount",
+                        value,
+                        ServiceCounterDataType.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public UaVariableNode getAddReferencesCountNode() throws UaException {
+    return ClientNodeSupport.await(getAddReferencesCountNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends UaVariableNode> getAddReferencesCountNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "AddReferencesCount",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
+  }
+
+  @Override
+  public @Nullable ServiceCounterDataType readAddReferencesCount() throws UaException {
+    return ClientNodeSupport.await(readAddReferencesCountAsync());
+  }
+
+  @Override
+  public void writeAddReferencesCount(@Nullable ServiceCounterDataType value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeAddReferencesCountAsync(value)),
+        "http://opcfoundation.org/UA/}AddReferencesCount");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable ServiceCounterDataType>
+      readAddReferencesCountAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getAddReferencesCountNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}AddReferencesCount",
+                            true,
+                            ServiceCounterDataType.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable ServiceCounterDataType) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeAddReferencesCountAsync(
+      @Nullable ServiceCounterDataType value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getAddReferencesCountNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}AddReferencesCount",
+                        value,
+                        ServiceCounterDataType.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public UaVariableNode getHistoryUpdateCountNode() throws UaException {
+    return ClientNodeSupport.await(getHistoryUpdateCountNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends UaVariableNode> getHistoryUpdateCountNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "HistoryUpdateCount",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
+  }
+
+  @Override
+  public @Nullable ServiceCounterDataType readHistoryUpdateCount() throws UaException {
+    return ClientNodeSupport.await(readHistoryUpdateCountAsync());
+  }
+
+  @Override
+  public void writeHistoryUpdateCount(@Nullable ServiceCounterDataType value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeHistoryUpdateCountAsync(value)),
+        "http://opcfoundation.org/UA/}HistoryUpdateCount");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable ServiceCounterDataType>
+      readHistoryUpdateCountAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getHistoryUpdateCountNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}HistoryUpdateCount",
+                            true,
+                            ServiceCounterDataType.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable ServiceCounterDataType) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeHistoryUpdateCountAsync(
+      @Nullable ServiceCounterDataType value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getHistoryUpdateCountNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}HistoryUpdateCount",
+                        value,
+                        ServiceCounterDataType.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public UaVariableNode getRegisterNodesCountNode() throws UaException {
+    return ClientNodeSupport.await(getRegisterNodesCountNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends UaVariableNode> getRegisterNodesCountNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "RegisterNodesCount",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
+  }
+
+  @Override
+  public @Nullable ServiceCounterDataType readRegisterNodesCount() throws UaException {
+    return ClientNodeSupport.await(readRegisterNodesCountAsync());
+  }
+
+  @Override
+  public void writeRegisterNodesCount(@Nullable ServiceCounterDataType value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeRegisterNodesCountAsync(value)),
+        "http://opcfoundation.org/UA/}RegisterNodesCount");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable ServiceCounterDataType>
+      readRegisterNodesCountAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getRegisterNodesCountNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}RegisterNodesCount",
+                            true,
+                            ServiceCounterDataType.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable ServiceCounterDataType) v)));
   }
 
   @Override
   public CompletableFuture<StatusCode> writeRegisterNodesCountAsync(
-      ServiceCounterDataType registerNodesCount) {
-    ExtensionObject encoded =
-        ExtensionObject.encode(client.getStaticEncodingContext(), registerNodesCount);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getRegisterNodesCountNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+      @Nullable ServiceCounterDataType value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getRegisterNodesCountNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}RegisterNodesCount",
+                        value,
+                        ServiceCounterDataType.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public BaseDataVariableTypeNode getRegisterNodesCountNode() throws UaException {
-    try {
-      return getRegisterNodesCountNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public UaVariableNode getSetTriggeringCountNode() throws UaException {
+    return ClientNodeSupport.await(getSetTriggeringCountNodeAsync());
   }
 
   @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getRegisterNodesCountNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "RegisterNodesCount",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
+  public CompletableFuture<? extends UaVariableNode> getSetTriggeringCountNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "SetTriggeringCount",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
   }
 
   @Override
-  public ServiceCounterDataType getUnregisterNodesCount() throws UaException {
-    BaseDataVariableTypeNode node = getUnregisterNodesCountNode();
-    return cast(node.getValue().getValue().getValue(), ServiceCounterDataType.class);
+  public @Nullable ServiceCounterDataType readSetTriggeringCount() throws UaException {
+    return ClientNodeSupport.await(readSetTriggeringCountAsync());
   }
 
   @Override
-  public void setUnregisterNodesCount(ServiceCounterDataType value) throws UaException {
-    BaseDataVariableTypeNode node = getUnregisterNodesCountNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
+  public void writeSetTriggeringCount(@Nullable ServiceCounterDataType value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeSetTriggeringCountAsync(value)),
+        "http://opcfoundation.org/UA/}SetTriggeringCount");
   }
 
   @Override
-  public ServiceCounterDataType readUnregisterNodesCount() throws UaException {
-    try {
-      return readUnregisterNodesCountAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable ServiceCounterDataType>
+      readSetTriggeringCountAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getSetTriggeringCountNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}SetTriggeringCount",
+                            true,
+                            ServiceCounterDataType.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable ServiceCounterDataType) v)));
   }
 
   @Override
-  public void writeUnregisterNodesCount(ServiceCounterDataType value) throws UaException {
-    try {
-      StatusCode statusCode = writeUnregisterNodesCountAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<StatusCode> writeSetTriggeringCountAsync(
+      @Nullable ServiceCounterDataType value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getSetTriggeringCountNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}SetTriggeringCount",
+                        value,
+                        ServiceCounterDataType.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public CompletableFuture<? extends ServiceCounterDataType> readUnregisterNodesCountAsync() {
-    return getUnregisterNodesCountNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), ServiceCounterDataType.class));
+  public UaVariableNode getActualSessionTimeoutNode() throws UaException {
+    return ClientNodeSupport.await(getActualSessionTimeoutNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends UaVariableNode> getActualSessionTimeoutNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "ActualSessionTimeout",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
+  }
+
+  @Override
+  public @Nullable Double readActualSessionTimeout() throws UaException {
+    return ClientNodeSupport.await(readActualSessionTimeoutAsync());
+  }
+
+  @Override
+  public void writeActualSessionTimeout(@Nullable Double value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeActualSessionTimeoutAsync(value)),
+        "http://opcfoundation.org/UA/}ActualSessionTimeout");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable Double> readActualSessionTimeoutAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getActualSessionTimeoutNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}ActualSessionTimeout",
+                            true,
+                            Double.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable Double) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeActualSessionTimeoutAsync(@Nullable Double value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getActualSessionTimeoutNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}ActualSessionTimeout",
+                        value,
+                        Double.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public UaVariableNode getClientConnectionTimeNode() throws UaException {
+    return ClientNodeSupport.await(getClientConnectionTimeNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends UaVariableNode> getClientConnectionTimeNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "ClientConnectionTime",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
+  }
+
+  @Override
+  public @Nullable DateTime readClientConnectionTime() throws UaException {
+    return ClientNodeSupport.await(readClientConnectionTimeAsync());
+  }
+
+  @Override
+  public void writeClientConnectionTime(@Nullable DateTime value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeClientConnectionTimeAsync(value)),
+        "http://opcfoundation.org/UA/}ClientConnectionTime");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable DateTime> readClientConnectionTimeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getClientConnectionTimeNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}ClientConnectionTime",
+                            true,
+                            DateTime.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable DateTime) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeClientConnectionTimeAsync(@Nullable DateTime value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getClientConnectionTimeNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}ClientConnectionTime",
+                        value,
+                        DateTime.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public UaVariableNode getUnregisterNodesCountNode() throws UaException {
+    return ClientNodeSupport.await(getUnregisterNodesCountNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends UaVariableNode> getUnregisterNodesCountNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "UnregisterNodesCount",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
+  }
+
+  @Override
+  public @Nullable ServiceCounterDataType readUnregisterNodesCount() throws UaException {
+    return ClientNodeSupport.await(readUnregisterNodesCountAsync());
+  }
+
+  @Override
+  public void writeUnregisterNodesCount(@Nullable ServiceCounterDataType value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeUnregisterNodesCountAsync(value)),
+        "http://opcfoundation.org/UA/}UnregisterNodesCount");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable ServiceCounterDataType>
+      readUnregisterNodesCountAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getUnregisterNodesCountNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}UnregisterNodesCount",
+                            true,
+                            ServiceCounterDataType.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable ServiceCounterDataType) v)));
   }
 
   @Override
   public CompletableFuture<StatusCode> writeUnregisterNodesCountAsync(
-      ServiceCounterDataType unregisterNodesCount) {
-    ExtensionObject encoded =
-        ExtensionObject.encode(client.getStaticEncodingContext(), unregisterNodesCount);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getUnregisterNodesCountNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+      @Nullable ServiceCounterDataType value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getUnregisterNodesCountNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}UnregisterNodesCount",
+                        value,
+                        ServiceCounterDataType.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public BaseDataVariableTypeNode getUnregisterNodesCountNode() throws UaException {
-    try {
-      return getUnregisterNodesCountNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public UaVariableNode getClientLastContactTimeNode() throws UaException {
+    return ClientNodeSupport.await(getClientLastContactTimeNodeAsync());
   }
 
   @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getUnregisterNodesCountNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "UnregisterNodesCount",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
+  public CompletableFuture<? extends UaVariableNode> getClientLastContactTimeNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "ClientLastContactTime",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
+  }
+
+  @Override
+  public @Nullable DateTime readClientLastContactTime() throws UaException {
+    return ClientNodeSupport.await(readClientLastContactTimeAsync());
+  }
+
+  @Override
+  public void writeClientLastContactTime(@Nullable DateTime value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeClientLastContactTimeAsync(value)),
+        "http://opcfoundation.org/UA/}ClientLastContactTime");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable DateTime> readClientLastContactTimeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getClientLastContactTimeNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}ClientLastContactTime",
+                            true,
+                            DateTime.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable DateTime) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeClientLastContactTimeAsync(@Nullable DateTime value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getClientLastContactTimeNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}ClientLastContactTime",
+                        value,
+                        DateTime.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public UaVariableNode getDeleteReferencesCountNode() throws UaException {
+    return ClientNodeSupport.await(getDeleteReferencesCountNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends UaVariableNode> getDeleteReferencesCountNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "DeleteReferencesCount",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
+  }
+
+  @Override
+  public @Nullable ServiceCounterDataType readDeleteReferencesCount() throws UaException {
+    return ClientNodeSupport.await(readDeleteReferencesCountAsync());
+  }
+
+  @Override
+  public void writeDeleteReferencesCount(@Nullable ServiceCounterDataType value)
+      throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeDeleteReferencesCountAsync(value)),
+        "http://opcfoundation.org/UA/}DeleteReferencesCount");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable ServiceCounterDataType>
+      readDeleteReferencesCountAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getDeleteReferencesCountNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}DeleteReferencesCount",
+                            true,
+                            ServiceCounterDataType.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable ServiceCounterDataType) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeDeleteReferencesCountAsync(
+      @Nullable ServiceCounterDataType value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getDeleteReferencesCountNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}DeleteReferencesCount",
+                        value,
+                        ServiceCounterDataType.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public UaVariableNode getMaxResponseMessageSizeNode() throws UaException {
+    return ClientNodeSupport.await(getMaxResponseMessageSizeNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends UaVariableNode> getMaxResponseMessageSizeNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "MaxResponseMessageSize",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
+  }
+
+  @Override
+  public @Nullable UInteger readMaxResponseMessageSize() throws UaException {
+    return ClientNodeSupport.await(readMaxResponseMessageSizeAsync());
+  }
+
+  @Override
+  public void writeMaxResponseMessageSize(@Nullable UInteger value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeMaxResponseMessageSizeAsync(value)),
+        "http://opcfoundation.org/UA/}MaxResponseMessageSize");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable UInteger> readMaxResponseMessageSizeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getMaxResponseMessageSizeNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}MaxResponseMessageSize",
+                            true,
+                            UInteger.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable UInteger) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeMaxResponseMessageSizeAsync(@Nullable UInteger value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getMaxResponseMessageSizeNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}MaxResponseMessageSize",
+                        value,
+                        UInteger.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public UaVariableNode getSetMonitoringModeCountNode() throws UaException {
+    return ClientNodeSupport.await(getSetMonitoringModeCountNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends UaVariableNode> getSetMonitoringModeCountNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "SetMonitoringModeCount",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
+  }
+
+  @Override
+  public @Nullable ServiceCounterDataType readSetMonitoringModeCount() throws UaException {
+    return ClientNodeSupport.await(readSetMonitoringModeCountAsync());
+  }
+
+  @Override
+  public void writeSetMonitoringModeCount(@Nullable ServiceCounterDataType value)
+      throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeSetMonitoringModeCountAsync(value)),
+        "http://opcfoundation.org/UA/}SetMonitoringModeCount");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable ServiceCounterDataType>
+      readSetMonitoringModeCountAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getSetMonitoringModeCountNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}SetMonitoringModeCount",
+                            true,
+                            ServiceCounterDataType.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable ServiceCounterDataType) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeSetMonitoringModeCountAsync(
+      @Nullable ServiceCounterDataType value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getSetMonitoringModeCountNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}SetMonitoringModeCount",
+                        value,
+                        ServiceCounterDataType.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public UaVariableNode getSetPublishingModeCountNode() throws UaException {
+    return ClientNodeSupport.await(getSetPublishingModeCountNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends UaVariableNode> getSetPublishingModeCountNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "SetPublishingModeCount",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
+  }
+
+  @Override
+  public @Nullable ServiceCounterDataType readSetPublishingModeCount() throws UaException {
+    return ClientNodeSupport.await(readSetPublishingModeCountAsync());
+  }
+
+  @Override
+  public void writeSetPublishingModeCount(@Nullable ServiceCounterDataType value)
+      throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeSetPublishingModeCountAsync(value)),
+        "http://opcfoundation.org/UA/}SetPublishingModeCount");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable ServiceCounterDataType>
+      readSetPublishingModeCountAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getSetPublishingModeCountNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}SetPublishingModeCount",
+                            true,
+                            ServiceCounterDataType.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable ServiceCounterDataType) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeSetPublishingModeCountAsync(
+      @Nullable ServiceCounterDataType value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getSetPublishingModeCountNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}SetPublishingModeCount",
+                        value,
+                        ServiceCounterDataType.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public UaVariableNode getCreateSubscriptionCountNode() throws UaException {
+    return ClientNodeSupport.await(getCreateSubscriptionCountNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends UaVariableNode> getCreateSubscriptionCountNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "CreateSubscriptionCount",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
+  }
+
+  @Override
+  public @Nullable ServiceCounterDataType readCreateSubscriptionCount() throws UaException {
+    return ClientNodeSupport.await(readCreateSubscriptionCountAsync());
+  }
+
+  @Override
+  public void writeCreateSubscriptionCount(@Nullable ServiceCounterDataType value)
+      throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeCreateSubscriptionCountAsync(value)),
+        "http://opcfoundation.org/UA/}CreateSubscriptionCount");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable ServiceCounterDataType>
+      readCreateSubscriptionCountAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getCreateSubscriptionCountNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}CreateSubscriptionCount",
+                            true,
+                            ServiceCounterDataType.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable ServiceCounterDataType) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeCreateSubscriptionCountAsync(
+      @Nullable ServiceCounterDataType value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getCreateSubscriptionCountNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}CreateSubscriptionCount",
+                        value,
+                        ServiceCounterDataType.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public UaVariableNode getModifySubscriptionCountNode() throws UaException {
+    return ClientNodeSupport.await(getModifySubscriptionCountNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends UaVariableNode> getModifySubscriptionCountNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "ModifySubscriptionCount",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
+  }
+
+  @Override
+  public @Nullable ServiceCounterDataType readModifySubscriptionCount() throws UaException {
+    return ClientNodeSupport.await(readModifySubscriptionCountAsync());
+  }
+
+  @Override
+  public void writeModifySubscriptionCount(@Nullable ServiceCounterDataType value)
+      throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeModifySubscriptionCountAsync(value)),
+        "http://opcfoundation.org/UA/}ModifySubscriptionCount");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable ServiceCounterDataType>
+      readModifySubscriptionCountAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getModifySubscriptionCountNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}ModifySubscriptionCount",
+                            true,
+                            ServiceCounterDataType.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable ServiceCounterDataType) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeModifySubscriptionCountAsync(
+      @Nullable ServiceCounterDataType value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getModifySubscriptionCountNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}ModifySubscriptionCount",
+                        value,
+                        ServiceCounterDataType.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public UaVariableNode getDeleteSubscriptionsCountNode() throws UaException {
+    return ClientNodeSupport.await(getDeleteSubscriptionsCountNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends UaVariableNode> getDeleteSubscriptionsCountNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "DeleteSubscriptionsCount",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
+  }
+
+  @Override
+  public @Nullable ServiceCounterDataType readDeleteSubscriptionsCount() throws UaException {
+    return ClientNodeSupport.await(readDeleteSubscriptionsCountAsync());
+  }
+
+  @Override
+  public void writeDeleteSubscriptionsCount(@Nullable ServiceCounterDataType value)
+      throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeDeleteSubscriptionsCountAsync(value)),
+        "http://opcfoundation.org/UA/}DeleteSubscriptionsCount");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable ServiceCounterDataType>
+      readDeleteSubscriptionsCountAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getDeleteSubscriptionsCountNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}DeleteSubscriptionsCount",
+                            true,
+                            ServiceCounterDataType.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable ServiceCounterDataType) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeDeleteSubscriptionsCountAsync(
+      @Nullable ServiceCounterDataType value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getDeleteSubscriptionsCountNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}DeleteSubscriptionsCount",
+                        value,
+                        ServiceCounterDataType.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public UaVariableNode getUnauthorizedRequestCountNode() throws UaException {
+    return ClientNodeSupport.await(getUnauthorizedRequestCountNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends UaVariableNode> getUnauthorizedRequestCountNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "UnauthorizedRequestCount",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
+  }
+
+  @Override
+  public @Nullable UInteger readUnauthorizedRequestCount() throws UaException {
+    return ClientNodeSupport.await(readUnauthorizedRequestCountAsync());
+  }
+
+  @Override
+  public void writeUnauthorizedRequestCount(@Nullable UInteger value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeUnauthorizedRequestCountAsync(value)),
+        "http://opcfoundation.org/UA/}UnauthorizedRequestCount");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable UInteger> readUnauthorizedRequestCountAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getUnauthorizedRequestCountNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}UnauthorizedRequestCount",
+                            true,
+                            UInteger.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable UInteger) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeUnauthorizedRequestCountAsync(
+      @Nullable UInteger value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getUnauthorizedRequestCountNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}UnauthorizedRequestCount",
+                        value,
+                        UInteger.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public UaVariableNode getCreateMonitoredItemsCountNode() throws UaException {
+    return ClientNodeSupport.await(getCreateMonitoredItemsCountNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends UaVariableNode> getCreateMonitoredItemsCountNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "CreateMonitoredItemsCount",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
+  }
+
+  @Override
+  public @Nullable ServiceCounterDataType readCreateMonitoredItemsCount() throws UaException {
+    return ClientNodeSupport.await(readCreateMonitoredItemsCountAsync());
+  }
+
+  @Override
+  public void writeCreateMonitoredItemsCount(@Nullable ServiceCounterDataType value)
+      throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeCreateMonitoredItemsCountAsync(value)),
+        "http://opcfoundation.org/UA/}CreateMonitoredItemsCount");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable ServiceCounterDataType>
+      readCreateMonitoredItemsCountAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getCreateMonitoredItemsCountNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}CreateMonitoredItemsCount",
+                            true,
+                            ServiceCounterDataType.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable ServiceCounterDataType) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeCreateMonitoredItemsCountAsync(
+      @Nullable ServiceCounterDataType value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getCreateMonitoredItemsCountNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}CreateMonitoredItemsCount",
+                        value,
+                        ServiceCounterDataType.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public UaVariableNode getCurrentSubscriptionsCountNode() throws UaException {
+    return ClientNodeSupport.await(getCurrentSubscriptionsCountNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends UaVariableNode> getCurrentSubscriptionsCountNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "CurrentSubscriptionsCount",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
+  }
+
+  @Override
+  public @Nullable UInteger readCurrentSubscriptionsCount() throws UaException {
+    return ClientNodeSupport.await(readCurrentSubscriptionsCountAsync());
+  }
+
+  @Override
+  public void writeCurrentSubscriptionsCount(@Nullable UInteger value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeCurrentSubscriptionsCountAsync(value)),
+        "http://opcfoundation.org/UA/}CurrentSubscriptionsCount");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable UInteger> readCurrentSubscriptionsCountAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getCurrentSubscriptionsCountNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}CurrentSubscriptionsCount",
+                            true,
+                            UInteger.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable UInteger) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeCurrentSubscriptionsCountAsync(
+      @Nullable UInteger value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getCurrentSubscriptionsCountNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}CurrentSubscriptionsCount",
+                        value,
+                        UInteger.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public UaVariableNode getDeleteMonitoredItemsCountNode() throws UaException {
+    return ClientNodeSupport.await(getDeleteMonitoredItemsCountNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends UaVariableNode> getDeleteMonitoredItemsCountNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "DeleteMonitoredItemsCount",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
+  }
+
+  @Override
+  public @Nullable ServiceCounterDataType readDeleteMonitoredItemsCount() throws UaException {
+    return ClientNodeSupport.await(readDeleteMonitoredItemsCountAsync());
+  }
+
+  @Override
+  public void writeDeleteMonitoredItemsCount(@Nullable ServiceCounterDataType value)
+      throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeDeleteMonitoredItemsCountAsync(value)),
+        "http://opcfoundation.org/UA/}DeleteMonitoredItemsCount");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable ServiceCounterDataType>
+      readDeleteMonitoredItemsCountAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getDeleteMonitoredItemsCountNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}DeleteMonitoredItemsCount",
+                            true,
+                            ServiceCounterDataType.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable ServiceCounterDataType) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeDeleteMonitoredItemsCountAsync(
+      @Nullable ServiceCounterDataType value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getDeleteMonitoredItemsCountNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}DeleteMonitoredItemsCount",
+                        value,
+                        ServiceCounterDataType.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public UaVariableNode getModifyMonitoredItemsCountNode() throws UaException {
+    return ClientNodeSupport.await(getModifyMonitoredItemsCountNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends UaVariableNode> getModifyMonitoredItemsCountNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "ModifyMonitoredItemsCount",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
+  }
+
+  @Override
+  public @Nullable ServiceCounterDataType readModifyMonitoredItemsCount() throws UaException {
+    return ClientNodeSupport.await(readModifyMonitoredItemsCountAsync());
+  }
+
+  @Override
+  public void writeModifyMonitoredItemsCount(@Nullable ServiceCounterDataType value)
+      throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeModifyMonitoredItemsCountAsync(value)),
+        "http://opcfoundation.org/UA/}ModifyMonitoredItemsCount");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable ServiceCounterDataType>
+      readModifyMonitoredItemsCountAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getModifyMonitoredItemsCountNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}ModifyMonitoredItemsCount",
+                            true,
+                            ServiceCounterDataType.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable ServiceCounterDataType) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeModifyMonitoredItemsCountAsync(
+      @Nullable ServiceCounterDataType value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getModifyMonitoredItemsCountNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}ModifyMonitoredItemsCount",
+                        value,
+                        ServiceCounterDataType.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public UaVariableNode getCurrentMonitoredItemsCountNode() throws UaException {
+    return ClientNodeSupport.await(getCurrentMonitoredItemsCountNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends UaVariableNode> getCurrentMonitoredItemsCountNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "CurrentMonitoredItemsCount",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
+  }
+
+  @Override
+  public @Nullable UInteger readCurrentMonitoredItemsCount() throws UaException {
+    return ClientNodeSupport.await(readCurrentMonitoredItemsCountAsync());
+  }
+
+  @Override
+  public void writeCurrentMonitoredItemsCount(@Nullable UInteger value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeCurrentMonitoredItemsCountAsync(value)),
+        "http://opcfoundation.org/UA/}CurrentMonitoredItemsCount");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable UInteger> readCurrentMonitoredItemsCountAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getCurrentMonitoredItemsCountNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}CurrentMonitoredItemsCount",
+                            true,
+                            UInteger.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable UInteger) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeCurrentMonitoredItemsCountAsync(
+      @Nullable UInteger value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getCurrentMonitoredItemsCountNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}CurrentMonitoredItemsCount",
+                        value,
+                        UInteger.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public UaVariableNode getTransferSubscriptionsCountNode() throws UaException {
+    return ClientNodeSupport.await(getTransferSubscriptionsCountNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends UaVariableNode> getTransferSubscriptionsCountNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "TransferSubscriptionsCount",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
+  }
+
+  @Override
+  public @Nullable ServiceCounterDataType readTransferSubscriptionsCount() throws UaException {
+    return ClientNodeSupport.await(readTransferSubscriptionsCountAsync());
+  }
+
+  @Override
+  public void writeTransferSubscriptionsCount(@Nullable ServiceCounterDataType value)
+      throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeTransferSubscriptionsCountAsync(value)),
+        "http://opcfoundation.org/UA/}TransferSubscriptionsCount");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable ServiceCounterDataType>
+      readTransferSubscriptionsCountAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getTransferSubscriptionsCountNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}TransferSubscriptionsCount",
+                            true,
+                            ServiceCounterDataType.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable ServiceCounterDataType) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeTransferSubscriptionsCountAsync(
+      @Nullable ServiceCounterDataType value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getTransferSubscriptionsCountNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}TransferSubscriptionsCount",
+                        value,
+                        ServiceCounterDataType.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public UaVariableNode getCurrentPublishRequestsInQueueNode() throws UaException {
+    return ClientNodeSupport.await(getCurrentPublishRequestsInQueueNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends UaVariableNode> getCurrentPublishRequestsInQueueNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "CurrentPublishRequestsInQueue",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
+  }
+
+  @Override
+  public @Nullable UInteger readCurrentPublishRequestsInQueue() throws UaException {
+    return ClientNodeSupport.await(readCurrentPublishRequestsInQueueAsync());
+  }
+
+  @Override
+  public void writeCurrentPublishRequestsInQueue(@Nullable UInteger value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeCurrentPublishRequestsInQueueAsync(value)),
+        "http://opcfoundation.org/UA/}CurrentPublishRequestsInQueue");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable UInteger> readCurrentPublishRequestsInQueueAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getCurrentPublishRequestsInQueueNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}CurrentPublishRequestsInQueue",
+                            true,
+                            UInteger.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable UInteger) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeCurrentPublishRequestsInQueueAsync(
+      @Nullable UInteger value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getCurrentPublishRequestsInQueueNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}CurrentPublishRequestsInQueue",
+                        value,
+                        UInteger.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public UaVariableNode getTranslateBrowsePathsToNodeIdsCountNode() throws UaException {
+    return ClientNodeSupport.await(getTranslateBrowsePathsToNodeIdsCountNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends UaVariableNode>
+      getTranslateBrowsePathsToNodeIdsCountNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "TranslateBrowsePathsToNodeIdsCount",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
+  }
+
+  @Override
+  public @Nullable ServiceCounterDataType readTranslateBrowsePathsToNodeIdsCount()
+      throws UaException {
+    return ClientNodeSupport.await(readTranslateBrowsePathsToNodeIdsCountAsync());
+  }
+
+  @Override
+  public void writeTranslateBrowsePathsToNodeIdsCount(@Nullable ServiceCounterDataType value)
+      throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeTranslateBrowsePathsToNodeIdsCountAsync(value)),
+        "http://opcfoundation.org/UA/}TranslateBrowsePathsToNodeIdsCount");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable ServiceCounterDataType>
+      readTranslateBrowsePathsToNodeIdsCountAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getTranslateBrowsePathsToNodeIdsCountNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}TranslateBrowsePathsToNodeIdsCount",
+                            true,
+                            ServiceCounterDataType.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable ServiceCounterDataType) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeTranslateBrowsePathsToNodeIdsCountAsync(
+      @Nullable ServiceCounterDataType value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getTranslateBrowsePathsToNodeIdsCountNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}TranslateBrowsePathsToNodeIdsCount",
+                        value,
+                        ServiceCounterDataType.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public UaVariableNode getCallCountNode() throws UaException {
+    return ClientNodeSupport.await(getCallCountNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends UaVariableNode> getCallCountNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "CallCount",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
+  }
+
+  @Override
+  public @Nullable ServiceCounterDataType readCallCount() throws UaException {
+    return ClientNodeSupport.await(readCallCountAsync());
+  }
+
+  @Override
+  public void writeCallCount(@Nullable ServiceCounterDataType value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeCallCountAsync(value)),
+        "http://opcfoundation.org/UA/}CallCount");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable ServiceCounterDataType> readCallCountAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getCallCountNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}CallCount",
+                            true,
+                            ServiceCounterDataType.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable ServiceCounterDataType) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeCallCountAsync(@Nullable ServiceCounterDataType value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getCallCountNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}CallCount",
+                        value,
+                        ServiceCounterDataType.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public UaVariableNode getLocaleIdsNode() throws UaException {
+    return ClientNodeSupport.await(getLocaleIdsNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends UaVariableNode> getLocaleIdsNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "LocaleIds",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
+  }
+
+  @Override
+  public @Nullable String @Nullable [] readLocaleIds() throws UaException {
+    return ClientNodeSupport.await(readLocaleIdsAsync());
+  }
+
+  @Override
+  public void writeLocaleIds(@Nullable String @Nullable [] value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeLocaleIdsAsync(value)),
+        "http://opcfoundation.org/UA/}LocaleIds");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable String @Nullable []> readLocaleIdsAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getLocaleIdsNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}LocaleIds",
+                            true,
+                            String.class,
+                            1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable String @Nullable []) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeLocaleIdsAsync(@Nullable String @Nullable [] value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getLocaleIdsNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}LocaleIds",
+                        value,
+                        String.class,
+                        1,
+                        null)));
+  }
+
+  @Override
+  public UaVariableNode getReadCountNode() throws UaException {
+    return ClientNodeSupport.await(getReadCountNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends UaVariableNode> getReadCountNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "ReadCount",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
+  }
+
+  @Override
+  public @Nullable ServiceCounterDataType readReadCount() throws UaException {
+    return ClientNodeSupport.await(readReadCountAsync());
+  }
+
+  @Override
+  public void writeReadCount(@Nullable ServiceCounterDataType value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeReadCountAsync(value)),
+        "http://opcfoundation.org/UA/}ReadCount");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable ServiceCounterDataType> readReadCountAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getReadCountNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}ReadCount",
+                            true,
+                            ServiceCounterDataType.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable ServiceCounterDataType) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeReadCountAsync(@Nullable ServiceCounterDataType value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getReadCountNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}ReadCount",
+                        value,
+                        ServiceCounterDataType.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public UaVariableNode getServerUriNode() throws UaException {
+    return ClientNodeSupport.await(getServerUriNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends UaVariableNode> getServerUriNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "ServerUri",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
+  }
+
+  @Override
+  public @Nullable String readServerUri() throws UaException {
+    return ClientNodeSupport.await(readServerUriAsync());
+  }
+
+  @Override
+  public void writeServerUri(@Nullable String value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeServerUriAsync(value)),
+        "http://opcfoundation.org/UA/}ServerUri");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable String> readServerUriAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getServerUriNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}ServerUri",
+                            true,
+                            String.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable String) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeServerUriAsync(@Nullable String value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getServerUriNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}ServerUri",
+                        value,
+                        String.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public UaVariableNode getSessionIdNode() throws UaException {
+    return ClientNodeSupport.await(getSessionIdNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends UaVariableNode> getSessionIdNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "SessionId",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
+  }
+
+  @Override
+  public @Nullable NodeId readSessionId() throws UaException {
+    return ClientNodeSupport.await(readSessionIdAsync());
+  }
+
+  @Override
+  public void writeSessionId(@Nullable NodeId value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeSessionIdAsync(value)),
+        "http://opcfoundation.org/UA/}SessionId");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable NodeId> readSessionIdAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getSessionIdNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}SessionId",
+                            true,
+                            NodeId.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable NodeId) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeSessionIdAsync(@Nullable NodeId value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getSessionIdNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}SessionId",
+                        value,
+                        NodeId.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public @Nullable SessionDiagnosticsDataType readTypedValue() throws UaException {
+    return ClientNodeSupport.await(readTypedValueAsync());
+  }
+
+  @Override
+  public void writeTypedValue(@Nullable SessionDiagnosticsDataType value) throws UaException {
+    ClientNodeSupport.good(ClientNodeSupport.await(writeTypedValueAsync(value)), "Value");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable SessionDiagnosticsDataType> readTypedValueAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    CompletableFuture.completedFuture(this),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "Value",
+                            true,
+                            SessionDiagnosticsDataType.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable SessionDiagnosticsDataType) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeTypedValueAsync(
+      @Nullable SessionDiagnosticsDataType value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "Value",
+                        value,
+                        SessionDiagnosticsDataType.class,
+                        -1,
+                        null)));
   }
 }

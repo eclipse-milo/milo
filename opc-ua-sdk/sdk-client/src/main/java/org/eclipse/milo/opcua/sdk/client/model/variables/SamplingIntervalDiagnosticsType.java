@@ -1,323 +1,187 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.variables;
 
 import java.util.concurrent.CompletableFuture;
+import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.structured.SamplingIntervalDiagnosticsDataType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.10">https://reference.opcfoundation.org/v105/Core/docs/Part5/7.10</a>
+ * Client API for the SamplingIntervalDiagnosticsType VariableType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.10">Model
+ *     documentation</a>
  */
 public interface SamplingIntervalDiagnosticsType extends BaseDataVariableType {
-  /**
-   * Get the local value of the SamplingInterval Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SamplingInterval Node.
-   * @throws UaException if an error occurs creating or getting the SamplingInterval Node.
-   */
-  Double getSamplingInterval() throws UaException;
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2165L);
 
   /**
-   * Set the local value of the SamplingInterval Node.
+   * Resolves the mandatory SamplingInterval child, a BaseDataVariableType with DataType Duration.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SamplingInterval Node.
-   * @throws UaException if an error occurs creating or getting the SamplingInterval Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  void setSamplingInterval(Double value) throws UaException;
+  VariableNode getSamplingIntervalNode() throws UaException;
+
+  /** Asynchronous form of {@link #getSamplingIntervalNode()}. */
+  CompletableFuture<? extends VariableNode> getSamplingIntervalNodeAsync();
 
   /**
-   * Read the value of the SamplingInterval Node from the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the SamplingInterval child from the server.
    *
-   * @return the {@link Double} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  Double readSamplingInterval() throws UaException;
+  @Nullable Double readSamplingInterval() throws UaException;
 
   /**
-   * Write a new value for the SamplingInterval Node to the server and update the local value if the
-   * operation succeeds.
+   * Writes the Value of the SamplingInterval child to the server.
    *
-   * @param value the {@link Double} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeSamplingInterval(Double value) throws UaException;
+  void writeSamplingInterval(@Nullable Double value) throws UaException;
+
+  /** Asynchronous form of {@link #readSamplingInterval()}. */
+  CompletableFuture<? extends @Nullable Double> readSamplingIntervalAsync();
+
+  /** Asynchronous form of {@link #writeSamplingInterval}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeSamplingIntervalAsync(@Nullable Double value);
 
   /**
-   * An asynchronous implementation of {@link #readSamplingInterval}.
+   * Resolves the mandatory SampledMonitoredItemsCount child, a BaseDataVariableType with DataType
+   * UInt32.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  CompletableFuture<? extends Double> readSamplingIntervalAsync();
+  VariableNode getSampledMonitoredItemsCountNode() throws UaException;
+
+  /** Asynchronous form of {@link #getSampledMonitoredItemsCountNode()}. */
+  CompletableFuture<? extends VariableNode> getSampledMonitoredItemsCountNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeSamplingInterval}.
+   * Reads the Value of the SampledMonitoredItemsCount child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeSamplingIntervalAsync(Double value);
+  @Nullable UInteger readSampledMonitoredItemsCount() throws UaException;
 
   /**
-   * Get the SamplingInterval {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
+   * Writes the Value of the SampledMonitoredItemsCount child to the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SamplingInterval {@link BaseDataVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  BaseDataVariableType getSamplingIntervalNode() throws UaException;
+  void writeSampledMonitoredItemsCount(@Nullable UInteger value) throws UaException;
+
+  /** Asynchronous form of {@link #readSampledMonitoredItemsCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readSampledMonitoredItemsCountAsync();
 
   /**
-   * Asynchronous implementation of {@link #getSamplingIntervalNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * Asynchronous form of {@link #writeSampledMonitoredItemsCount}; completes with the operation
+   * status.
    */
-  CompletableFuture<? extends BaseDataVariableType> getSamplingIntervalNodeAsync();
+  CompletableFuture<StatusCode> writeSampledMonitoredItemsCountAsync(@Nullable UInteger value);
 
   /**
-   * Get the local value of the SampledMonitoredItemsCount Node.
+   * Resolves the mandatory MaxSampledMonitoredItemsCount child, a BaseDataVariableType with
+   * DataType UInt32.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SampledMonitoredItemsCount Node.
-   * @throws UaException if an error occurs creating or getting the SampledMonitoredItemsCount Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  UInteger getSampledMonitoredItemsCount() throws UaException;
+  VariableNode getMaxSampledMonitoredItemsCountNode() throws UaException;
+
+  /** Asynchronous form of {@link #getMaxSampledMonitoredItemsCountNode()}. */
+  CompletableFuture<? extends VariableNode> getMaxSampledMonitoredItemsCountNodeAsync();
 
   /**
-   * Set the local value of the SampledMonitoredItemsCount Node.
+   * Reads the Value of the MaxSampledMonitoredItemsCount child from the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SampledMonitoredItemsCount Node.
-   * @throws UaException if an error occurs creating or getting the SampledMonitoredItemsCount Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setSampledMonitoredItemsCount(UInteger value) throws UaException;
+  @Nullable UInteger readMaxSampledMonitoredItemsCount() throws UaException;
 
   /**
-   * Read the value of the SampledMonitoredItemsCount Node from the server and update the local
-   * value if the operation succeeds.
+   * Writes the Value of the MaxSampledMonitoredItemsCount child to the server.
    *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UInteger readSampledMonitoredItemsCount() throws UaException;
+  void writeMaxSampledMonitoredItemsCount(@Nullable UInteger value) throws UaException;
+
+  /** Asynchronous form of {@link #readMaxSampledMonitoredItemsCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readMaxSampledMonitoredItemsCountAsync();
 
   /**
-   * Write a new value for the SampledMonitoredItemsCount Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * Asynchronous form of {@link #writeMaxSampledMonitoredItemsCount}; completes with the operation
+   * status.
    */
-  void writeSampledMonitoredItemsCount(UInteger value) throws UaException;
+  CompletableFuture<StatusCode> writeMaxSampledMonitoredItemsCountAsync(@Nullable UInteger value);
 
   /**
-   * An asynchronous implementation of {@link #readSampledMonitoredItemsCount}.
+   * Resolves the mandatory DisabledMonitoredItemsSamplingCount child, a BaseDataVariableType with
+   * DataType UInt32.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  CompletableFuture<? extends UInteger> readSampledMonitoredItemsCountAsync();
+  VariableNode getDisabledMonitoredItemsSamplingCountNode() throws UaException;
+
+  /** Asynchronous form of {@link #getDisabledMonitoredItemsSamplingCountNode()}. */
+  CompletableFuture<? extends VariableNode> getDisabledMonitoredItemsSamplingCountNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeSampledMonitoredItemsCount}.
+   * Reads the Value of the DisabledMonitoredItemsSamplingCount child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeSampledMonitoredItemsCountAsync(UInteger value);
+  @Nullable UInteger readDisabledMonitoredItemsSamplingCount() throws UaException;
 
   /**
-   * Get the SampledMonitoredItemsCount {@link BaseDataVariableType} Node, or {@code null} if it
-   * does not exist.
+   * Writes the Value of the DisabledMonitoredItemsSamplingCount child to the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SampledMonitoredItemsCount {@link BaseDataVariableType} Node, or {@code null} if it
-   *     does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  BaseDataVariableType getSampledMonitoredItemsCountNode() throws UaException;
+  void writeDisabledMonitoredItemsSamplingCount(@Nullable UInteger value) throws UaException;
+
+  /** Asynchronous form of {@link #readDisabledMonitoredItemsSamplingCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readDisabledMonitoredItemsSamplingCountAsync();
 
   /**
-   * Asynchronous implementation of {@link #getSampledMonitoredItemsCountNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * Asynchronous form of {@link #writeDisabledMonitoredItemsSamplingCount}; completes with the
+   * operation status.
    */
-  CompletableFuture<? extends BaseDataVariableType> getSampledMonitoredItemsCountNodeAsync();
+  CompletableFuture<StatusCode> writeDisabledMonitoredItemsSamplingCountAsync(
+      @Nullable UInteger value);
 
   /**
-   * Get the local value of the MaxSampledMonitoredItemsCount Node.
+   * Reads the Value of this node from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaxSampledMonitoredItemsCount Node.
-   * @throws UaException if an error occurs creating or getting the MaxSampledMonitoredItemsCount
-   *     Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UInteger getMaxSampledMonitoredItemsCount() throws UaException;
+  @Nullable SamplingIntervalDiagnosticsDataType readTypedValue() throws UaException;
 
   /**
-   * Set the local value of the MaxSampledMonitoredItemsCount Node.
+   * Writes the Value of this node to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaxSampledMonitoredItemsCount Node.
-   * @throws UaException if an error occurs creating or getting the MaxSampledMonitoredItemsCount
-   *     Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setMaxSampledMonitoredItemsCount(UInteger value) throws UaException;
+  void writeTypedValue(@Nullable SamplingIntervalDiagnosticsDataType value) throws UaException;
 
-  /**
-   * Read the value of the MaxSampledMonitoredItemsCount Node from the server and update the local
-   * value if the operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readMaxSampledMonitoredItemsCount() throws UaException;
+  /** Asynchronous form of {@link #readTypedValue()}. */
+  CompletableFuture<? extends @Nullable SamplingIntervalDiagnosticsDataType> readTypedValueAsync();
 
-  /**
-   * Write a new value for the MaxSampledMonitoredItemsCount Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMaxSampledMonitoredItemsCount(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readMaxSampledMonitoredItemsCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readMaxSampledMonitoredItemsCountAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeMaxSampledMonitoredItemsCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMaxSampledMonitoredItemsCountAsync(UInteger value);
-
-  /**
-   * Get the MaxSampledMonitoredItemsCount {@link BaseDataVariableType} Node, or {@code null} if it
-   * does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaxSampledMonitoredItemsCount {@link BaseDataVariableType} Node, or {@code null} if
-   *     it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getMaxSampledMonitoredItemsCountNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getMaxSampledMonitoredItemsCountNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getMaxSampledMonitoredItemsCountNodeAsync();
-
-  /**
-   * Get the local value of the DisabledMonitoredItemsSamplingCount Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the DisabledMonitoredItemsSamplingCount Node.
-   * @throws UaException if an error occurs creating or getting the
-   *     DisabledMonitoredItemsSamplingCount Node.
-   */
-  UInteger getDisabledMonitoredItemsSamplingCount() throws UaException;
-
-  /**
-   * Set the local value of the DisabledMonitoredItemsSamplingCount Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the DisabledMonitoredItemsSamplingCount Node.
-   * @throws UaException if an error occurs creating or getting the
-   *     DisabledMonitoredItemsSamplingCount Node.
-   */
-  void setDisabledMonitoredItemsSamplingCount(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the DisabledMonitoredItemsSamplingCount Node from the server and update the
-   * local value if the operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readDisabledMonitoredItemsSamplingCount() throws UaException;
-
-  /**
-   * Write a new value for the DisabledMonitoredItemsSamplingCount Node to the server and update the
-   * local value if the operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeDisabledMonitoredItemsSamplingCount(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readDisabledMonitoredItemsSamplingCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readDisabledMonitoredItemsSamplingCountAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeDisabledMonitoredItemsSamplingCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeDisabledMonitoredItemsSamplingCountAsync(UInteger value);
-
-  /**
-   * Get the DisabledMonitoredItemsSamplingCount {@link BaseDataVariableType} Node, or {@code null}
-   * if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the DisabledMonitoredItemsSamplingCount {@link BaseDataVariableType} Node, or {@code
-   *     null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getDisabledMonitoredItemsSamplingCountNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getDisabledMonitoredItemsSamplingCountNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType>
-      getDisabledMonitoredItemsSamplingCountNodeAsync();
+  /** Asynchronous form of {@link #writeTypedValue}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeTypedValueAsync(
+      @Nullable SamplingIntervalDiagnosticsDataType value);
 }

@@ -1,1042 +1,531 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallOptions;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallResult;
 import org.eclipse.milo.opcua.sdk.client.model.variables.ConditionVariableType;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyType;
 import org.eclipse.milo.opcua.sdk.client.model.variables.TwoStateVariableType;
+import org.eclipse.milo.opcua.sdk.client.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.5.2">https://reference.opcfoundation.org/v105/Core/docs/Part9/5.5.2</a>
+ * Client API for the ConditionType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.5.2">Model
+ *     documentation</a>
  */
 public interface ConditionType extends BaseEventType {
-  QualifiedProperty<NodeId> CONDITION_CLASS_ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ConditionClassId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-          -1,
-          NodeId.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2782L);
 
-  QualifiedProperty<LocalizedText> CONDITION_CLASS_NAME =
+  QualifiedProperty<String> ClientUserId_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ConditionClassName",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
-          -1,
-          LocalizedText.class);
-
-  QualifiedProperty<NodeId[]> CONDITION_SUB_CLASS_ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ConditionSubClassId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-          1,
-          NodeId[].class);
-
-  QualifiedProperty<LocalizedText[]> CONDITION_SUB_CLASS_NAME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ConditionSubClassName",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
-          1,
-          LocalizedText[].class);
-
-  QualifiedProperty<String> CONDITION_NAME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ConditionName",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
-
-  QualifiedProperty<NodeId> BRANCH_ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "BranchId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-          -1,
-          NodeId.class);
-
-  QualifiedProperty<Boolean> RETAIN =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Retain",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
-
-  QualifiedProperty<Boolean> SUPPORTS_FILTERED_RETAIN =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "SupportsFilteredRetain",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
-
-  QualifiedProperty<String> CLIENT_USER_ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "ClientUserId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
           -1,
           String.class);
 
-  /**
-   * Get the local value of the ConditionClassId Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ConditionClassId Node.
-   * @throws UaException if an error occurs creating or getting the ConditionClassId Node.
-   */
-  NodeId getConditionClassId() throws UaException;
-
-  /**
-   * Set the local value of the ConditionClassId Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ConditionClassId Node.
-   * @throws UaException if an error occurs creating or getting the ConditionClassId Node.
-   */
-  void setConditionClassId(NodeId value) throws UaException;
-
-  /**
-   * Read the value of the ConditionClassId Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link NodeId} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  NodeId readConditionClassId() throws UaException;
-
-  /**
-   * Write a new value for the ConditionClassId Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link NodeId} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeConditionClassId(NodeId value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readConditionClassId}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends NodeId> readConditionClassIdAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeConditionClassId}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeConditionClassIdAsync(NodeId value);
-
-  /**
-   * Get the ConditionClassId {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ConditionClassId {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getConditionClassIdNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getConditionClassIdNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getConditionClassIdNodeAsync();
-
-  /**
-   * Get the local value of the ConditionClassName Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ConditionClassName Node.
-   * @throws UaException if an error occurs creating or getting the ConditionClassName Node.
-   */
-  LocalizedText getConditionClassName() throws UaException;
-
-  /**
-   * Set the local value of the ConditionClassName Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ConditionClassName Node.
-   * @throws UaException if an error occurs creating or getting the ConditionClassName Node.
-   */
-  void setConditionClassName(LocalizedText value) throws UaException;
-
-  /**
-   * Read the value of the ConditionClassName Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link LocalizedText} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  LocalizedText readConditionClassName() throws UaException;
-
-  /**
-   * Write a new value for the ConditionClassName Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link LocalizedText} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeConditionClassName(LocalizedText value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readConditionClassName}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends LocalizedText> readConditionClassNameAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeConditionClassName}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeConditionClassNameAsync(LocalizedText value);
-
-  /**
-   * Get the ConditionClassName {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ConditionClassName {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getConditionClassNameNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getConditionClassNameNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getConditionClassNameNodeAsync();
-
-  /**
-   * Get the local value of the ConditionSubClassId Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ConditionSubClassId Node.
-   * @throws UaException if an error occurs creating or getting the ConditionSubClassId Node.
-   */
-  NodeId[] getConditionSubClassId() throws UaException;
-
-  /**
-   * Set the local value of the ConditionSubClassId Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ConditionSubClassId Node.
-   * @throws UaException if an error occurs creating or getting the ConditionSubClassId Node.
-   */
-  void setConditionSubClassId(NodeId[] value) throws UaException;
-
-  /**
-   * Read the value of the ConditionSubClassId Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link NodeId[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  NodeId[] readConditionSubClassId() throws UaException;
-
-  /**
-   * Write a new value for the ConditionSubClassId Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link NodeId[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeConditionSubClassId(NodeId[] value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readConditionSubClassId}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends NodeId[]> readConditionSubClassIdAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeConditionSubClassId}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeConditionSubClassIdAsync(NodeId[] value);
-
-  /**
-   * Get the ConditionSubClassId {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ConditionSubClassId {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getConditionSubClassIdNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getConditionSubClassIdNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getConditionSubClassIdNodeAsync();
-
-  /**
-   * Get the local value of the ConditionSubClassName Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ConditionSubClassName Node.
-   * @throws UaException if an error occurs creating or getting the ConditionSubClassName Node.
-   */
-  LocalizedText[] getConditionSubClassName() throws UaException;
-
-  /**
-   * Set the local value of the ConditionSubClassName Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ConditionSubClassName Node.
-   * @throws UaException if an error occurs creating or getting the ConditionSubClassName Node.
-   */
-  void setConditionSubClassName(LocalizedText[] value) throws UaException;
-
-  /**
-   * Read the value of the ConditionSubClassName Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link LocalizedText[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  LocalizedText[] readConditionSubClassName() throws UaException;
-
-  /**
-   * Write a new value for the ConditionSubClassName Node to the server and update the local value
-   * if the operation succeeds.
-   *
-   * @param value the {@link LocalizedText[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeConditionSubClassName(LocalizedText[] value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readConditionSubClassName}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends LocalizedText[]> readConditionSubClassNameAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeConditionSubClassName}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeConditionSubClassNameAsync(LocalizedText[] value);
-
-  /**
-   * Get the ConditionSubClassName {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ConditionSubClassName {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getConditionSubClassNameNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getConditionSubClassNameNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getConditionSubClassNameNodeAsync();
-
-  /**
-   * Get the local value of the ConditionName Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ConditionName Node.
-   * @throws UaException if an error occurs creating or getting the ConditionName Node.
-   */
-  String getConditionName() throws UaException;
-
-  /**
-   * Set the local value of the ConditionName Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ConditionName Node.
-   * @throws UaException if an error occurs creating or getting the ConditionName Node.
-   */
-  void setConditionName(String value) throws UaException;
-
-  /**
-   * Read the value of the ConditionName Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String readConditionName() throws UaException;
-
-  /**
-   * Write a new value for the ConditionName Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeConditionName(String value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readConditionName}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String> readConditionNameAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeConditionName}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeConditionNameAsync(String value);
-
-  /**
-   * Get the ConditionName {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ConditionName {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getConditionNameNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getConditionNameNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getConditionNameNodeAsync();
-
-  /**
-   * Get the local value of the BranchId Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the BranchId Node.
-   * @throws UaException if an error occurs creating or getting the BranchId Node.
-   */
-  NodeId getBranchId() throws UaException;
-
-  /**
-   * Set the local value of the BranchId Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the BranchId Node.
-   * @throws UaException if an error occurs creating or getting the BranchId Node.
-   */
-  void setBranchId(NodeId value) throws UaException;
-
-  /**
-   * Read the value of the BranchId Node from the server and update the local value if the operation
-   * succeeds.
-   *
-   * @return the {@link NodeId} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  NodeId readBranchId() throws UaException;
-
-  /**
-   * Write a new value for the BranchId Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link NodeId} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeBranchId(NodeId value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readBranchId}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends NodeId> readBranchIdAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeBranchId}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeBranchIdAsync(NodeId value);
-
-  /**
-   * Get the BranchId {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the BranchId {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getBranchIdNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getBranchIdNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getBranchIdNodeAsync();
-
-  /**
-   * Get the local value of the Retain Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the Retain Node.
-   * @throws UaException if an error occurs creating or getting the Retain Node.
-   */
-  Boolean getRetain() throws UaException;
-
-  /**
-   * Set the local value of the Retain Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the Retain Node.
-   * @throws UaException if an error occurs creating or getting the Retain Node.
-   */
-  void setRetain(Boolean value) throws UaException;
-
-  /**
-   * Read the value of the Retain Node from the server and update the local value if the operation
-   * succeeds.
-   *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Boolean readRetain() throws UaException;
-
-  /**
-   * Write a new value for the Retain Node to the server and update the local value if the operation
-   * succeeds.
-   *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeRetain(Boolean value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readRetain}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Boolean> readRetainAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeRetain}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeRetainAsync(Boolean value);
-
-  /**
-   * Get the Retain {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the Retain {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getRetainNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getRetainNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getRetainNodeAsync();
-
-  /**
-   * Get the local value of the SupportsFilteredRetain Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SupportsFilteredRetain Node.
-   * @throws UaException if an error occurs creating or getting the SupportsFilteredRetain Node.
-   */
-  Boolean getSupportsFilteredRetain() throws UaException;
-
-  /**
-   * Set the local value of the SupportsFilteredRetain Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SupportsFilteredRetain Node.
-   * @throws UaException if an error occurs creating or getting the SupportsFilteredRetain Node.
-   */
-  void setSupportsFilteredRetain(Boolean value) throws UaException;
-
-  /**
-   * Read the value of the SupportsFilteredRetain Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Boolean readSupportsFilteredRetain() throws UaException;
-
-  /**
-   * Write a new value for the SupportsFilteredRetain Node to the server and update the local value
-   * if the operation succeeds.
-   *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeSupportsFilteredRetain(Boolean value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readSupportsFilteredRetain}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Boolean> readSupportsFilteredRetainAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeSupportsFilteredRetain}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeSupportsFilteredRetainAsync(Boolean value);
-
-  /**
-   * Get the SupportsFilteredRetain {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SupportsFilteredRetain {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getSupportsFilteredRetainNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getSupportsFilteredRetainNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getSupportsFilteredRetainNodeAsync();
-
-  /**
-   * Get the local value of the ClientUserId Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ClientUserId Node.
-   * @throws UaException if an error occurs creating or getting the ClientUserId Node.
-   */
-  String getClientUserId() throws UaException;
-
-  /**
-   * Set the local value of the ClientUserId Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ClientUserId Node.
-   * @throws UaException if an error occurs creating or getting the ClientUserId Node.
-   */
-  void setClientUserId(String value) throws UaException;
-
-  /**
-   * Read the value of the ClientUserId Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String readClientUserId() throws UaException;
-
-  /**
-   * Write a new value for the ClientUserId Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeClientUserId(String value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readClientUserId}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String> readClientUserIdAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeClientUserId}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeClientUserIdAsync(String value);
-
-  /**
-   * Get the ClientUserId {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ClientUserId {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+  QualifiedProperty<String> ConditionName_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "ConditionName",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+          -1,
+          String.class);
+
+  QualifiedProperty<Boolean> Retain_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA, "Retain", ExpandedNodeId.of(Namespaces.OPC_UA, 1L), -1, Boolean.class);
+
+  QualifiedProperty<NodeId> BranchId_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "BranchId",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 17L),
+          -1,
+          NodeId.class);
+
+  /**
+   * Resolves the mandatory ClientUserId child, a PropertyType with DataType String.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getClientUserIdNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getClientUserIdNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getClientUserIdNode()}. */
   CompletableFuture<? extends PropertyType> getClientUserIdNodeAsync();
 
   /**
-   * Get the local value of the EnabledState Node.
+   * Reads the Value of the ClientUserId child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the EnabledState Node.
-   * @throws UaException if an error occurs creating or getting the EnabledState Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  LocalizedText getEnabledState() throws UaException;
+  @Nullable String readClientUserId() throws UaException;
 
   /**
-   * Set the local value of the EnabledState Node.
+   * Writes the Value of the ClientUserId child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the EnabledState Node.
-   * @throws UaException if an error occurs creating or getting the EnabledState Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setEnabledState(LocalizedText value) throws UaException;
+  void writeClientUserId(@Nullable String value) throws UaException;
+
+  /** Asynchronous form of {@link #readClientUserId()}. */
+  CompletableFuture<? extends @Nullable String> readClientUserIdAsync();
+
+  /** Asynchronous form of {@link #writeClientUserId}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeClientUserIdAsync(@Nullable String value);
 
   /**
-   * Read the value of the EnabledState Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the mandatory EnabledState child, a TwoStateVariableType with DataType LocalizedText.
    *
-   * @return the {@link LocalizedText} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  LocalizedText readEnabledState() throws UaException;
-
-  /**
-   * Write a new value for the EnabledState Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link LocalizedText} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeEnabledState(LocalizedText value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readEnabledState}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends LocalizedText> readEnabledStateAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeEnabledState}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeEnabledStateAsync(LocalizedText value);
-
-  /**
-   * Get the EnabledState {@link TwoStateVariableType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the EnabledState {@link TwoStateVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.2">TwoStateVariableType
+   *     documentation</a>
    */
   TwoStateVariableType getEnabledStateNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getEnabledStateNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the TwoStateVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getEnabledStateNode()}. */
   CompletableFuture<? extends TwoStateVariableType> getEnabledStateNodeAsync();
 
   /**
-   * Get the local value of the Quality Node.
+   * Reads the Value of the EnabledState child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the Quality Node.
-   * @throws UaException if an error occurs creating or getting the Quality Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  StatusCode getQuality() throws UaException;
+  @Nullable LocalizedText readEnabledState() throws UaException;
 
   /**
-   * Set the local value of the Quality Node.
+   * Writes the Value of the EnabledState child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the Quality Node.
-   * @throws UaException if an error occurs creating or getting the Quality Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setQuality(StatusCode value) throws UaException;
+  void writeEnabledState(@Nullable LocalizedText value) throws UaException;
+
+  /** Asynchronous form of {@link #readEnabledState()}. */
+  CompletableFuture<? extends @Nullable LocalizedText> readEnabledStateAsync();
+
+  /** Asynchronous form of {@link #writeEnabledState}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeEnabledStateAsync(@Nullable LocalizedText value);
 
   /**
-   * Read the value of the Quality Node from the server and update the local value if the operation
-   * succeeds.
+   * Resolves the mandatory LastSeverity child, a ConditionVariableType with DataType UInt16.
    *
-   * @return the {@link StatusCode} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  StatusCode readQuality() throws UaException;
-
-  /**
-   * Write a new value for the Quality Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link StatusCode} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeQuality(StatusCode value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readQuality}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends StatusCode> readQualityAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeQuality}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeQualityAsync(StatusCode value);
-
-  /**
-   * Get the Quality {@link ConditionVariableType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the Quality {@link ConditionVariableType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  ConditionVariableType getQualityNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getQualityNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the ConditionVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends ConditionVariableType> getQualityNodeAsync();
-
-  /**
-   * Get the local value of the LastSeverity Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the LastSeverity Node.
-   * @throws UaException if an error occurs creating or getting the LastSeverity Node.
-   */
-  UShort getLastSeverity() throws UaException;
-
-  /**
-   * Set the local value of the LastSeverity Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the LastSeverity Node.
-   * @throws UaException if an error occurs creating or getting the LastSeverity Node.
-   */
-  void setLastSeverity(UShort value) throws UaException;
-
-  /**
-   * Read the value of the LastSeverity Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link UShort} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UShort readLastSeverity() throws UaException;
-
-  /**
-   * Write a new value for the LastSeverity Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link UShort} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeLastSeverity(UShort value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readLastSeverity}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UShort> readLastSeverityAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeLastSeverity}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeLastSeverityAsync(UShort value);
-
-  /**
-   * Get the LastSeverity {@link ConditionVariableType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the LastSeverity {@link ConditionVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.3">ConditionVariableType
+   *     documentation</a>
    */
   ConditionVariableType getLastSeverityNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getLastSeverityNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the ConditionVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getLastSeverityNode()}. */
   CompletableFuture<? extends ConditionVariableType> getLastSeverityNodeAsync();
 
   /**
-   * Get the local value of the Comment Node.
+   * Reads the Value of the LastSeverity child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the Comment Node.
-   * @throws UaException if an error occurs creating or getting the Comment Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  LocalizedText getComment() throws UaException;
+  @Nullable UShort readLastSeverity() throws UaException;
 
   /**
-   * Set the local value of the Comment Node.
+   * Writes the Value of the LastSeverity child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the Comment Node.
-   * @throws UaException if an error occurs creating or getting the Comment Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setComment(LocalizedText value) throws UaException;
+  void writeLastSeverity(@Nullable UShort value) throws UaException;
+
+  /** Asynchronous form of {@link #readLastSeverity()}. */
+  CompletableFuture<? extends @Nullable UShort> readLastSeverityAsync();
+
+  /** Asynchronous form of {@link #writeLastSeverity}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeLastSeverityAsync(@Nullable UShort value);
 
   /**
-   * Read the value of the Comment Node from the server and update the local value if the operation
-   * succeeds.
+   * Resolves the mandatory ConditionName child, a PropertyType with DataType String.
    *
-   * @return the {@link LocalizedText} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  LocalizedText readComment() throws UaException;
+  PropertyType getConditionNameNode() throws UaException;
+
+  /** Asynchronous form of {@link #getConditionNameNode()}. */
+  CompletableFuture<? extends PropertyType> getConditionNameNodeAsync();
 
   /**
-   * Write a new value for the Comment Node to the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the ConditionName child from the server.
    *
-   * @param value the {@link LocalizedText} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeComment(LocalizedText value) throws UaException;
+  @Nullable String readConditionName() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readComment}.
+   * Writes the Value of the ConditionName child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends LocalizedText> readCommentAsync();
+  void writeConditionName(@Nullable String value) throws UaException;
+
+  /** Asynchronous form of {@link #readConditionName()}. */
+  CompletableFuture<? extends @Nullable String> readConditionNameAsync();
+
+  /** Asynchronous form of {@link #writeConditionName}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeConditionNameAsync(@Nullable String value);
 
   /**
-   * An asynchronous implementation of {@link #writeComment}.
+   * Resolves the mandatory ConditionClassId child, a PropertyType with DataType NodeId.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  CompletableFuture<StatusCode> writeCommentAsync(LocalizedText value);
+  PropertyType getConditionClassIdNode() throws UaException;
+
+  /** Asynchronous form of {@link #getConditionClassIdNode()}. */
+  CompletableFuture<? extends PropertyType> getConditionClassIdNodeAsync();
 
   /**
-   * Get the Comment {@link ConditionVariableType} Node, or {@code null} if it does not exist.
+   * Resolves the mandatory ConditionClassName child, a PropertyType with DataType LocalizedText.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getConditionClassNameNode() throws UaException;
+
+  /** Asynchronous form of {@link #getConditionClassNameNode()}. */
+  CompletableFuture<? extends PropertyType> getConditionClassNameNodeAsync();
+
+  /**
+   * Resolves the optional ConditionSubClassId child, a PropertyType with DataType NodeId.
    *
-   * @return the Comment {@link ConditionVariableType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyType getConditionSubClassIdNode() throws UaException;
+
+  /** Asynchronous form of {@link #getConditionSubClassIdNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getConditionSubClassIdNodeAsync();
+
+  /**
+   * Resolves the optional ConditionSubClassName child, a PropertyType with DataType LocalizedText.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyType getConditionSubClassNameNode() throws UaException;
+
+  /** Asynchronous form of {@link #getConditionSubClassNameNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getConditionSubClassNameNodeAsync();
+
+  /**
+   * Resolves the mandatory Retain child, a PropertyType with DataType Boolean.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getRetainNode() throws UaException;
+
+  /** Asynchronous form of {@link #getRetainNode()}. */
+  CompletableFuture<? extends PropertyType> getRetainNodeAsync();
+
+  /**
+   * Reads the Value of the Retain child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable Boolean readRetain() throws UaException;
+
+  /**
+   * Writes the Value of the Retain child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeRetain(@Nullable Boolean value) throws UaException;
+
+  /** Asynchronous form of {@link #readRetain()}. */
+  CompletableFuture<? extends @Nullable Boolean> readRetainAsync();
+
+  /** Asynchronous form of {@link #writeRetain}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeRetainAsync(@Nullable Boolean value);
+
+  /**
+   * Resolves the mandatory Comment child, a ConditionVariableType with DataType LocalizedText.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.3">ConditionVariableType
+   *     documentation</a>
    */
   ConditionVariableType getCommentNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getCommentNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the ConditionVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getCommentNode()}. */
   CompletableFuture<? extends ConditionVariableType> getCommentNodeAsync();
+
+  /**
+   * Reads the Value of the Comment child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable LocalizedText readComment() throws UaException;
+
+  /**
+   * Writes the Value of the Comment child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeComment(@Nullable LocalizedText value) throws UaException;
+
+  /** Asynchronous form of {@link #readComment()}. */
+  CompletableFuture<? extends @Nullable LocalizedText> readCommentAsync();
+
+  /** Asynchronous form of {@link #writeComment}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeCommentAsync(@Nullable LocalizedText value);
+
+  /**
+   * Resolves the mandatory Quality child, a ConditionVariableType with DataType StatusCode.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.3">ConditionVariableType
+   *     documentation</a>
+   */
+  ConditionVariableType getQualityNode() throws UaException;
+
+  /** Asynchronous form of {@link #getQualityNode()}. */
+  CompletableFuture<? extends ConditionVariableType> getQualityNodeAsync();
+
+  /**
+   * Reads the Value of the Quality child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable StatusCode readQuality() throws UaException;
+
+  /**
+   * Writes the Value of the Quality child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeQuality(@Nullable StatusCode value) throws UaException;
+
+  /** Asynchronous form of {@link #readQuality()}. */
+  CompletableFuture<? extends @Nullable StatusCode> readQualityAsync();
+
+  /** Asynchronous form of {@link #writeQuality}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeQualityAsync(@Nullable StatusCode value);
+
+  /**
+   * Resolves the mandatory BranchId child, a PropertyType with DataType NodeId.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getBranchIdNode() throws UaException;
+
+  /** Asynchronous form of {@link #getBranchIdNode()}. */
+  CompletableFuture<? extends PropertyType> getBranchIdNodeAsync();
+
+  /**
+   * Reads the Value of the BranchId child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable NodeId readBranchId() throws UaException;
+
+  /**
+   * Writes the Value of the BranchId child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeBranchId(@Nullable NodeId value) throws UaException;
+
+  /** Asynchronous form of {@link #readBranchId()}. */
+  CompletableFuture<? extends @Nullable NodeId> readBranchIdAsync();
+
+  /** Asynchronous form of {@link #writeBranchId}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeBranchIdAsync(@Nullable NodeId value);
+
+  /**
+   * Resolves the mandatory AddComment Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.5.6">Model
+   *     documentation</a>
+   */
+  UaMethodNode getAddCommentMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getAddCommentMethodNode()}. */
+  CompletableFuture<UaMethodNode> getAddCommentMethodNodeAsync();
+
+  /**
+   * Calls the AddComment Method and returns its outputs; requires a Good result.
+   *
+   * @param eventId the identifier for the event to comment.
+   * @param comment the comment to add to the condition.
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.5.6">Model
+   *     documentation</a>
+   */
+  void addComment(@Nullable ByteString eventId, @Nullable LocalizedText comment) throws UaException;
+
+  /**
+   * Calls the AddComment Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callAddComment(
+      @Nullable ByteString eventId, @Nullable LocalizedText comment) throws UaException;
+
+  /**
+   * Calls the AddComment Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callAddCommentWith(
+      MethodCallOptions options, @Nullable ByteString eventId, @Nullable LocalizedText comment)
+      throws UaException;
+
+  /** Asynchronous form of {@link #addComment}. */
+  CompletableFuture<Void> addCommentAsync(
+      @Nullable ByteString eventId, @Nullable LocalizedText comment);
+
+  /** Asynchronous form of {@link #callAddComment}. */
+  CompletableFuture<MethodCallResult<Void>> callAddCommentAsync(
+      @Nullable ByteString eventId, @Nullable LocalizedText comment);
+
+  /** Asynchronous form of {@link #callAddCommentWith}. */
+  CompletableFuture<MethodCallResult<Void>> callAddCommentWithAsync(
+      MethodCallOptions options, @Nullable ByteString eventId, @Nullable LocalizedText comment);
+
+  /**
+   * Resolves the optional ConditionRefresh Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.5.7">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getConditionRefreshMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getConditionRefreshMethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getConditionRefreshMethodNodeAsync();
+
+  /**
+   * Resolves the optional ConditionRefresh2 Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.5.8">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getConditionRefresh2MethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getConditionRefresh2MethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getConditionRefresh2MethodNodeAsync();
+
+  /**
+   * Resolves the mandatory Disable Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.5.4">Model
+   *     documentation</a>
+   */
+  UaMethodNode getDisableMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getDisableMethodNode()}. */
+  CompletableFuture<UaMethodNode> getDisableMethodNodeAsync();
+
+  /**
+   * Calls the Disable Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.5.4">Model
+   *     documentation</a>
+   */
+  void disable() throws UaException;
+
+  /**
+   * Calls the Disable Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callDisable() throws UaException;
+
+  /**
+   * Calls the Disable Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callDisableWith(MethodCallOptions options) throws UaException;
+
+  /** Asynchronous form of {@link #disable}. */
+  CompletableFuture<Void> disableAsync();
+
+  /** Asynchronous form of {@link #callDisable}. */
+  CompletableFuture<MethodCallResult<Void>> callDisableAsync();
+
+  /** Asynchronous form of {@link #callDisableWith}. */
+  CompletableFuture<MethodCallResult<Void>> callDisableWithAsync(MethodCallOptions options);
+
+  /**
+   * Resolves the mandatory Enable Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.5.5">Model
+   *     documentation</a>
+   */
+  UaMethodNode getEnableMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getEnableMethodNode()}. */
+  CompletableFuture<UaMethodNode> getEnableMethodNodeAsync();
+
+  /**
+   * Calls the Enable Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.5.5">Model
+   *     documentation</a>
+   */
+  void enable() throws UaException;
+
+  /**
+   * Calls the Enable Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callEnable() throws UaException;
+
+  /**
+   * Calls the Enable Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callEnableWith(MethodCallOptions options) throws UaException;
+
+  /** Asynchronous form of {@link #enable}. */
+  CompletableFuture<Void> enableAsync();
+
+  /** Asynchronous form of {@link #callEnable}. */
+  CompletableFuture<MethodCallResult<Void>> callEnableAsync();
+
+  /** Asynchronous form of {@link #callEnableWith}. */
+  CompletableFuture<MethodCallResult<Void>> callEnableWithAsync(MethodCallOptions options);
 }

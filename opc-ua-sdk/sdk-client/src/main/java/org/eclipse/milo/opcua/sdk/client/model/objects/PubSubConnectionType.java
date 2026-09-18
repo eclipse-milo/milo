@@ -1,338 +1,344 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallOptions;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallResult;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyType;
 import org.eclipse.milo.opcua.sdk.client.model.variables.SelectionListType;
+import org.eclipse.milo.opcua.sdk.client.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.structured.KeyValuePair;
+import org.eclipse.milo.opcua.stack.core.types.structured.ReaderGroupDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.WriterGroupDataType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.2">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.2</a>
+ * Client API for the PubSubConnectionType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.2">Model
+ *     documentation</a>
  */
 public interface PubSubConnectionType extends BaseObjectType {
-  QualifiedProperty<Object> PUBLISHER_ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "PublisherId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24"),
-          -1,
-          Object.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 14209L);
 
-  QualifiedProperty<KeyValuePair[]> CONNECTION_PROPERTIES =
+  QualifiedProperty<Variant> PublisherId_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
+          "PublisherId",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 24L),
+          -1,
+          Variant.class);
+
+  QualifiedProperty<KeyValuePair[]> ConnectionProperties_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
           "ConnectionProperties",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14533"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 14533L),
           1,
           KeyValuePair[].class);
 
   /**
-   * Get the local value of the PublisherId Node.
+   * Resolves the optional Diagnostics child, a PubSubDiagnosticsConnectionType.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the PublisherId Node.
-   * @throws UaException if an error occurs creating or getting the PublisherId Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.11/#9.1.11.8">PubSubDiagnosticsConnectionType
+   *     documentation</a>
    */
-  Object getPublisherId() throws UaException;
+  @Nullable PubSubDiagnosticsConnectionType getDiagnosticsNode() throws UaException;
+
+  /** Asynchronous form of {@link #getDiagnosticsNode()}. */
+  CompletableFuture<? extends @Nullable PubSubDiagnosticsConnectionType> getDiagnosticsNodeAsync();
 
   /**
-   * Set the local value of the PublisherId Node.
+   * Resolves the mandatory PublisherId child, a PropertyType with DataType BaseDataType.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the PublisherId Node.
-   * @throws UaException if an error occurs creating or getting the PublisherId Node.
-   */
-  void setPublisherId(Object value) throws UaException;
-
-  /**
-   * Read the value of the PublisherId Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link Object} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Object readPublisherId() throws UaException;
-
-  /**
-   * Write a new value for the PublisherId Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Object} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writePublisherId(Object value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readPublisherId}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<?> readPublisherIdAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writePublisherId}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writePublisherIdAsync(Object value);
-
-  /**
-   * Get the PublisherId {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the PublisherId {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getPublisherIdNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getPublisherIdNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getPublisherIdNode()}. */
   CompletableFuture<? extends PropertyType> getPublisherIdNodeAsync();
 
   /**
-   * Get the local value of the ConnectionProperties Node.
+   * Reads the Value of the PublisherId child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ConnectionProperties Node.
-   * @throws UaException if an error occurs creating or getting the ConnectionProperties Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  KeyValuePair[] getConnectionProperties() throws UaException;
+  @Nullable Variant readPublisherId() throws UaException;
 
   /**
-   * Set the local value of the ConnectionProperties Node.
+   * Writes the Value of the PublisherId child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ConnectionProperties Node.
-   * @throws UaException if an error occurs creating or getting the ConnectionProperties Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setConnectionProperties(KeyValuePair[] value) throws UaException;
+  void writePublisherId(@Nullable Variant value) throws UaException;
+
+  /** Asynchronous form of {@link #readPublisherId()}. */
+  CompletableFuture<? extends @Nullable Variant> readPublisherIdAsync();
+
+  /** Asynchronous form of {@link #writePublisherId}; completes with the operation status. */
+  CompletableFuture<StatusCode> writePublisherIdAsync(@Nullable Variant value);
 
   /**
-   * Read the value of the ConnectionProperties Node from the server and update the local value if
-   * the operation succeeds.
+   * Resolves the optional TransportSettings child, a ConnectionTransportType.
    *
-   * @return the {@link KeyValuePair[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.8">ConnectionTransportType
+   *     documentation</a>
    */
-  KeyValuePair[] readConnectionProperties() throws UaException;
+  @Nullable ConnectionTransportType getTransportSettingsNode() throws UaException;
+
+  /** Asynchronous form of {@link #getTransportSettingsNode()}. */
+  CompletableFuture<? extends @Nullable ConnectionTransportType> getTransportSettingsNodeAsync();
 
   /**
-   * Write a new value for the ConnectionProperties Node to the server and update the local value if
-   * the operation succeeds.
+   * Resolves the mandatory TransportProfileUri child, a SelectionListType with DataType String.
    *
-   * @param value the {@link KeyValuePair[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeConnectionProperties(KeyValuePair[] value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readConnectionProperties}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends KeyValuePair[]> readConnectionPropertiesAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeConnectionProperties}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeConnectionPropertiesAsync(KeyValuePair[] value);
-
-  /**
-   * Get the ConnectionProperties {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ConnectionProperties {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getConnectionPropertiesNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getConnectionPropertiesNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getConnectionPropertiesNodeAsync();
-
-  /**
-   * Get the local value of the TransportProfileUri Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the TransportProfileUri Node.
-   * @throws UaException if an error occurs creating or getting the TransportProfileUri Node.
-   */
-  String getTransportProfileUri() throws UaException;
-
-  /**
-   * Set the local value of the TransportProfileUri Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the TransportProfileUri Node.
-   * @throws UaException if an error occurs creating or getting the TransportProfileUri Node.
-   */
-  void setTransportProfileUri(String value) throws UaException;
-
-  /**
-   * Read the value of the TransportProfileUri Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String readTransportProfileUri() throws UaException;
-
-  /**
-   * Write a new value for the TransportProfileUri Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeTransportProfileUri(String value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readTransportProfileUri}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String> readTransportProfileUriAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeTransportProfileUri}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeTransportProfileUriAsync(String value);
-
-  /**
-   * Get the TransportProfileUri {@link SelectionListType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the TransportProfileUri {@link SelectionListType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.18">SelectionListType
+   *     documentation</a>
    */
   SelectionListType getTransportProfileUriNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getTransportProfileUriNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the SelectionListType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getTransportProfileUriNode()}. */
   CompletableFuture<? extends SelectionListType> getTransportProfileUriNodeAsync();
 
   /**
-   * Get the Address {@link NetworkAddressType} Node, or {@code null} if it does not exist.
+   * Reads the Value of the TransportProfileUri child from the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the Address {@link NetworkAddressType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  NetworkAddressType getAddressNode() throws UaException;
+  @Nullable String readTransportProfileUri() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getAddressNode()}.
+   * Writes the Value of the TransportProfileUri child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the NetworkAddressType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends NetworkAddressType> getAddressNodeAsync();
+  void writeTransportProfileUri(@Nullable String value) throws UaException;
+
+  /** Asynchronous form of {@link #readTransportProfileUri()}. */
+  CompletableFuture<? extends @Nullable String> readTransportProfileUriAsync();
 
   /**
-   * Get the TransportSettings {@link ConnectionTransportType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the TransportSettings {@link ConnectionTransportType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * Asynchronous form of {@link #writeTransportProfileUri}; completes with the operation status.
    */
-  ConnectionTransportType getTransportSettingsNode() throws UaException;
+  CompletableFuture<StatusCode> writeTransportProfileUriAsync(@Nullable String value);
 
   /**
-   * Asynchronous implementation of {@link #getTransportSettingsNode()}.
+   * Resolves the mandatory ConnectionProperties child, a PropertyType with DataType KeyValuePair.
    *
-   * @return a CompletableFuture that completes successfully with the ConnectionTransportType Node
-   *     or completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  CompletableFuture<? extends ConnectionTransportType> getTransportSettingsNodeAsync();
+  PropertyType getConnectionPropertiesNode() throws UaException;
+
+  /** Asynchronous form of {@link #getConnectionPropertiesNode()}. */
+  CompletableFuture<? extends PropertyType> getConnectionPropertiesNodeAsync();
 
   /**
-   * Get the Status {@link PubSubStatusType} Node, or {@code null} if it does not exist.
+   * Reads the Value of the ConnectionProperties child from the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable KeyValuePair @Nullable [] readConnectionProperties() throws UaException;
+
+  /**
+   * Writes the Value of the ConnectionProperties child to the server.
    *
-   * @return the Status {@link PubSubStatusType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeConnectionProperties(@Nullable KeyValuePair @Nullable [] value) throws UaException;
+
+  /** Asynchronous form of {@link #readConnectionProperties()}. */
+  CompletableFuture<? extends @Nullable KeyValuePair @Nullable []> readConnectionPropertiesAsync();
+
+  /**
+   * Asynchronous form of {@link #writeConnectionProperties}; completes with the operation status.
+   */
+  CompletableFuture<StatusCode> writeConnectionPropertiesAsync(
+      @Nullable KeyValuePair @Nullable [] value);
+
+  /**
+   * Resolves the mandatory Status child, a PubSubStatusType.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.10/#9.1.10.1">PubSubStatusType
+   *     documentation</a>
    */
   PubSubStatusType getStatusNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getStatusNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PubSubStatusType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getStatusNode()}. */
   CompletableFuture<? extends PubSubStatusType> getStatusNodeAsync();
 
   /**
-   * Get the Diagnostics {@link PubSubDiagnosticsConnectionType} Node, or {@code null} if it does
-   * not exist.
+   * Resolves the mandatory Address child, a NetworkAddressType.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the Diagnostics {@link PubSubDiagnosticsConnectionType} Node, or {@code null} if it
-   *     does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.6">NetworkAddressType
+   *     documentation</a>
    */
-  PubSubDiagnosticsConnectionType getDiagnosticsNode() throws UaException;
+  NetworkAddressType getAddressNode() throws UaException;
+
+  /** Asynchronous form of {@link #getAddressNode()}. */
+  CompletableFuture<? extends NetworkAddressType> getAddressNodeAsync();
 
   /**
-   * Asynchronous implementation of {@link #getDiagnosticsNode()}.
+   * Resolves the optional AddReaderGroup Method node.
    *
-   * @return a CompletableFuture that completes successfully with the
-   *     PubSubDiagnosticsConnectionType Node or completes exceptionally if an error occurs creating
-   *     or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.4">Model
+   *     documentation</a>
    */
-  CompletableFuture<? extends PubSubDiagnosticsConnectionType> getDiagnosticsNodeAsync();
+  @Nullable UaMethodNode getAddReaderGroupMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getAddReaderGroupMethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getAddReaderGroupMethodNodeAsync();
+
+  /**
+   * Calls the AddReaderGroup Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.4">Model
+   *     documentation</a>
+   */
+  @Nullable NodeId addReaderGroup(@Nullable ReaderGroupDataType configuration) throws UaException;
+
+  /**
+   * Calls the AddReaderGroup Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<@Nullable NodeId> callAddReaderGroup(@Nullable ReaderGroupDataType configuration)
+      throws UaException;
+
+  /**
+   * Calls the AddReaderGroup Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<@Nullable NodeId> callAddReaderGroupWith(
+      MethodCallOptions options, @Nullable ReaderGroupDataType configuration) throws UaException;
+
+  /** Asynchronous form of {@link #addReaderGroup}. */
+  CompletableFuture<@Nullable NodeId> addReaderGroupAsync(
+      @Nullable ReaderGroupDataType configuration);
+
+  /** Asynchronous form of {@link #callAddReaderGroup}. */
+  CompletableFuture<MethodCallResult<@Nullable NodeId>> callAddReaderGroupAsync(
+      @Nullable ReaderGroupDataType configuration);
+
+  /** Asynchronous form of {@link #callAddReaderGroupWith}. */
+  CompletableFuture<MethodCallResult<@Nullable NodeId>> callAddReaderGroupWithAsync(
+      MethodCallOptions options, @Nullable ReaderGroupDataType configuration);
+
+  /**
+   * Resolves the optional AddWriterGroup Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.3">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getAddWriterGroupMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getAddWriterGroupMethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getAddWriterGroupMethodNodeAsync();
+
+  /**
+   * Calls the AddWriterGroup Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.3">Model
+   *     documentation</a>
+   */
+  @Nullable NodeId addWriterGroup(@Nullable WriterGroupDataType configuration) throws UaException;
+
+  /**
+   * Calls the AddWriterGroup Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<@Nullable NodeId> callAddWriterGroup(@Nullable WriterGroupDataType configuration)
+      throws UaException;
+
+  /**
+   * Calls the AddWriterGroup Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<@Nullable NodeId> callAddWriterGroupWith(
+      MethodCallOptions options, @Nullable WriterGroupDataType configuration) throws UaException;
+
+  /** Asynchronous form of {@link #addWriterGroup}. */
+  CompletableFuture<@Nullable NodeId> addWriterGroupAsync(
+      @Nullable WriterGroupDataType configuration);
+
+  /** Asynchronous form of {@link #callAddWriterGroup}. */
+  CompletableFuture<MethodCallResult<@Nullable NodeId>> callAddWriterGroupAsync(
+      @Nullable WriterGroupDataType configuration);
+
+  /** Asynchronous form of {@link #callAddWriterGroupWith}. */
+  CompletableFuture<MethodCallResult<@Nullable NodeId>> callAddWriterGroupWithAsync(
+      MethodCallOptions options, @Nullable WriterGroupDataType configuration);
+
+  /**
+   * Resolves the optional RemoveGroup Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.5">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getRemoveGroupMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getRemoveGroupMethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getRemoveGroupMethodNodeAsync();
+
+  /**
+   * Calls the RemoveGroup Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.5">Model
+   *     documentation</a>
+   */
+  void removeGroup(@Nullable NodeId groupId) throws UaException;
+
+  /**
+   * Calls the RemoveGroup Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callRemoveGroup(@Nullable NodeId groupId) throws UaException;
+
+  /**
+   * Calls the RemoveGroup Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callRemoveGroupWith(MethodCallOptions options, @Nullable NodeId groupId)
+      throws UaException;
+
+  /** Asynchronous form of {@link #removeGroup}. */
+  CompletableFuture<Void> removeGroupAsync(@Nullable NodeId groupId);
+
+  /** Asynchronous form of {@link #callRemoveGroup}. */
+  CompletableFuture<MethodCallResult<Void>> callRemoveGroupAsync(@Nullable NodeId groupId);
+
+  /** Asynchronous form of {@link #callRemoveGroupWith}. */
+  CompletableFuture<MethodCallResult<Void>> callRemoveGroupWithAsync(
+      MethodCallOptions options, @Nullable NodeId groupId);
 }

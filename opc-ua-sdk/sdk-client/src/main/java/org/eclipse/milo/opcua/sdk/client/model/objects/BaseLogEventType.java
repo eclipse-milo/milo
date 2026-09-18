@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
@@ -15,413 +5,168 @@ import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyType;
 import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.structured.TraceContextDataType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part26/6.3">https://reference.opcfoundation.org/v105/Core/docs/Part26/6.3</a>
+ * Client API for the BaseLogEventType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part26/6.3">Model
+ *     documentation</a>
  */
 public interface BaseLogEventType extends BaseEventType {
-  QualifiedProperty<NodeId> CONDITION_CLASS_ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ConditionClassId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-          -1,
-          NodeId.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 19362L);
 
-  QualifiedProperty<LocalizedText> CONDITION_CLASS_NAME =
+  QualifiedProperty<TraceContextDataType> TraceContext_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ConditionClassName",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
-          -1,
-          LocalizedText.class);
-
-  QualifiedProperty<StatusCode> ERROR_CODE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ErrorCode",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=19"),
-          -1,
-          StatusCode.class);
-
-  QualifiedProperty<NodeId> ERROR_CODE_NODE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ErrorCodeNode",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-          -1,
-          NodeId.class);
-
-  QualifiedProperty<TraceContextDataType> TRACE_CONTEXT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "TraceContext",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=19747"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 19747L),
           -1,
           TraceContextDataType.class);
 
-  /**
-   * Get the local value of the ConditionClassId Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ConditionClassId Node.
-   * @throws UaException if an error occurs creating or getting the ConditionClassId Node.
-   */
-  NodeId getConditionClassId() throws UaException;
+  QualifiedProperty<NodeId> ErrorCodeNode_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "ErrorCodeNode",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 17L),
+          -1,
+          NodeId.class);
+
+  QualifiedProperty<StatusCode> ErrorCode__PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "ErrorCode",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 19L),
+          -1,
+          StatusCode.class);
 
   /**
-   * Set the local value of the ConditionClassId Node.
+   * Resolves the optional TraceContext child, a PropertyType with DataType TraceContextDataType.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ConditionClassId Node.
-   * @throws UaException if an error occurs creating or getting the ConditionClassId Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  void setConditionClassId(NodeId value) throws UaException;
+  @Nullable PropertyType getTraceContextNode() throws UaException;
+
+  /** Asynchronous form of {@link #getTraceContextNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getTraceContextNodeAsync();
 
   /**
-   * Read the value of the ConditionClassId Node from the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the TraceContext child from the server.
    *
-   * @return the {@link NodeId} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  NodeId readConditionClassId() throws UaException;
+  @Nullable TraceContextDataType readTraceContext() throws UaException;
 
   /**
-   * Write a new value for the ConditionClassId Node to the server and update the local value if the
-   * operation succeeds.
+   * Writes the Value of the TraceContext child to the server.
    *
-   * @param value the {@link NodeId} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeConditionClassId(NodeId value) throws UaException;
+  void writeTraceContext(@Nullable TraceContextDataType value) throws UaException;
+
+  /** Asynchronous form of {@link #readTraceContext()}. */
+  CompletableFuture<? extends @Nullable TraceContextDataType> readTraceContextAsync();
+
+  /** Asynchronous form of {@link #writeTraceContext}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeTraceContextAsync(@Nullable TraceContextDataType value);
 
   /**
-   * An asynchronous implementation of {@link #readConditionClassId}.
+   * Resolves the optional ErrorCodeNode child, a PropertyType with DataType NodeId.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  CompletableFuture<? extends NodeId> readConditionClassIdAsync();
+  @Nullable PropertyType getErrorCodeNodeNode() throws UaException;
+
+  /** Asynchronous form of {@link #getErrorCodeNodeNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getErrorCodeNodeNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeConditionClassId}.
+   * Reads the Value of the ErrorCodeNode child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeConditionClassIdAsync(NodeId value);
+  @Nullable NodeId readErrorCodeNode() throws UaException;
 
   /**
-   * Get the ConditionClassId {@link PropertyType} Node, or {@code null} if it does not exist.
+   * Writes the Value of the ErrorCodeNode child to the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeErrorCodeNode(@Nullable NodeId value) throws UaException;
+
+  /** Asynchronous form of {@link #readErrorCodeNode()}. */
+  CompletableFuture<? extends @Nullable NodeId> readErrorCodeNodeAsync();
+
+  /** Asynchronous form of {@link #writeErrorCodeNode}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeErrorCodeNodeAsync(@Nullable NodeId value);
+
+  /**
+   * Resolves the mandatory ConditionClassId child, a PropertyType with DataType NodeId.
    *
-   * @return the ConditionClassId {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getConditionClassIdNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getConditionClassIdNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getConditionClassIdNode()}. */
   CompletableFuture<? extends PropertyType> getConditionClassIdNodeAsync();
 
   /**
-   * Get the local value of the ConditionClassName Node.
+   * Resolves the mandatory ConditionClassName child, a PropertyType with DataType LocalizedText.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ConditionClassName Node.
-   * @throws UaException if an error occurs creating or getting the ConditionClassName Node.
-   */
-  LocalizedText getConditionClassName() throws UaException;
-
-  /**
-   * Set the local value of the ConditionClassName Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ConditionClassName Node.
-   * @throws UaException if an error occurs creating or getting the ConditionClassName Node.
-   */
-  void setConditionClassName(LocalizedText value) throws UaException;
-
-  /**
-   * Read the value of the ConditionClassName Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link LocalizedText} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  LocalizedText readConditionClassName() throws UaException;
-
-  /**
-   * Write a new value for the ConditionClassName Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link LocalizedText} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeConditionClassName(LocalizedText value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readConditionClassName}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends LocalizedText> readConditionClassNameAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeConditionClassName}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeConditionClassNameAsync(LocalizedText value);
-
-  /**
-   * Get the ConditionClassName {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ConditionClassName {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getConditionClassNameNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getConditionClassNameNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getConditionClassNameNode()}. */
   CompletableFuture<? extends PropertyType> getConditionClassNameNodeAsync();
 
   /**
-   * Get the local value of the ErrorCode Node.
+   * Resolves the optional ErrorCode child, a PropertyType with DataType StatusCode.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ErrorCode Node.
-   * @throws UaException if an error occurs creating or getting the ErrorCode Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  StatusCode getErrorCode() throws UaException;
+  @Nullable PropertyType getErrorCode_Node() throws UaException;
+
+  /** Asynchronous form of {@link #getErrorCode_Node()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getErrorCode_NodeAsync();
 
   /**
-   * Set the local value of the ErrorCode Node.
+   * Reads the Value of the ErrorCode child from the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ErrorCode Node.
-   * @throws UaException if an error occurs creating or getting the ErrorCode Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setErrorCode(StatusCode value) throws UaException;
+  @Nullable StatusCode readErrorCode_() throws UaException;
 
   /**
-   * Read the value of the ErrorCode Node from the server and update the local value if the
-   * operation succeeds.
+   * Writes the Value of the ErrorCode child to the server.
    *
-   * @return the {@link StatusCode} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  StatusCode readErrorCode() throws UaException;
+  void writeErrorCode_(@Nullable StatusCode value) throws UaException;
 
-  /**
-   * Write a new value for the ErrorCode Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link StatusCode} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeErrorCode(StatusCode value) throws UaException;
+  /** Asynchronous form of {@link #readErrorCode_()}. */
+  CompletableFuture<? extends @Nullable StatusCode> readErrorCode_Async();
 
-  /**
-   * An asynchronous implementation of {@link #readErrorCode}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends StatusCode> readErrorCodeAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeErrorCode}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeErrorCodeAsync(StatusCode value);
-
-  /**
-   * Get the ErrorCode {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ErrorCode {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getErrorCodePropertyNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getErrorCodePropertyNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getErrorCodePropertyNodeAsync();
-
-  /**
-   * Get the local value of the ErrorCodeNode Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ErrorCodeNode Node.
-   * @throws UaException if an error occurs creating or getting the ErrorCodeNode Node.
-   */
-  NodeId getErrorCodeNode() throws UaException;
-
-  /**
-   * Set the local value of the ErrorCodeNode Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ErrorCodeNode Node.
-   * @throws UaException if an error occurs creating or getting the ErrorCodeNode Node.
-   */
-  void setErrorCodeNode(NodeId value) throws UaException;
-
-  /**
-   * Read the value of the ErrorCodeNode Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link NodeId} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  NodeId readErrorCodeNode() throws UaException;
-
-  /**
-   * Write a new value for the ErrorCodeNode Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link NodeId} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeErrorCodeNode(NodeId value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readErrorCodeNode}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends NodeId> readErrorCodeNodeAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeErrorCodeNode}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeErrorCodeNodeAsync(NodeId value);
-
-  /**
-   * Get the ErrorCodeNode {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ErrorCodeNode {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getErrorCodeNodeNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getErrorCodeNodeNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getErrorCodeNodeNodeAsync();
-
-  /**
-   * Get the local value of the TraceContext Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the TraceContext Node.
-   * @throws UaException if an error occurs creating or getting the TraceContext Node.
-   */
-  TraceContextDataType getTraceContext() throws UaException;
-
-  /**
-   * Set the local value of the TraceContext Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the TraceContext Node.
-   * @throws UaException if an error occurs creating or getting the TraceContext Node.
-   */
-  void setTraceContext(TraceContextDataType value) throws UaException;
-
-  /**
-   * Read the value of the TraceContext Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link TraceContextDataType} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  TraceContextDataType readTraceContext() throws UaException;
-
-  /**
-   * Write a new value for the TraceContext Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link TraceContextDataType} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeTraceContext(TraceContextDataType value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readTraceContext}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends TraceContextDataType> readTraceContextAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeTraceContext}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeTraceContextAsync(TraceContextDataType value);
-
-  /**
-   * Get the TraceContext {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the TraceContext {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getTraceContextNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getTraceContextNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getTraceContextNodeAsync();
+  /** Asynchronous form of {@link #writeErrorCode_}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeErrorCode_Async(@Nullable StatusCode value);
 }

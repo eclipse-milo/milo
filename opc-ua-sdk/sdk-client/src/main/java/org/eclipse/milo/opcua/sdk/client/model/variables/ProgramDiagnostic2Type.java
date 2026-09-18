@@ -1,919 +1,474 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.variables;
 
 import java.util.concurrent.CompletableFuture;
 import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
+import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
+import org.eclipse.milo.opcua.stack.core.types.structured.ProgramDiagnostic2DataType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part10/5.2.9">https://reference.opcfoundation.org/v105/Core/docs/Part10/5.2.9</a>
+ * Client API for the ProgramDiagnostic2Type VariableType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part10/5.2.9">Model
+ *     documentation</a>
  */
 public interface ProgramDiagnostic2Type extends BaseDataVariableType {
-  QualifiedProperty<DateTime> LAST_TRANSITION_TIME =
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 15383L);
+
+  QualifiedProperty<DateTime> LastTransitionTime_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "LastTransitionTime",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 294L),
           -1,
           DateTime.class);
 
   /**
-   * Get the local value of the LastTransitionTime Node.
+   * Resolves the mandatory LastMethodCall child, a BaseDataVariableType with DataType String.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the LastTransitionTime Node.
-   * @throws UaException if an error occurs creating or getting the LastTransitionTime Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  DateTime getLastTransitionTime() throws UaException;
+  VariableNode getLastMethodCallNode() throws UaException;
+
+  /** Asynchronous form of {@link #getLastMethodCallNode()}. */
+  CompletableFuture<? extends VariableNode> getLastMethodCallNodeAsync();
 
   /**
-   * Set the local value of the LastTransitionTime Node.
+   * Reads the Value of the LastMethodCall child from the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the LastTransitionTime Node.
-   * @throws UaException if an error occurs creating or getting the LastTransitionTime Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setLastTransitionTime(DateTime value) throws UaException;
+  @Nullable String readLastMethodCall() throws UaException;
 
   /**
-   * Read the value of the LastTransitionTime Node from the server and update the local value if the
-   * operation succeeds.
+   * Writes the Value of the LastMethodCall child to the server.
    *
-   * @return the {@link DateTime} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  DateTime readLastTransitionTime() throws UaException;
+  void writeLastMethodCall(@Nullable String value) throws UaException;
+
+  /** Asynchronous form of {@link #readLastMethodCall()}. */
+  CompletableFuture<? extends @Nullable String> readLastMethodCallAsync();
+
+  /** Asynchronous form of {@link #writeLastMethodCall}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeLastMethodCallAsync(@Nullable String value);
 
   /**
-   * Write a new value for the LastTransitionTime Node to the server and update the local value if
-   * the operation succeeds.
+   * Resolves the mandatory CreateSessionId child, a BaseDataVariableType with DataType NodeId.
    *
-   * @param value the {@link DateTime} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  void writeLastTransitionTime(DateTime value) throws UaException;
+  VariableNode getCreateSessionIdNode() throws UaException;
+
+  /** Asynchronous form of {@link #getCreateSessionIdNode()}. */
+  CompletableFuture<? extends VariableNode> getCreateSessionIdNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #readLastTransitionTime}.
+   * Reads the Value of the CreateSessionId child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends DateTime> readLastTransitionTimeAsync();
+  @Nullable NodeId readCreateSessionId() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeLastTransitionTime}.
+   * Writes the Value of the CreateSessionId child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeLastTransitionTimeAsync(DateTime value);
+  void writeCreateSessionId(@Nullable NodeId value) throws UaException;
+
+  /** Asynchronous form of {@link #readCreateSessionId()}. */
+  CompletableFuture<? extends @Nullable NodeId> readCreateSessionIdAsync();
+
+  /** Asynchronous form of {@link #writeCreateSessionId}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeCreateSessionIdAsync(@Nullable NodeId value);
 
   /**
-   * Get the LastTransitionTime {@link PropertyType} Node, or {@code null} if it does not exist.
+   * Resolves the mandatory CreateClientName child, a BaseDataVariableType with DataType String.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  VariableNode getCreateClientNameNode() throws UaException;
+
+  /** Asynchronous form of {@link #getCreateClientNameNode()}. */
+  CompletableFuture<? extends VariableNode> getCreateClientNameNodeAsync();
+
+  /**
+   * Reads the Value of the CreateClientName child from the server.
    *
-   * @return the LastTransitionTime {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable String readCreateClientName() throws UaException;
+
+  /**
+   * Writes the Value of the CreateClientName child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeCreateClientName(@Nullable String value) throws UaException;
+
+  /** Asynchronous form of {@link #readCreateClientName()}. */
+  CompletableFuture<? extends @Nullable String> readCreateClientNameAsync();
+
+  /** Asynchronous form of {@link #writeCreateClientName}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeCreateClientNameAsync(@Nullable String value);
+
+  /**
+   * Resolves the mandatory LastMethodCallTime child, a BaseDataVariableType with DataType UtcTime.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  VariableNode getLastMethodCallTimeNode() throws UaException;
+
+  /** Asynchronous form of {@link #getLastMethodCallTimeNode()}. */
+  CompletableFuture<? extends VariableNode> getLastMethodCallTimeNodeAsync();
+
+  /**
+   * Reads the Value of the LastMethodCallTime child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable DateTime readLastMethodCallTime() throws UaException;
+
+  /**
+   * Writes the Value of the LastMethodCallTime child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeLastMethodCallTime(@Nullable DateTime value) throws UaException;
+
+  /** Asynchronous form of {@link #readLastMethodCallTime()}. */
+  CompletableFuture<? extends @Nullable DateTime> readLastMethodCallTimeAsync();
+
+  /** Asynchronous form of {@link #writeLastMethodCallTime}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeLastMethodCallTimeAsync(@Nullable DateTime value);
+
+  /**
+   * Resolves the mandatory LastTransitionTime child, a PropertyType with DataType UtcTime.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getLastTransitionTimeNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getLastTransitionTimeNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getLastTransitionTimeNode()}. */
   CompletableFuture<? extends PropertyType> getLastTransitionTimeNodeAsync();
 
   /**
-   * Get the local value of the CreateSessionId Node.
+   * Reads the Value of the LastTransitionTime child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the CreateSessionId Node.
-   * @throws UaException if an error occurs creating or getting the CreateSessionId Node.
-   */
-  NodeId getCreateSessionId() throws UaException;
-
-  /**
-   * Set the local value of the CreateSessionId Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the CreateSessionId Node.
-   * @throws UaException if an error occurs creating or getting the CreateSessionId Node.
-   */
-  void setCreateSessionId(NodeId value) throws UaException;
-
-  /**
-   * Read the value of the CreateSessionId Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link NodeId} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  NodeId readCreateSessionId() throws UaException;
-
-  /**
-   * Write a new value for the CreateSessionId Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link NodeId} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeCreateSessionId(NodeId value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readCreateSessionId}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends NodeId> readCreateSessionIdAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeCreateSessionId}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeCreateSessionIdAsync(NodeId value);
-
-  /**
-   * Get the CreateSessionId {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the CreateSessionId {@link BaseDataVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getCreateSessionIdNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getCreateSessionIdNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getCreateSessionIdNodeAsync();
-
-  /**
-   * Get the local value of the CreateClientName Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the CreateClientName Node.
-   * @throws UaException if an error occurs creating or getting the CreateClientName Node.
-   */
-  String getCreateClientName() throws UaException;
-
-  /**
-   * Set the local value of the CreateClientName Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the CreateClientName Node.
-   * @throws UaException if an error occurs creating or getting the CreateClientName Node.
-   */
-  void setCreateClientName(String value) throws UaException;
-
-  /**
-   * Read the value of the CreateClientName Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String readCreateClientName() throws UaException;
-
-  /**
-   * Write a new value for the CreateClientName Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeCreateClientName(String value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readCreateClientName}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String> readCreateClientNameAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeCreateClientName}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeCreateClientNameAsync(String value);
-
-  /**
-   * Get the CreateClientName {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the CreateClientName {@link BaseDataVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getCreateClientNameNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getCreateClientNameNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getCreateClientNameNodeAsync();
-
-  /**
-   * Get the local value of the InvocationCreationTime Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the InvocationCreationTime Node.
-   * @throws UaException if an error occurs creating or getting the InvocationCreationTime Node.
-   */
-  DateTime getInvocationCreationTime() throws UaException;
-
-  /**
-   * Set the local value of the InvocationCreationTime Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the InvocationCreationTime Node.
-   * @throws UaException if an error occurs creating or getting the InvocationCreationTime Node.
-   */
-  void setInvocationCreationTime(DateTime value) throws UaException;
-
-  /**
-   * Read the value of the InvocationCreationTime Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link DateTime} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  DateTime readInvocationCreationTime() throws UaException;
-
-  /**
-   * Write a new value for the InvocationCreationTime Node to the server and update the local value
-   * if the operation succeeds.
-   *
-   * @param value the {@link DateTime} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeInvocationCreationTime(DateTime value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readInvocationCreationTime}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends DateTime> readInvocationCreationTimeAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeInvocationCreationTime}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeInvocationCreationTimeAsync(DateTime value);
-
-  /**
-   * Get the InvocationCreationTime {@link BaseDataVariableType} Node, or {@code null} if it does
-   * not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the InvocationCreationTime {@link BaseDataVariableType} Node, or {@code null} if it
-   *     does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getInvocationCreationTimeNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getInvocationCreationTimeNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getInvocationCreationTimeNodeAsync();
-
-  /**
-   * Get the local value of the LastMethodCall Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the LastMethodCall Node.
-   * @throws UaException if an error occurs creating or getting the LastMethodCall Node.
-   */
-  String getLastMethodCall() throws UaException;
-
-  /**
-   * Set the local value of the LastMethodCall Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the LastMethodCall Node.
-   * @throws UaException if an error occurs creating or getting the LastMethodCall Node.
-   */
-  void setLastMethodCall(String value) throws UaException;
-
-  /**
-   * Read the value of the LastMethodCall Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String readLastMethodCall() throws UaException;
-
-  /**
-   * Write a new value for the LastMethodCall Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeLastMethodCall(String value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readLastMethodCall}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends String> readLastMethodCallAsync();
+  @Nullable DateTime readLastTransitionTime() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeLastMethodCall}.
+   * Writes the Value of the LastTransitionTime child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeLastMethodCallAsync(String value);
+  void writeLastTransitionTime(@Nullable DateTime value) throws UaException;
 
-  /**
-   * Get the LastMethodCall {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the LastMethodCall {@link BaseDataVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getLastMethodCallNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getLastMethodCallNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getLastMethodCallNodeAsync();
-
-  /**
-   * Get the local value of the LastMethodSessionId Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the LastMethodSessionId Node.
-   * @throws UaException if an error occurs creating or getting the LastMethodSessionId Node.
-   */
-  NodeId getLastMethodSessionId() throws UaException;
-
-  /**
-   * Set the local value of the LastMethodSessionId Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the LastMethodSessionId Node.
-   * @throws UaException if an error occurs creating or getting the LastMethodSessionId Node.
-   */
-  void setLastMethodSessionId(NodeId value) throws UaException;
-
-  /**
-   * Read the value of the LastMethodSessionId Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link NodeId} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  NodeId readLastMethodSessionId() throws UaException;
-
-  /**
-   * Write a new value for the LastMethodSessionId Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link NodeId} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeLastMethodSessionId(NodeId value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readLastMethodSessionId}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends NodeId> readLastMethodSessionIdAsync();
+  /** Asynchronous form of {@link #readLastTransitionTime()}. */
+  CompletableFuture<? extends @Nullable DateTime> readLastTransitionTimeAsync();
 
-  /**
-   * An asynchronous implementation of {@link #writeLastMethodSessionId}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeLastMethodSessionIdAsync(NodeId value);
-
-  /**
-   * Get the LastMethodSessionId {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the LastMethodSessionId {@link BaseDataVariableType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getLastMethodSessionIdNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getLastMethodSessionIdNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getLastMethodSessionIdNodeAsync();
-
-  /**
-   * Get the local value of the LastMethodInputArguments Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the LastMethodInputArguments Node.
-   * @throws UaException if an error occurs creating or getting the LastMethodInputArguments Node.
-   */
-  Argument[] getLastMethodInputArguments() throws UaException;
-
-  /**
-   * Set the local value of the LastMethodInputArguments Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the LastMethodInputArguments Node.
-   * @throws UaException if an error occurs creating or getting the LastMethodInputArguments Node.
-   */
-  void setLastMethodInputArguments(Argument[] value) throws UaException;
+  /** Asynchronous form of {@link #writeLastTransitionTime}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeLastTransitionTimeAsync(@Nullable DateTime value);
 
   /**
-   * Read the value of the LastMethodInputArguments Node from the server and update the local value
-   * if the operation succeeds.
+   * Resolves the mandatory LastMethodSessionId child, a BaseDataVariableType with DataType NodeId.
    *
-   * @return the {@link Argument[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  Argument[] readLastMethodInputArguments() throws UaException;
+  VariableNode getLastMethodSessionIdNode() throws UaException;
 
-  /**
-   * Write a new value for the LastMethodInputArguments Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link Argument[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeLastMethodInputArguments(Argument[] value) throws UaException;
+  /** Asynchronous form of {@link #getLastMethodSessionIdNode()}. */
+  CompletableFuture<? extends VariableNode> getLastMethodSessionIdNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #readLastMethodInputArguments}.
+   * Reads the Value of the LastMethodSessionId child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends Argument[]> readLastMethodInputArgumentsAsync();
+  @Nullable NodeId readLastMethodSessionId() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeLastMethodInputArguments}.
+   * Writes the Value of the LastMethodSessionId child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeLastMethodInputArgumentsAsync(Argument[] value);
+  void writeLastMethodSessionId(@Nullable NodeId value) throws UaException;
 
-  /**
-   * Get the LastMethodInputArguments {@link BaseDataVariableType} Node, or {@code null} if it does
-   * not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the LastMethodInputArguments {@link BaseDataVariableType} Node, or {@code null} if it
-   *     does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getLastMethodInputArgumentsNode() throws UaException;
+  /** Asynchronous form of {@link #readLastMethodSessionId()}. */
+  CompletableFuture<? extends @Nullable NodeId> readLastMethodSessionIdAsync();
 
   /**
-   * Asynchronous implementation of {@link #getLastMethodInputArgumentsNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * Asynchronous form of {@link #writeLastMethodSessionId}; completes with the operation status.
    */
-  CompletableFuture<? extends BaseDataVariableType> getLastMethodInputArgumentsNodeAsync();
+  CompletableFuture<StatusCode> writeLastMethodSessionIdAsync(@Nullable NodeId value);
 
   /**
-   * Get the local value of the LastMethodOutputArguments Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
+   * Resolves the mandatory LastMethodInputValues child, a BaseDataVariableType with DataType
+   * BaseDataType.
    *
-   * @return the local value of the LastMethodOutputArguments Node.
-   * @throws UaException if an error occurs creating or getting the LastMethodOutputArguments Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  Argument[] getLastMethodOutputArguments() throws UaException;
+  VariableNode getLastMethodInputValuesNode() throws UaException;
 
-  /**
-   * Set the local value of the LastMethodOutputArguments Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the LastMethodOutputArguments Node.
-   * @throws UaException if an error occurs creating or getting the LastMethodOutputArguments Node.
-   */
-  void setLastMethodOutputArguments(Argument[] value) throws UaException;
+  /** Asynchronous form of {@link #getLastMethodInputValuesNode()}. */
+  CompletableFuture<? extends VariableNode> getLastMethodInputValuesNodeAsync();
 
   /**
-   * Read the value of the LastMethodOutputArguments Node from the server and update the local value
-   * if the operation succeeds.
+   * Reads the Value of the LastMethodInputValues child from the server.
    *
-   * @return the {@link Argument[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  Argument[] readLastMethodOutputArguments() throws UaException;
+  @Nullable Variant @Nullable [] readLastMethodInputValues() throws UaException;
 
   /**
-   * Write a new value for the LastMethodOutputArguments Node to the server and update the local
-   * value if the operation succeeds.
+   * Writes the Value of the LastMethodInputValues child to the server.
    *
-   * @param value the {@link Argument[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeLastMethodOutputArguments(Argument[] value) throws UaException;
+  void writeLastMethodInputValues(@Nullable Variant @Nullable [] value) throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #readLastMethodOutputArguments}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Argument[]> readLastMethodOutputArgumentsAsync();
+  /** Asynchronous form of {@link #readLastMethodInputValues()}. */
+  CompletableFuture<? extends @Nullable Variant @Nullable []> readLastMethodInputValuesAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeLastMethodOutputArguments}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * Asynchronous form of {@link #writeLastMethodInputValues}; completes with the operation status.
    */
-  CompletableFuture<StatusCode> writeLastMethodOutputArgumentsAsync(Argument[] value);
+  CompletableFuture<StatusCode> writeLastMethodInputValuesAsync(
+      @Nullable Variant @Nullable [] value);
 
   /**
-   * Get the LastMethodOutputArguments {@link BaseDataVariableType} Node, or {@code null} if it does
-   * not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * Resolves the mandatory InvocationCreationTime child, a BaseDataVariableType with DataType
+   * UtcTime.
    *
-   * @return the LastMethodOutputArguments {@link BaseDataVariableType} Node, or {@code null} if it
-   *     does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  BaseDataVariableType getLastMethodOutputArgumentsNode() throws UaException;
+  VariableNode getInvocationCreationTimeNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getLastMethodOutputArgumentsNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getLastMethodOutputArgumentsNodeAsync();
+  /** Asynchronous form of {@link #getInvocationCreationTimeNode()}. */
+  CompletableFuture<? extends VariableNode> getInvocationCreationTimeNodeAsync();
 
   /**
-   * Get the local value of the LastMethodInputValues Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
+   * Reads the Value of the InvocationCreationTime child from the server.
    *
-   * @return the local value of the LastMethodInputValues Node.
-   * @throws UaException if an error occurs creating or getting the LastMethodInputValues Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  Object[] getLastMethodInputValues() throws UaException;
+  @Nullable DateTime readInvocationCreationTime() throws UaException;
 
   /**
-   * Set the local value of the LastMethodInputValues Node.
+   * Writes the Value of the InvocationCreationTime child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the LastMethodInputValues Node.
-   * @throws UaException if an error occurs creating or getting the LastMethodInputValues Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setLastMethodInputValues(Object[] value) throws UaException;
+  void writeInvocationCreationTime(@Nullable DateTime value) throws UaException;
 
-  /**
-   * Read the value of the LastMethodInputValues Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link Object[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Object[] readLastMethodInputValues() throws UaException;
+  /** Asynchronous form of {@link #readInvocationCreationTime()}. */
+  CompletableFuture<? extends @Nullable DateTime> readInvocationCreationTimeAsync();
 
   /**
-   * Write a new value for the LastMethodInputValues Node to the server and update the local value
-   * if the operation succeeds.
-   *
-   * @param value the {@link Object[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * Asynchronous form of {@link #writeInvocationCreationTime}; completes with the operation status.
    */
-  void writeLastMethodInputValues(Object[] value) throws UaException;
+  CompletableFuture<StatusCode> writeInvocationCreationTimeAsync(@Nullable DateTime value);
 
   /**
-   * An asynchronous implementation of {@link #readLastMethodInputValues}.
+   * Resolves the mandatory LastMethodOutputValues child, a BaseDataVariableType with DataType
+   * BaseDataType.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  CompletableFuture<? extends Object[]> readLastMethodInputValuesAsync();
+  VariableNode getLastMethodOutputValuesNode() throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #writeLastMethodInputValues}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeLastMethodInputValuesAsync(Object[] value);
+  /** Asynchronous form of {@link #getLastMethodOutputValuesNode()}. */
+  CompletableFuture<? extends VariableNode> getLastMethodOutputValuesNodeAsync();
 
   /**
-   * Get the LastMethodInputValues {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
+   * Reads the Value of the LastMethodOutputValues child from the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the LastMethodInputValues {@link BaseDataVariableType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  BaseDataVariableType getLastMethodInputValuesNode() throws UaException;
+  @Nullable Variant @Nullable [] readLastMethodOutputValues() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getLastMethodInputValuesNode()}.
+   * Writes the Value of the LastMethodOutputValues child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends BaseDataVariableType> getLastMethodInputValuesNodeAsync();
+  void writeLastMethodOutputValues(@Nullable Variant @Nullable [] value) throws UaException;
 
-  /**
-   * Get the local value of the LastMethodOutputValues Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the LastMethodOutputValues Node.
-   * @throws UaException if an error occurs creating or getting the LastMethodOutputValues Node.
-   */
-  Object[] getLastMethodOutputValues() throws UaException;
+  /** Asynchronous form of {@link #readLastMethodOutputValues()}. */
+  CompletableFuture<? extends @Nullable Variant @Nullable []> readLastMethodOutputValuesAsync();
 
   /**
-   * Set the local value of the LastMethodOutputValues Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the LastMethodOutputValues Node.
-   * @throws UaException if an error occurs creating or getting the LastMethodOutputValues Node.
+   * Asynchronous form of {@link #writeLastMethodOutputValues}; completes with the operation status.
    */
-  void setLastMethodOutputValues(Object[] value) throws UaException;
+  CompletableFuture<StatusCode> writeLastMethodOutputValuesAsync(
+      @Nullable Variant @Nullable [] value);
 
   /**
-   * Read the value of the LastMethodOutputValues Node from the server and update the local value if
-   * the operation succeeds.
+   * Resolves the mandatory LastMethodReturnStatus child, a BaseDataVariableType with DataType
+   * StatusCode.
    *
-   * @return the {@link Object[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  Object[] readLastMethodOutputValues() throws UaException;
+  VariableNode getLastMethodReturnStatusNode() throws UaException;
 
-  /**
-   * Write a new value for the LastMethodOutputValues Node to the server and update the local value
-   * if the operation succeeds.
-   *
-   * @param value the {@link Object[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeLastMethodOutputValues(Object[] value) throws UaException;
+  /** Asynchronous form of {@link #getLastMethodReturnStatusNode()}. */
+  CompletableFuture<? extends VariableNode> getLastMethodReturnStatusNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #readLastMethodOutputValues}.
+   * Reads the Value of the LastMethodReturnStatus child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends Object[]> readLastMethodOutputValuesAsync();
+  @Nullable StatusCode readLastMethodReturnStatus() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeLastMethodOutputValues}.
+   * Writes the Value of the LastMethodReturnStatus child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeLastMethodOutputValuesAsync(Object[] value);
+  void writeLastMethodReturnStatus(@Nullable StatusCode value) throws UaException;
 
-  /**
-   * Get the LastMethodOutputValues {@link BaseDataVariableType} Node, or {@code null} if it does
-   * not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the LastMethodOutputValues {@link BaseDataVariableType} Node, or {@code null} if it
-   *     does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getLastMethodOutputValuesNode() throws UaException;
+  /** Asynchronous form of {@link #readLastMethodReturnStatus()}. */
+  CompletableFuture<? extends @Nullable StatusCode> readLastMethodReturnStatusAsync();
 
   /**
-   * Asynchronous implementation of {@link #getLastMethodOutputValuesNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * Asynchronous form of {@link #writeLastMethodReturnStatus}; completes with the operation status.
    */
-  CompletableFuture<? extends BaseDataVariableType> getLastMethodOutputValuesNodeAsync();
+  CompletableFuture<StatusCode> writeLastMethodReturnStatusAsync(@Nullable StatusCode value);
 
   /**
-   * Get the local value of the LastMethodCallTime Node.
+   * Resolves the mandatory LastMethodInputArguments child, a BaseDataVariableType with DataType
+   * Argument.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the LastMethodCallTime Node.
-   * @throws UaException if an error occurs creating or getting the LastMethodCallTime Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  DateTime getLastMethodCallTime() throws UaException;
+  VariableNode getLastMethodInputArgumentsNode() throws UaException;
 
-  /**
-   * Set the local value of the LastMethodCallTime Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the LastMethodCallTime Node.
-   * @throws UaException if an error occurs creating or getting the LastMethodCallTime Node.
-   */
-  void setLastMethodCallTime(DateTime value) throws UaException;
+  /** Asynchronous form of {@link #getLastMethodInputArgumentsNode()}. */
+  CompletableFuture<? extends VariableNode> getLastMethodInputArgumentsNodeAsync();
 
   /**
-   * Read the value of the LastMethodCallTime Node from the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the LastMethodInputArguments child from the server.
    *
-   * @return the {@link DateTime} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  DateTime readLastMethodCallTime() throws UaException;
+  @Nullable Argument @Nullable [] readLastMethodInputArguments() throws UaException;
 
   /**
-   * Write a new value for the LastMethodCallTime Node to the server and update the local value if
-   * the operation succeeds.
+   * Writes the Value of the LastMethodInputArguments child to the server.
    *
-   * @param value the {@link DateTime} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeLastMethodCallTime(DateTime value) throws UaException;
+  void writeLastMethodInputArguments(@Nullable Argument @Nullable [] value) throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #readLastMethodCallTime}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends DateTime> readLastMethodCallTimeAsync();
+  /** Asynchronous form of {@link #readLastMethodInputArguments()}. */
+  CompletableFuture<? extends @Nullable Argument @Nullable []> readLastMethodInputArgumentsAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeLastMethodCallTime}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * Asynchronous form of {@link #writeLastMethodInputArguments}; completes with the operation
+   * status.
    */
-  CompletableFuture<StatusCode> writeLastMethodCallTimeAsync(DateTime value);
+  CompletableFuture<StatusCode> writeLastMethodInputArgumentsAsync(
+      @Nullable Argument @Nullable [] value);
 
   /**
-   * Get the LastMethodCallTime {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * Resolves the mandatory LastMethodOutputArguments child, a BaseDataVariableType with DataType
+   * Argument.
    *
-   * @return the LastMethodCallTime {@link BaseDataVariableType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  BaseDataVariableType getLastMethodCallTimeNode() throws UaException;
+  VariableNode getLastMethodOutputArgumentsNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getLastMethodCallTimeNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getLastMethodCallTimeNodeAsync();
+  /** Asynchronous form of {@link #getLastMethodOutputArgumentsNode()}. */
+  CompletableFuture<? extends VariableNode> getLastMethodOutputArgumentsNodeAsync();
 
   /**
-   * Get the local value of the LastMethodReturnStatus Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
+   * Reads the Value of the LastMethodOutputArguments child from the server.
    *
-   * @return the local value of the LastMethodReturnStatus Node.
-   * @throws UaException if an error occurs creating or getting the LastMethodReturnStatus Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  StatusCode getLastMethodReturnStatus() throws UaException;
+  @Nullable Argument @Nullable [] readLastMethodOutputArguments() throws UaException;
 
   /**
-   * Set the local value of the LastMethodReturnStatus Node.
+   * Writes the Value of the LastMethodOutputArguments child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the LastMethodReturnStatus Node.
-   * @throws UaException if an error occurs creating or getting the LastMethodReturnStatus Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setLastMethodReturnStatus(StatusCode value) throws UaException;
+  void writeLastMethodOutputArguments(@Nullable Argument @Nullable [] value) throws UaException;
 
-  /**
-   * Read the value of the LastMethodReturnStatus Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link StatusCode} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  StatusCode readLastMethodReturnStatus() throws UaException;
+  /** Asynchronous form of {@link #readLastMethodOutputArguments()}. */
+  CompletableFuture<? extends @Nullable Argument @Nullable []> readLastMethodOutputArgumentsAsync();
 
   /**
-   * Write a new value for the LastMethodReturnStatus Node to the server and update the local value
-   * if the operation succeeds.
-   *
-   * @param value the {@link StatusCode} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * Asynchronous form of {@link #writeLastMethodOutputArguments}; completes with the operation
+   * status.
    */
-  void writeLastMethodReturnStatus(StatusCode value) throws UaException;
+  CompletableFuture<StatusCode> writeLastMethodOutputArgumentsAsync(
+      @Nullable Argument @Nullable [] value);
 
   /**
-   * An asynchronous implementation of {@link #readLastMethodReturnStatus}.
+   * Reads the Value of this node from the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends StatusCode> readLastMethodReturnStatusAsync();
+  @Nullable ProgramDiagnostic2DataType readTypedValue() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeLastMethodReturnStatus}.
+   * Writes the Value of this node to the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeLastMethodReturnStatusAsync(StatusCode value);
+  void writeTypedValue(@Nullable ProgramDiagnostic2DataType value) throws UaException;
 
-  /**
-   * Get the LastMethodReturnStatus {@link BaseDataVariableType} Node, or {@code null} if it does
-   * not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the LastMethodReturnStatus {@link BaseDataVariableType} Node, or {@code null} if it
-   *     does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getLastMethodReturnStatusNode() throws UaException;
+  /** Asynchronous form of {@link #readTypedValue()}. */
+  CompletableFuture<? extends @Nullable ProgramDiagnostic2DataType> readTypedValueAsync();
 
-  /**
-   * Asynchronous implementation of {@link #getLastMethodReturnStatusNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getLastMethodReturnStatusNodeAsync();
+  /** Asynchronous form of {@link #writeTypedValue}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeTypedValueAsync(@Nullable ProgramDiagnostic2DataType value);
 }

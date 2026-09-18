@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.variables;
 
 import java.util.concurrent.CompletableFuture;
@@ -16,89 +6,55 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.structured.ContentFilter;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part16/4.6.5">https://reference.opcfoundation.org/v105/Core/docs/Part16/4.6.5</a>
+ * Client API for the ExpressionGuardVariableType VariableType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part16/4.6.5">Model
+ *     documentation</a>
  */
 public interface ExpressionGuardVariableType extends GuardVariableType {
-  QualifiedProperty<ContentFilter> EXPRESSION =
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 15128L);
+
+  QualifiedProperty<ContentFilter> Expression_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "Expression",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=586"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 586L),
           -1,
           ContentFilter.class);
 
   /**
-   * Get the local value of the Expression Node.
+   * Resolves the mandatory Expression child, a PropertyType with DataType ContentFilter.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the Expression Node.
-   * @throws UaException if an error occurs creating or getting the Expression Node.
-   */
-  ContentFilter getExpression() throws UaException;
-
-  /**
-   * Set the local value of the Expression Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the Expression Node.
-   * @throws UaException if an error occurs creating or getting the Expression Node.
-   */
-  void setExpression(ContentFilter value) throws UaException;
-
-  /**
-   * Read the value of the Expression Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link ContentFilter} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  ContentFilter readExpression() throws UaException;
-
-  /**
-   * Write a new value for the Expression Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link ContentFilter} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeExpression(ContentFilter value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readExpression}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends ContentFilter> readExpressionAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeExpression}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeExpressionAsync(ContentFilter value);
-
-  /**
-   * Get the Expression {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the Expression {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getExpressionNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getExpressionNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getExpressionNode()}. */
   CompletableFuture<? extends PropertyType> getExpressionNodeAsync();
+
+  /**
+   * Reads the Value of the Expression child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable ContentFilter readExpression() throws UaException;
+
+  /**
+   * Writes the Value of the Expression child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeExpression(@Nullable ContentFilter value) throws UaException;
+
+  /** Asynchronous form of {@link #readExpression()}. */
+  CompletableFuture<? extends @Nullable ContentFilter> readExpressionAsync();
+
+  /** Asynchronous form of {@link #writeExpression}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeExpressionAsync(@Nullable ContentFilter value);
 }

@@ -1,424 +1,408 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallOptions;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallResult;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.client.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
+import org.eclipse.milo.opcua.sdk.core.model.methods.KeyCredentialConfigurationTypeGetEncryptingKey;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/8.6.5">https://reference.opcfoundation.org/v105/Core/docs/Part12/8.6.5</a>
+ * Client API for the KeyCredentialConfigurationType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/8.6.5">Model
+ *     documentation</a>
  */
 public interface KeyCredentialConfigurationType extends BaseObjectType {
-  QualifiedProperty<String> RESOURCE_URI =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ResourceUri",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 18001L);
 
-  QualifiedProperty<String> PROFILE_URI =
+  QualifiedProperty<String> ProfileUri_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "ProfileUri",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
           -1,
           String.class);
 
-  QualifiedProperty<String[]> ENDPOINT_URLS =
+  QualifiedProperty<String> ResourceUri_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
+          "ResourceUri",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+          -1,
+          String.class);
+
+  QualifiedProperty<String> CredentialId_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "CredentialId",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+          -1,
+          String.class);
+
+  QualifiedProperty<String[]> EndpointUrls_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
           "EndpointUrls",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
           1,
           String[].class);
 
-  QualifiedProperty<String> CREDENTIAL_ID =
+  QualifiedProperty<StatusCode> ServiceStatus_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "CredentialId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
-
-  QualifiedProperty<StatusCode> SERVICE_STATUS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "ServiceStatus",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=19"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 19L),
           -1,
           StatusCode.class);
 
   /**
-   * Get the local value of the ResourceUri Node.
+   * Resolves the mandatory ProfileUri child, a PropertyType with DataType String.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ResourceUri Node.
-   * @throws UaException if an error occurs creating or getting the ResourceUri Node.
-   */
-  String getResourceUri() throws UaException;
-
-  /**
-   * Set the local value of the ResourceUri Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ResourceUri Node.
-   * @throws UaException if an error occurs creating or getting the ResourceUri Node.
-   */
-  void setResourceUri(String value) throws UaException;
-
-  /**
-   * Read the value of the ResourceUri Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String readResourceUri() throws UaException;
-
-  /**
-   * Write a new value for the ResourceUri Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeResourceUri(String value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readResourceUri}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String> readResourceUriAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeResourceUri}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeResourceUriAsync(String value);
-
-  /**
-   * Get the ResourceUri {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ResourceUri {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getResourceUriNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getResourceUriNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getResourceUriNodeAsync();
-
-  /**
-   * Get the local value of the ProfileUri Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ProfileUri Node.
-   * @throws UaException if an error occurs creating or getting the ProfileUri Node.
-   */
-  String getProfileUri() throws UaException;
-
-  /**
-   * Set the local value of the ProfileUri Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ProfileUri Node.
-   * @throws UaException if an error occurs creating or getting the ProfileUri Node.
-   */
-  void setProfileUri(String value) throws UaException;
-
-  /**
-   * Read the value of the ProfileUri Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String readProfileUri() throws UaException;
-
-  /**
-   * Write a new value for the ProfileUri Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeProfileUri(String value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readProfileUri}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String> readProfileUriAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeProfileUri}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeProfileUriAsync(String value);
-
-  /**
-   * Get the ProfileUri {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ProfileUri {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getProfileUriNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getProfileUriNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getProfileUriNode()}. */
   CompletableFuture<? extends PropertyType> getProfileUriNodeAsync();
 
   /**
-   * Get the local value of the EndpointUrls Node.
+   * Reads the Value of the ProfileUri child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the EndpointUrls Node.
-   * @throws UaException if an error occurs creating or getting the EndpointUrls Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  String[] getEndpointUrls() throws UaException;
+  @Nullable String readProfileUri() throws UaException;
 
   /**
-   * Set the local value of the EndpointUrls Node.
+   * Writes the Value of the ProfileUri child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the EndpointUrls Node.
-   * @throws UaException if an error occurs creating or getting the EndpointUrls Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setEndpointUrls(String[] value) throws UaException;
+  void writeProfileUri(@Nullable String value) throws UaException;
+
+  /** Asynchronous form of {@link #readProfileUri()}. */
+  CompletableFuture<? extends @Nullable String> readProfileUriAsync();
+
+  /** Asynchronous form of {@link #writeProfileUri}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeProfileUriAsync(@Nullable String value);
 
   /**
-   * Read the value of the EndpointUrls Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the mandatory ResourceUri child, a PropertyType with DataType String.
    *
-   * @return the {@link String[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  String[] readEndpointUrls() throws UaException;
+  PropertyType getResourceUriNode() throws UaException;
+
+  /** Asynchronous form of {@link #getResourceUriNode()}. */
+  CompletableFuture<? extends PropertyType> getResourceUriNodeAsync();
 
   /**
-   * Write a new value for the EndpointUrls Node to the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the ResourceUri child from the server.
    *
-   * @param value the {@link String[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeEndpointUrls(String[] value) throws UaException;
+  @Nullable String readResourceUri() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readEndpointUrls}.
+   * Writes the Value of the ResourceUri child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends String[]> readEndpointUrlsAsync();
+  void writeResourceUri(@Nullable String value) throws UaException;
+
+  /** Asynchronous form of {@link #readResourceUri()}. */
+  CompletableFuture<? extends @Nullable String> readResourceUriAsync();
+
+  /** Asynchronous form of {@link #writeResourceUri}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeResourceUriAsync(@Nullable String value);
 
   /**
-   * An asynchronous implementation of {@link #writeEndpointUrls}.
+   * Resolves the optional CredentialId child, a PropertyType with DataType String.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  CompletableFuture<StatusCode> writeEndpointUrlsAsync(String[] value);
+  @Nullable PropertyType getCredentialIdNode() throws UaException;
+
+  /** Asynchronous form of {@link #getCredentialIdNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getCredentialIdNodeAsync();
 
   /**
-   * Get the EndpointUrls {@link PropertyType} Node, or {@code null} if it does not exist.
+   * Reads the Value of the CredentialId child from the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the EndpointUrls {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  PropertyType getEndpointUrlsNode() throws UaException;
+  @Nullable String readCredentialId() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getEndpointUrlsNode()}.
+   * Writes the Value of the CredentialId child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends PropertyType> getEndpointUrlsNodeAsync();
+  void writeCredentialId(@Nullable String value) throws UaException;
+
+  /** Asynchronous form of {@link #readCredentialId()}. */
+  CompletableFuture<? extends @Nullable String> readCredentialIdAsync();
+
+  /** Asynchronous form of {@link #writeCredentialId}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeCredentialIdAsync(@Nullable String value);
 
   /**
-   * Get the local value of the CredentialId Node.
+   * Resolves the optional EndpointUrls child, a PropertyType with DataType String.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the CredentialId Node.
-   * @throws UaException if an error occurs creating or getting the CredentialId Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  String getCredentialId() throws UaException;
+  @Nullable PropertyType getEndpointUrlsNode() throws UaException;
+
+  /** Asynchronous form of {@link #getEndpointUrlsNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getEndpointUrlsNodeAsync();
 
   /**
-   * Set the local value of the CredentialId Node.
+   * Reads the Value of the EndpointUrls child from the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the CredentialId Node.
-   * @throws UaException if an error occurs creating or getting the CredentialId Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setCredentialId(String value) throws UaException;
+  @Nullable String @Nullable [] readEndpointUrls() throws UaException;
 
   /**
-   * Read the value of the CredentialId Node from the server and update the local value if the
-   * operation succeeds.
+   * Writes the Value of the EndpointUrls child to the server.
    *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  String readCredentialId() throws UaException;
+  void writeEndpointUrls(@Nullable String @Nullable [] value) throws UaException;
+
+  /** Asynchronous form of {@link #readEndpointUrls()}. */
+  CompletableFuture<? extends @Nullable String @Nullable []> readEndpointUrlsAsync();
+
+  /** Asynchronous form of {@link #writeEndpointUrls}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeEndpointUrlsAsync(@Nullable String @Nullable [] value);
 
   /**
-   * Write a new value for the CredentialId Node to the server and update the local value if the
-   * operation succeeds.
+   * Resolves the optional ServiceStatus child, a PropertyType with DataType StatusCode.
    *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  void writeCredentialId(String value) throws UaException;
+  @Nullable PropertyType getServiceStatusNode() throws UaException;
+
+  /** Asynchronous form of {@link #getServiceStatusNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getServiceStatusNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #readCredentialId}.
+   * Reads the Value of the ServiceStatus child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends String> readCredentialIdAsync();
+  @Nullable StatusCode readServiceStatus() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeCredentialId}.
+   * Writes the Value of the ServiceStatus child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeCredentialIdAsync(String value);
+  void writeServiceStatus(@Nullable StatusCode value) throws UaException;
+
+  /** Asynchronous form of {@link #readServiceStatus()}. */
+  CompletableFuture<? extends @Nullable StatusCode> readServiceStatusAsync();
+
+  /** Asynchronous form of {@link #writeServiceStatus}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeServiceStatusAsync(@Nullable StatusCode value);
 
   /**
-   * Get the CredentialId {@link PropertyType} Node, or {@code null} if it does not exist.
+   * Resolves the optional DeleteCredential Method node.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the CredentialId {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/8.6.8">Model
+   *     documentation</a>
    */
-  PropertyType getCredentialIdNode() throws UaException;
+  @Nullable UaMethodNode getDeleteCredentialMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getDeleteCredentialMethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getDeleteCredentialMethodNodeAsync();
 
   /**
-   * Asynchronous implementation of {@link #getCredentialIdNode()}.
+   * Calls the DeleteCredential Method and returns its outputs; requires a Good result.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/8.6.8">Model
+   *     documentation</a>
    */
-  CompletableFuture<? extends PropertyType> getCredentialIdNodeAsync();
+  void deleteCredential() throws UaException;
 
   /**
-   * Get the local value of the ServiceStatus Node.
+   * Calls the DeleteCredential Method and returns the complete result, including a Bad status.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ServiceStatus Node.
-   * @throws UaException if an error occurs creating or getting the ServiceStatus Node.
+   * @throws UaException if lookup, transport or conversion fails.
    */
-  StatusCode getServiceStatus() throws UaException;
+  MethodCallResult<Void> callDeleteCredential() throws UaException;
 
   /**
-   * Set the local value of the ServiceStatus Node.
+   * Calls the DeleteCredential Method with explicit options and returns the complete result.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ServiceStatus Node.
-   * @throws UaException if an error occurs creating or getting the ServiceStatus Node.
+   * @throws UaException if lookup, transport or conversion fails.
    */
-  void setServiceStatus(StatusCode value) throws UaException;
+  MethodCallResult<Void> callDeleteCredentialWith(MethodCallOptions options) throws UaException;
+
+  /** Asynchronous form of {@link #deleteCredential}. */
+  CompletableFuture<Void> deleteCredentialAsync();
+
+  /** Asynchronous form of {@link #callDeleteCredential}. */
+  CompletableFuture<MethodCallResult<Void>> callDeleteCredentialAsync();
+
+  /** Asynchronous form of {@link #callDeleteCredentialWith}. */
+  CompletableFuture<MethodCallResult<Void>> callDeleteCredentialWithAsync(
+      MethodCallOptions options);
 
   /**
-   * Read the value of the ServiceStatus Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the optional GetEncryptingKey Method node.
    *
-   * @return the {@link StatusCode} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/8.6.6">Model
+   *     documentation</a>
    */
-  StatusCode readServiceStatus() throws UaException;
+  @Nullable UaMethodNode getGetEncryptingKeyMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getGetEncryptingKeyMethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getGetEncryptingKeyMethodNodeAsync();
 
   /**
-   * Write a new value for the ServiceStatus Node to the server and update the local value if the
-   * operation succeeds.
+   * Calls the GetEncryptingKey Method and returns its outputs; requires a Good result.
    *
-   * @param value the {@link StatusCode} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/8.6.6">Model
+   *     documentation</a>
    */
-  void writeServiceStatus(StatusCode value) throws UaException;
+  KeyCredentialConfigurationTypeGetEncryptingKey.Outputs getEncryptingKey(
+      @Nullable String credentialId, @Nullable String requestedSecurityPolicyUri)
+      throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readServiceStatus}.
+   * Calls the GetEncryptingKey Method and returns the complete result, including a Bad status.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, transport or conversion fails.
    */
-  CompletableFuture<? extends StatusCode> readServiceStatusAsync();
+  MethodCallResult<KeyCredentialConfigurationTypeGetEncryptingKey.Outputs> callGetEncryptingKey(
+      @Nullable String credentialId, @Nullable String requestedSecurityPolicyUri)
+      throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeServiceStatus}.
+   * Calls the GetEncryptingKey Method with explicit options and returns the complete result.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, transport or conversion fails.
    */
-  CompletableFuture<StatusCode> writeServiceStatusAsync(StatusCode value);
+  MethodCallResult<KeyCredentialConfigurationTypeGetEncryptingKey.Outputs> callGetEncryptingKeyWith(
+      MethodCallOptions options,
+      @Nullable String credentialId,
+      @Nullable String requestedSecurityPolicyUri)
+      throws UaException;
+
+  /** Asynchronous form of {@link #getEncryptingKey}. */
+  CompletableFuture<KeyCredentialConfigurationTypeGetEncryptingKey.Outputs> getEncryptingKeyAsync(
+      @Nullable String credentialId, @Nullable String requestedSecurityPolicyUri);
+
+  /** Asynchronous form of {@link #callGetEncryptingKey}. */
+  CompletableFuture<MethodCallResult<KeyCredentialConfigurationTypeGetEncryptingKey.Outputs>>
+      callGetEncryptingKeyAsync(
+          @Nullable String credentialId, @Nullable String requestedSecurityPolicyUri);
+
+  /** Asynchronous form of {@link #callGetEncryptingKeyWith}. */
+  CompletableFuture<MethodCallResult<KeyCredentialConfigurationTypeGetEncryptingKey.Outputs>>
+      callGetEncryptingKeyWithAsync(
+          MethodCallOptions options,
+          @Nullable String credentialId,
+          @Nullable String requestedSecurityPolicyUri);
 
   /**
-   * Get the ServiceStatus {@link PropertyType} Node, or {@code null} if it does not exist.
+   * Resolves the optional UpdateCredential Method node.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ServiceStatus {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/8.6.7">Model
+   *     documentation</a>
    */
-  PropertyType getServiceStatusNode() throws UaException;
+  @Nullable UaMethodNode getUpdateCredentialMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getUpdateCredentialMethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getUpdateCredentialMethodNodeAsync();
 
   /**
-   * Asynchronous implementation of {@link #getServiceStatusNode()}.
+   * Calls the UpdateCredential Method and returns its outputs; requires a Good result.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/8.6.7">Model
+   *     documentation</a>
    */
-  CompletableFuture<? extends PropertyType> getServiceStatusNodeAsync();
+  void updateCredential(
+      @Nullable String credentialId,
+      @Nullable ByteString credentialSecret,
+      @Nullable String certificateThumbprint,
+      @Nullable String securityPolicyUri)
+      throws UaException;
+
+  /**
+   * Calls the UpdateCredential Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callUpdateCredential(
+      @Nullable String credentialId,
+      @Nullable ByteString credentialSecret,
+      @Nullable String certificateThumbprint,
+      @Nullable String securityPolicyUri)
+      throws UaException;
+
+  /**
+   * Calls the UpdateCredential Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callUpdateCredentialWith(
+      MethodCallOptions options,
+      @Nullable String credentialId,
+      @Nullable ByteString credentialSecret,
+      @Nullable String certificateThumbprint,
+      @Nullable String securityPolicyUri)
+      throws UaException;
+
+  /** Asynchronous form of {@link #updateCredential}. */
+  CompletableFuture<Void> updateCredentialAsync(
+      @Nullable String credentialId,
+      @Nullable ByteString credentialSecret,
+      @Nullable String certificateThumbprint,
+      @Nullable String securityPolicyUri);
+
+  /** Asynchronous form of {@link #callUpdateCredential}. */
+  CompletableFuture<MethodCallResult<Void>> callUpdateCredentialAsync(
+      @Nullable String credentialId,
+      @Nullable ByteString credentialSecret,
+      @Nullable String certificateThumbprint,
+      @Nullable String securityPolicyUri);
+
+  /** Asynchronous form of {@link #callUpdateCredentialWith}. */
+  CompletableFuture<MethodCallResult<Void>> callUpdateCredentialWithAsync(
+      MethodCallOptions options,
+      @Nullable String credentialId,
+      @Nullable ByteString credentialSecret,
+      @Nullable String certificateThumbprint,
+      @Nullable String securityPolicyUri);
 }

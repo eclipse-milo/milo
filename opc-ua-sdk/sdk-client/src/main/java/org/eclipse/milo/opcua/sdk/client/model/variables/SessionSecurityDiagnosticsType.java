@@ -1,685 +1,352 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.variables;
 
 import java.util.concurrent.CompletableFuture;
+import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
+import org.eclipse.milo.opcua.stack.core.types.structured.SessionSecurityDiagnosticsDataType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.16">https://reference.opcfoundation.org/v105/Core/docs/Part5/7.16</a>
+ * Client API for the SessionSecurityDiagnosticsType VariableType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.16">Model
+ *     documentation</a>
  */
 public interface SessionSecurityDiagnosticsType extends BaseDataVariableType {
-  /**
-   * Get the local value of the SessionId Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SessionId Node.
-   * @throws UaException if an error occurs creating or getting the SessionId Node.
-   */
-  NodeId getSessionId() throws UaException;
-
-  /**
-   * Set the local value of the SessionId Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SessionId Node.
-   * @throws UaException if an error occurs creating or getting the SessionId Node.
-   */
-  void setSessionId(NodeId value) throws UaException;
-
-  /**
-   * Read the value of the SessionId Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link NodeId} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  NodeId readSessionId() throws UaException;
-
-  /**
-   * Write a new value for the SessionId Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link NodeId} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeSessionId(NodeId value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readSessionId}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends NodeId> readSessionIdAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeSessionId}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeSessionIdAsync(NodeId value);
-
-  /**
-   * Get the SessionId {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SessionId {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getSessionIdNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getSessionIdNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getSessionIdNodeAsync();
-
-  /**
-   * Get the local value of the ClientUserIdOfSession Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ClientUserIdOfSession Node.
-   * @throws UaException if an error occurs creating or getting the ClientUserIdOfSession Node.
-   */
-  String getClientUserIdOfSession() throws UaException;
-
-  /**
-   * Set the local value of the ClientUserIdOfSession Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ClientUserIdOfSession Node.
-   * @throws UaException if an error occurs creating or getting the ClientUserIdOfSession Node.
-   */
-  void setClientUserIdOfSession(String value) throws UaException;
-
-  /**
-   * Read the value of the ClientUserIdOfSession Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String readClientUserIdOfSession() throws UaException;
-
-  /**
-   * Write a new value for the ClientUserIdOfSession Node to the server and update the local value
-   * if the operation succeeds.
-   *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeClientUserIdOfSession(String value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readClientUserIdOfSession}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String> readClientUserIdOfSessionAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeClientUserIdOfSession}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeClientUserIdOfSessionAsync(String value);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2244L);
 
   /**
-   * Get the ClientUserIdOfSession {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
+   * Resolves the mandatory SecurityMode child, a BaseDataVariableType with DataType
+   * MessageSecurityMode.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ClientUserIdOfSession {@link BaseDataVariableType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  BaseDataVariableType getClientUserIdOfSessionNode() throws UaException;
+  VariableNode getSecurityModeNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getClientUserIdOfSessionNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getClientUserIdOfSessionNodeAsync();
+  /** Asynchronous form of {@link #getSecurityModeNode()}. */
+  CompletableFuture<? extends VariableNode> getSecurityModeNodeAsync();
 
   /**
-   * Get the local value of the ClientUserIdHistory Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
+   * Reads the Value of the SecurityMode child from the server.
    *
-   * @return the local value of the ClientUserIdHistory Node.
-   * @throws UaException if an error occurs creating or getting the ClientUserIdHistory Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  String[] getClientUserIdHistory() throws UaException;
+  @Nullable MessageSecurityMode readSecurityMode() throws UaException;
 
   /**
-   * Set the local value of the ClientUserIdHistory Node.
+   * Writes the Value of the SecurityMode child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ClientUserIdHistory Node.
-   * @throws UaException if an error occurs creating or getting the ClientUserIdHistory Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setClientUserIdHistory(String[] value) throws UaException;
+  void writeSecurityMode(@Nullable MessageSecurityMode value) throws UaException;
 
-  /**
-   * Read the value of the ClientUserIdHistory Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link String[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String[] readClientUserIdHistory() throws UaException;
+  /** Asynchronous form of {@link #readSecurityMode()}. */
+  CompletableFuture<? extends @Nullable MessageSecurityMode> readSecurityModeAsync();
 
-  /**
-   * Write a new value for the ClientUserIdHistory Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link String[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeClientUserIdHistory(String[] value) throws UaException;
+  /** Asynchronous form of {@link #writeSecurityMode}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeSecurityModeAsync(@Nullable MessageSecurityMode value);
 
   /**
-   * An asynchronous implementation of {@link #readClientUserIdHistory}.
+   * Resolves the mandatory ClientCertificate child, a BaseDataVariableType with DataType
+   * ByteString.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  CompletableFuture<? extends String[]> readClientUserIdHistoryAsync();
+  VariableNode getClientCertificateNode() throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #writeClientUserIdHistory}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeClientUserIdHistoryAsync(String[] value);
+  /** Asynchronous form of {@link #getClientCertificateNode()}. */
+  CompletableFuture<? extends VariableNode> getClientCertificateNodeAsync();
 
   /**
-   * Get the ClientUserIdHistory {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
+   * Reads the Value of the ClientCertificate child from the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ClientUserIdHistory {@link BaseDataVariableType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  BaseDataVariableType getClientUserIdHistoryNode() throws UaException;
+  @Nullable ByteString readClientCertificate() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getClientUserIdHistoryNode()}.
+   * Writes the Value of the ClientCertificate child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends BaseDataVariableType> getClientUserIdHistoryNodeAsync();
+  void writeClientCertificate(@Nullable ByteString value) throws UaException;
 
-  /**
-   * Get the local value of the AuthenticationMechanism Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the AuthenticationMechanism Node.
-   * @throws UaException if an error occurs creating or getting the AuthenticationMechanism Node.
-   */
-  String getAuthenticationMechanism() throws UaException;
+  /** Asynchronous form of {@link #readClientCertificate()}. */
+  CompletableFuture<? extends @Nullable ByteString> readClientCertificateAsync();
 
-  /**
-   * Set the local value of the AuthenticationMechanism Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the AuthenticationMechanism Node.
-   * @throws UaException if an error occurs creating or getting the AuthenticationMechanism Node.
-   */
-  void setAuthenticationMechanism(String value) throws UaException;
+  /** Asynchronous form of {@link #writeClientCertificate}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeClientCertificateAsync(@Nullable ByteString value);
 
   /**
-   * Read the value of the AuthenticationMechanism Node from the server and update the local value
-   * if the operation succeeds.
+   * Resolves the mandatory SecurityPolicyUri child, a BaseDataVariableType with DataType String.
    *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  String readAuthenticationMechanism() throws UaException;
+  VariableNode getSecurityPolicyUriNode() throws UaException;
 
-  /**
-   * Write a new value for the AuthenticationMechanism Node to the server and update the local value
-   * if the operation succeeds.
-   *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeAuthenticationMechanism(String value) throws UaException;
+  /** Asynchronous form of {@link #getSecurityPolicyUriNode()}. */
+  CompletableFuture<? extends VariableNode> getSecurityPolicyUriNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #readAuthenticationMechanism}.
+   * Reads the Value of the SecurityPolicyUri child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends String> readAuthenticationMechanismAsync();
+  @Nullable String readSecurityPolicyUri() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeAuthenticationMechanism}.
+   * Writes the Value of the SecurityPolicyUri child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeAuthenticationMechanismAsync(String value);
+  void writeSecurityPolicyUri(@Nullable String value) throws UaException;
 
-  /**
-   * Get the AuthenticationMechanism {@link BaseDataVariableType} Node, or {@code null} if it does
-   * not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the AuthenticationMechanism {@link BaseDataVariableType} Node, or {@code null} if it
-   *     does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getAuthenticationMechanismNode() throws UaException;
+  /** Asynchronous form of {@link #readSecurityPolicyUri()}. */
+  CompletableFuture<? extends @Nullable String> readSecurityPolicyUriAsync();
 
-  /**
-   * Asynchronous implementation of {@link #getAuthenticationMechanismNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getAuthenticationMechanismNodeAsync();
+  /** Asynchronous form of {@link #writeSecurityPolicyUri}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeSecurityPolicyUriAsync(@Nullable String value);
 
   /**
-   * Get the local value of the Encoding Node.
+   * Resolves the mandatory TransportProtocol child, a BaseDataVariableType with DataType String.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the Encoding Node.
-   * @throws UaException if an error occurs creating or getting the Encoding Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  String getEncoding() throws UaException;
+  VariableNode getTransportProtocolNode() throws UaException;
 
-  /**
-   * Set the local value of the Encoding Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the Encoding Node.
-   * @throws UaException if an error occurs creating or getting the Encoding Node.
-   */
-  void setEncoding(String value) throws UaException;
+  /** Asynchronous form of {@link #getTransportProtocolNode()}. */
+  CompletableFuture<? extends VariableNode> getTransportProtocolNodeAsync();
 
   /**
-   * Read the value of the Encoding Node from the server and update the local value if the operation
-   * succeeds.
+   * Reads the Value of the TransportProtocol child from the server.
    *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  String readEncoding() throws UaException;
+  @Nullable String readTransportProtocol() throws UaException;
 
   /**
-   * Write a new value for the Encoding Node to the server and update the local value if the
-   * operation succeeds.
+   * Writes the Value of the TransportProtocol child to the server.
    *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeEncoding(String value) throws UaException;
+  void writeTransportProtocol(@Nullable String value) throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #readEncoding}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String> readEncodingAsync();
+  /** Asynchronous form of {@link #readTransportProtocol()}. */
+  CompletableFuture<? extends @Nullable String> readTransportProtocolAsync();
 
-  /**
-   * An asynchronous implementation of {@link #writeEncoding}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeEncodingAsync(String value);
+  /** Asynchronous form of {@link #writeTransportProtocol}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeTransportProtocolAsync(@Nullable String value);
 
   /**
-   * Get the Encoding {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * Resolves the mandatory ClientUserIdHistory child, a BaseDataVariableType with DataType String.
    *
-   * @return the Encoding {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  BaseDataVariableType getEncodingNode() throws UaException;
+  VariableNode getClientUserIdHistoryNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getEncodingNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getEncodingNodeAsync();
+  /** Asynchronous form of {@link #getClientUserIdHistoryNode()}. */
+  CompletableFuture<? extends VariableNode> getClientUserIdHistoryNodeAsync();
 
   /**
-   * Get the local value of the TransportProtocol Node.
+   * Reads the Value of the ClientUserIdHistory child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the TransportProtocol Node.
-   * @throws UaException if an error occurs creating or getting the TransportProtocol Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  String getTransportProtocol() throws UaException;
+  @Nullable String @Nullable [] readClientUserIdHistory() throws UaException;
 
   /**
-   * Set the local value of the TransportProtocol Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
+   * Writes the Value of the ClientUserIdHistory child to the server.
    *
-   * @param value the local value to set for the TransportProtocol Node.
-   * @throws UaException if an error occurs creating or getting the TransportProtocol Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setTransportProtocol(String value) throws UaException;
+  void writeClientUserIdHistory(@Nullable String @Nullable [] value) throws UaException;
 
-  /**
-   * Read the value of the TransportProtocol Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String readTransportProtocol() throws UaException;
+  /** Asynchronous form of {@link #readClientUserIdHistory()}. */
+  CompletableFuture<? extends @Nullable String @Nullable []> readClientUserIdHistoryAsync();
 
   /**
-   * Write a new value for the TransportProtocol Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * Asynchronous form of {@link #writeClientUserIdHistory}; completes with the operation status.
    */
-  void writeTransportProtocol(String value) throws UaException;
+  CompletableFuture<StatusCode> writeClientUserIdHistoryAsync(@Nullable String @Nullable [] value);
 
   /**
-   * An asynchronous implementation of {@link #readTransportProtocol}.
+   * Resolves the mandatory ClientUserIdOfSession child, a BaseDataVariableType with DataType
+   * String.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  CompletableFuture<? extends String> readTransportProtocolAsync();
+  VariableNode getClientUserIdOfSessionNode() throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #writeTransportProtocol}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeTransportProtocolAsync(String value);
+  /** Asynchronous form of {@link #getClientUserIdOfSessionNode()}. */
+  CompletableFuture<? extends VariableNode> getClientUserIdOfSessionNodeAsync();
 
   /**
-   * Get the TransportProtocol {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * Reads the Value of the ClientUserIdOfSession child from the server.
    *
-   * @return the TransportProtocol {@link BaseDataVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  BaseDataVariableType getTransportProtocolNode() throws UaException;
+  @Nullable String readClientUserIdOfSession() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getTransportProtocolNode()}.
+   * Writes the Value of the ClientUserIdOfSession child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends BaseDataVariableType> getTransportProtocolNodeAsync();
+  void writeClientUserIdOfSession(@Nullable String value) throws UaException;
 
-  /**
-   * Get the local value of the SecurityMode Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SecurityMode Node.
-   * @throws UaException if an error occurs creating or getting the SecurityMode Node.
-   */
-  MessageSecurityMode getSecurityMode() throws UaException;
+  /** Asynchronous form of {@link #readClientUserIdOfSession()}. */
+  CompletableFuture<? extends @Nullable String> readClientUserIdOfSessionAsync();
 
   /**
-   * Set the local value of the SecurityMode Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SecurityMode Node.
-   * @throws UaException if an error occurs creating or getting the SecurityMode Node.
+   * Asynchronous form of {@link #writeClientUserIdOfSession}; completes with the operation status.
    */
-  void setSecurityMode(MessageSecurityMode value) throws UaException;
+  CompletableFuture<StatusCode> writeClientUserIdOfSessionAsync(@Nullable String value);
 
   /**
-   * Read the value of the SecurityMode Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the mandatory AuthenticationMechanism child, a BaseDataVariableType with DataType
+   * String.
    *
-   * @return the {@link MessageSecurityMode} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  MessageSecurityMode readSecurityMode() throws UaException;
+  VariableNode getAuthenticationMechanismNode() throws UaException;
 
-  /**
-   * Write a new value for the SecurityMode Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link MessageSecurityMode} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeSecurityMode(MessageSecurityMode value) throws UaException;
+  /** Asynchronous form of {@link #getAuthenticationMechanismNode()}. */
+  CompletableFuture<? extends VariableNode> getAuthenticationMechanismNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #readSecurityMode}.
+   * Reads the Value of the AuthenticationMechanism child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends MessageSecurityMode> readSecurityModeAsync();
+  @Nullable String readAuthenticationMechanism() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeSecurityMode}.
+   * Writes the Value of the AuthenticationMechanism child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeSecurityModeAsync(MessageSecurityMode value);
+  void writeAuthenticationMechanism(@Nullable String value) throws UaException;
 
-  /**
-   * Get the SecurityMode {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SecurityMode {@link BaseDataVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getSecurityModeNode() throws UaException;
+  /** Asynchronous form of {@link #readAuthenticationMechanism()}. */
+  CompletableFuture<? extends @Nullable String> readAuthenticationMechanismAsync();
 
   /**
-   * Asynchronous implementation of {@link #getSecurityModeNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * Asynchronous form of {@link #writeAuthenticationMechanism}; completes with the operation
+   * status.
    */
-  CompletableFuture<? extends BaseDataVariableType> getSecurityModeNodeAsync();
+  CompletableFuture<StatusCode> writeAuthenticationMechanismAsync(@Nullable String value);
 
   /**
-   * Get the local value of the SecurityPolicyUri Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
+   * Resolves the mandatory Encoding child, a BaseDataVariableType with DataType String.
    *
-   * @return the local value of the SecurityPolicyUri Node.
-   * @throws UaException if an error occurs creating or getting the SecurityPolicyUri Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  String getSecurityPolicyUri() throws UaException;
+  VariableNode getEncodingNode() throws UaException;
 
-  /**
-   * Set the local value of the SecurityPolicyUri Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SecurityPolicyUri Node.
-   * @throws UaException if an error occurs creating or getting the SecurityPolicyUri Node.
-   */
-  void setSecurityPolicyUri(String value) throws UaException;
+  /** Asynchronous form of {@link #getEncodingNode()}. */
+  CompletableFuture<? extends VariableNode> getEncodingNodeAsync();
 
   /**
-   * Read the value of the SecurityPolicyUri Node from the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the Encoding child from the server.
    *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  String readSecurityPolicyUri() throws UaException;
+  @Nullable String readEncoding() throws UaException;
 
   /**
-   * Write a new value for the SecurityPolicyUri Node to the server and update the local value if
-   * the operation succeeds.
+   * Writes the Value of the Encoding child to the server.
    *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeSecurityPolicyUri(String value) throws UaException;
+  void writeEncoding(@Nullable String value) throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #readSecurityPolicyUri}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String> readSecurityPolicyUriAsync();
+  /** Asynchronous form of {@link #readEncoding()}. */
+  CompletableFuture<? extends @Nullable String> readEncodingAsync();
 
-  /**
-   * An asynchronous implementation of {@link #writeSecurityPolicyUri}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeSecurityPolicyUriAsync(String value);
+  /** Asynchronous form of {@link #writeEncoding}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeEncodingAsync(@Nullable String value);
 
   /**
-   * Get the SecurityPolicyUri {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
+   * Resolves the mandatory SessionId child, a BaseDataVariableType with DataType NodeId.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SecurityPolicyUri {@link BaseDataVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  BaseDataVariableType getSecurityPolicyUriNode() throws UaException;
+  VariableNode getSessionIdNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getSecurityPolicyUriNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getSecurityPolicyUriNodeAsync();
+  /** Asynchronous form of {@link #getSessionIdNode()}. */
+  CompletableFuture<? extends VariableNode> getSessionIdNodeAsync();
 
   /**
-   * Get the local value of the ClientCertificate Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
+   * Reads the Value of the SessionId child from the server.
    *
-   * @return the local value of the ClientCertificate Node.
-   * @throws UaException if an error occurs creating or getting the ClientCertificate Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  ByteString getClientCertificate() throws UaException;
+  @Nullable NodeId readSessionId() throws UaException;
 
   /**
-   * Set the local value of the ClientCertificate Node.
+   * Writes the Value of the SessionId child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ClientCertificate Node.
-   * @throws UaException if an error occurs creating or getting the ClientCertificate Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setClientCertificate(ByteString value) throws UaException;
+  void writeSessionId(@Nullable NodeId value) throws UaException;
 
-  /**
-   * Read the value of the ClientCertificate Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link ByteString} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  ByteString readClientCertificate() throws UaException;
+  /** Asynchronous form of {@link #readSessionId()}. */
+  CompletableFuture<? extends @Nullable NodeId> readSessionIdAsync();
 
-  /**
-   * Write a new value for the ClientCertificate Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link ByteString} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeClientCertificate(ByteString value) throws UaException;
+  /** Asynchronous form of {@link #writeSessionId}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeSessionIdAsync(@Nullable NodeId value);
 
   /**
-   * An asynchronous implementation of {@link #readClientCertificate}.
+   * Reads the Value of this node from the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends ByteString> readClientCertificateAsync();
+  @Nullable SessionSecurityDiagnosticsDataType readTypedValue() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeClientCertificate}.
+   * Writes the Value of this node to the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeClientCertificateAsync(ByteString value);
+  void writeTypedValue(@Nullable SessionSecurityDiagnosticsDataType value) throws UaException;
 
-  /**
-   * Get the ClientCertificate {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ClientCertificate {@link BaseDataVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getClientCertificateNode() throws UaException;
+  /** Asynchronous form of {@link #readTypedValue()}. */
+  CompletableFuture<? extends @Nullable SessionSecurityDiagnosticsDataType> readTypedValueAsync();
 
-  /**
-   * Asynchronous implementation of {@link #getClientCertificateNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getClientCertificateNodeAsync();
+  /** Asynchronous form of {@link #writeTypedValue}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeTypedValueAsync(
+      @Nullable SessionSecurityDiagnosticsDataType value);
 }

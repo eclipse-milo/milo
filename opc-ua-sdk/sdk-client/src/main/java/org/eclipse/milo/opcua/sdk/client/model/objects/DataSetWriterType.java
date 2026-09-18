@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
@@ -20,412 +10,244 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetFieldContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.KeyValuePair;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.7/#9.1.7.2">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.7/#9.1.7.2</a>
+ * Client API for the DataSetWriterType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.7/#9.1.7.2">Model
+ *     documentation</a>
  */
 public interface DataSetWriterType extends BaseObjectType {
-  QualifiedProperty<UShort> DATA_SET_WRITER_ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "DataSetWriterId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-          -1,
-          UShort.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 15298L);
 
-  QualifiedProperty<DataSetFieldContentMask> DATA_SET_FIELD_CONTENT_MASK =
+  QualifiedProperty<UInteger> KeyFrameCount_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "DataSetFieldContentMask",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15583"),
-          -1,
-          DataSetFieldContentMask.class);
-
-  QualifiedProperty<UInteger> KEY_FRAME_COUNT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "KeyFrameCount",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
           -1,
           UInteger.class);
 
-  QualifiedProperty<KeyValuePair[]> DATA_SET_WRITER_PROPERTIES =
+  QualifiedProperty<UShort> DataSetWriterId_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
+          "DataSetWriterId",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 5L),
+          -1,
+          UShort.class);
+
+  QualifiedProperty<DataSetFieldContentMask> DataSetFieldContentMask_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "DataSetFieldContentMask",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 15583L),
+          -1,
+          DataSetFieldContentMask.class);
+
+  QualifiedProperty<KeyValuePair[]> DataSetWriterProperties_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
           "DataSetWriterProperties",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14533"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 14533L),
           1,
           KeyValuePair[].class);
 
   /**
-   * Get the local value of the DataSetWriterId Node.
+   * Resolves the optional Diagnostics child, a PubSubDiagnosticsDataSetWriterType.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the DataSetWriterId Node.
-   * @throws UaException if an error occurs creating or getting the DataSetWriterId Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.11/#9.1.11.11">PubSubDiagnosticsDataSetWriterType
+   *     documentation</a>
    */
-  UShort getDataSetWriterId() throws UaException;
+  @Nullable PubSubDiagnosticsDataSetWriterType getDiagnosticsNode() throws UaException;
+
+  /** Asynchronous form of {@link #getDiagnosticsNode()}. */
+  CompletableFuture<? extends @Nullable PubSubDiagnosticsDataSetWriterType>
+      getDiagnosticsNodeAsync();
 
   /**
-   * Set the local value of the DataSetWriterId Node.
+   * Resolves the optional KeyFrameCount child, a PropertyType with DataType UInt32.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the DataSetWriterId Node.
-   * @throws UaException if an error occurs creating or getting the DataSetWriterId Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  void setDataSetWriterId(UShort value) throws UaException;
+  @Nullable PropertyType getKeyFrameCountNode() throws UaException;
+
+  /** Asynchronous form of {@link #getKeyFrameCountNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getKeyFrameCountNodeAsync();
 
   /**
-   * Read the value of the DataSetWriterId Node from the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the KeyFrameCount child from the server.
    *
-   * @return the {@link UShort} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UShort readDataSetWriterId() throws UaException;
+  @Nullable UInteger readKeyFrameCount() throws UaException;
 
   /**
-   * Write a new value for the DataSetWriterId Node to the server and update the local value if the
-   * operation succeeds.
+   * Writes the Value of the KeyFrameCount child to the server.
    *
-   * @param value the {@link UShort} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeDataSetWriterId(UShort value) throws UaException;
+  void writeKeyFrameCount(@Nullable UInteger value) throws UaException;
+
+  /** Asynchronous form of {@link #readKeyFrameCount()}. */
+  CompletableFuture<? extends @Nullable UInteger> readKeyFrameCountAsync();
+
+  /** Asynchronous form of {@link #writeKeyFrameCount}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeKeyFrameCountAsync(@Nullable UInteger value);
 
   /**
-   * An asynchronous implementation of {@link #readDataSetWriterId}.
+   * Resolves the mandatory DataSetWriterId child, a PropertyType with DataType UInt16.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UShort> readDataSetWriterIdAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeDataSetWriterId}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeDataSetWriterIdAsync(UShort value);
-
-  /**
-   * Get the DataSetWriterId {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the DataSetWriterId {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getDataSetWriterIdNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getDataSetWriterIdNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getDataSetWriterIdNode()}. */
   CompletableFuture<? extends PropertyType> getDataSetWriterIdNodeAsync();
 
   /**
-   * Get the local value of the DataSetFieldContentMask Node.
+   * Reads the Value of the DataSetWriterId child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the DataSetFieldContentMask Node.
-   * @throws UaException if an error occurs creating or getting the DataSetFieldContentMask Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  DataSetFieldContentMask getDataSetFieldContentMask() throws UaException;
+  @Nullable UShort readDataSetWriterId() throws UaException;
 
   /**
-   * Set the local value of the DataSetFieldContentMask Node.
+   * Writes the Value of the DataSetWriterId child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the DataSetFieldContentMask Node.
-   * @throws UaException if an error occurs creating or getting the DataSetFieldContentMask Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setDataSetFieldContentMask(DataSetFieldContentMask value) throws UaException;
+  void writeDataSetWriterId(@Nullable UShort value) throws UaException;
+
+  /** Asynchronous form of {@link #readDataSetWriterId()}. */
+  CompletableFuture<? extends @Nullable UShort> readDataSetWriterIdAsync();
+
+  /** Asynchronous form of {@link #writeDataSetWriterId}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeDataSetWriterIdAsync(@Nullable UShort value);
 
   /**
-   * Read the value of the DataSetFieldContentMask Node from the server and update the local value
-   * if the operation succeeds.
+   * Resolves the optional MessageSettings child, a DataSetWriterMessageType.
    *
-   * @return the {@link DataSetFieldContentMask} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.7/#9.1.7.4">DataSetWriterMessageType
+   *     documentation</a>
    */
-  DataSetFieldContentMask readDataSetFieldContentMask() throws UaException;
+  @Nullable DataSetWriterMessageType getMessageSettingsNode() throws UaException;
+
+  /** Asynchronous form of {@link #getMessageSettingsNode()}. */
+  CompletableFuture<? extends @Nullable DataSetWriterMessageType> getMessageSettingsNodeAsync();
 
   /**
-   * Write a new value for the DataSetFieldContentMask Node to the server and update the local value
-   * if the operation succeeds.
+   * Resolves the optional TransportSettings child, a DataSetWriterTransportType.
    *
-   * @param value the {@link DataSetFieldContentMask} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.7/#9.1.7.3">DataSetWriterTransportType
+   *     documentation</a>
    */
-  void writeDataSetFieldContentMask(DataSetFieldContentMask value) throws UaException;
+  @Nullable DataSetWriterTransportType getTransportSettingsNode() throws UaException;
+
+  /** Asynchronous form of {@link #getTransportSettingsNode()}. */
+  CompletableFuture<? extends @Nullable DataSetWriterTransportType> getTransportSettingsNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #readDataSetFieldContentMask}.
+   * Resolves the mandatory DataSetFieldContentMask child, a PropertyType with DataType
+   * DataSetFieldContentMask.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends DataSetFieldContentMask> readDataSetFieldContentMaskAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeDataSetFieldContentMask}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeDataSetFieldContentMaskAsync(DataSetFieldContentMask value);
-
-  /**
-   * Get the DataSetFieldContentMask {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the DataSetFieldContentMask {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getDataSetFieldContentMaskNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getDataSetFieldContentMaskNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getDataSetFieldContentMaskNode()}. */
   CompletableFuture<? extends PropertyType> getDataSetFieldContentMaskNodeAsync();
 
   /**
-   * Get the local value of the KeyFrameCount Node.
+   * Reads the Value of the DataSetFieldContentMask child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the KeyFrameCount Node.
-   * @throws UaException if an error occurs creating or getting the KeyFrameCount Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UInteger getKeyFrameCount() throws UaException;
+  @Nullable DataSetFieldContentMask readDataSetFieldContentMask() throws UaException;
 
   /**
-   * Set the local value of the KeyFrameCount Node.
+   * Writes the Value of the DataSetFieldContentMask child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the KeyFrameCount Node.
-   * @throws UaException if an error occurs creating or getting the KeyFrameCount Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setKeyFrameCount(UInteger value) throws UaException;
+  void writeDataSetFieldContentMask(@Nullable DataSetFieldContentMask value) throws UaException;
+
+  /** Asynchronous form of {@link #readDataSetFieldContentMask()}. */
+  CompletableFuture<? extends @Nullable DataSetFieldContentMask> readDataSetFieldContentMaskAsync();
 
   /**
-   * Read the value of the KeyFrameCount Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * Asynchronous form of {@link #writeDataSetFieldContentMask}; completes with the operation
+   * status.
    */
-  UInteger readKeyFrameCount() throws UaException;
+  CompletableFuture<StatusCode> writeDataSetFieldContentMaskAsync(
+      @Nullable DataSetFieldContentMask value);
 
   /**
-   * Write a new value for the KeyFrameCount Node to the server and update the local value if the
-   * operation succeeds.
+   * Resolves the mandatory DataSetWriterProperties child, a PropertyType with DataType
+   * KeyValuePair.
    *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeKeyFrameCount(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readKeyFrameCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readKeyFrameCountAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeKeyFrameCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeKeyFrameCountAsync(UInteger value);
-
-  /**
-   * Get the KeyFrameCount {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the KeyFrameCount {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getKeyFrameCountNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getKeyFrameCountNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getKeyFrameCountNodeAsync();
-
-  /**
-   * Get the local value of the DataSetWriterProperties Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the DataSetWriterProperties Node.
-   * @throws UaException if an error occurs creating or getting the DataSetWriterProperties Node.
-   */
-  KeyValuePair[] getDataSetWriterProperties() throws UaException;
-
-  /**
-   * Set the local value of the DataSetWriterProperties Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the DataSetWriterProperties Node.
-   * @throws UaException if an error occurs creating or getting the DataSetWriterProperties Node.
-   */
-  void setDataSetWriterProperties(KeyValuePair[] value) throws UaException;
-
-  /**
-   * Read the value of the DataSetWriterProperties Node from the server and update the local value
-   * if the operation succeeds.
-   *
-   * @return the {@link KeyValuePair[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  KeyValuePair[] readDataSetWriterProperties() throws UaException;
-
-  /**
-   * Write a new value for the DataSetWriterProperties Node to the server and update the local value
-   * if the operation succeeds.
-   *
-   * @param value the {@link KeyValuePair[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeDataSetWriterProperties(KeyValuePair[] value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readDataSetWriterProperties}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends KeyValuePair[]> readDataSetWriterPropertiesAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeDataSetWriterProperties}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeDataSetWriterPropertiesAsync(KeyValuePair[] value);
-
-  /**
-   * Get the DataSetWriterProperties {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the DataSetWriterProperties {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getDataSetWriterPropertiesNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getDataSetWriterPropertiesNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getDataSetWriterPropertiesNode()}. */
   CompletableFuture<? extends PropertyType> getDataSetWriterPropertiesNodeAsync();
 
   /**
-   * Get the TransportSettings {@link DataSetWriterTransportType} Node, or {@code null} if it does
-   * not exist.
+   * Reads the Value of the DataSetWriterProperties child from the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the TransportSettings {@link DataSetWriterTransportType} Node, or {@code null} if it
-   *     does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  DataSetWriterTransportType getTransportSettingsNode() throws UaException;
+  @Nullable KeyValuePair @Nullable [] readDataSetWriterProperties() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getTransportSettingsNode()}.
+   * Writes the Value of the DataSetWriterProperties child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the DataSetWriterTransportType
-   *     Node or completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends DataSetWriterTransportType> getTransportSettingsNodeAsync();
+  void writeDataSetWriterProperties(@Nullable KeyValuePair @Nullable [] value) throws UaException;
+
+  /** Asynchronous form of {@link #readDataSetWriterProperties()}. */
+  CompletableFuture<? extends @Nullable KeyValuePair @Nullable []>
+      readDataSetWriterPropertiesAsync();
 
   /**
-   * Get the MessageSettings {@link DataSetWriterMessageType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MessageSettings {@link DataSetWriterMessageType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * Asynchronous form of {@link #writeDataSetWriterProperties}; completes with the operation
+   * status.
    */
-  DataSetWriterMessageType getMessageSettingsNode() throws UaException;
+  CompletableFuture<StatusCode> writeDataSetWriterPropertiesAsync(
+      @Nullable KeyValuePair @Nullable [] value);
 
   /**
-   * Asynchronous implementation of {@link #getMessageSettingsNode()}.
+   * Resolves the mandatory Status child, a PubSubStatusType.
    *
-   * @return a CompletableFuture that completes successfully with the DataSetWriterMessageType Node
-   *     or completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends DataSetWriterMessageType> getMessageSettingsNodeAsync();
-
-  /**
-   * Get the Status {@link PubSubStatusType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the Status {@link PubSubStatusType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.10/#9.1.10.1">PubSubStatusType
+   *     documentation</a>
    */
   PubSubStatusType getStatusNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getStatusNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PubSubStatusType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getStatusNode()}. */
   CompletableFuture<? extends PubSubStatusType> getStatusNodeAsync();
-
-  /**
-   * Get the Diagnostics {@link PubSubDiagnosticsDataSetWriterType} Node, or {@code null} if it does
-   * not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the Diagnostics {@link PubSubDiagnosticsDataSetWriterType} Node, or {@code null} if it
-   *     does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PubSubDiagnosticsDataSetWriterType getDiagnosticsNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getDiagnosticsNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the
-   *     PubSubDiagnosticsDataSetWriterType Node or completes exceptionally if an error occurs
-   *     creating or getting the Node.
-   */
-  CompletableFuture<? extends PubSubDiagnosticsDataSetWriterType> getDiagnosticsNodeAsync();
 }

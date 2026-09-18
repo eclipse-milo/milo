@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
@@ -19,332 +9,185 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.structured.SignedSoftwareCertificate;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserIdentityToken;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.10">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.10</a>
+ * Client API for the AuditActivateSessionEventType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.10">Model
+ *     documentation</a>
  */
 public interface AuditActivateSessionEventType extends AuditSessionEventType {
-  QualifiedProperty<SignedSoftwareCertificate[]> CLIENT_SOFTWARE_CERTIFICATES =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ClientSoftwareCertificates",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=344"),
-          1,
-          SignedSoftwareCertificate[].class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2075L);
 
-  QualifiedProperty<UserIdentityToken> USER_IDENTITY_TOKEN =
+  QualifiedProperty<NodeId[]> CurrentRoleIds_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "UserIdentityToken",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=316"),
-          -1,
-          UserIdentityToken.class);
-
-  QualifiedProperty<String> SECURE_CHANNEL_ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "SecureChannelId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
-
-  QualifiedProperty<NodeId[]> CURRENT_ROLE_IDS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "CurrentRoleIds",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 17L),
           1,
           NodeId[].class);
 
-  /**
-   * Get the local value of the ClientSoftwareCertificates Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ClientSoftwareCertificates Node.
-   * @throws UaException if an error occurs creating or getting the ClientSoftwareCertificates Node.
-   */
-  SignedSoftwareCertificate[] getClientSoftwareCertificates() throws UaException;
+  QualifiedProperty<String> SecureChannelId_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "SecureChannelId",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+          -1,
+          String.class);
+
+  QualifiedProperty<UserIdentityToken> UserIdentityToken_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "UserIdentityToken",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 316L),
+          -1,
+          UserIdentityToken.class);
+
+  QualifiedProperty<SignedSoftwareCertificate[]> ClientSoftwareCertificates_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "ClientSoftwareCertificates",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 344L),
+          1,
+          SignedSoftwareCertificate[].class);
 
   /**
-   * Set the local value of the ClientSoftwareCertificates Node.
+   * Resolves the optional CurrentRoleIds child, a PropertyType with DataType NodeId.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ClientSoftwareCertificates Node.
-   * @throws UaException if an error occurs creating or getting the ClientSoftwareCertificates Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  void setClientSoftwareCertificates(SignedSoftwareCertificate[] value) throws UaException;
+  @Nullable PropertyType getCurrentRoleIdsNode() throws UaException;
+
+  /** Asynchronous form of {@link #getCurrentRoleIdsNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getCurrentRoleIdsNodeAsync();
 
   /**
-   * Read the value of the ClientSoftwareCertificates Node from the server and update the local
-   * value if the operation succeeds.
+   * Reads the Value of the CurrentRoleIds child from the server.
    *
-   * @return the {@link SignedSoftwareCertificate[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  SignedSoftwareCertificate[] readClientSoftwareCertificates() throws UaException;
+  NodeId @Nullable [] readCurrentRoleIds() throws UaException;
 
   /**
-   * Write a new value for the ClientSoftwareCertificates Node to the server and update the local
-   * value if the operation succeeds.
+   * Writes the Value of the CurrentRoleIds child to the server.
    *
-   * @param value the {@link SignedSoftwareCertificate[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeClientSoftwareCertificates(SignedSoftwareCertificate[] value) throws UaException;
+  void writeCurrentRoleIds(NodeId @Nullable [] value) throws UaException;
+
+  /** Asynchronous form of {@link #readCurrentRoleIds()}. */
+  CompletableFuture<? extends NodeId @Nullable []> readCurrentRoleIdsAsync();
+
+  /** Asynchronous form of {@link #writeCurrentRoleIds}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeCurrentRoleIdsAsync(NodeId @Nullable [] value);
 
   /**
-   * An asynchronous implementation of {@link #readClientSoftwareCertificates}.
+   * Resolves the mandatory SecureChannelId child, a PropertyType with DataType String.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends SignedSoftwareCertificate[]> readClientSoftwareCertificatesAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeClientSoftwareCertificates}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeClientSoftwareCertificatesAsync(
-      SignedSoftwareCertificate[] value);
-
-  /**
-   * Get the ClientSoftwareCertificates {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ClientSoftwareCertificates {@link PropertyType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getClientSoftwareCertificatesNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getClientSoftwareCertificatesNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getClientSoftwareCertificatesNodeAsync();
-
-  /**
-   * Get the local value of the UserIdentityToken Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the UserIdentityToken Node.
-   * @throws UaException if an error occurs creating or getting the UserIdentityToken Node.
-   */
-  UserIdentityToken getUserIdentityToken() throws UaException;
-
-  /**
-   * Set the local value of the UserIdentityToken Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the UserIdentityToken Node.
-   * @throws UaException if an error occurs creating or getting the UserIdentityToken Node.
-   */
-  void setUserIdentityToken(UserIdentityToken value) throws UaException;
-
-  /**
-   * Read the value of the UserIdentityToken Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link UserIdentityToken} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UserIdentityToken readUserIdentityToken() throws UaException;
-
-  /**
-   * Write a new value for the UserIdentityToken Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link UserIdentityToken} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeUserIdentityToken(UserIdentityToken value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readUserIdentityToken}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UserIdentityToken> readUserIdentityTokenAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeUserIdentityToken}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeUserIdentityTokenAsync(UserIdentityToken value);
-
-  /**
-   * Get the UserIdentityToken {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the UserIdentityToken {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getUserIdentityTokenNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getUserIdentityTokenNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getUserIdentityTokenNodeAsync();
-
-  /**
-   * Get the local value of the SecureChannelId Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SecureChannelId Node.
-   * @throws UaException if an error occurs creating or getting the SecureChannelId Node.
-   */
-  String getSecureChannelId() throws UaException;
-
-  /**
-   * Set the local value of the SecureChannelId Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SecureChannelId Node.
-   * @throws UaException if an error occurs creating or getting the SecureChannelId Node.
-   */
-  void setSecureChannelId(String value) throws UaException;
-
-  /**
-   * Read the value of the SecureChannelId Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String readSecureChannelId() throws UaException;
-
-  /**
-   * Write a new value for the SecureChannelId Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeSecureChannelId(String value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readSecureChannelId}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String> readSecureChannelIdAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeSecureChannelId}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeSecureChannelIdAsync(String value);
-
-  /**
-   * Get the SecureChannelId {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SecureChannelId {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getSecureChannelIdNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getSecureChannelIdNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getSecureChannelIdNode()}. */
   CompletableFuture<? extends PropertyType> getSecureChannelIdNodeAsync();
 
   /**
-   * Get the local value of the CurrentRoleIds Node.
+   * Reads the Value of the SecureChannelId child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the CurrentRoleIds Node.
-   * @throws UaException if an error occurs creating or getting the CurrentRoleIds Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  NodeId[] getCurrentRoleIds() throws UaException;
+  @Nullable String readSecureChannelId() throws UaException;
 
   /**
-   * Set the local value of the CurrentRoleIds Node.
+   * Writes the Value of the SecureChannelId child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the CurrentRoleIds Node.
-   * @throws UaException if an error occurs creating or getting the CurrentRoleIds Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setCurrentRoleIds(NodeId[] value) throws UaException;
+  void writeSecureChannelId(@Nullable String value) throws UaException;
+
+  /** Asynchronous form of {@link #readSecureChannelId()}. */
+  CompletableFuture<? extends @Nullable String> readSecureChannelIdAsync();
+
+  /** Asynchronous form of {@link #writeSecureChannelId}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeSecureChannelIdAsync(@Nullable String value);
 
   /**
-   * Read the value of the CurrentRoleIds Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the mandatory UserIdentityToken child, a PropertyType with DataType UserIdentityToken.
    *
-   * @return the {@link NodeId[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  NodeId[] readCurrentRoleIds() throws UaException;
+  PropertyType getUserIdentityTokenNode() throws UaException;
+
+  /** Asynchronous form of {@link #getUserIdentityTokenNode()}. */
+  CompletableFuture<? extends PropertyType> getUserIdentityTokenNodeAsync();
 
   /**
-   * Write a new value for the CurrentRoleIds Node to the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the UserIdentityToken child from the server.
    *
-   * @param value the {@link NodeId[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeCurrentRoleIds(NodeId[] value) throws UaException;
+  @Nullable UserIdentityToken readUserIdentityToken() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readCurrentRoleIds}.
+   * Writes the Value of the UserIdentityToken child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends NodeId[]> readCurrentRoleIdsAsync();
+  void writeUserIdentityToken(@Nullable UserIdentityToken value) throws UaException;
+
+  /** Asynchronous form of {@link #readUserIdentityToken()}. */
+  CompletableFuture<? extends @Nullable UserIdentityToken> readUserIdentityTokenAsync();
+
+  /** Asynchronous form of {@link #writeUserIdentityToken}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeUserIdentityTokenAsync(@Nullable UserIdentityToken value);
 
   /**
-   * An asynchronous implementation of {@link #writeCurrentRoleIds}.
+   * Resolves the mandatory ClientSoftwareCertificates child, a PropertyType with DataType
+   * SignedSoftwareCertificate.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  CompletableFuture<StatusCode> writeCurrentRoleIdsAsync(NodeId[] value);
+  PropertyType getClientSoftwareCertificatesNode() throws UaException;
+
+  /** Asynchronous form of {@link #getClientSoftwareCertificatesNode()}. */
+  CompletableFuture<? extends PropertyType> getClientSoftwareCertificatesNodeAsync();
 
   /**
-   * Get the CurrentRoleIds {@link PropertyType} Node, or {@code null} if it does not exist.
+   * Reads the Value of the ClientSoftwareCertificates child from the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the CurrentRoleIds {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  PropertyType getCurrentRoleIdsNode() throws UaException;
+  @Nullable SignedSoftwareCertificate @Nullable [] readClientSoftwareCertificates()
+      throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getCurrentRoleIdsNode()}.
+   * Writes the Value of the ClientSoftwareCertificates child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends PropertyType> getCurrentRoleIdsNodeAsync();
+  void writeClientSoftwareCertificates(@Nullable SignedSoftwareCertificate @Nullable [] value)
+      throws UaException;
+
+  /** Asynchronous form of {@link #readClientSoftwareCertificates()}. */
+  CompletableFuture<? extends @Nullable SignedSoftwareCertificate @Nullable []>
+      readClientSoftwareCertificatesAsync();
+
+  /**
+   * Asynchronous form of {@link #writeClientSoftwareCertificates}; completes with the operation
+   * status.
+   */
+  CompletableFuture<StatusCode> writeClientSoftwareCertificatesAsync(
+      @Nullable SignedSoftwareCertificate @Nullable [] value);
 }

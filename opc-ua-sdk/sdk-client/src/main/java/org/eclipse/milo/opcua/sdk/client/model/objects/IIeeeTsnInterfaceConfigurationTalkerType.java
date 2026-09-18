@@ -1,98 +1,56 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
-import org.eclipse.milo.opcua.sdk.client.model.variables.BaseDataVariableType;
+import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.11">https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.11</a>
+ * Client API for the IIeeeTsnInterfaceConfigurationTalkerType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.11">Model
+ *     documentation</a>
  */
 public interface IIeeeTsnInterfaceConfigurationTalkerType
     extends IIeeeTsnInterfaceConfigurationType {
-  /**
-   * Get the local value of the TimeAwareOffset Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the TimeAwareOffset Node.
-   * @throws UaException if an error occurs creating or getting the TimeAwareOffset Node.
-   */
-  UInteger getTimeAwareOffset() throws UaException;
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 24191L);
 
   /**
-   * Set the local value of the TimeAwareOffset Node.
+   * Resolves the optional TimeAwareOffset child, a BaseDataVariableType with DataType UInt32.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the TimeAwareOffset Node.
-   * @throws UaException if an error occurs creating or getting the TimeAwareOffset Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  void setTimeAwareOffset(UInteger value) throws UaException;
+  @Nullable VariableNode getTimeAwareOffsetNode() throws UaException;
+
+  /** Asynchronous form of {@link #getTimeAwareOffsetNode()}. */
+  CompletableFuture<? extends @Nullable VariableNode> getTimeAwareOffsetNodeAsync();
 
   /**
-   * Read the value of the TimeAwareOffset Node from the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the TimeAwareOffset child from the server.
    *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  UInteger readTimeAwareOffset() throws UaException;
+  @Nullable UInteger readTimeAwareOffset() throws UaException;
 
   /**
-   * Write a new value for the TimeAwareOffset Node to the server and update the local value if the
-   * operation succeeds.
+   * Writes the Value of the TimeAwareOffset child to the server.
    *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeTimeAwareOffset(UInteger value) throws UaException;
+  void writeTimeAwareOffset(@Nullable UInteger value) throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #readTimeAwareOffset}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readTimeAwareOffsetAsync();
+  /** Asynchronous form of {@link #readTimeAwareOffset()}. */
+  CompletableFuture<? extends @Nullable UInteger> readTimeAwareOffsetAsync();
 
-  /**
-   * An asynchronous implementation of {@link #writeTimeAwareOffset}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeTimeAwareOffsetAsync(UInteger value);
-
-  /**
-   * Get the TimeAwareOffset {@link BaseDataVariableType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the TimeAwareOffset {@link BaseDataVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getTimeAwareOffsetNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getTimeAwareOffsetNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getTimeAwareOffsetNodeAsync();
+  /** Asynchronous form of {@link #writeTimeAwareOffset}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeTimeAwareOffsetAsync(@Nullable UInteger value);
 }

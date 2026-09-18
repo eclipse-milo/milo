@@ -1,31 +1,16 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyTypeNode;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.sdk.client.nodes.UaObjectNode;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
@@ -33,7 +18,15 @@ import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AnnotationDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.QuantityDimension;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link QuantityType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part8/6.4.1">Model
+ *     documentation</a>
+ */
 public class QuantityTypeNode extends BaseObjectTypeNode implements QuantityType {
   public QuantityTypeNode(
       OpcUaClient client,
@@ -41,12 +34,12 @@ public class QuantityTypeNode extends BaseObjectTypeNode implements QuantityType
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         client,
@@ -64,323 +57,315 @@ public class QuantityTypeNode extends BaseObjectTypeNode implements QuantityType
   }
 
   @Override
-  public LocalizedText getSymbol() throws UaException {
-    PropertyTypeNode node = getSymbolNode();
-    return (LocalizedText) node.getValue().getValue().getValue();
+  public @Nullable PropertyTypeNode getAnnotationNode() throws UaException {
+    return ClientNodeSupport.await(getAnnotationNodeAsync());
   }
 
   @Override
-  public void setSymbol(LocalizedText value) throws UaException {
-    PropertyTypeNode node = getSymbolNode();
-    node.setValue(new Variant(value));
+  public CompletableFuture<? extends @Nullable PropertyTypeNode> getAnnotationNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "Annotation",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public LocalizedText readSymbol() throws UaException {
-    try {
-      return readSymbolAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable AnnotationDataType @Nullable [] readAnnotation() throws UaException {
+    return ClientNodeSupport.await(readAnnotationAsync());
   }
 
   @Override
-  public void writeSymbol(LocalizedText value) throws UaException {
-    try {
-      StatusCode statusCode = writeSymbolAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public void writeAnnotation(@Nullable AnnotationDataType @Nullable [] value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeAnnotationAsync(value)),
+        "http://opcfoundation.org/UA/}Annotation");
   }
 
   @Override
-  public CompletableFuture<? extends LocalizedText> readSymbolAsync() {
-    return getSymbolNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (LocalizedText) v.getValue().getValue());
+  public CompletableFuture<? extends @Nullable AnnotationDataType @Nullable []>
+      readAnnotationAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getAnnotationNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}Annotation",
+                            false,
+                            AnnotationDataType.class,
+                            1,
+                            null)),
+                v ->
+                    CompletableFuture.completedFuture(
+                        (@Nullable AnnotationDataType @Nullable []) v)));
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeSymbolAsync(LocalizedText symbol) {
-    DataValue value = DataValue.valueOnly(new Variant(symbol));
-    return getSymbolNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<StatusCode> writeAnnotationAsync(
+      @Nullable AnnotationDataType @Nullable [] value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getAnnotationNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}Annotation",
+                        value,
+                        AnnotationDataType.class,
+                        1,
+                        null)));
   }
 
   @Override
-  public PropertyTypeNode getSymbolNode() throws UaException {
-    try {
-      return getSymbolNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public UaObjectNode getServerUnitsNode() throws UaException {
+    return ClientNodeSupport.await(getServerUnitsNodeAsync());
   }
 
   @Override
-  public CompletableFuture<? extends PropertyTypeNode> getSymbolNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Symbol", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+  public CompletableFuture<? extends UaObjectNode> getServerUnitsNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "ServerUnits",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Object,
+                        UaObjectNode.class)));
   }
 
   @Override
-  public AnnotationDataType[] getAnnotation() throws UaException {
-    PropertyTypeNode node = getAnnotationNode();
-    return cast(node.getValue().getValue().getValue(), AnnotationDataType[].class);
+  public @Nullable PropertyTypeNode getConversionServiceNode() throws UaException {
+    return ClientNodeSupport.await(getConversionServiceNodeAsync());
   }
 
   @Override
-  public void setAnnotation(AnnotationDataType[] value) throws UaException {
-    PropertyTypeNode node = getAnnotationNode();
-    ExtensionObject[] encoded =
-        ExtensionObject.encodeArray(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
+  public CompletableFuture<? extends @Nullable PropertyTypeNode> getConversionServiceNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "ConversionService",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public AnnotationDataType[] readAnnotation() throws UaException {
-    try {
-      return readAnnotationAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable String readConversionService() throws UaException {
+    return ClientNodeSupport.await(readConversionServiceAsync());
   }
 
   @Override
-  public void writeAnnotation(AnnotationDataType[] value) throws UaException {
-    try {
-      StatusCode statusCode = writeAnnotationAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public void writeConversionService(@Nullable String value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeConversionServiceAsync(value)),
+        "http://opcfoundation.org/UA/}ConversionService");
   }
 
   @Override
-  public CompletableFuture<? extends AnnotationDataType[]> readAnnotationAsync() {
-    return getAnnotationNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), AnnotationDataType[].class));
+  public CompletableFuture<? extends @Nullable String> readConversionServiceAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getConversionServiceNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}ConversionService",
+                            false,
+                            String.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable String) v)));
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeAnnotationAsync(AnnotationDataType[] annotation) {
-    ExtensionObject[] encoded =
-        ExtensionObject.encodeArray(client.getStaticEncodingContext(), annotation);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getAnnotationNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<StatusCode> writeConversionServiceAsync(@Nullable String value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getConversionServiceNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}ConversionService",
+                        value,
+                        String.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public PropertyTypeNode getAnnotationNode() throws UaException {
-    try {
-      return getAnnotationNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable PropertyTypeNode getSymbolNode() throws UaException {
+    return ClientNodeSupport.await(getSymbolNodeAsync());
   }
 
   @Override
-  public CompletableFuture<? extends PropertyTypeNode> getAnnotationNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Annotation", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+  public CompletableFuture<? extends @Nullable PropertyTypeNode> getSymbolNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "Symbol",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public String getConversionService() throws UaException {
-    PropertyTypeNode node = getConversionServiceNode();
-    return (String) node.getValue().getValue().getValue();
+  public @Nullable LocalizedText readSymbol() throws UaException {
+    return ClientNodeSupport.await(readSymbolAsync());
   }
 
   @Override
-  public void setConversionService(String value) throws UaException {
-    PropertyTypeNode node = getConversionServiceNode();
-    node.setValue(new Variant(value));
+  public void writeSymbol(@Nullable LocalizedText value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeSymbolAsync(value)), "http://opcfoundation.org/UA/}Symbol");
   }
 
   @Override
-  public String readConversionService() throws UaException {
-    try {
-      return readConversionServiceAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable LocalizedText> readSymbolAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getSymbolNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}Symbol",
+                            false,
+                            LocalizedText.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable LocalizedText) v)));
   }
 
   @Override
-  public void writeConversionService(String value) throws UaException {
-    try {
-      StatusCode statusCode = writeConversionServiceAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends String> readConversionServiceAsync() {
-    return getConversionServiceNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (String) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeConversionServiceAsync(String conversionService) {
-    DataValue value = DataValue.valueOnly(new Variant(conversionService));
-    return getConversionServiceNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public PropertyTypeNode getConversionServiceNode() throws UaException {
-    try {
-      return getConversionServiceNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends PropertyTypeNode> getConversionServiceNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "ConversionService",
-            ExpandedNodeId.parse("i=46"),
-            false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
-  }
-
-  @Override
-  public QuantityDimension getDimension() throws UaException {
-    PropertyTypeNode node = getDimensionNode();
-    return cast(node.getValue().getValue().getValue(), QuantityDimension.class);
-  }
-
-  @Override
-  public void setDimension(QuantityDimension value) throws UaException {
-    PropertyTypeNode node = getDimensionNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
-  }
-
-  @Override
-  public QuantityDimension readDimension() throws UaException {
-    try {
-      return readDimensionAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeDimension(QuantityDimension value) throws UaException {
-    try {
-      StatusCode statusCode = writeDimensionAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends QuantityDimension> readDimensionAsync() {
-    return getDimensionNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), QuantityDimension.class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeDimensionAsync(QuantityDimension dimension) {
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), dimension);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getDimensionNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<StatusCode> writeSymbolAsync(@Nullable LocalizedText value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getSymbolNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}Symbol",
+                        value,
+                        LocalizedText.class,
+                        -1,
+                        null)));
   }
 
   @Override
   public PropertyTypeNode getDimensionNode() throws UaException {
-    try {
-      return getDimensionNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getDimensionNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends PropertyTypeNode> getDimensionNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Dimension", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "Dimension",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public BaseObjectTypeNode getServerUnitsNode() throws UaException {
-    try {
-      return getServerUnitsNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable QuantityDimension readDimension() throws UaException {
+    return ClientNodeSupport.await(readDimensionAsync());
   }
 
   @Override
-  public CompletableFuture<? extends BaseObjectTypeNode> getServerUnitsNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "ServerUnits", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (BaseObjectTypeNode) node);
+  public void writeDimension(@Nullable QuantityDimension value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeDimensionAsync(value)),
+        "http://opcfoundation.org/UA/}Dimension");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable QuantityDimension> readDimensionAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getDimensionNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}Dimension",
+                            true,
+                            QuantityDimension.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable QuantityDimension) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeDimensionAsync(@Nullable QuantityDimension value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getDimensionNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}Dimension",
+                        value,
+                        QuantityDimension.class,
+                        -1,
+                        null)));
   }
 }

@@ -1,19 +1,12 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
-import org.eclipse.milo.opcua.sdk.client.model.variables.BaseDataVariableType;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallOptions;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallResult;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.client.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
+import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
@@ -21,813 +14,500 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.structured.KeyValuePair;
 import org.eclipse.milo.opcua.stack.core.types.structured.Structure;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part25/6.3.1">https://reference.opcfoundation.org/v105/Core/docs/Part25/6.3.1</a>
+ * Client API for the SerializationEntityType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part25/6.3.1">Model
+ *     documentation</a>
  */
 public interface SerializationEntityType extends BaseObjectType {
-  QualifiedProperty<NodeId[]> INCLUDE_REFERENCE_TYPES =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "IncludeReferenceTypes",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-          1,
-          NodeId[].class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 19824L);
 
-  QualifiedProperty<NodeId[]> EXCLUDE_REFERENCE_TYPES =
+  QualifiedProperty<Boolean> IncludeStatus_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ExcludeReferenceTypes",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-          1,
-          NodeId[].class);
-
-  QualifiedProperty<UShort> SERIALIZATION_DEPTH =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "SerializationDepth",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-          -1,
-          UShort.class);
-
-  QualifiedProperty<Boolean> CONSIDER_SUB_ELEMENT_SERIALIZATION_PROPERTIES =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ConsiderSubElementSerializationProperties",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          Namespaces.OPC_UA,
+          "IncludeStatus",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
           -1,
           Boolean.class);
 
-  QualifiedProperty<KeyValuePair[]> CUSTOM_META_DATA_PROPERTIES =
+  QualifiedProperty<NodeId> CustomMetaDataRef_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "CustomMetaDataProperties",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14533"),
-          1,
-          KeyValuePair[].class);
-
-  QualifiedProperty<NodeId> CUSTOM_META_DATA_REF =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "CustomMetaDataRef",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 17L),
           -1,
           NodeId.class);
 
-  QualifiedProperty<Boolean> INCLUDE_STATUS =
+  QualifiedProperty<UShort> SerializationDepth_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "IncludeStatus",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          Namespaces.OPC_UA,
+          "SerializationDepth",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 5L),
           -1,
-          Boolean.class);
+          UShort.class);
 
-  QualifiedProperty<Boolean> INCLUDE_SOURCE_TIMESTAMP =
+  QualifiedProperty<NodeId[]> ExcludeReferenceTypes_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
+          "ExcludeReferenceTypes",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 17L),
+          1,
+          NodeId[].class);
+
+  QualifiedProperty<NodeId[]> IncludeReferenceTypes_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "IncludeReferenceTypes",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 17L),
+          1,
+          NodeId[].class);
+
+  QualifiedProperty<Boolean> IncludeSourceTimestamp_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
           "IncludeSourceTimestamp",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
           -1,
           Boolean.class);
 
-  QualifiedProperty<Boolean> INCLUDE_DICTIONARY_REFERENCE =
+  QualifiedProperty<KeyValuePair[]> CustomMetaDataProperties_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
+          "CustomMetaDataProperties",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 14533L),
+          1,
+          KeyValuePair[].class);
+
+  QualifiedProperty<Boolean> IncludeDictionaryReference_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
           "IncludeDictionaryReference",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+          -1,
+          Boolean.class);
+
+  QualifiedProperty<Boolean> ConsiderSubElementSerializationProperties_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "ConsiderSubElementSerializationProperties",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
           -1,
           Boolean.class);
 
   /**
-   * Get the local value of the IncludeReferenceTypes Node.
+   * Resolves the optional IncludeStatus child, a PropertyType with DataType Boolean.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the IncludeReferenceTypes Node.
-   * @throws UaException if an error occurs creating or getting the IncludeReferenceTypes Node.
-   */
-  NodeId[] getIncludeReferenceTypes() throws UaException;
-
-  /**
-   * Set the local value of the IncludeReferenceTypes Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the IncludeReferenceTypes Node.
-   * @throws UaException if an error occurs creating or getting the IncludeReferenceTypes Node.
-   */
-  void setIncludeReferenceTypes(NodeId[] value) throws UaException;
-
-  /**
-   * Read the value of the IncludeReferenceTypes Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link NodeId[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  NodeId[] readIncludeReferenceTypes() throws UaException;
-
-  /**
-   * Write a new value for the IncludeReferenceTypes Node to the server and update the local value
-   * if the operation succeeds.
-   *
-   * @param value the {@link NodeId[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeIncludeReferenceTypes(NodeId[] value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readIncludeReferenceTypes}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends NodeId[]> readIncludeReferenceTypesAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeIncludeReferenceTypes}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeIncludeReferenceTypesAsync(NodeId[] value);
-
-  /**
-   * Get the IncludeReferenceTypes {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the IncludeReferenceTypes {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getIncludeReferenceTypesNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getIncludeReferenceTypesNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getIncludeReferenceTypesNodeAsync();
-
-  /**
-   * Get the local value of the ExcludeReferenceTypes Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ExcludeReferenceTypes Node.
-   * @throws UaException if an error occurs creating or getting the ExcludeReferenceTypes Node.
-   */
-  NodeId[] getExcludeReferenceTypes() throws UaException;
-
-  /**
-   * Set the local value of the ExcludeReferenceTypes Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ExcludeReferenceTypes Node.
-   * @throws UaException if an error occurs creating or getting the ExcludeReferenceTypes Node.
-   */
-  void setExcludeReferenceTypes(NodeId[] value) throws UaException;
-
-  /**
-   * Read the value of the ExcludeReferenceTypes Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link NodeId[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  NodeId[] readExcludeReferenceTypes() throws UaException;
-
-  /**
-   * Write a new value for the ExcludeReferenceTypes Node to the server and update the local value
-   * if the operation succeeds.
-   *
-   * @param value the {@link NodeId[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeExcludeReferenceTypes(NodeId[] value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readExcludeReferenceTypes}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  CompletableFuture<? extends NodeId[]> readExcludeReferenceTypesAsync();
+  @Nullable PropertyType getIncludeStatusNode() throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #writeExcludeReferenceTypes}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeExcludeReferenceTypesAsync(NodeId[] value);
+  /** Asynchronous form of {@link #getIncludeStatusNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getIncludeStatusNodeAsync();
 
   /**
-   * Get the ExcludeReferenceTypes {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * Reads the Value of the IncludeStatus child from the server.
    *
-   * @return the ExcludeReferenceTypes {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  PropertyType getExcludeReferenceTypesNode() throws UaException;
+  @Nullable Boolean readIncludeStatus() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getExcludeReferenceTypesNode()}.
+   * Writes the Value of the IncludeStatus child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends PropertyType> getExcludeReferenceTypesNodeAsync();
+  void writeIncludeStatus(@Nullable Boolean value) throws UaException;
 
-  /**
-   * Get the local value of the SerializationDepth Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SerializationDepth Node.
-   * @throws UaException if an error occurs creating or getting the SerializationDepth Node.
-   */
-  UShort getSerializationDepth() throws UaException;
+  /** Asynchronous form of {@link #readIncludeStatus()}. */
+  CompletableFuture<? extends @Nullable Boolean> readIncludeStatusAsync();
 
-  /**
-   * Set the local value of the SerializationDepth Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SerializationDepth Node.
-   * @throws UaException if an error occurs creating or getting the SerializationDepth Node.
-   */
-  void setSerializationDepth(UShort value) throws UaException;
+  /** Asynchronous form of {@link #writeIncludeStatus}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeIncludeStatusAsync(@Nullable Boolean value);
 
   /**
-   * Read the value of the SerializationDepth Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the mandatory SerializedData child, a BaseDataVariableType with DataType Structure.
    *
-   * @return the {@link UShort} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
    */
-  UShort readSerializationDepth() throws UaException;
+  VariableNode getSerializedDataNode() throws UaException;
 
-  /**
-   * Write a new value for the SerializationDepth Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link UShort} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeSerializationDepth(UShort value) throws UaException;
+  /** Asynchronous form of {@link #getSerializedDataNode()}. */
+  CompletableFuture<? extends VariableNode> getSerializedDataNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #readSerializationDepth}.
+   * Reads the Value of the SerializedData child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends UShort> readSerializationDepthAsync();
+  @Nullable Structure readSerializedData() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeSerializationDepth}.
+   * Writes the Value of the SerializedData child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeSerializationDepthAsync(UShort value);
+  void writeSerializedData(@Nullable Structure value) throws UaException;
 
-  /**
-   * Get the SerializationDepth {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SerializationDepth {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getSerializationDepthNode() throws UaException;
+  /** Asynchronous form of {@link #readSerializedData()}. */
+  CompletableFuture<? extends @Nullable Structure> readSerializedDataAsync();
 
-  /**
-   * Asynchronous implementation of {@link #getSerializationDepthNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getSerializationDepthNodeAsync();
+  /** Asynchronous form of {@link #writeSerializedData}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeSerializedDataAsync(@Nullable Structure value);
 
   /**
-   * Get the local value of the ConsiderSubElementSerializationProperties Node.
+   * Resolves the optional CustomMetaDataRef child, a PropertyType with DataType NodeId.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ConsiderSubElementSerializationProperties Node.
-   * @throws UaException if an error occurs creating or getting the
-   *     ConsiderSubElementSerializationProperties Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  Boolean getConsiderSubElementSerializationProperties() throws UaException;
+  @Nullable PropertyType getCustomMetaDataRefNode() throws UaException;
 
-  /**
-   * Set the local value of the ConsiderSubElementSerializationProperties Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ConsiderSubElementSerializationProperties Node.
-   * @throws UaException if an error occurs creating or getting the
-   *     ConsiderSubElementSerializationProperties Node.
-   */
-  void setConsiderSubElementSerializationProperties(Boolean value) throws UaException;
+  /** Asynchronous form of {@link #getCustomMetaDataRefNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getCustomMetaDataRefNodeAsync();
 
   /**
-   * Read the value of the ConsiderSubElementSerializationProperties Node from the server and update
-   * the local value if the operation succeeds.
+   * Reads the Value of the CustomMetaDataRef child from the server.
    *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  Boolean readConsiderSubElementSerializationProperties() throws UaException;
+  @Nullable NodeId readCustomMetaDataRef() throws UaException;
 
   /**
-   * Write a new value for the ConsiderSubElementSerializationProperties Node to the server and
-   * update the local value if the operation succeeds.
+   * Writes the Value of the CustomMetaDataRef child to the server.
    *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeConsiderSubElementSerializationProperties(Boolean value) throws UaException;
+  void writeCustomMetaDataRef(@Nullable NodeId value) throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #readConsiderSubElementSerializationProperties}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Boolean> readConsiderSubElementSerializationPropertiesAsync();
+  /** Asynchronous form of {@link #readCustomMetaDataRef()}. */
+  CompletableFuture<? extends @Nullable NodeId> readCustomMetaDataRefAsync();
 
-  /**
-   * An asynchronous implementation of {@link #writeConsiderSubElementSerializationProperties}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeConsiderSubElementSerializationPropertiesAsync(Boolean value);
+  /** Asynchronous form of {@link #writeCustomMetaDataRef}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeCustomMetaDataRefAsync(@Nullable NodeId value);
 
   /**
-   * Get the ConsiderSubElementSerializationProperties {@link PropertyType} Node, or {@code null} if
-   * it does not exist.
+   * Resolves the optional SerializationDepth child, a PropertyType with DataType UInt16.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ConsiderSubElementSerializationProperties {@link PropertyType} Node, or {@code
-   *     null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  PropertyType getConsiderSubElementSerializationPropertiesNode() throws UaException;
+  @Nullable PropertyType getSerializationDepthNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getConsiderSubElementSerializationPropertiesNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getConsiderSubElementSerializationPropertiesNodeAsync();
+  /** Asynchronous form of {@link #getSerializationDepthNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getSerializationDepthNodeAsync();
 
   /**
-   * Get the local value of the CustomMetaDataProperties Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
+   * Reads the Value of the SerializationDepth child from the server.
    *
-   * @return the local value of the CustomMetaDataProperties Node.
-   * @throws UaException if an error occurs creating or getting the CustomMetaDataProperties Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  KeyValuePair[] getCustomMetaDataProperties() throws UaException;
+  @Nullable UShort readSerializationDepth() throws UaException;
 
   /**
-   * Set the local value of the CustomMetaDataProperties Node.
+   * Writes the Value of the SerializationDepth child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the CustomMetaDataProperties Node.
-   * @throws UaException if an error occurs creating or getting the CustomMetaDataProperties Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setCustomMetaDataProperties(KeyValuePair[] value) throws UaException;
+  void writeSerializationDepth(@Nullable UShort value) throws UaException;
 
-  /**
-   * Read the value of the CustomMetaDataProperties Node from the server and update the local value
-   * if the operation succeeds.
-   *
-   * @return the {@link KeyValuePair[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  KeyValuePair[] readCustomMetaDataProperties() throws UaException;
+  /** Asynchronous form of {@link #readSerializationDepth()}. */
+  CompletableFuture<? extends @Nullable UShort> readSerializationDepthAsync();
 
-  /**
-   * Write a new value for the CustomMetaDataProperties Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link KeyValuePair[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeCustomMetaDataProperties(KeyValuePair[] value) throws UaException;
+  /** Asynchronous form of {@link #writeSerializationDepth}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeSerializationDepthAsync(@Nullable UShort value);
 
   /**
-   * An asynchronous implementation of {@link #readCustomMetaDataProperties}.
+   * Resolves the optional ExcludeReferenceTypes child, a PropertyType with DataType NodeId.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  CompletableFuture<? extends KeyValuePair[]> readCustomMetaDataPropertiesAsync();
+  @Nullable PropertyType getExcludeReferenceTypesNode() throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #writeCustomMetaDataProperties}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeCustomMetaDataPropertiesAsync(KeyValuePair[] value);
+  /** Asynchronous form of {@link #getExcludeReferenceTypesNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getExcludeReferenceTypesNodeAsync();
 
   /**
-   * Get the CustomMetaDataProperties {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * Reads the Value of the ExcludeReferenceTypes child from the server.
    *
-   * @return the CustomMetaDataProperties {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  PropertyType getCustomMetaDataPropertiesNode() throws UaException;
+  NodeId @Nullable [] readExcludeReferenceTypes() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getCustomMetaDataPropertiesNode()}.
+   * Writes the Value of the ExcludeReferenceTypes child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends PropertyType> getCustomMetaDataPropertiesNodeAsync();
+  void writeExcludeReferenceTypes(NodeId @Nullable [] value) throws UaException;
 
-  /**
-   * Get the local value of the CustomMetaDataRef Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the CustomMetaDataRef Node.
-   * @throws UaException if an error occurs creating or getting the CustomMetaDataRef Node.
-   */
-  NodeId getCustomMetaDataRef() throws UaException;
+  /** Asynchronous form of {@link #readExcludeReferenceTypes()}. */
+  CompletableFuture<? extends NodeId @Nullable []> readExcludeReferenceTypesAsync();
 
   /**
-   * Set the local value of the CustomMetaDataRef Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the CustomMetaDataRef Node.
-   * @throws UaException if an error occurs creating or getting the CustomMetaDataRef Node.
+   * Asynchronous form of {@link #writeExcludeReferenceTypes}; completes with the operation status.
    */
-  void setCustomMetaDataRef(NodeId value) throws UaException;
+  CompletableFuture<StatusCode> writeExcludeReferenceTypesAsync(NodeId @Nullable [] value);
 
   /**
-   * Read the value of the CustomMetaDataRef Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the optional IncludeReferenceTypes child, a PropertyType with DataType NodeId.
    *
-   * @return the {@link NodeId} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  NodeId readCustomMetaDataRef() throws UaException;
+  @Nullable PropertyType getIncludeReferenceTypesNode() throws UaException;
 
-  /**
-   * Write a new value for the CustomMetaDataRef Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link NodeId} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeCustomMetaDataRef(NodeId value) throws UaException;
+  /** Asynchronous form of {@link #getIncludeReferenceTypesNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getIncludeReferenceTypesNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #readCustomMetaDataRef}.
+   * Reads the Value of the IncludeReferenceTypes child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends NodeId> readCustomMetaDataRefAsync();
+  NodeId @Nullable [] readIncludeReferenceTypes() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeCustomMetaDataRef}.
+   * Writes the Value of the IncludeReferenceTypes child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeCustomMetaDataRefAsync(NodeId value);
+  void writeIncludeReferenceTypes(NodeId @Nullable [] value) throws UaException;
 
-  /**
-   * Get the CustomMetaDataRef {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the CustomMetaDataRef {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getCustomMetaDataRefNode() throws UaException;
+  /** Asynchronous form of {@link #readIncludeReferenceTypes()}. */
+  CompletableFuture<? extends NodeId @Nullable []> readIncludeReferenceTypesAsync();
 
   /**
-   * Asynchronous implementation of {@link #getCustomMetaDataRefNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * Asynchronous form of {@link #writeIncludeReferenceTypes}; completes with the operation status.
    */
-  CompletableFuture<? extends PropertyType> getCustomMetaDataRefNodeAsync();
+  CompletableFuture<StatusCode> writeIncludeReferenceTypesAsync(NodeId @Nullable [] value);
 
   /**
-   * Get the local value of the IncludeStatus Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
+   * Resolves the optional IncludeSourceTimestamp child, a PropertyType with DataType Boolean.
    *
-   * @return the local value of the IncludeStatus Node.
-   * @throws UaException if an error occurs creating or getting the IncludeStatus Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  Boolean getIncludeStatus() throws UaException;
+  @Nullable PropertyType getIncludeSourceTimestampNode() throws UaException;
 
-  /**
-   * Set the local value of the IncludeStatus Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the IncludeStatus Node.
-   * @throws UaException if an error occurs creating or getting the IncludeStatus Node.
-   */
-  void setIncludeStatus(Boolean value) throws UaException;
+  /** Asynchronous form of {@link #getIncludeSourceTimestampNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getIncludeSourceTimestampNodeAsync();
 
   /**
-   * Read the value of the IncludeStatus Node from the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the IncludeSourceTimestamp child from the server.
    *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  Boolean readIncludeStatus() throws UaException;
+  @Nullable Boolean readIncludeSourceTimestamp() throws UaException;
 
   /**
-   * Write a new value for the IncludeStatus Node to the server and update the local value if the
-   * operation succeeds.
+   * Writes the Value of the IncludeSourceTimestamp child to the server.
    *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeIncludeStatus(Boolean value) throws UaException;
+  void writeIncludeSourceTimestamp(@Nullable Boolean value) throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #readIncludeStatus}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Boolean> readIncludeStatusAsync();
+  /** Asynchronous form of {@link #readIncludeSourceTimestamp()}. */
+  CompletableFuture<? extends @Nullable Boolean> readIncludeSourceTimestampAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeIncludeStatus}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * Asynchronous form of {@link #writeIncludeSourceTimestamp}; completes with the operation status.
    */
-  CompletableFuture<StatusCode> writeIncludeStatusAsync(Boolean value);
+  CompletableFuture<StatusCode> writeIncludeSourceTimestampAsync(@Nullable Boolean value);
 
   /**
-   * Get the IncludeStatus {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * Resolves the optional CustomMetaDataProperties child, a PropertyType with DataType
+   * KeyValuePair.
    *
-   * @return the IncludeStatus {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  PropertyType getIncludeStatusNode() throws UaException;
+  @Nullable PropertyType getCustomMetaDataPropertiesNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getIncludeStatusNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getIncludeStatusNodeAsync();
+  /** Asynchronous form of {@link #getCustomMetaDataPropertiesNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getCustomMetaDataPropertiesNodeAsync();
 
   /**
-   * Get the local value of the IncludeSourceTimestamp Node.
+   * Reads the Value of the CustomMetaDataProperties child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the IncludeSourceTimestamp Node.
-   * @throws UaException if an error occurs creating or getting the IncludeSourceTimestamp Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  Boolean getIncludeSourceTimestamp() throws UaException;
+  @Nullable KeyValuePair @Nullable [] readCustomMetaDataProperties() throws UaException;
 
   /**
-   * Set the local value of the IncludeSourceTimestamp Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
+   * Writes the Value of the CustomMetaDataProperties child to the server.
    *
-   * @param value the local value to set for the IncludeSourceTimestamp Node.
-   * @throws UaException if an error occurs creating or getting the IncludeSourceTimestamp Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setIncludeSourceTimestamp(Boolean value) throws UaException;
+  void writeCustomMetaDataProperties(@Nullable KeyValuePair @Nullable [] value) throws UaException;
 
-  /**
-   * Read the value of the IncludeSourceTimestamp Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Boolean readIncludeSourceTimestamp() throws UaException;
+  /** Asynchronous form of {@link #readCustomMetaDataProperties()}. */
+  CompletableFuture<? extends @Nullable KeyValuePair @Nullable []>
+      readCustomMetaDataPropertiesAsync();
 
   /**
-   * Write a new value for the IncludeSourceTimestamp Node to the server and update the local value
-   * if the operation succeeds.
-   *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * Asynchronous form of {@link #writeCustomMetaDataProperties}; completes with the operation
+   * status.
    */
-  void writeIncludeSourceTimestamp(Boolean value) throws UaException;
+  CompletableFuture<StatusCode> writeCustomMetaDataPropertiesAsync(
+      @Nullable KeyValuePair @Nullable [] value);
 
   /**
-   * An asynchronous implementation of {@link #readIncludeSourceTimestamp}.
+   * Resolves the optional IncludeDictionaryReference child, a PropertyType with DataType Boolean.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  CompletableFuture<? extends Boolean> readIncludeSourceTimestampAsync();
+  @Nullable PropertyType getIncludeDictionaryReferenceNode() throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #writeIncludeSourceTimestamp}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeIncludeSourceTimestampAsync(Boolean value);
+  /** Asynchronous form of {@link #getIncludeDictionaryReferenceNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getIncludeDictionaryReferenceNodeAsync();
 
   /**
-   * Get the IncludeSourceTimestamp {@link PropertyType} Node, or {@code null} if it does not exist.
+   * Reads the Value of the IncludeDictionaryReference child from the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the IncludeSourceTimestamp {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  PropertyType getIncludeSourceTimestampNode() throws UaException;
+  @Nullable Boolean readIncludeDictionaryReference() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getIncludeSourceTimestampNode()}.
+   * Writes the Value of the IncludeDictionaryReference child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends PropertyType> getIncludeSourceTimestampNodeAsync();
+  void writeIncludeDictionaryReference(@Nullable Boolean value) throws UaException;
 
-  /**
-   * Get the local value of the IncludeDictionaryReference Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the IncludeDictionaryReference Node.
-   * @throws UaException if an error occurs creating or getting the IncludeDictionaryReference Node.
-   */
-  Boolean getIncludeDictionaryReference() throws UaException;
+  /** Asynchronous form of {@link #readIncludeDictionaryReference()}. */
+  CompletableFuture<? extends @Nullable Boolean> readIncludeDictionaryReferenceAsync();
 
   /**
-   * Set the local value of the IncludeDictionaryReference Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the IncludeDictionaryReference Node.
-   * @throws UaException if an error occurs creating or getting the IncludeDictionaryReference Node.
+   * Asynchronous form of {@link #writeIncludeDictionaryReference}; completes with the operation
+   * status.
    */
-  void setIncludeDictionaryReference(Boolean value) throws UaException;
+  CompletableFuture<StatusCode> writeIncludeDictionaryReferenceAsync(@Nullable Boolean value);
 
   /**
-   * Read the value of the IncludeDictionaryReference Node from the server and update the local
-   * value if the operation succeeds.
+   * Resolves the optional ConsiderSubElementSerializationProperties child, a PropertyType with
+   * DataType Boolean.
    *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  Boolean readIncludeDictionaryReference() throws UaException;
+  @Nullable PropertyType getConsiderSubElementSerializationPropertiesNode() throws UaException;
 
-  /**
-   * Write a new value for the IncludeDictionaryReference Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeIncludeDictionaryReference(Boolean value) throws UaException;
+  /** Asynchronous form of {@link #getConsiderSubElementSerializationPropertiesNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType>
+      getConsiderSubElementSerializationPropertiesNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #readIncludeDictionaryReference}.
+   * Reads the Value of the ConsiderSubElementSerializationProperties child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends Boolean> readIncludeDictionaryReferenceAsync();
+  @Nullable Boolean readConsiderSubElementSerializationProperties() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #writeIncludeDictionaryReference}.
+   * Writes the Value of the ConsiderSubElementSerializationProperties child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeIncludeDictionaryReferenceAsync(Boolean value);
+  void writeConsiderSubElementSerializationProperties(@Nullable Boolean value) throws UaException;
 
-  /**
-   * Get the IncludeDictionaryReference {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the IncludeDictionaryReference {@link PropertyType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getIncludeDictionaryReferenceNode() throws UaException;
+  /** Asynchronous form of {@link #readConsiderSubElementSerializationProperties()}. */
+  CompletableFuture<? extends @Nullable Boolean>
+      readConsiderSubElementSerializationPropertiesAsync();
 
   /**
-   * Asynchronous implementation of {@link #getIncludeDictionaryReferenceNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * Asynchronous form of {@link #writeConsiderSubElementSerializationProperties}; completes with
+   * the operation status.
    */
-  CompletableFuture<? extends PropertyType> getIncludeDictionaryReferenceNodeAsync();
+  CompletableFuture<StatusCode> writeConsiderSubElementSerializationPropertiesAsync(
+      @Nullable Boolean value);
 
   /**
-   * Get the local value of the SerializedData Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
+   * Resolves the optional ConfigureSerialization Method node.
    *
-   * @return the local value of the SerializedData Node.
-   * @throws UaException if an error occurs creating or getting the SerializedData Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part25/6.3.3">Model
+   *     documentation</a>
    */
-  Structure getSerializedData() throws UaException;
+  @Nullable UaMethodNode getConfigureSerializationMethodNode() throws UaException;
 
-  /**
-   * Set the local value of the SerializedData Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SerializedData Node.
-   * @throws UaException if an error occurs creating or getting the SerializedData Node.
-   */
-  void setSerializedData(Structure value) throws UaException;
+  /** Asynchronous form of {@link #getConfigureSerializationMethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getConfigureSerializationMethodNodeAsync();
 
   /**
-   * Read the value of the SerializedData Node from the server and update the local value if the
-   * operation succeeds.
+   * Calls the ConfigureSerialization Method and returns its outputs; requires a Good result.
    *
-   * @return the {@link Structure} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part25/6.3.3">Model
+   *     documentation</a>
    */
-  Structure readSerializedData() throws UaException;
+  Integer @Nullable [] configureSerialization(
+      @Nullable KeyValuePair @Nullable [] serializationFilterProperties) throws UaException;
 
   /**
-   * Write a new value for the SerializedData Node to the server and update the local value if the
-   * operation succeeds.
+   * Calls the ConfigureSerialization Method and returns the complete result, including a Bad
+   * status.
    *
-   * @param value the {@link Structure} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, transport or conversion fails.
    */
-  void writeSerializedData(Structure value) throws UaException;
+  MethodCallResult<Integer @Nullable []> callConfigureSerialization(
+      @Nullable KeyValuePair @Nullable [] serializationFilterProperties) throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readSerializedData}.
+   * Calls the ConfigureSerialization Method with explicit options and returns the complete result.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, transport or conversion fails.
    */
-  CompletableFuture<? extends Structure> readSerializedDataAsync();
+  MethodCallResult<Integer @Nullable []> callConfigureSerializationWith(
+      MethodCallOptions options, @Nullable KeyValuePair @Nullable [] serializationFilterProperties)
+      throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #writeSerializedData}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeSerializedDataAsync(Structure value);
+  /** Asynchronous form of {@link #configureSerialization}. */
+  CompletableFuture<Integer @Nullable []> configureSerializationAsync(
+      @Nullable KeyValuePair @Nullable [] serializationFilterProperties);
 
-  /**
-   * Get the SerializedData {@link BaseDataVariableType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SerializedData {@link BaseDataVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseDataVariableType getSerializedDataNode() throws UaException;
+  /** Asynchronous form of {@link #callConfigureSerialization}. */
+  CompletableFuture<MethodCallResult<Integer @Nullable []>> callConfigureSerializationAsync(
+      @Nullable KeyValuePair @Nullable [] serializationFilterProperties);
 
-  /**
-   * Asynchronous implementation of {@link #getSerializedDataNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseDataVariableType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseDataVariableType> getSerializedDataNodeAsync();
+  /** Asynchronous form of {@link #callConfigureSerializationWith}. */
+  CompletableFuture<MethodCallResult<Integer @Nullable []>> callConfigureSerializationWithAsync(
+      MethodCallOptions options, @Nullable KeyValuePair @Nullable [] serializationFilterProperties);
 }

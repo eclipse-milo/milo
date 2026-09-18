@@ -1,31 +1,16 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
 import org.eclipse.milo.opcua.sdk.client.model.variables.AnalogUnitTypeNode;
-import org.eclipse.milo.opcua.sdk.client.model.variables.BaseDataVariableTypeNode;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.sdk.client.nodes.UaVariableNode;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
@@ -34,7 +19,15 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.InterfaceOperStatus;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link IIetfBaseNetworkInterfaceType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.1">Model
+ *     documentation</a>
+ */
 public class IIetfBaseNetworkInterfaceTypeNode extends BaseInterfaceTypeNode
     implements IIetfBaseNetworkInterfaceType {
   public IIetfBaseNetworkInterfaceTypeNode(
@@ -43,12 +36,12 @@ public class IIetfBaseNetworkInterfaceTypeNode extends BaseInterfaceTypeNode
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         client,
@@ -66,326 +59,289 @@ public class IIetfBaseNetworkInterfaceTypeNode extends BaseInterfaceTypeNode
   }
 
   @Override
-  public InterfaceAdminStatus getAdminStatus() throws UaException {
-    BaseDataVariableTypeNode node = getAdminStatusNode();
-    Object value = node.getValue().getValue().getValue();
-
-    if (value instanceof Integer) {
-      return InterfaceAdminStatus.from((Integer) value);
-    } else if (value instanceof InterfaceAdminStatus) {
-      return (InterfaceAdminStatus) value;
-    } else {
-      return null;
-    }
+  public UaVariableNode getOperStatusNode() throws UaException {
+    return ClientNodeSupport.await(getOperStatusNodeAsync());
   }
 
   @Override
-  public void setAdminStatus(InterfaceAdminStatus value) throws UaException {
-    BaseDataVariableTypeNode node = getAdminStatusNode();
-    node.setValue(new Variant(value));
+  public CompletableFuture<? extends UaVariableNode> getOperStatusNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "OperStatus",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
   }
 
   @Override
-  public InterfaceAdminStatus readAdminStatus() throws UaException {
-    try {
-      return readAdminStatusAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable InterfaceOperStatus readOperStatus() throws UaException {
+    return ClientNodeSupport.await(readOperStatusAsync());
   }
 
   @Override
-  public void writeAdminStatus(InterfaceAdminStatus value) throws UaException {
-    try {
-      StatusCode statusCode = writeAdminStatusAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public void writeOperStatus(@Nullable InterfaceOperStatus value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeOperStatusAsync(value)),
+        "http://opcfoundation.org/UA/}OperStatus");
   }
 
   @Override
-  public CompletableFuture<? extends InterfaceAdminStatus> readAdminStatusAsync() {
-    return getAdminStatusNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(
-            v -> {
-              Object value = v.getValue().getValue();
-              if (value instanceof Integer) {
-                return InterfaceAdminStatus.from((Integer) value);
-              } else {
-                return null;
-              }
-            });
+  public CompletableFuture<? extends @Nullable InterfaceOperStatus> readOperStatusAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getOperStatusNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}OperStatus",
+                            true,
+                            InterfaceOperStatus.class,
+                            -1,
+                            InterfaceOperStatus::from)),
+                v -> CompletableFuture.completedFuture((@Nullable InterfaceOperStatus) v)));
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeAdminStatusAsync(InterfaceAdminStatus adminStatus) {
-    DataValue value = DataValue.valueOnly(new Variant(adminStatus));
-    return getAdminStatusNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<StatusCode> writeOperStatusAsync(@Nullable InterfaceOperStatus value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getOperStatusNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}OperStatus",
+                        value,
+                        InterfaceOperStatus.class,
+                        -1,
+                        InterfaceOperStatus::from)));
   }
 
   @Override
-  public BaseDataVariableTypeNode getAdminStatusNode() throws UaException {
-    try {
-      return getAdminStatusNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public UaVariableNode getAdminStatusNode() throws UaException {
+    return ClientNodeSupport.await(getAdminStatusNodeAsync());
   }
 
   @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getAdminStatusNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "AdminStatus", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
+  public CompletableFuture<? extends UaVariableNode> getAdminStatusNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "AdminStatus",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
   }
 
   @Override
-  public InterfaceOperStatus getOperStatus() throws UaException {
-    BaseDataVariableTypeNode node = getOperStatusNode();
-    Object value = node.getValue().getValue().getValue();
-
-    if (value instanceof Integer) {
-      return InterfaceOperStatus.from((Integer) value);
-    } else if (value instanceof InterfaceOperStatus) {
-      return (InterfaceOperStatus) value;
-    } else {
-      return null;
-    }
+  public @Nullable InterfaceAdminStatus readAdminStatus() throws UaException {
+    return ClientNodeSupport.await(readAdminStatusAsync());
   }
 
   @Override
-  public void setOperStatus(InterfaceOperStatus value) throws UaException {
-    BaseDataVariableTypeNode node = getOperStatusNode();
-    node.setValue(new Variant(value));
+  public void writeAdminStatus(@Nullable InterfaceAdminStatus value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeAdminStatusAsync(value)),
+        "http://opcfoundation.org/UA/}AdminStatus");
   }
 
   @Override
-  public InterfaceOperStatus readOperStatus() throws UaException {
-    try {
-      return readOperStatusAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable InterfaceAdminStatus> readAdminStatusAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getAdminStatusNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}AdminStatus",
+                            true,
+                            InterfaceAdminStatus.class,
+                            -1,
+                            InterfaceAdminStatus::from)),
+                v -> CompletableFuture.completedFuture((@Nullable InterfaceAdminStatus) v)));
   }
 
   @Override
-  public void writeOperStatus(InterfaceOperStatus value) throws UaException {
-    try {
-      StatusCode statusCode = writeOperStatusAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<StatusCode> writeAdminStatusAsync(@Nullable InterfaceAdminStatus value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getAdminStatusNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}AdminStatus",
+                        value,
+                        InterfaceAdminStatus.class,
+                        -1,
+                        InterfaceAdminStatus::from)));
   }
 
   @Override
-  public CompletableFuture<? extends InterfaceOperStatus> readOperStatusAsync() {
-    return getOperStatusNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(
-            v -> {
-              Object value = v.getValue().getValue();
-              if (value instanceof Integer) {
-                return InterfaceOperStatus.from((Integer) value);
-              } else {
-                return null;
-              }
-            });
+  public @Nullable UaVariableNode getPhysAddressNode() throws UaException {
+    return ClientNodeSupport.await(getPhysAddressNodeAsync());
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeOperStatusAsync(InterfaceOperStatus operStatus) {
-    DataValue value = DataValue.valueOnly(new Variant(operStatus));
-    return getOperStatusNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<? extends @Nullable UaVariableNode> getPhysAddressNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "PhysAddress",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        UaVariableNode.class)));
   }
 
   @Override
-  public BaseDataVariableTypeNode getOperStatusNode() throws UaException {
-    try {
-      return getOperStatusNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable String readPhysAddress() throws UaException {
+    return ClientNodeSupport.await(readPhysAddressAsync());
   }
 
   @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getOperStatusNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "OperStatus", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
+  public void writePhysAddress(@Nullable String value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writePhysAddressAsync(value)),
+        "http://opcfoundation.org/UA/}PhysAddress");
   }
 
   @Override
-  public String getPhysAddress() throws UaException {
-    BaseDataVariableTypeNode node = getPhysAddressNode();
-    return (String) node.getValue().getValue().getValue();
+  public CompletableFuture<? extends @Nullable String> readPhysAddressAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getPhysAddressNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}PhysAddress",
+                            false,
+                            String.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable String) v)));
   }
 
   @Override
-  public void setPhysAddress(String value) throws UaException {
-    BaseDataVariableTypeNode node = getPhysAddressNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public String readPhysAddress() throws UaException {
-    try {
-      return readPhysAddressAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writePhysAddress(String value) throws UaException {
-    try {
-      StatusCode statusCode = writePhysAddressAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends String> readPhysAddressAsync() {
-    return getPhysAddressNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (String) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writePhysAddressAsync(String physAddress) {
-    DataValue value = DataValue.valueOnly(new Variant(physAddress));
-    return getPhysAddressNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getPhysAddressNode() throws UaException {
-    try {
-      return getPhysAddressNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends BaseDataVariableTypeNode> getPhysAddressNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "PhysAddress", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (BaseDataVariableTypeNode) node);
-  }
-
-  @Override
-  public ULong getSpeed() throws UaException {
-    AnalogUnitTypeNode node = getSpeedNode();
-    return (ULong) node.getValue().getValue().getValue();
-  }
-
-  @Override
-  public void setSpeed(ULong value) throws UaException {
-    AnalogUnitTypeNode node = getSpeedNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public ULong readSpeed() throws UaException {
-    try {
-      return readSpeedAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeSpeed(ULong value) throws UaException {
-    try {
-      StatusCode statusCode = writeSpeedAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends ULong> readSpeedAsync() {
-    return getSpeedNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (ULong) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeSpeedAsync(ULong speed) {
-    DataValue value = DataValue.valueOnly(new Variant(speed));
-    return getSpeedNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<StatusCode> writePhysAddressAsync(@Nullable String value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getPhysAddressNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}PhysAddress",
+                        value,
+                        String.class,
+                        -1,
+                        null)));
   }
 
   @Override
   public AnalogUnitTypeNode getSpeedNode() throws UaException {
-    try {
-      return getSpeedNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getSpeedNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends AnalogUnitTypeNode> getSpeedNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Speed", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (AnalogUnitTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "Speed",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Variable,
+                        AnalogUnitTypeNode.class)));
+  }
+
+  @Override
+  public @Nullable ULong readSpeed() throws UaException {
+    return ClientNodeSupport.await(readSpeedAsync());
+  }
+
+  @Override
+  public void writeSpeed(@Nullable ULong value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeSpeedAsync(value)), "http://opcfoundation.org/UA/}Speed");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable ULong> readSpeedAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getSpeedNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}Speed",
+                            true,
+                            ULong.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable ULong) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeSpeedAsync(@Nullable ULong value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getSpeedNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}Speed",
+                        value,
+                        ULong.class,
+                        -1,
+                        null)));
   }
 }

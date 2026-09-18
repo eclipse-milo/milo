@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
@@ -16,1052 +6,220 @@ import org.eclipse.milo.opcua.sdk.client.model.variables.FiniteTransitionVariabl
 import org.eclipse.milo.opcua.sdk.client.model.variables.ProgramDiagnostic2Type;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyType;
 import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
+import org.eclipse.milo.opcua.sdk.core.nodes.ObjectNode;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.ProgramDiagnostic2DataType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part10/5.2.1">https://reference.opcfoundation.org/v105/Core/docs/Part10/5.2.1</a>
+ * Client API for the ProgramStateMachineType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part10/5.2.1">Model
+ *     documentation</a>
  */
 public interface ProgramStateMachineType extends FiniteStateMachineType {
-  QualifiedProperty<Boolean> CREATABLE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Creatable",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2391L);
 
-  QualifiedProperty<Boolean> DELETABLE =
+  QualifiedProperty<Boolean> AutoDelete_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Deletable",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
-
-  QualifiedProperty<Boolean> AUTO_DELETE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "AutoDelete",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
           -1,
           Boolean.class);
 
-  QualifiedProperty<Integer> RECYCLE_COUNT =
+  QualifiedProperty<Integer> RecycleCount_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "RecycleCount",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=6"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 6L),
           -1,
           Integer.class);
 
-  QualifiedProperty<UInteger> INSTANCE_COUNT =
+  QualifiedProperty<Boolean> Deletable_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "InstanceCount",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
+          Namespaces.OPC_UA,
+          "Deletable",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
           -1,
-          UInteger.class);
-
-  QualifiedProperty<UInteger> MAX_INSTANCE_COUNT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxInstanceCount",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
-
-  QualifiedProperty<UInteger> MAX_RECYCLE_COUNT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxRecycleCount",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+          Boolean.class);
 
   /**
-   * Get the local value of the Creatable Node.
+   * Resolves the mandatory AutoDelete child, a PropertyType with DataType Boolean.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the Creatable Node.
-   * @throws UaException if an error occurs creating or getting the Creatable Node.
-   */
-  Boolean getCreatable() throws UaException;
-
-  /**
-   * Set the local value of the Creatable Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the Creatable Node.
-   * @throws UaException if an error occurs creating or getting the Creatable Node.
-   */
-  void setCreatable(Boolean value) throws UaException;
-
-  /**
-   * Read the value of the Creatable Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Boolean readCreatable() throws UaException;
-
-  /**
-   * Write a new value for the Creatable Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeCreatable(Boolean value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readCreatable}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Boolean> readCreatableAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeCreatable}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeCreatableAsync(Boolean value);
-
-  /**
-   * Get the Creatable {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the Creatable {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getCreatableNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getCreatableNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getCreatableNodeAsync();
-
-  /**
-   * Get the local value of the Deletable Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the Deletable Node.
-   * @throws UaException if an error occurs creating or getting the Deletable Node.
-   */
-  Boolean getDeletable() throws UaException;
-
-  /**
-   * Set the local value of the Deletable Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the Deletable Node.
-   * @throws UaException if an error occurs creating or getting the Deletable Node.
-   */
-  void setDeletable(Boolean value) throws UaException;
-
-  /**
-   * Read the value of the Deletable Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Boolean readDeletable() throws UaException;
-
-  /**
-   * Write a new value for the Deletable Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeDeletable(Boolean value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readDeletable}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Boolean> readDeletableAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeDeletable}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeDeletableAsync(Boolean value);
-
-  /**
-   * Get the Deletable {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the Deletable {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getDeletableNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getDeletableNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getDeletableNodeAsync();
-
-  /**
-   * Get the local value of the AutoDelete Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the AutoDelete Node.
-   * @throws UaException if an error occurs creating or getting the AutoDelete Node.
-   */
-  Boolean getAutoDelete() throws UaException;
-
-  /**
-   * Set the local value of the AutoDelete Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the AutoDelete Node.
-   * @throws UaException if an error occurs creating or getting the AutoDelete Node.
-   */
-  void setAutoDelete(Boolean value) throws UaException;
-
-  /**
-   * Read the value of the AutoDelete Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link Boolean} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Boolean readAutoDelete() throws UaException;
-
-  /**
-   * Write a new value for the AutoDelete Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Boolean} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeAutoDelete(Boolean value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readAutoDelete}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Boolean> readAutoDeleteAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeAutoDelete}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeAutoDeleteAsync(Boolean value);
-
-  /**
-   * Get the AutoDelete {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the AutoDelete {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getAutoDeleteNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getAutoDeleteNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getAutoDeleteNode()}. */
   CompletableFuture<? extends PropertyType> getAutoDeleteNodeAsync();
 
   /**
-   * Get the local value of the RecycleCount Node.
+   * Reads the Value of the AutoDelete child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the RecycleCount Node.
-   * @throws UaException if an error occurs creating or getting the RecycleCount Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  Integer getRecycleCount() throws UaException;
+  @Nullable Boolean readAutoDelete() throws UaException;
 
   /**
-   * Set the local value of the RecycleCount Node.
+   * Writes the Value of the AutoDelete child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the RecycleCount Node.
-   * @throws UaException if an error occurs creating or getting the RecycleCount Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setRecycleCount(Integer value) throws UaException;
+  void writeAutoDelete(@Nullable Boolean value) throws UaException;
+
+  /** Asynchronous form of {@link #readAutoDelete()}. */
+  CompletableFuture<? extends @Nullable Boolean> readAutoDeleteAsync();
+
+  /** Asynchronous form of {@link #writeAutoDelete}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeAutoDeleteAsync(@Nullable Boolean value);
 
   /**
-   * Read the value of the RecycleCount Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the mandatory CurrentState child, a FiniteStateVariableType with DataType
+   * LocalizedText.
    *
-   * @return the {@link Integer} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Integer readRecycleCount() throws UaException;
-
-  /**
-   * Write a new value for the RecycleCount Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Integer} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeRecycleCount(Integer value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readRecycleCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Integer> readRecycleCountAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeRecycleCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeRecycleCountAsync(Integer value);
-
-  /**
-   * Get the RecycleCount {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the RecycleCount {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getRecycleCountNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getRecycleCountNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getRecycleCountNodeAsync();
-
-  /**
-   * Get the local value of the InstanceCount Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the InstanceCount Node.
-   * @throws UaException if an error occurs creating or getting the InstanceCount Node.
-   */
-  UInteger getInstanceCount() throws UaException;
-
-  /**
-   * Set the local value of the InstanceCount Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the InstanceCount Node.
-   * @throws UaException if an error occurs creating or getting the InstanceCount Node.
-   */
-  void setInstanceCount(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the InstanceCount Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readInstanceCount() throws UaException;
-
-  /**
-   * Write a new value for the InstanceCount Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeInstanceCount(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readInstanceCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readInstanceCountAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeInstanceCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeInstanceCountAsync(UInteger value);
-
-  /**
-   * Get the InstanceCount {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the InstanceCount {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getInstanceCountNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getInstanceCountNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getInstanceCountNodeAsync();
-
-  /**
-   * Get the local value of the MaxInstanceCount Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaxInstanceCount Node.
-   * @throws UaException if an error occurs creating or getting the MaxInstanceCount Node.
-   */
-  UInteger getMaxInstanceCount() throws UaException;
-
-  /**
-   * Set the local value of the MaxInstanceCount Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaxInstanceCount Node.
-   * @throws UaException if an error occurs creating or getting the MaxInstanceCount Node.
-   */
-  void setMaxInstanceCount(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the MaxInstanceCount Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readMaxInstanceCount() throws UaException;
-
-  /**
-   * Write a new value for the MaxInstanceCount Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMaxInstanceCount(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readMaxInstanceCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readMaxInstanceCountAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeMaxInstanceCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMaxInstanceCountAsync(UInteger value);
-
-  /**
-   * Get the MaxInstanceCount {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaxInstanceCount {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getMaxInstanceCountNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getMaxInstanceCountNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getMaxInstanceCountNodeAsync();
-
-  /**
-   * Get the local value of the MaxRecycleCount Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaxRecycleCount Node.
-   * @throws UaException if an error occurs creating or getting the MaxRecycleCount Node.
-   */
-  UInteger getMaxRecycleCount() throws UaException;
-
-  /**
-   * Set the local value of the MaxRecycleCount Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaxRecycleCount Node.
-   * @throws UaException if an error occurs creating or getting the MaxRecycleCount Node.
-   */
-  void setMaxRecycleCount(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the MaxRecycleCount Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readMaxRecycleCount() throws UaException;
-
-  /**
-   * Write a new value for the MaxRecycleCount Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMaxRecycleCount(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readMaxRecycleCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readMaxRecycleCountAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeMaxRecycleCount}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMaxRecycleCountAsync(UInteger value);
-
-  /**
-   * Get the MaxRecycleCount {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaxRecycleCount {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getMaxRecycleCountNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getMaxRecycleCountNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getMaxRecycleCountNodeAsync();
-
-  /**
-   * Get the local value of the CurrentState Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the CurrentState Node.
-   * @throws UaException if an error occurs creating or getting the CurrentState Node.
-   */
-  LocalizedText getCurrentState() throws UaException;
-
-  /**
-   * Set the local value of the CurrentState Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the CurrentState Node.
-   * @throws UaException if an error occurs creating or getting the CurrentState Node.
-   */
-  void setCurrentState(LocalizedText value) throws UaException;
-
-  /**
-   * Read the value of the CurrentState Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link LocalizedText} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  LocalizedText readCurrentState() throws UaException;
-
-  /**
-   * Write a new value for the CurrentState Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link LocalizedText} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeCurrentState(LocalizedText value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readCurrentState}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends LocalizedText> readCurrentStateAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeCurrentState}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeCurrentStateAsync(LocalizedText value);
-
-  /**
-   * Get the CurrentState {@link FiniteStateVariableType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the CurrentState {@link FiniteStateVariableType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part16/4.4.6">FiniteStateVariableType
+   *     documentation</a>
    */
   FiniteStateVariableType getCurrentStateNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getCurrentStateNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the FiniteStateVariableType Node
-   *     or completes exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getCurrentStateNode()}. */
   CompletableFuture<? extends FiniteStateVariableType> getCurrentStateNodeAsync();
 
   /**
-   * Get the local value of the LastTransition Node.
+   * Resolves the mandatory RecycleCount child, a PropertyType with DataType Int32.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the LastTransition Node.
-   * @throws UaException if an error occurs creating or getting the LastTransition Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  LocalizedText getLastTransition() throws UaException;
+  PropertyType getRecycleCountNode() throws UaException;
+
+  /** Asynchronous form of {@link #getRecycleCountNode()}. */
+  CompletableFuture<? extends PropertyType> getRecycleCountNodeAsync();
 
   /**
-   * Set the local value of the LastTransition Node.
+   * Reads the Value of the RecycleCount child from the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the LastTransition Node.
-   * @throws UaException if an error occurs creating or getting the LastTransition Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setLastTransition(LocalizedText value) throws UaException;
+  @Nullable Integer readRecycleCount() throws UaException;
 
   /**
-   * Read the value of the LastTransition Node from the server and update the local value if the
-   * operation succeeds.
+   * Writes the Value of the RecycleCount child to the server.
    *
-   * @return the {@link LocalizedText} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  LocalizedText readLastTransition() throws UaException;
+  void writeRecycleCount(@Nullable Integer value) throws UaException;
+
+  /** Asynchronous form of {@link #readRecycleCount()}. */
+  CompletableFuture<? extends @Nullable Integer> readRecycleCountAsync();
+
+  /** Asynchronous form of {@link #writeRecycleCount}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeRecycleCountAsync(@Nullable Integer value);
 
   /**
-   * Write a new value for the LastTransition Node to the server and update the local value if the
-   * operation succeeds.
+   * Resolves the mandatory LastTransition child, a FiniteTransitionVariableType with DataType
+   * LocalizedText.
    *
-   * @param value the {@link LocalizedText} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeLastTransition(LocalizedText value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readLastTransition}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends LocalizedText> readLastTransitionAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeLastTransition}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeLastTransitionAsync(LocalizedText value);
-
-  /**
-   * Get the LastTransition {@link FiniteTransitionVariableType} Node, or {@code null} if it does
-   * not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the LastTransition {@link FiniteTransitionVariableType} Node, or {@code null} if it
-   *     does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part16/4.4.7">FiniteTransitionVariableType
+   *     documentation</a>
    */
   FiniteTransitionVariableType getLastTransitionNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getLastTransitionNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the FiniteTransitionVariableType
-   *     Node or completes exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getLastTransitionNode()}. */
   CompletableFuture<? extends FiniteTransitionVariableType> getLastTransitionNodeAsync();
 
   /**
-   * Get the local value of the ProgramDiagnostic Node.
+   * Resolves the optional FinalResultData child, a BaseObjectType.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ProgramDiagnostic Node.
-   * @throws UaException if an error occurs creating or getting the ProgramDiagnostic Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part10/A.2.6/#A.2.6.2">Model
+   *     documentation</a>
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.2">BaseObjectType
+   *     documentation</a>
    */
-  ProgramDiagnostic2DataType getProgramDiagnostic() throws UaException;
+  @Nullable ObjectNode getFinalResultDataNode() throws UaException;
+
+  /** Asynchronous form of {@link #getFinalResultDataNode()}. */
+  CompletableFuture<? extends @Nullable ObjectNode> getFinalResultDataNodeAsync();
 
   /**
-   * Set the local value of the ProgramDiagnostic Node.
+   * Resolves the optional ProgramDiagnostic child, a ProgramDiagnostic2Type with DataType
+   * ProgramDiagnostic2DataType.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ProgramDiagnostic Node.
-   * @throws UaException if an error occurs creating or getting the ProgramDiagnostic Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part10/5.2.9">ProgramDiagnostic2Type
+   *     documentation</a>
    */
-  void setProgramDiagnostic(ProgramDiagnostic2DataType value) throws UaException;
+  @Nullable ProgramDiagnostic2Type getProgramDiagnosticNode() throws UaException;
+
+  /** Asynchronous form of {@link #getProgramDiagnosticNode()}. */
+  CompletableFuture<? extends @Nullable ProgramDiagnostic2Type> getProgramDiagnosticNodeAsync();
 
   /**
-   * Read the value of the ProgramDiagnostic Node from the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the ProgramDiagnostic child from the server.
    *
-   * @return the {@link ProgramDiagnostic2DataType} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  ProgramDiagnostic2DataType readProgramDiagnostic() throws UaException;
+  @Nullable ProgramDiagnostic2DataType readProgramDiagnostic() throws UaException;
 
   /**
-   * Write a new value for the ProgramDiagnostic Node to the server and update the local value if
-   * the operation succeeds.
+   * Writes the Value of the ProgramDiagnostic child to the server.
    *
-   * @param value the {@link ProgramDiagnostic2DataType} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeProgramDiagnostic(ProgramDiagnostic2DataType value) throws UaException;
+  void writeProgramDiagnostic(@Nullable ProgramDiagnostic2DataType value) throws UaException;
+
+  /** Asynchronous form of {@link #readProgramDiagnostic()}. */
+  CompletableFuture<? extends @Nullable ProgramDiagnostic2DataType> readProgramDiagnosticAsync();
+
+  /** Asynchronous form of {@link #writeProgramDiagnostic}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeProgramDiagnosticAsync(
+      @Nullable ProgramDiagnostic2DataType value);
 
   /**
-   * An asynchronous implementation of {@link #readProgramDiagnostic}.
+   * Resolves the mandatory Deletable child, a PropertyType with DataType Boolean.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  CompletableFuture<? extends ProgramDiagnostic2DataType> readProgramDiagnosticAsync();
+  PropertyType getDeletableNode() throws UaException;
+
+  /** Asynchronous form of {@link #getDeletableNode()}. */
+  CompletableFuture<? extends PropertyType> getDeletableNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeProgramDiagnostic}.
+   * Reads the Value of the Deletable child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeProgramDiagnosticAsync(ProgramDiagnostic2DataType value);
+  @Nullable Boolean readDeletable() throws UaException;
 
   /**
-   * Get the ProgramDiagnostic {@link ProgramDiagnostic2Type} Node, or {@code null} if it does not
-   * exist.
+   * Writes the Value of the Deletable child to the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ProgramDiagnostic {@link ProgramDiagnostic2Type} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  ProgramDiagnostic2Type getProgramDiagnosticNode() throws UaException;
+  void writeDeletable(@Nullable Boolean value) throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getProgramDiagnosticNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the ProgramDiagnostic2Type Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends ProgramDiagnostic2Type> getProgramDiagnosticNodeAsync();
+  /** Asynchronous form of {@link #readDeletable()}. */
+  CompletableFuture<? extends @Nullable Boolean> readDeletableAsync();
 
-  /**
-   * Get the FinalResultData {@link BaseObjectType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the FinalResultData {@link BaseObjectType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  BaseObjectType getFinalResultDataNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getFinalResultDataNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the BaseObjectType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends BaseObjectType> getFinalResultDataNodeAsync();
-
-  /**
-   * Get the Halted {@link StateType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the Halted {@link StateType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  StateType getHaltedNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getHaltedNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the StateType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends StateType> getHaltedNodeAsync();
-
-  /**
-   * Get the Ready {@link StateType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the Ready {@link StateType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  StateType getReadyNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getReadyNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the StateType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends StateType> getReadyNodeAsync();
-
-  /**
-   * Get the Running {@link StateType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the Running {@link StateType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  StateType getRunningNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getRunningNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the StateType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends StateType> getRunningNodeAsync();
-
-  /**
-   * Get the Suspended {@link StateType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the Suspended {@link StateType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  StateType getSuspendedNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getSuspendedNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the StateType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends StateType> getSuspendedNodeAsync();
-
-  /**
-   * Get the HaltedToReady {@link TransitionType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the HaltedToReady {@link TransitionType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  TransitionType getHaltedToReadyNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getHaltedToReadyNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the TransitionType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends TransitionType> getHaltedToReadyNodeAsync();
-
-  /**
-   * Get the ReadyToRunning {@link TransitionType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ReadyToRunning {@link TransitionType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  TransitionType getReadyToRunningNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getReadyToRunningNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the TransitionType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends TransitionType> getReadyToRunningNodeAsync();
-
-  /**
-   * Get the RunningToHalted {@link TransitionType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the RunningToHalted {@link TransitionType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  TransitionType getRunningToHaltedNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getRunningToHaltedNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the TransitionType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends TransitionType> getRunningToHaltedNodeAsync();
-
-  /**
-   * Get the RunningToReady {@link TransitionType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the RunningToReady {@link TransitionType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  TransitionType getRunningToReadyNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getRunningToReadyNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the TransitionType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends TransitionType> getRunningToReadyNodeAsync();
-
-  /**
-   * Get the RunningToSuspended {@link TransitionType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the RunningToSuspended {@link TransitionType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  TransitionType getRunningToSuspendedNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getRunningToSuspendedNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the TransitionType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends TransitionType> getRunningToSuspendedNodeAsync();
-
-  /**
-   * Get the SuspendedToRunning {@link TransitionType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SuspendedToRunning {@link TransitionType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  TransitionType getSuspendedToRunningNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getSuspendedToRunningNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the TransitionType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends TransitionType> getSuspendedToRunningNodeAsync();
-
-  /**
-   * Get the SuspendedToHalted {@link TransitionType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SuspendedToHalted {@link TransitionType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  TransitionType getSuspendedToHaltedNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getSuspendedToHaltedNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the TransitionType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends TransitionType> getSuspendedToHaltedNodeAsync();
-
-  /**
-   * Get the SuspendedToReady {@link TransitionType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SuspendedToReady {@link TransitionType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  TransitionType getSuspendedToReadyNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getSuspendedToReadyNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the TransitionType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends TransitionType> getSuspendedToReadyNodeAsync();
-
-  /**
-   * Get the ReadyToHalted {@link TransitionType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ReadyToHalted {@link TransitionType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  TransitionType getReadyToHaltedNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getReadyToHaltedNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the TransitionType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends TransitionType> getReadyToHaltedNodeAsync();
+  /** Asynchronous form of {@link #writeDeletable}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeDeletableAsync(@Nullable Boolean value);
 }

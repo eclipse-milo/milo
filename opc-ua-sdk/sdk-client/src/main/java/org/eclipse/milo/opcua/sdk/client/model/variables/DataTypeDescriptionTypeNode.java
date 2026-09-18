@@ -1,21 +1,8 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.variables;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
@@ -24,14 +11,16 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelExType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/** Node implementation of {@link DataTypeDescriptionType}. */
 public class DataTypeDescriptionTypeNode extends BaseDataVariableTypeNode
     implements DataTypeDescriptionType {
   public DataTypeDescriptionTypeNode(
@@ -40,21 +29,21 @@ public class DataTypeDescriptionTypeNode extends BaseDataVariableTypeNode
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       DataValue value,
       NodeId dataType,
       Integer valueRank,
-      UInteger[] arrayDimensions,
+      UInteger @Nullable [] arrayDimensions,
       UByte accessLevel,
       UByte userAccessLevel,
       Double minimumSamplingInterval,
       Boolean historizing,
-      AccessLevelExType accessLevelEx) {
+      @Nullable AccessLevelExType accessLevelEx) {
     super(
         client,
         nodeId,
@@ -79,151 +68,180 @@ public class DataTypeDescriptionTypeNode extends BaseDataVariableTypeNode
   }
 
   @Override
-  public String getDataTypeVersion() throws UaException {
-    PropertyTypeNode node = getDataTypeVersionNode();
-    return (String) node.getValue().getValue().getValue();
+  public @Nullable PropertyTypeNode getDataTypeVersion_Node() throws UaException {
+    return ClientNodeSupport.await(getDataTypeVersion_NodeAsync());
   }
 
   @Override
-  public void setDataTypeVersion(String value) throws UaException {
-    PropertyTypeNode node = getDataTypeVersionNode();
-    node.setValue(new Variant(value));
+  public CompletableFuture<? extends @Nullable PropertyTypeNode> getDataTypeVersion_NodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "DataTypeVersion",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public String readDataTypeVersion() throws UaException {
-    try {
-      return readDataTypeVersionAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable String readDataTypeVersion_() throws UaException {
+    return ClientNodeSupport.await(readDataTypeVersion_Async());
   }
 
   @Override
-  public void writeDataTypeVersion(String value) throws UaException {
-    try {
-      StatusCode statusCode = writeDataTypeVersionAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public void writeDataTypeVersion_(@Nullable String value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeDataTypeVersion_Async(value)),
+        "http://opcfoundation.org/UA/}DataTypeVersion");
   }
 
   @Override
-  public CompletableFuture<? extends String> readDataTypeVersionAsync() {
-    return getDataTypeVersionNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (String) v.getValue().getValue());
+  public CompletableFuture<? extends @Nullable String> readDataTypeVersion_Async() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getDataTypeVersion_NodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}DataTypeVersion",
+                            false,
+                            String.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable String) v)));
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeDataTypeVersionAsync(String dataTypeVersion) {
-    DataValue value = DataValue.valueOnly(new Variant(dataTypeVersion));
-    return getDataTypeVersionNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<StatusCode> writeDataTypeVersion_Async(@Nullable String value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getDataTypeVersion_NodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}DataTypeVersion",
+                        value,
+                        String.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public PropertyTypeNode getDataTypeVersionNode() throws UaException {
-    try {
-      return getDataTypeVersionNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable PropertyTypeNode getDictionaryFragment_Node() throws UaException {
+    return ClientNodeSupport.await(getDictionaryFragment_NodeAsync());
   }
 
   @Override
-  public CompletableFuture<? extends PropertyTypeNode> getDataTypeVersionNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "DataTypeVersion", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+  public CompletableFuture<? extends @Nullable PropertyTypeNode> getDictionaryFragment_NodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "DictionaryFragment",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public ByteString getDictionaryFragment() throws UaException {
-    PropertyTypeNode node = getDictionaryFragmentNode();
-    return (ByteString) node.getValue().getValue().getValue();
+  public @Nullable ByteString readDictionaryFragment_() throws UaException {
+    return ClientNodeSupport.await(readDictionaryFragment_Async());
   }
 
   @Override
-  public void setDictionaryFragment(ByteString value) throws UaException {
-    PropertyTypeNode node = getDictionaryFragmentNode();
-    node.setValue(new Variant(value));
+  public void writeDictionaryFragment_(@Nullable ByteString value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeDictionaryFragment_Async(value)),
+        "http://opcfoundation.org/UA/}DictionaryFragment");
   }
 
   @Override
-  public ByteString readDictionaryFragment() throws UaException {
-    try {
-      return readDictionaryFragmentAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable ByteString> readDictionaryFragment_Async() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getDictionaryFragment_NodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}DictionaryFragment",
+                            false,
+                            ByteString.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable ByteString) v)));
   }
 
   @Override
-  public void writeDictionaryFragment(ByteString value) throws UaException {
-    try {
-      StatusCode statusCode = writeDictionaryFragmentAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<StatusCode> writeDictionaryFragment_Async(@Nullable ByteString value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getDictionaryFragment_NodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}DictionaryFragment",
+                        value,
+                        ByteString.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public CompletableFuture<? extends ByteString> readDictionaryFragmentAsync() {
-    return getDictionaryFragmentNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (ByteString) v.getValue().getValue());
+  public @Nullable String readTypedValue() throws UaException {
+    return ClientNodeSupport.await(readTypedValueAsync());
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeDictionaryFragmentAsync(ByteString dictionaryFragment) {
-    DataValue value = DataValue.valueOnly(new Variant(dictionaryFragment));
-    return getDictionaryFragmentNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public void writeTypedValue(@Nullable String value) throws UaException {
+    ClientNodeSupport.good(ClientNodeSupport.await(writeTypedValueAsync(value)), "Value");
   }
 
   @Override
-  public PropertyTypeNode getDictionaryFragmentNode() throws UaException {
-    try {
-      return getDictionaryFragmentNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable String> readTypedValueAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    CompletableFuture.completedFuture(this),
+                    n ->
+                        ClientNodeSupport.read(
+                            client, n, this, "Value", true, String.class, -1, null)),
+                v -> CompletableFuture.completedFuture((@Nullable String) v)));
   }
 
   @Override
-  public CompletableFuture<? extends PropertyTypeNode> getDictionaryFragmentNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "DictionaryFragment",
-            ExpandedNodeId.parse("i=46"),
-            false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+  public CompletableFuture<StatusCode> writeTypedValueAsync(@Nullable String value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                n ->
+                    ClientNodeSupport.write(
+                        client, n, this, "Value", value, String.class, -1, null)));
   }
 }

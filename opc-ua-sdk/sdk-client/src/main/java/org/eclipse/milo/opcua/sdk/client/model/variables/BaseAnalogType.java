@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.variables;
 
 import java.util.concurrent.CompletableFuture;
@@ -15,413 +5,251 @@ import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.structured.EUInformation;
 import org.eclipse.milo.opcua.stack.core.types.structured.NumberRange;
 import org.eclipse.milo.opcua.stack.core.types.structured.Range;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.2/#5.3.2.2">https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.2/#5.3.2.2</a>
+ * Client API for the BaseAnalogType VariableType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.2/#5.3.2.2">Model
+ *     documentation</a>
  */
 public interface BaseAnalogType extends DataItemType {
-  QualifiedProperty<Range> INSTRUMENT_RANGE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "InstrumentRange",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=884"),
-          -1,
-          Range.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 15318L);
 
-  QualifiedProperty<NumberRange> INSTRUMENT_NUMBER_RANGE =
+  QualifiedProperty<NumberRange> EUNumberRange_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "InstrumentNumberRange",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=23903"),
-          -1,
-          NumberRange.class);
-
-  QualifiedProperty<Range> EU_RANGE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "EURange",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=884"),
-          -1,
-          Range.class);
-
-  QualifiedProperty<NumberRange> EU_NUMBER_RANGE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "EUNumberRange",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=23903"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 23903L),
           -1,
           NumberRange.class);
 
-  QualifiedProperty<EUInformation> ENGINEERING_UNITS =
+  QualifiedProperty<Range> InstrumentRange_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
+          "InstrumentRange",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 884L),
+          -1,
+          Range.class);
+
+  QualifiedProperty<EUInformation> EngineeringUnits__PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
           "EngineeringUnits",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=887"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 887L),
           -1,
           EUInformation.class);
 
-  /**
-   * Get the local value of the InstrumentRange Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the InstrumentRange Node.
-   * @throws UaException if an error occurs creating or getting the InstrumentRange Node.
-   */
-  Range getInstrumentRange() throws UaException;
+  QualifiedProperty<NumberRange> InstrumentNumberRange_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "InstrumentNumberRange",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 23903L),
+          -1,
+          NumberRange.class);
+
+  QualifiedProperty<Range> EURange_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "EURange",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 884L),
+          -1,
+          Range.class);
 
   /**
-   * Set the local value of the InstrumentRange Node.
+   * Resolves the optional EUNumberRange child, a PropertyType with DataType NumberRange.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the InstrumentRange Node.
-   * @throws UaException if an error occurs creating or getting the InstrumentRange Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  void setInstrumentRange(Range value) throws UaException;
+  @Nullable PropertyType getEUNumberRangeNode() throws UaException;
+
+  /** Asynchronous form of {@link #getEUNumberRangeNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getEUNumberRangeNodeAsync();
 
   /**
-   * Read the value of the InstrumentRange Node from the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the EUNumberRange child from the server.
    *
-   * @return the {@link Range} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  Range readInstrumentRange() throws UaException;
+  @Nullable NumberRange readEUNumberRange() throws UaException;
 
   /**
-   * Write a new value for the InstrumentRange Node to the server and update the local value if the
-   * operation succeeds.
+   * Writes the Value of the EUNumberRange child to the server.
    *
-   * @param value the {@link Range} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeInstrumentRange(Range value) throws UaException;
+  void writeEUNumberRange(@Nullable NumberRange value) throws UaException;
+
+  /** Asynchronous form of {@link #readEUNumberRange()}. */
+  CompletableFuture<? extends @Nullable NumberRange> readEUNumberRangeAsync();
+
+  /** Asynchronous form of {@link #writeEUNumberRange}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeEUNumberRangeAsync(@Nullable NumberRange value);
 
   /**
-   * An asynchronous implementation of {@link #readInstrumentRange}.
+   * Resolves the optional InstrumentRange child, a PropertyType with DataType Range.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  CompletableFuture<? extends Range> readInstrumentRangeAsync();
+  @Nullable PropertyType getInstrumentRangeNode() throws UaException;
+
+  /** Asynchronous form of {@link #getInstrumentRangeNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getInstrumentRangeNodeAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeInstrumentRange}.
+   * Reads the Value of the InstrumentRange child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<StatusCode> writeInstrumentRangeAsync(Range value);
+  @Nullable Range readInstrumentRange() throws UaException;
 
   /**
-   * Get the InstrumentRange {@link PropertyType} Node, or {@code null} if it does not exist.
+   * Writes the Value of the InstrumentRange child to the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the InstrumentRange {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  PropertyType getInstrumentRangeNode() throws UaException;
+  void writeInstrumentRange(@Nullable Range value) throws UaException;
+
+  /** Asynchronous form of {@link #readInstrumentRange()}. */
+  CompletableFuture<? extends @Nullable Range> readInstrumentRangeAsync();
+
+  /** Asynchronous form of {@link #writeInstrumentRange}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeInstrumentRangeAsync(@Nullable Range value);
 
   /**
-   * Asynchronous implementation of {@link #getInstrumentRangeNode()}.
+   * Resolves the optional EngineeringUnits child, a PropertyType with DataType EUInformation.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  CompletableFuture<? extends PropertyType> getInstrumentRangeNodeAsync();
+  @Nullable PropertyType getEngineeringUnits_Node() throws UaException;
+
+  /** Asynchronous form of {@link #getEngineeringUnits_Node()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getEngineeringUnits_NodeAsync();
 
   /**
-   * Get the local value of the InstrumentNumberRange Node.
+   * Reads the Value of the EngineeringUnits child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the InstrumentNumberRange Node.
-   * @throws UaException if an error occurs creating or getting the InstrumentNumberRange Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  NumberRange getInstrumentNumberRange() throws UaException;
+  @Nullable EUInformation readEngineeringUnits_() throws UaException;
 
   /**
-   * Set the local value of the InstrumentNumberRange Node.
+   * Writes the Value of the EngineeringUnits child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the InstrumentNumberRange Node.
-   * @throws UaException if an error occurs creating or getting the InstrumentNumberRange Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setInstrumentNumberRange(NumberRange value) throws UaException;
+  void writeEngineeringUnits_(@Nullable EUInformation value) throws UaException;
+
+  /** Asynchronous form of {@link #readEngineeringUnits_()}. */
+  CompletableFuture<? extends @Nullable EUInformation> readEngineeringUnits_Async();
+
+  /** Asynchronous form of {@link #writeEngineeringUnits_}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeEngineeringUnits_Async(@Nullable EUInformation value);
 
   /**
-   * Read the value of the InstrumentNumberRange Node from the server and update the local value if
-   * the operation succeeds.
+   * Resolves the optional InstrumentNumberRange child, a PropertyType with DataType NumberRange.
    *
-   * @return the {@link NumberRange} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  NumberRange readInstrumentNumberRange() throws UaException;
+  @Nullable PropertyType getInstrumentNumberRangeNode() throws UaException;
+
+  /** Asynchronous form of {@link #getInstrumentNumberRangeNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getInstrumentNumberRangeNodeAsync();
 
   /**
-   * Write a new value for the InstrumentNumberRange Node to the server and update the local value
-   * if the operation succeeds.
+   * Reads the Value of the InstrumentNumberRange child from the server.
    *
-   * @param value the {@link NumberRange} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeInstrumentNumberRange(NumberRange value) throws UaException;
+  @Nullable NumberRange readInstrumentNumberRange() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readInstrumentNumberRange}.
+   * Writes the Value of the InstrumentNumberRange child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends NumberRange> readInstrumentNumberRangeAsync();
+  void writeInstrumentNumberRange(@Nullable NumberRange value) throws UaException;
+
+  /** Asynchronous form of {@link #readInstrumentNumberRange()}. */
+  CompletableFuture<? extends @Nullable NumberRange> readInstrumentNumberRangeAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeInstrumentNumberRange}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * Asynchronous form of {@link #writeInstrumentNumberRange}; completes with the operation status.
    */
-  CompletableFuture<StatusCode> writeInstrumentNumberRangeAsync(NumberRange value);
+  CompletableFuture<StatusCode> writeInstrumentNumberRangeAsync(@Nullable NumberRange value);
 
   /**
-   * Get the InstrumentNumberRange {@link PropertyType} Node, or {@code null} if it does not exist.
+   * Resolves the optional EURange child, a PropertyType with DataType Range.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the InstrumentNumberRange {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  PropertyType getInstrumentNumberRangeNode() throws UaException;
+  @Nullable PropertyType getEURangeNode() throws UaException;
+
+  /** Asynchronous form of {@link #getEURangeNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getEURangeNodeAsync();
 
   /**
-   * Asynchronous implementation of {@link #getInstrumentNumberRangeNode()}.
+   * Reads the Value of the EURange child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends PropertyType> getInstrumentNumberRangeNodeAsync();
+  @Nullable Range readEURange() throws UaException;
 
   /**
-   * Get the local value of the EURange Node.
+   * Writes the Value of the EURange child to the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the EURange Node.
-   * @throws UaException if an error occurs creating or getting the EURange Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  Range getEuRange() throws UaException;
+  void writeEURange(@Nullable Range value) throws UaException;
+
+  /** Asynchronous form of {@link #readEURange()}. */
+  CompletableFuture<? extends @Nullable Range> readEURangeAsync();
+
+  /** Asynchronous form of {@link #writeEURange}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeEURangeAsync(@Nullable Range value);
 
   /**
-   * Set the local value of the EURange Node.
+   * Reads the Value of this node from the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the EURange Node.
-   * @throws UaException if an error occurs creating or getting the EURange Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setEuRange(Range value) throws UaException;
+  @Nullable Variant readTypedValue() throws UaException;
 
   /**
-   * Read the value of the EURange Node from the server and update the local value if the operation
-   * succeeds.
+   * Writes the Value of this node to the server.
    *
-   * @return the {@link Range} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  Range readEuRange() throws UaException;
+  void writeTypedValue(@Nullable Variant value) throws UaException;
 
-  /**
-   * Write a new value for the EURange Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Range} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeEuRange(Range value) throws UaException;
+  /** Asynchronous form of {@link #readTypedValue()}. */
+  CompletableFuture<? extends @Nullable Variant> readTypedValueAsync();
 
-  /**
-   * An asynchronous implementation of {@link #readEuRange}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Range> readEuRangeAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeEuRange}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeEuRangeAsync(Range value);
-
-  /**
-   * Get the EURange {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the EURange {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getEuRangeNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getEuRangeNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getEuRangeNodeAsync();
-
-  /**
-   * Get the local value of the EUNumberRange Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the EUNumberRange Node.
-   * @throws UaException if an error occurs creating or getting the EUNumberRange Node.
-   */
-  NumberRange getEuNumberRange() throws UaException;
-
-  /**
-   * Set the local value of the EUNumberRange Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the EUNumberRange Node.
-   * @throws UaException if an error occurs creating or getting the EUNumberRange Node.
-   */
-  void setEuNumberRange(NumberRange value) throws UaException;
-
-  /**
-   * Read the value of the EUNumberRange Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link NumberRange} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  NumberRange readEuNumberRange() throws UaException;
-
-  /**
-   * Write a new value for the EUNumberRange Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link NumberRange} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeEuNumberRange(NumberRange value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readEuNumberRange}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends NumberRange> readEuNumberRangeAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeEuNumberRange}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeEuNumberRangeAsync(NumberRange value);
-
-  /**
-   * Get the EUNumberRange {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the EUNumberRange {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getEuNumberRangeNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getEuNumberRangeNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getEuNumberRangeNodeAsync();
-
-  /**
-   * Get the local value of the EngineeringUnits Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the EngineeringUnits Node.
-   * @throws UaException if an error occurs creating or getting the EngineeringUnits Node.
-   */
-  EUInformation getEngineeringUnits() throws UaException;
-
-  /**
-   * Set the local value of the EngineeringUnits Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the EngineeringUnits Node.
-   * @throws UaException if an error occurs creating or getting the EngineeringUnits Node.
-   */
-  void setEngineeringUnits(EUInformation value) throws UaException;
-
-  /**
-   * Read the value of the EngineeringUnits Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link EUInformation} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  EUInformation readEngineeringUnits() throws UaException;
-
-  /**
-   * Write a new value for the EngineeringUnits Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link EUInformation} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeEngineeringUnits(EUInformation value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readEngineeringUnits}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends EUInformation> readEngineeringUnitsAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeEngineeringUnits}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeEngineeringUnitsAsync(EUInformation value);
-
-  /**
-   * Get the EngineeringUnits {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the EngineeringUnits {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getEngineeringUnitsNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getEngineeringUnitsNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getEngineeringUnitsNodeAsync();
+  /** Asynchronous form of {@link #writeTypedValue}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeTypedValueAsync(@Nullable Variant value);
 }

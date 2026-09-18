@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
@@ -17,89 +7,57 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.structured.EUInformation;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.23/#5.8.23.3">https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.23/#5.8.23.3</a>
+ * Client API for the ExclusiveRateOfChangeAlarmType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.23/#5.8.23.3">Model
+ *     documentation</a>
  */
 public interface ExclusiveRateOfChangeAlarmType extends ExclusiveLimitAlarmType {
-  QualifiedProperty<EUInformation> ENGINEERING_UNITS =
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 9623L);
+
+  QualifiedProperty<EUInformation> EngineeringUnits_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "EngineeringUnits",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=887"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 887L),
           -1,
           EUInformation.class);
 
   /**
-   * Get the local value of the EngineeringUnits Node.
+   * Resolves the optional EngineeringUnits child, a PropertyType with DataType EUInformation.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the EngineeringUnits Node.
-   * @throws UaException if an error occurs creating or getting the EngineeringUnits Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  EUInformation getEngineeringUnits() throws UaException;
+  @Nullable PropertyType getEngineeringUnitsNode() throws UaException;
+
+  /** Asynchronous form of {@link #getEngineeringUnitsNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getEngineeringUnitsNodeAsync();
 
   /**
-   * Set the local value of the EngineeringUnits Node.
+   * Reads the Value of the EngineeringUnits child from the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the EngineeringUnits Node.
-   * @throws UaException if an error occurs creating or getting the EngineeringUnits Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setEngineeringUnits(EUInformation value) throws UaException;
+  @Nullable EUInformation readEngineeringUnits() throws UaException;
 
   /**
-   * Read the value of the EngineeringUnits Node from the server and update the local value if the
-   * operation succeeds.
+   * Writes the Value of the EngineeringUnits child to the server.
    *
-   * @return the {@link EUInformation} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  EUInformation readEngineeringUnits() throws UaException;
+  void writeEngineeringUnits(@Nullable EUInformation value) throws UaException;
 
-  /**
-   * Write a new value for the EngineeringUnits Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link EUInformation} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeEngineeringUnits(EUInformation value) throws UaException;
+  /** Asynchronous form of {@link #readEngineeringUnits()}. */
+  CompletableFuture<? extends @Nullable EUInformation> readEngineeringUnitsAsync();
 
-  /**
-   * An asynchronous implementation of {@link #readEngineeringUnits}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends EUInformation> readEngineeringUnitsAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeEngineeringUnits}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeEngineeringUnitsAsync(EUInformation value);
-
-  /**
-   * Get the EngineeringUnits {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the EngineeringUnits {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getEngineeringUnitsNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getEngineeringUnitsNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getEngineeringUnitsNodeAsync();
+  /** Asynchronous form of {@link #writeEngineeringUnits}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeEngineeringUnitsAsync(@Nullable EUInformation value);
 }

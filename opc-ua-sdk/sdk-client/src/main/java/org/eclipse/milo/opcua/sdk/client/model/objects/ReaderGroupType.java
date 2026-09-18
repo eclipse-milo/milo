@@ -1,81 +1,162 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallOptions;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallResult;
+import org.eclipse.milo.opcua.sdk.client.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.structured.DataSetReaderDataType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.6/#9.1.6.9">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.6/#9.1.6.9</a>
+ * Client API for the ReaderGroupType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.6/#9.1.6.9">Model
+ *     documentation</a>
  */
 public interface ReaderGroupType extends PubSubGroupType {
-  /**
-   * Get the Diagnostics {@link PubSubDiagnosticsReaderGroupType} Node, or {@code null} if it does
-   * not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the Diagnostics {@link PubSubDiagnosticsReaderGroupType} Node, or {@code null} if it
-   *     does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PubSubDiagnosticsReaderGroupType getDiagnosticsNode() throws UaException;
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 17999L);
 
   /**
-   * Asynchronous implementation of {@link #getDiagnosticsNode()}.
+   * Resolves the optional Diagnostics child, a PubSubDiagnosticsReaderGroupType.
    *
-   * @return a CompletableFuture that completes successfully with the
-   *     PubSubDiagnosticsReaderGroupType Node or completes exceptionally if an error occurs
-   *     creating or getting the Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.11/#9.1.11.10">PubSubDiagnosticsReaderGroupType
+   *     documentation</a>
    */
-  CompletableFuture<? extends PubSubDiagnosticsReaderGroupType> getDiagnosticsNodeAsync();
+  @Nullable PubSubDiagnosticsReaderGroupType getDiagnosticsNode() throws UaException;
+
+  /** Asynchronous form of {@link #getDiagnosticsNode()}. */
+  CompletableFuture<? extends @Nullable PubSubDiagnosticsReaderGroupType> getDiagnosticsNodeAsync();
 
   /**
-   * Get the TransportSettings {@link ReaderGroupTransportType} Node, or {@code null} if it does not
-   * exist.
+   * Resolves the optional MessageSettings child, a ReaderGroupMessageType.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the TransportSettings {@link ReaderGroupTransportType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.6/#9.1.6.14">ReaderGroupMessageType
+   *     documentation</a>
    */
-  ReaderGroupTransportType getTransportSettingsNode() throws UaException;
+  @Nullable ReaderGroupMessageType getMessageSettingsNode() throws UaException;
+
+  /** Asynchronous form of {@link #getMessageSettingsNode()}. */
+  CompletableFuture<? extends @Nullable ReaderGroupMessageType> getMessageSettingsNodeAsync();
 
   /**
-   * Asynchronous implementation of {@link #getTransportSettingsNode()}.
+   * Resolves the optional TransportSettings child, a ReaderGroupTransportType.
    *
-   * @return a CompletableFuture that completes successfully with the ReaderGroupTransportType Node
-   *     or completes exceptionally if an error occurs creating or getting the Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.6/#9.1.6.13">ReaderGroupTransportType
+   *     documentation</a>
    */
-  CompletableFuture<? extends ReaderGroupTransportType> getTransportSettingsNodeAsync();
+  @Nullable ReaderGroupTransportType getTransportSettingsNode() throws UaException;
+
+  /** Asynchronous form of {@link #getTransportSettingsNode()}. */
+  CompletableFuture<? extends @Nullable ReaderGroupTransportType> getTransportSettingsNodeAsync();
 
   /**
-   * Get the MessageSettings {@link ReaderGroupMessageType} Node, or {@code null} if it does not
-   * exist.
+   * Resolves the optional AddDataSetReader Method node.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MessageSettings {@link ReaderGroupMessageType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.6/#9.1.6.10">Model
+   *     documentation</a>
    */
-  ReaderGroupMessageType getMessageSettingsNode() throws UaException;
+  @Nullable UaMethodNode getAddDataSetReaderMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getAddDataSetReaderMethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getAddDataSetReaderMethodNodeAsync();
 
   /**
-   * Asynchronous implementation of {@link #getMessageSettingsNode()}.
+   * Calls the AddDataSetReader Method and returns its outputs; requires a Good result.
    *
-   * @return a CompletableFuture that completes successfully with the ReaderGroupMessageType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.6/#9.1.6.10">Model
+   *     documentation</a>
    */
-  CompletableFuture<? extends ReaderGroupMessageType> getMessageSettingsNodeAsync();
+  @Nullable NodeId addDataSetReader(@Nullable DataSetReaderDataType configuration)
+      throws UaException;
+
+  /**
+   * Calls the AddDataSetReader Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<@Nullable NodeId> callAddDataSetReader(
+      @Nullable DataSetReaderDataType configuration) throws UaException;
+
+  /**
+   * Calls the AddDataSetReader Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<@Nullable NodeId> callAddDataSetReaderWith(
+      MethodCallOptions options, @Nullable DataSetReaderDataType configuration) throws UaException;
+
+  /** Asynchronous form of {@link #addDataSetReader}. */
+  CompletableFuture<@Nullable NodeId> addDataSetReaderAsync(
+      @Nullable DataSetReaderDataType configuration);
+
+  /** Asynchronous form of {@link #callAddDataSetReader}. */
+  CompletableFuture<MethodCallResult<@Nullable NodeId>> callAddDataSetReaderAsync(
+      @Nullable DataSetReaderDataType configuration);
+
+  /** Asynchronous form of {@link #callAddDataSetReaderWith}. */
+  CompletableFuture<MethodCallResult<@Nullable NodeId>> callAddDataSetReaderWithAsync(
+      MethodCallOptions options, @Nullable DataSetReaderDataType configuration);
+
+  /**
+   * Resolves the optional RemoveDataSetReader Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.6/#9.1.6.11">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getRemoveDataSetReaderMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getRemoveDataSetReaderMethodNode()}. */
+  CompletableFuture<@Nullable UaMethodNode> getRemoveDataSetReaderMethodNodeAsync();
+
+  /**
+   * Calls the RemoveDataSetReader Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.6/#9.1.6.11">Model
+   *     documentation</a>
+   */
+  void removeDataSetReader(@Nullable NodeId dataSetReaderNodeId) throws UaException;
+
+  /**
+   * Calls the RemoveDataSetReader Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callRemoveDataSetReader(@Nullable NodeId dataSetReaderNodeId)
+      throws UaException;
+
+  /**
+   * Calls the RemoveDataSetReader Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callRemoveDataSetReaderWith(
+      MethodCallOptions options, @Nullable NodeId dataSetReaderNodeId) throws UaException;
+
+  /** Asynchronous form of {@link #removeDataSetReader}. */
+  CompletableFuture<Void> removeDataSetReaderAsync(@Nullable NodeId dataSetReaderNodeId);
+
+  /** Asynchronous form of {@link #callRemoveDataSetReader}. */
+  CompletableFuture<MethodCallResult<Void>> callRemoveDataSetReaderAsync(
+      @Nullable NodeId dataSetReaderNodeId);
+
+  /** Asynchronous form of {@link #callRemoveDataSetReaderWith}. */
+  CompletableFuture<MethodCallResult<Void>> callRemoveDataSetReaderWithAsync(
+      MethodCallOptions options, @Nullable NodeId dataSetReaderNodeId);
 }

@@ -1,80 +1,58 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.3/#7.8.3.3">https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.3/#7.8.3.3</a>
+ * Client API for the CertificateGroupFolderType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.3/#7.8.3.3">Model
+ *     documentation</a>
  */
 public interface CertificateGroupFolderType extends FolderType {
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 13813L);
+
   /**
-   * Get the DefaultApplicationGroup {@link CertificateGroupType} Node, or {@code null} if it does
-   * not exist.
+   * Resolves the optional DefaultHttpsGroup child, a CertificateGroupType.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.3/#7.8.3.1">CertificateGroupType
+   *     documentation</a>
+   */
+  @Nullable CertificateGroupType getDefaultHttpsGroupNode() throws UaException;
+
+  /** Asynchronous form of {@link #getDefaultHttpsGroupNode()}. */
+  CompletableFuture<? extends @Nullable CertificateGroupType> getDefaultHttpsGroupNodeAsync();
+
+  /**
+   * Resolves the optional DefaultUserTokenGroup child, a CertificateGroupType.
    *
-   * @return the DefaultApplicationGroup {@link CertificateGroupType} Node, or {@code null} if it
-   *     does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.3/#7.8.3.1">CertificateGroupType
+   *     documentation</a>
+   */
+  @Nullable CertificateGroupType getDefaultUserTokenGroupNode() throws UaException;
+
+  /** Asynchronous form of {@link #getDefaultUserTokenGroupNode()}. */
+  CompletableFuture<? extends @Nullable CertificateGroupType> getDefaultUserTokenGroupNodeAsync();
+
+  /**
+   * Resolves the mandatory DefaultApplicationGroup child, a CertificateGroupType.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.3/#7.8.3.1">CertificateGroupType
+   *     documentation</a>
    */
   CertificateGroupType getDefaultApplicationGroupNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getDefaultApplicationGroupNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the CertificateGroupType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getDefaultApplicationGroupNode()}. */
   CompletableFuture<? extends CertificateGroupType> getDefaultApplicationGroupNodeAsync();
-
-  /**
-   * Get the DefaultHttpsGroup {@link CertificateGroupType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the DefaultHttpsGroup {@link CertificateGroupType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  CertificateGroupType getDefaultHttpsGroupNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getDefaultHttpsGroupNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the CertificateGroupType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends CertificateGroupType> getDefaultHttpsGroupNodeAsync();
-
-  /**
-   * Get the DefaultUserTokenGroup {@link CertificateGroupType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the DefaultUserTokenGroup {@link CertificateGroupType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  CertificateGroupType getDefaultUserTokenGroupNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getDefaultUserTokenGroupNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the CertificateGroupType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends CertificateGroupType> getDefaultUserTokenGroupNodeAsync();
 }

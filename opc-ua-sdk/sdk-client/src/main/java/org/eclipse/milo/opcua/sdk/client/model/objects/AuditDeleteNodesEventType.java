@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
@@ -17,89 +7,56 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.structured.DeleteNodesItem;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.21">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.21</a>
+ * Client API for the AuditDeleteNodesEventType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.21">Model
+ *     documentation</a>
  */
 public interface AuditDeleteNodesEventType extends AuditNodeManagementEventType {
-  QualifiedProperty<DeleteNodesItem[]> NODES_TO_DELETE =
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2093L);
+
+  QualifiedProperty<DeleteNodesItem[]> NodesToDelete_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "NodesToDelete",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=382"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 382L),
           1,
           DeleteNodesItem[].class);
 
   /**
-   * Get the local value of the NodesToDelete Node.
+   * Resolves the mandatory NodesToDelete child, a PropertyType with DataType DeleteNodesItem.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the NodesToDelete Node.
-   * @throws UaException if an error occurs creating or getting the NodesToDelete Node.
-   */
-  DeleteNodesItem[] getNodesToDelete() throws UaException;
-
-  /**
-   * Set the local value of the NodesToDelete Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the NodesToDelete Node.
-   * @throws UaException if an error occurs creating or getting the NodesToDelete Node.
-   */
-  void setNodesToDelete(DeleteNodesItem[] value) throws UaException;
-
-  /**
-   * Read the value of the NodesToDelete Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link DeleteNodesItem[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  DeleteNodesItem[] readNodesToDelete() throws UaException;
-
-  /**
-   * Write a new value for the NodesToDelete Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link DeleteNodesItem[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeNodesToDelete(DeleteNodesItem[] value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readNodesToDelete}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends DeleteNodesItem[]> readNodesToDeleteAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeNodesToDelete}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeNodesToDeleteAsync(DeleteNodesItem[] value);
-
-  /**
-   * Get the NodesToDelete {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the NodesToDelete {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getNodesToDeleteNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getNodesToDeleteNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getNodesToDeleteNode()}. */
   CompletableFuture<? extends PropertyType> getNodesToDeleteNodeAsync();
+
+  /**
+   * Reads the Value of the NodesToDelete child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable DeleteNodesItem @Nullable [] readNodesToDelete() throws UaException;
+
+  /**
+   * Writes the Value of the NodesToDelete child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeNodesToDelete(@Nullable DeleteNodesItem @Nullable [] value) throws UaException;
+
+  /** Asynchronous form of {@link #readNodesToDelete()}. */
+  CompletableFuture<? extends @Nullable DeleteNodesItem @Nullable []> readNodesToDeleteAsync();
+
+  /** Asynchronous form of {@link #writeNodesToDelete}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeNodesToDeleteAsync(
+      @Nullable DeleteNodesItem @Nullable [] value);
 }

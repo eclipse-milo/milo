@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
@@ -20,1711 +10,933 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.structured.SignedSoftwareCertificate;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.2">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.2</a>
+ * Client API for the ServerCapabilitiesType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.2">Model
+ *     documentation</a>
  */
 public interface ServerCapabilitiesType extends BaseObjectType {
-  QualifiedProperty<String[]> SERVER_PROFILE_ARRAY =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ServerProfileArray",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          1,
-          String[].class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2013L);
 
-  QualifiedProperty<String[]> LOCALE_ID_ARRAY =
+  QualifiedProperty<UInteger> MaxSessions_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "LocaleIdArray",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=295"),
-          1,
-          String[].class);
-
-  QualifiedProperty<Double> MIN_SUPPORTED_SAMPLE_RATE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MinSupportedSampleRate",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
-          -1,
-          Double.class);
-
-  QualifiedProperty<UShort> MAX_BROWSE_CONTINUATION_POINTS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxBrowseContinuationPoints",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-          -1,
-          UShort.class);
-
-  QualifiedProperty<UShort> MAX_QUERY_CONTINUATION_POINTS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxQueryContinuationPoints",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-          -1,
-          UShort.class);
-
-  QualifiedProperty<UShort> MAX_HISTORY_CONTINUATION_POINTS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxHistoryContinuationPoints",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-          -1,
-          UShort.class);
-
-  QualifiedProperty<UShort> MAX_LOG_OBJECT_CONTINUATION_POINTS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxLogObjectContinuationPoints",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-          -1,
-          UShort.class);
-
-  QualifiedProperty<SignedSoftwareCertificate[]> SOFTWARE_CERTIFICATES =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "SoftwareCertificates",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=344"),
-          1,
-          SignedSoftwareCertificate[].class);
-
-  QualifiedProperty<UInteger> MAX_ARRAY_LENGTH =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxArrayLength",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
-
-  QualifiedProperty<UInteger> MAX_STRING_LENGTH =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxStringLength",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
-
-  QualifiedProperty<UInteger> MAX_BYTE_STRING_LENGTH =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxByteStringLength",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
-
-  QualifiedProperty<UInteger> MAX_SESSIONS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "MaxSessions",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
           -1,
           UInteger.class);
 
-  QualifiedProperty<UInteger> MAX_SUBSCRIPTIONS =
+  QualifiedProperty<String[]> LocaleIdArray_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxSubscriptions",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
+          Namespaces.OPC_UA,
+          "LocaleIdArray",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 295L),
+          1,
+          String[].class);
+
+  QualifiedProperty<UInteger> MaxArrayLength_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "MaxArrayLength",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
           -1,
           UInteger.class);
 
-  QualifiedProperty<UInteger> MAX_MONITORED_ITEMS =
+  QualifiedProperty<UInteger> MaxStringLength_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxMonitoredItems",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
+          Namespaces.OPC_UA,
+          "MaxStringLength",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
           -1,
           UInteger.class);
 
-  QualifiedProperty<UInteger> MAX_SUBSCRIPTIONS_PER_SESSION =
+  QualifiedProperty<QualifiedName[]> ConformanceUnits_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxSubscriptionsPerSession",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
-
-  QualifiedProperty<UInteger> MAX_MONITORED_ITEMS_PER_SUBSCRIPTION =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxMonitoredItemsPerSubscription",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
-
-  QualifiedProperty<UInteger> MAX_SELECT_CLAUSE_PARAMETERS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxSelectClauseParameters",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
-
-  QualifiedProperty<UInteger> MAX_WHERE_CLAUSE_PARAMETERS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxWhereClauseParameters",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
-
-  QualifiedProperty<UInteger> MAX_MONITORED_ITEMS_QUEUE_SIZE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxMonitoredItemsQueueSize",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
-
-  QualifiedProperty<QualifiedName[]> CONFORMANCE_UNITS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "ConformanceUnits",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=20"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 20L),
           1,
           QualifiedName[].class);
 
-  /**
-   * Get the local value of the ServerProfileArray Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ServerProfileArray Node.
-   * @throws UaException if an error occurs creating or getting the ServerProfileArray Node.
-   */
-  String[] getServerProfileArray() throws UaException;
+  QualifiedProperty<UInteger> MaxSubscriptions_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "MaxSubscriptions",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+          -1,
+          UInteger.class);
+
+  QualifiedProperty<UInteger> MaxMonitoredItems_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "MaxMonitoredItems",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+          -1,
+          UInteger.class);
+
+  QualifiedProperty<String[]> ServerProfileArray_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "ServerProfileArray",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+          1,
+          String[].class);
+
+  QualifiedProperty<UInteger> MaxByteStringLength_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "MaxByteStringLength",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+          -1,
+          UInteger.class);
+
+  QualifiedProperty<SignedSoftwareCertificate[]> SoftwareCertificates_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "SoftwareCertificates",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 344L),
+          1,
+          SignedSoftwareCertificate[].class);
+
+  QualifiedProperty<Double> MinSupportedSampleRate_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "MinSupportedSampleRate",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 290L),
+          -1,
+          Double.class);
+
+  QualifiedProperty<UInteger> MaxWhereClauseParameters_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "MaxWhereClauseParameters",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+          -1,
+          UInteger.class);
+
+  QualifiedProperty<UInteger> MaxSelectClauseParameters_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "MaxSelectClauseParameters",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+          -1,
+          UInteger.class);
+
+  QualifiedProperty<UInteger> MaxMonitoredItemsQueueSize_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "MaxMonitoredItemsQueueSize",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+          -1,
+          UInteger.class);
+
+  QualifiedProperty<UShort> MaxQueryContinuationPoints_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "MaxQueryContinuationPoints",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 5L),
+          -1,
+          UShort.class);
+
+  QualifiedProperty<UInteger> MaxSubscriptionsPerSession_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "MaxSubscriptionsPerSession",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+          -1,
+          UInteger.class);
+
+  QualifiedProperty<UShort> MaxBrowseContinuationPoints_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "MaxBrowseContinuationPoints",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 5L),
+          -1,
+          UShort.class);
+
+  QualifiedProperty<UShort> MaxHistoryContinuationPoints_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "MaxHistoryContinuationPoints",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 5L),
+          -1,
+          UShort.class);
+
+  QualifiedProperty<UShort> MaxLogObjectContinuationPoints_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "MaxLogObjectContinuationPoints",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 5L),
+          -1,
+          UShort.class);
+
+  QualifiedProperty<UInteger> MaxMonitoredItemsPerSubscription_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "MaxMonitoredItemsPerSubscription",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+          -1,
+          UInteger.class);
 
   /**
-   * Set the local value of the ServerProfileArray Node.
+   * Resolves the optional MaxSessions child, a PropertyType with DataType UInt32.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ServerProfileArray Node.
-   * @throws UaException if an error occurs creating or getting the ServerProfileArray Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  void setServerProfileArray(String[] value) throws UaException;
+  @Nullable PropertyType getMaxSessionsNode() throws UaException;
+
+  /** Asynchronous form of {@link #getMaxSessionsNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getMaxSessionsNodeAsync();
 
   /**
-   * Read the value of the ServerProfileArray Node from the server and update the local value if the
-   * operation succeeds.
+   * Reads the Value of the MaxSessions child from the server.
    *
-   * @return the {@link String[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  String[] readServerProfileArray() throws UaException;
+  @Nullable UInteger readMaxSessions() throws UaException;
 
   /**
-   * Write a new value for the ServerProfileArray Node to the server and update the local value if
-   * the operation succeeds.
+   * Writes the Value of the MaxSessions child to the server.
    *
-   * @param value the {@link String[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeServerProfileArray(String[] value) throws UaException;
+  void writeMaxSessions(@Nullable UInteger value) throws UaException;
+
+  /** Asynchronous form of {@link #readMaxSessions()}. */
+  CompletableFuture<? extends @Nullable UInteger> readMaxSessionsAsync();
+
+  /** Asynchronous form of {@link #writeMaxSessions}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeMaxSessionsAsync(@Nullable UInteger value);
 
   /**
-   * An asynchronous implementation of {@link #readServerProfileArray}.
+   * Resolves the mandatory LocaleIdArray child, a PropertyType with DataType LocaleId.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String[]> readServerProfileArrayAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeServerProfileArray}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeServerProfileArrayAsync(String[] value);
-
-  /**
-   * Get the ServerProfileArray {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ServerProfileArray {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getServerProfileArrayNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getServerProfileArrayNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getServerProfileArrayNodeAsync();
-
-  /**
-   * Get the local value of the LocaleIdArray Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the LocaleIdArray Node.
-   * @throws UaException if an error occurs creating or getting the LocaleIdArray Node.
-   */
-  String[] getLocaleIdArray() throws UaException;
-
-  /**
-   * Set the local value of the LocaleIdArray Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the LocaleIdArray Node.
-   * @throws UaException if an error occurs creating or getting the LocaleIdArray Node.
-   */
-  void setLocaleIdArray(String[] value) throws UaException;
-
-  /**
-   * Read the value of the LocaleIdArray Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link String[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String[] readLocaleIdArray() throws UaException;
-
-  /**
-   * Write a new value for the LocaleIdArray Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link String[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeLocaleIdArray(String[] value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readLocaleIdArray}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String[]> readLocaleIdArrayAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeLocaleIdArray}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeLocaleIdArrayAsync(String[] value);
-
-  /**
-   * Get the LocaleIdArray {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the LocaleIdArray {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getLocaleIdArrayNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getLocaleIdArrayNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getLocaleIdArrayNode()}. */
   CompletableFuture<? extends PropertyType> getLocaleIdArrayNodeAsync();
 
   /**
-   * Get the local value of the MinSupportedSampleRate Node.
+   * Reads the Value of the LocaleIdArray child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MinSupportedSampleRate Node.
-   * @throws UaException if an error occurs creating or getting the MinSupportedSampleRate Node.
-   */
-  Double getMinSupportedSampleRate() throws UaException;
-
-  /**
-   * Set the local value of the MinSupportedSampleRate Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MinSupportedSampleRate Node.
-   * @throws UaException if an error occurs creating or getting the MinSupportedSampleRate Node.
-   */
-  void setMinSupportedSampleRate(Double value) throws UaException;
-
-  /**
-   * Read the value of the MinSupportedSampleRate Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link Double} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Double readMinSupportedSampleRate() throws UaException;
-
-  /**
-   * Write a new value for the MinSupportedSampleRate Node to the server and update the local value
-   * if the operation succeeds.
-   *
-   * @param value the {@link Double} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMinSupportedSampleRate(Double value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readMinSupportedSampleRate}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Double> readMinSupportedSampleRateAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeMinSupportedSampleRate}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMinSupportedSampleRateAsync(Double value);
-
-  /**
-   * Get the MinSupportedSampleRate {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MinSupportedSampleRate {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getMinSupportedSampleRateNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getMinSupportedSampleRateNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getMinSupportedSampleRateNodeAsync();
-
-  /**
-   * Get the local value of the MaxBrowseContinuationPoints Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaxBrowseContinuationPoints Node.
-   * @throws UaException if an error occurs creating or getting the MaxBrowseContinuationPoints
-   *     Node.
-   */
-  UShort getMaxBrowseContinuationPoints() throws UaException;
-
-  /**
-   * Set the local value of the MaxBrowseContinuationPoints Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaxBrowseContinuationPoints Node.
-   * @throws UaException if an error occurs creating or getting the MaxBrowseContinuationPoints
-   *     Node.
-   */
-  void setMaxBrowseContinuationPoints(UShort value) throws UaException;
-
-  /**
-   * Read the value of the MaxBrowseContinuationPoints Node from the server and update the local
-   * value if the operation succeeds.
-   *
-   * @return the {@link UShort} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UShort readMaxBrowseContinuationPoints() throws UaException;
-
-  /**
-   * Write a new value for the MaxBrowseContinuationPoints Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link UShort} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMaxBrowseContinuationPoints(UShort value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readMaxBrowseContinuationPoints}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UShort> readMaxBrowseContinuationPointsAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeMaxBrowseContinuationPoints}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMaxBrowseContinuationPointsAsync(UShort value);
-
-  /**
-   * Get the MaxBrowseContinuationPoints {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaxBrowseContinuationPoints {@link PropertyType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getMaxBrowseContinuationPointsNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getMaxBrowseContinuationPointsNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getMaxBrowseContinuationPointsNodeAsync();
-
-  /**
-   * Get the local value of the MaxQueryContinuationPoints Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaxQueryContinuationPoints Node.
-   * @throws UaException if an error occurs creating or getting the MaxQueryContinuationPoints Node.
-   */
-  UShort getMaxQueryContinuationPoints() throws UaException;
-
-  /**
-   * Set the local value of the MaxQueryContinuationPoints Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaxQueryContinuationPoints Node.
-   * @throws UaException if an error occurs creating or getting the MaxQueryContinuationPoints Node.
-   */
-  void setMaxQueryContinuationPoints(UShort value) throws UaException;
-
-  /**
-   * Read the value of the MaxQueryContinuationPoints Node from the server and update the local
-   * value if the operation succeeds.
-   *
-   * @return the {@link UShort} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UShort readMaxQueryContinuationPoints() throws UaException;
-
-  /**
-   * Write a new value for the MaxQueryContinuationPoints Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link UShort} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMaxQueryContinuationPoints(UShort value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readMaxQueryContinuationPoints}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UShort> readMaxQueryContinuationPointsAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeMaxQueryContinuationPoints}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMaxQueryContinuationPointsAsync(UShort value);
-
-  /**
-   * Get the MaxQueryContinuationPoints {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaxQueryContinuationPoints {@link PropertyType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getMaxQueryContinuationPointsNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getMaxQueryContinuationPointsNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getMaxQueryContinuationPointsNodeAsync();
-
-  /**
-   * Get the local value of the MaxHistoryContinuationPoints Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaxHistoryContinuationPoints Node.
-   * @throws UaException if an error occurs creating or getting the MaxHistoryContinuationPoints
-   *     Node.
-   */
-  UShort getMaxHistoryContinuationPoints() throws UaException;
-
-  /**
-   * Set the local value of the MaxHistoryContinuationPoints Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaxHistoryContinuationPoints Node.
-   * @throws UaException if an error occurs creating or getting the MaxHistoryContinuationPoints
-   *     Node.
-   */
-  void setMaxHistoryContinuationPoints(UShort value) throws UaException;
-
-  /**
-   * Read the value of the MaxHistoryContinuationPoints Node from the server and update the local
-   * value if the operation succeeds.
-   *
-   * @return the {@link UShort} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UShort readMaxHistoryContinuationPoints() throws UaException;
-
-  /**
-   * Write a new value for the MaxHistoryContinuationPoints Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link UShort} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMaxHistoryContinuationPoints(UShort value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readMaxHistoryContinuationPoints}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UShort> readMaxHistoryContinuationPointsAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeMaxHistoryContinuationPoints}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMaxHistoryContinuationPointsAsync(UShort value);
-
-  /**
-   * Get the MaxHistoryContinuationPoints {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaxHistoryContinuationPoints {@link PropertyType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getMaxHistoryContinuationPointsNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getMaxHistoryContinuationPointsNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getMaxHistoryContinuationPointsNodeAsync();
-
-  /**
-   * Get the local value of the MaxLogObjectContinuationPoints Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaxLogObjectContinuationPoints Node.
-   * @throws UaException if an error occurs creating or getting the MaxLogObjectContinuationPoints
-   *     Node.
-   */
-  UShort getMaxLogObjectContinuationPoints() throws UaException;
-
-  /**
-   * Set the local value of the MaxLogObjectContinuationPoints Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaxLogObjectContinuationPoints Node.
-   * @throws UaException if an error occurs creating or getting the MaxLogObjectContinuationPoints
-   *     Node.
-   */
-  void setMaxLogObjectContinuationPoints(UShort value) throws UaException;
-
-  /**
-   * Read the value of the MaxLogObjectContinuationPoints Node from the server and update the local
-   * value if the operation succeeds.
-   *
-   * @return the {@link UShort} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UShort readMaxLogObjectContinuationPoints() throws UaException;
-
-  /**
-   * Write a new value for the MaxLogObjectContinuationPoints Node to the server and update the
-   * local value if the operation succeeds.
-   *
-   * @param value the {@link UShort} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMaxLogObjectContinuationPoints(UShort value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readMaxLogObjectContinuationPoints}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UShort> readMaxLogObjectContinuationPointsAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeMaxLogObjectContinuationPoints}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMaxLogObjectContinuationPointsAsync(UShort value);
-
-  /**
-   * Get the MaxLogObjectContinuationPoints {@link PropertyType} Node, or {@code null} if it does
-   * not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaxLogObjectContinuationPoints {@link PropertyType} Node, or {@code null} if it
-   *     does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getMaxLogObjectContinuationPointsNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getMaxLogObjectContinuationPointsNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getMaxLogObjectContinuationPointsNodeAsync();
-
-  /**
-   * Get the local value of the SoftwareCertificates Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SoftwareCertificates Node.
-   * @throws UaException if an error occurs creating or getting the SoftwareCertificates Node.
-   */
-  SignedSoftwareCertificate[] getSoftwareCertificates() throws UaException;
-
-  /**
-   * Set the local value of the SoftwareCertificates Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SoftwareCertificates Node.
-   * @throws UaException if an error occurs creating or getting the SoftwareCertificates Node.
-   */
-  void setSoftwareCertificates(SignedSoftwareCertificate[] value) throws UaException;
-
-  /**
-   * Read the value of the SoftwareCertificates Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link SignedSoftwareCertificate[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  SignedSoftwareCertificate[] readSoftwareCertificates() throws UaException;
-
-  /**
-   * Write a new value for the SoftwareCertificates Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link SignedSoftwareCertificate[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeSoftwareCertificates(SignedSoftwareCertificate[] value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readSoftwareCertificates}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends SignedSoftwareCertificate[]> readSoftwareCertificatesAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeSoftwareCertificates}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeSoftwareCertificatesAsync(SignedSoftwareCertificate[] value);
-
-  /**
-   * Get the SoftwareCertificates {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SoftwareCertificates {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getSoftwareCertificatesNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getSoftwareCertificatesNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getSoftwareCertificatesNodeAsync();
-
-  /**
-   * Get the local value of the MaxArrayLength Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaxArrayLength Node.
-   * @throws UaException if an error occurs creating or getting the MaxArrayLength Node.
-   */
-  UInteger getMaxArrayLength() throws UaException;
-
-  /**
-   * Set the local value of the MaxArrayLength Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaxArrayLength Node.
-   * @throws UaException if an error occurs creating or getting the MaxArrayLength Node.
-   */
-  void setMaxArrayLength(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the MaxArrayLength Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readMaxArrayLength() throws UaException;
-
-  /**
-   * Write a new value for the MaxArrayLength Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMaxArrayLength(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readMaxArrayLength}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readMaxArrayLengthAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeMaxArrayLength}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMaxArrayLengthAsync(UInteger value);
-
-  /**
-   * Get the MaxArrayLength {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaxArrayLength {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getMaxArrayLengthNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getMaxArrayLengthNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getMaxArrayLengthNodeAsync();
-
-  /**
-   * Get the local value of the MaxStringLength Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaxStringLength Node.
-   * @throws UaException if an error occurs creating or getting the MaxStringLength Node.
-   */
-  UInteger getMaxStringLength() throws UaException;
-
-  /**
-   * Set the local value of the MaxStringLength Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaxStringLength Node.
-   * @throws UaException if an error occurs creating or getting the MaxStringLength Node.
-   */
-  void setMaxStringLength(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the MaxStringLength Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readMaxStringLength() throws UaException;
-
-  /**
-   * Write a new value for the MaxStringLength Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMaxStringLength(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readMaxStringLength}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readMaxStringLengthAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeMaxStringLength}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMaxStringLengthAsync(UInteger value);
-
-  /**
-   * Get the MaxStringLength {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaxStringLength {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getMaxStringLengthNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getMaxStringLengthNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getMaxStringLengthNodeAsync();
-
-  /**
-   * Get the local value of the MaxByteStringLength Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaxByteStringLength Node.
-   * @throws UaException if an error occurs creating or getting the MaxByteStringLength Node.
-   */
-  UInteger getMaxByteStringLength() throws UaException;
-
-  /**
-   * Set the local value of the MaxByteStringLength Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaxByteStringLength Node.
-   * @throws UaException if an error occurs creating or getting the MaxByteStringLength Node.
-   */
-  void setMaxByteStringLength(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the MaxByteStringLength Node from the server and update the local value if
-   * the operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readMaxByteStringLength() throws UaException;
-
-  /**
-   * Write a new value for the MaxByteStringLength Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMaxByteStringLength(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readMaxByteStringLength}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readMaxByteStringLengthAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeMaxByteStringLength}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMaxByteStringLengthAsync(UInteger value);
-
-  /**
-   * Get the MaxByteStringLength {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaxByteStringLength {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getMaxByteStringLengthNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getMaxByteStringLengthNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getMaxByteStringLengthNodeAsync();
-
-  /**
-   * Get the local value of the MaxSessions Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaxSessions Node.
-   * @throws UaException if an error occurs creating or getting the MaxSessions Node.
-   */
-  UInteger getMaxSessions() throws UaException;
-
-  /**
-   * Set the local value of the MaxSessions Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaxSessions Node.
-   * @throws UaException if an error occurs creating or getting the MaxSessions Node.
-   */
-  void setMaxSessions(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the MaxSessions Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readMaxSessions() throws UaException;
-
-  /**
-   * Write a new value for the MaxSessions Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMaxSessions(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readMaxSessions}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readMaxSessionsAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeMaxSessions}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMaxSessionsAsync(UInteger value);
-
-  /**
-   * Get the MaxSessions {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaxSessions {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getMaxSessionsNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getMaxSessionsNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getMaxSessionsNodeAsync();
-
-  /**
-   * Get the local value of the MaxSubscriptions Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaxSubscriptions Node.
-   * @throws UaException if an error occurs creating or getting the MaxSubscriptions Node.
-   */
-  UInteger getMaxSubscriptions() throws UaException;
-
-  /**
-   * Set the local value of the MaxSubscriptions Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaxSubscriptions Node.
-   * @throws UaException if an error occurs creating or getting the MaxSubscriptions Node.
-   */
-  void setMaxSubscriptions(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the MaxSubscriptions Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readMaxSubscriptions() throws UaException;
-
-  /**
-   * Write a new value for the MaxSubscriptions Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMaxSubscriptions(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readMaxSubscriptions}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readMaxSubscriptionsAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeMaxSubscriptions}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMaxSubscriptionsAsync(UInteger value);
-
-  /**
-   * Get the MaxSubscriptions {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaxSubscriptions {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getMaxSubscriptionsNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getMaxSubscriptionsNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getMaxSubscriptionsNodeAsync();
-
-  /**
-   * Get the local value of the MaxMonitoredItems Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaxMonitoredItems Node.
-   * @throws UaException if an error occurs creating or getting the MaxMonitoredItems Node.
-   */
-  UInteger getMaxMonitoredItems() throws UaException;
-
-  /**
-   * Set the local value of the MaxMonitoredItems Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaxMonitoredItems Node.
-   * @throws UaException if an error occurs creating or getting the MaxMonitoredItems Node.
-   */
-  void setMaxMonitoredItems(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the MaxMonitoredItems Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readMaxMonitoredItems() throws UaException;
-
-  /**
-   * Write a new value for the MaxMonitoredItems Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMaxMonitoredItems(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readMaxMonitoredItems}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readMaxMonitoredItemsAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeMaxMonitoredItems}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMaxMonitoredItemsAsync(UInteger value);
-
-  /**
-   * Get the MaxMonitoredItems {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaxMonitoredItems {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getMaxMonitoredItemsNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getMaxMonitoredItemsNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getMaxMonitoredItemsNodeAsync();
-
-  /**
-   * Get the local value of the MaxSubscriptionsPerSession Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaxSubscriptionsPerSession Node.
-   * @throws UaException if an error occurs creating or getting the MaxSubscriptionsPerSession Node.
-   */
-  UInteger getMaxSubscriptionsPerSession() throws UaException;
-
-  /**
-   * Set the local value of the MaxSubscriptionsPerSession Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaxSubscriptionsPerSession Node.
-   * @throws UaException if an error occurs creating or getting the MaxSubscriptionsPerSession Node.
-   */
-  void setMaxSubscriptionsPerSession(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the MaxSubscriptionsPerSession Node from the server and update the local
-   * value if the operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readMaxSubscriptionsPerSession() throws UaException;
-
-  /**
-   * Write a new value for the MaxSubscriptionsPerSession Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMaxSubscriptionsPerSession(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readMaxSubscriptionsPerSession}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readMaxSubscriptionsPerSessionAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeMaxSubscriptionsPerSession}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMaxSubscriptionsPerSessionAsync(UInteger value);
-
-  /**
-   * Get the MaxSubscriptionsPerSession {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaxSubscriptionsPerSession {@link PropertyType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getMaxSubscriptionsPerSessionNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getMaxSubscriptionsPerSessionNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getMaxSubscriptionsPerSessionNodeAsync();
-
-  /**
-   * Get the local value of the MaxMonitoredItemsPerSubscription Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaxMonitoredItemsPerSubscription Node.
-   * @throws UaException if an error occurs creating or getting the MaxMonitoredItemsPerSubscription
-   *     Node.
-   */
-  UInteger getMaxMonitoredItemsPerSubscription() throws UaException;
-
-  /**
-   * Set the local value of the MaxMonitoredItemsPerSubscription Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaxMonitoredItemsPerSubscription Node.
-   * @throws UaException if an error occurs creating or getting the MaxMonitoredItemsPerSubscription
-   *     Node.
-   */
-  void setMaxMonitoredItemsPerSubscription(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the MaxMonitoredItemsPerSubscription Node from the server and update the
-   * local value if the operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readMaxMonitoredItemsPerSubscription() throws UaException;
-
-  /**
-   * Write a new value for the MaxMonitoredItemsPerSubscription Node to the server and update the
-   * local value if the operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMaxMonitoredItemsPerSubscription(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readMaxMonitoredItemsPerSubscription}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readMaxMonitoredItemsPerSubscriptionAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeMaxMonitoredItemsPerSubscription}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMaxMonitoredItemsPerSubscriptionAsync(UInteger value);
-
-  /**
-   * Get the MaxMonitoredItemsPerSubscription {@link PropertyType} Node, or {@code null} if it does
-   * not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaxMonitoredItemsPerSubscription {@link PropertyType} Node, or {@code null} if it
-   *     does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getMaxMonitoredItemsPerSubscriptionNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getMaxMonitoredItemsPerSubscriptionNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends PropertyType> getMaxMonitoredItemsPerSubscriptionNodeAsync();
+  @Nullable String @Nullable [] readLocaleIdArray() throws UaException;
 
   /**
-   * Get the local value of the MaxSelectClauseParameters Node.
+   * Writes the Value of the LocaleIdArray child to the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaxSelectClauseParameters Node.
-   * @throws UaException if an error occurs creating or getting the MaxSelectClauseParameters Node.
-   */
-  UInteger getMaxSelectClauseParameters() throws UaException;
-
-  /**
-   * Set the local value of the MaxSelectClauseParameters Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaxSelectClauseParameters Node.
-   * @throws UaException if an error occurs creating or getting the MaxSelectClauseParameters Node.
-   */
-  void setMaxSelectClauseParameters(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the MaxSelectClauseParameters Node from the server and update the local value
-   * if the operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readMaxSelectClauseParameters() throws UaException;
-
-  /**
-   * Write a new value for the MaxSelectClauseParameters Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMaxSelectClauseParameters(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readMaxSelectClauseParameters}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readMaxSelectClauseParametersAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeMaxSelectClauseParameters}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMaxSelectClauseParametersAsync(UInteger value);
-
-  /**
-   * Get the MaxSelectClauseParameters {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaxSelectClauseParameters {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getMaxSelectClauseParametersNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getMaxSelectClauseParametersNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getMaxSelectClauseParametersNodeAsync();
-
-  /**
-   * Get the local value of the MaxWhereClauseParameters Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaxWhereClauseParameters Node.
-   * @throws UaException if an error occurs creating or getting the MaxWhereClauseParameters Node.
-   */
-  UInteger getMaxWhereClauseParameters() throws UaException;
-
-  /**
-   * Set the local value of the MaxWhereClauseParameters Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaxWhereClauseParameters Node.
-   * @throws UaException if an error occurs creating or getting the MaxWhereClauseParameters Node.
-   */
-  void setMaxWhereClauseParameters(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the MaxWhereClauseParameters Node from the server and update the local value
-   * if the operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readMaxWhereClauseParameters() throws UaException;
-
-  /**
-   * Write a new value for the MaxWhereClauseParameters Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMaxWhereClauseParameters(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readMaxWhereClauseParameters}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readMaxWhereClauseParametersAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeMaxWhereClauseParameters}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMaxWhereClauseParametersAsync(UInteger value);
-
-  /**
-   * Get the MaxWhereClauseParameters {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaxWhereClauseParameters {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getMaxWhereClauseParametersNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getMaxWhereClauseParametersNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getMaxWhereClauseParametersNodeAsync();
-
-  /**
-   * Get the local value of the MaxMonitoredItemsQueueSize Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the MaxMonitoredItemsQueueSize Node.
-   * @throws UaException if an error occurs creating or getting the MaxMonitoredItemsQueueSize Node.
-   */
-  UInteger getMaxMonitoredItemsQueueSize() throws UaException;
-
-  /**
-   * Set the local value of the MaxMonitoredItemsQueueSize Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the MaxMonitoredItemsQueueSize Node.
-   * @throws UaException if an error occurs creating or getting the MaxMonitoredItemsQueueSize Node.
-   */
-  void setMaxMonitoredItemsQueueSize(UInteger value) throws UaException;
-
-  /**
-   * Read the value of the MaxMonitoredItemsQueueSize Node from the server and update the local
-   * value if the operation succeeds.
-   *
-   * @return the {@link UInteger} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UInteger readMaxMonitoredItemsQueueSize() throws UaException;
-
-  /**
-   * Write a new value for the MaxMonitoredItemsQueueSize Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link UInteger} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeMaxMonitoredItemsQueueSize(UInteger value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readMaxMonitoredItemsQueueSize}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UInteger> readMaxMonitoredItemsQueueSizeAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeMaxMonitoredItemsQueueSize}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeMaxMonitoredItemsQueueSizeAsync(UInteger value);
-
-  /**
-   * Get the MaxMonitoredItemsQueueSize {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the MaxMonitoredItemsQueueSize {@link PropertyType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getMaxMonitoredItemsQueueSizeNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getMaxMonitoredItemsQueueSizeNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getMaxMonitoredItemsQueueSizeNodeAsync();
-
-  /**
-   * Get the local value of the ConformanceUnits Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ConformanceUnits Node.
-   * @throws UaException if an error occurs creating or getting the ConformanceUnits Node.
-   */
-  QualifiedName[] getConformanceUnits() throws UaException;
-
-  /**
-   * Set the local value of the ConformanceUnits Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ConformanceUnits Node.
-   * @throws UaException if an error occurs creating or getting the ConformanceUnits Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setConformanceUnits(QualifiedName[] value) throws UaException;
+  void writeLocaleIdArray(@Nullable String @Nullable [] value) throws UaException;
 
-  /**
-   * Read the value of the ConformanceUnits Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link QualifiedName[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  QualifiedName[] readConformanceUnits() throws UaException;
+  /** Asynchronous form of {@link #readLocaleIdArray()}. */
+  CompletableFuture<? extends @Nullable String @Nullable []> readLocaleIdArrayAsync();
 
-  /**
-   * Write a new value for the ConformanceUnits Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link QualifiedName[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeConformanceUnits(QualifiedName[] value) throws UaException;
+  /** Asynchronous form of {@link #writeLocaleIdArray}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeLocaleIdArrayAsync(@Nullable String @Nullable [] value);
 
   /**
-   * An asynchronous implementation of {@link #readConformanceUnits}.
+   * Resolves the optional MaxArrayLength child, a PropertyType with DataType UInt32.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  CompletableFuture<? extends QualifiedName[]> readConformanceUnitsAsync();
+  @Nullable PropertyType getMaxArrayLengthNode() throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #writeConformanceUnits}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeConformanceUnitsAsync(QualifiedName[] value);
+  /** Asynchronous form of {@link #getMaxArrayLengthNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getMaxArrayLengthNodeAsync();
 
   /**
-   * Get the ConformanceUnits {@link PropertyType} Node, or {@code null} if it does not exist.
+   * Reads the Value of the MaxArrayLength child from the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ConformanceUnits {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  PropertyType getConformanceUnitsNode() throws UaException;
+  @Nullable UInteger readMaxArrayLength() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getConformanceUnitsNode()}.
+   * Writes the Value of the MaxArrayLength child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends PropertyType> getConformanceUnitsNodeAsync();
+  void writeMaxArrayLength(@Nullable UInteger value) throws UaException;
 
-  /**
-   * Get the OperationLimits {@link OperationLimitsType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the OperationLimits {@link OperationLimitsType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  OperationLimitsType getOperationLimitsNode() throws UaException;
+  /** Asynchronous form of {@link #readMaxArrayLength()}. */
+  CompletableFuture<? extends @Nullable UInteger> readMaxArrayLengthAsync();
 
-  /**
-   * Asynchronous implementation of {@link #getOperationLimitsNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the OperationLimitsType Node or
-   *     completes exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends OperationLimitsType> getOperationLimitsNodeAsync();
+  /** Asynchronous form of {@link #writeMaxArrayLength}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeMaxArrayLengthAsync(@Nullable UInteger value);
 
   /**
-   * Get the ModellingRules {@link FolderType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * Resolves the mandatory ModellingRules child, a FolderType.
    *
-   * @return the ModellingRules {@link FolderType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.6">FolderType
+   *     documentation</a>
    */
   FolderType getModellingRulesNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getModellingRulesNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the FolderType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getModellingRulesNode()}. */
   CompletableFuture<? extends FolderType> getModellingRulesNodeAsync();
 
   /**
-   * Get the AggregateFunctions {@link FolderType} Node, or {@code null} if it does not exist.
+   * Resolves the optional MaxStringLength child, a PropertyType with DataType UInt32.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyType getMaxStringLengthNode() throws UaException;
+
+  /** Asynchronous form of {@link #getMaxStringLengthNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getMaxStringLengthNodeAsync();
+
+  /**
+   * Reads the Value of the MaxStringLength child from the server.
    *
-   * @return the AggregateFunctions {@link FolderType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable UInteger readMaxStringLength() throws UaException;
+
+  /**
+   * Writes the Value of the MaxStringLength child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeMaxStringLength(@Nullable UInteger value) throws UaException;
+
+  /** Asynchronous form of {@link #readMaxStringLength()}. */
+  CompletableFuture<? extends @Nullable UInteger> readMaxStringLengthAsync();
+
+  /** Asynchronous form of {@link #writeMaxStringLength}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeMaxStringLengthAsync(@Nullable UInteger value);
+
+  /**
+   * Resolves the optional OperationLimits child, a OperationLimitsType.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.11">OperationLimitsType
+   *     documentation</a>
+   */
+  @Nullable OperationLimitsType getOperationLimitsNode() throws UaException;
+
+  /** Asynchronous form of {@link #getOperationLimitsNode()}. */
+  CompletableFuture<? extends @Nullable OperationLimitsType> getOperationLimitsNodeAsync();
+
+  /**
+   * Resolves the optional ConformanceUnits child, a PropertyType with DataType QualifiedName.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyType getConformanceUnitsNode() throws UaException;
+
+  /** Asynchronous form of {@link #getConformanceUnitsNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getConformanceUnitsNodeAsync();
+
+  /**
+   * Reads the Value of the ConformanceUnits child from the server.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  QualifiedName @Nullable [] readConformanceUnits() throws UaException;
+
+  /**
+   * Writes the Value of the ConformanceUnits child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeConformanceUnits(QualifiedName @Nullable [] value) throws UaException;
+
+  /** Asynchronous form of {@link #readConformanceUnits()}. */
+  CompletableFuture<? extends QualifiedName @Nullable []> readConformanceUnitsAsync();
+
+  /** Asynchronous form of {@link #writeConformanceUnits}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeConformanceUnitsAsync(QualifiedName @Nullable [] value);
+
+  /**
+   * Resolves the optional MaxSubscriptions child, a PropertyType with DataType UInt32.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyType getMaxSubscriptionsNode() throws UaException;
+
+  /** Asynchronous form of {@link #getMaxSubscriptionsNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getMaxSubscriptionsNodeAsync();
+
+  /**
+   * Reads the Value of the MaxSubscriptions child from the server.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable UInteger readMaxSubscriptions() throws UaException;
+
+  /**
+   * Writes the Value of the MaxSubscriptions child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeMaxSubscriptions(@Nullable UInteger value) throws UaException;
+
+  /** Asynchronous form of {@link #readMaxSubscriptions()}. */
+  CompletableFuture<? extends @Nullable UInteger> readMaxSubscriptionsAsync();
+
+  /** Asynchronous form of {@link #writeMaxSubscriptions}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeMaxSubscriptionsAsync(@Nullable UInteger value);
+
+  /**
+   * Resolves the optional MaxMonitoredItems child, a PropertyType with DataType UInt32.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyType getMaxMonitoredItemsNode() throws UaException;
+
+  /** Asynchronous form of {@link #getMaxMonitoredItemsNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getMaxMonitoredItemsNodeAsync();
+
+  /**
+   * Reads the Value of the MaxMonitoredItems child from the server.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable UInteger readMaxMonitoredItems() throws UaException;
+
+  /**
+   * Writes the Value of the MaxMonitoredItems child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeMaxMonitoredItems(@Nullable UInteger value) throws UaException;
+
+  /** Asynchronous form of {@link #readMaxMonitoredItems()}. */
+  CompletableFuture<? extends @Nullable UInteger> readMaxMonitoredItemsAsync();
+
+  /** Asynchronous form of {@link #writeMaxMonitoredItems}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeMaxMonitoredItemsAsync(@Nullable UInteger value);
+
+  /**
+   * Resolves the mandatory AggregateFunctions child, a FolderType.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.6">FolderType
+   *     documentation</a>
    */
   FolderType getAggregateFunctionsNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getAggregateFunctionsNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the FolderType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getAggregateFunctionsNode()}. */
   CompletableFuture<? extends FolderType> getAggregateFunctionsNodeAsync();
 
   /**
-   * Get the RoleSet {@link RoleSetType} Node, or {@code null} if it does not exist.
+   * Resolves the mandatory ServerProfileArray child, a PropertyType with DataType String.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the RoleSet {@link RoleSetType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  RoleSetType getRoleSetNode() throws UaException;
+  PropertyType getServerProfileArrayNode() throws UaException;
+
+  /** Asynchronous form of {@link #getServerProfileArrayNode()}. */
+  CompletableFuture<? extends PropertyType> getServerProfileArrayNodeAsync();
 
   /**
-   * Asynchronous implementation of {@link #getRoleSetNode()}.
+   * Reads the Value of the ServerProfileArray child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the RoleSetType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends RoleSetType> getRoleSetNodeAsync();
+  @Nullable String @Nullable [] readServerProfileArray() throws UaException;
+
+  /**
+   * Writes the Value of the ServerProfileArray child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeServerProfileArray(@Nullable String @Nullable [] value) throws UaException;
+
+  /** Asynchronous form of {@link #readServerProfileArray()}. */
+  CompletableFuture<? extends @Nullable String @Nullable []> readServerProfileArrayAsync();
+
+  /** Asynchronous form of {@link #writeServerProfileArray}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeServerProfileArrayAsync(@Nullable String @Nullable [] value);
+
+  /**
+   * Resolves the optional MaxByteStringLength child, a PropertyType with DataType UInt32.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyType getMaxByteStringLengthNode() throws UaException;
+
+  /** Asynchronous form of {@link #getMaxByteStringLengthNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getMaxByteStringLengthNodeAsync();
+
+  /**
+   * Reads the Value of the MaxByteStringLength child from the server.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable UInteger readMaxByteStringLength() throws UaException;
+
+  /**
+   * Writes the Value of the MaxByteStringLength child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeMaxByteStringLength(@Nullable UInteger value) throws UaException;
+
+  /** Asynchronous form of {@link #readMaxByteStringLength()}. */
+  CompletableFuture<? extends @Nullable UInteger> readMaxByteStringLengthAsync();
+
+  /**
+   * Asynchronous form of {@link #writeMaxByteStringLength}; completes with the operation status.
+   */
+  CompletableFuture<StatusCode> writeMaxByteStringLengthAsync(@Nullable UInteger value);
+
+  /**
+   * Resolves the mandatory SoftwareCertificates child, a PropertyType with DataType
+   * SignedSoftwareCertificate.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getSoftwareCertificatesNode() throws UaException;
+
+  /** Asynchronous form of {@link #getSoftwareCertificatesNode()}. */
+  CompletableFuture<? extends PropertyType> getSoftwareCertificatesNodeAsync();
+
+  /**
+   * Reads the Value of the SoftwareCertificates child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable SignedSoftwareCertificate @Nullable [] readSoftwareCertificates() throws UaException;
+
+  /**
+   * Writes the Value of the SoftwareCertificates child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeSoftwareCertificates(@Nullable SignedSoftwareCertificate @Nullable [] value)
+      throws UaException;
+
+  /** Asynchronous form of {@link #readSoftwareCertificates()}. */
+  CompletableFuture<? extends @Nullable SignedSoftwareCertificate @Nullable []>
+      readSoftwareCertificatesAsync();
+
+  /**
+   * Asynchronous form of {@link #writeSoftwareCertificates}; completes with the operation status.
+   */
+  CompletableFuture<StatusCode> writeSoftwareCertificatesAsync(
+      @Nullable SignedSoftwareCertificate @Nullable [] value);
+
+  /**
+   * Resolves the mandatory MinSupportedSampleRate child, a PropertyType with DataType Duration.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getMinSupportedSampleRateNode() throws UaException;
+
+  /** Asynchronous form of {@link #getMinSupportedSampleRateNode()}. */
+  CompletableFuture<? extends PropertyType> getMinSupportedSampleRateNodeAsync();
+
+  /**
+   * Reads the Value of the MinSupportedSampleRate child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable Double readMinSupportedSampleRate() throws UaException;
+
+  /**
+   * Writes the Value of the MinSupportedSampleRate child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeMinSupportedSampleRate(@Nullable Double value) throws UaException;
+
+  /** Asynchronous form of {@link #readMinSupportedSampleRate()}. */
+  CompletableFuture<? extends @Nullable Double> readMinSupportedSampleRateAsync();
+
+  /**
+   * Asynchronous form of {@link #writeMinSupportedSampleRate}; completes with the operation status.
+   */
+  CompletableFuture<StatusCode> writeMinSupportedSampleRateAsync(@Nullable Double value);
+
+  /**
+   * Resolves the optional MaxWhereClauseParameters child, a PropertyType with DataType UInt32.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyType getMaxWhereClauseParametersNode() throws UaException;
+
+  /** Asynchronous form of {@link #getMaxWhereClauseParametersNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getMaxWhereClauseParametersNodeAsync();
+
+  /**
+   * Reads the Value of the MaxWhereClauseParameters child from the server.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable UInteger readMaxWhereClauseParameters() throws UaException;
+
+  /**
+   * Writes the Value of the MaxWhereClauseParameters child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeMaxWhereClauseParameters(@Nullable UInteger value) throws UaException;
+
+  /** Asynchronous form of {@link #readMaxWhereClauseParameters()}. */
+  CompletableFuture<? extends @Nullable UInteger> readMaxWhereClauseParametersAsync();
+
+  /**
+   * Asynchronous form of {@link #writeMaxWhereClauseParameters}; completes with the operation
+   * status.
+   */
+  CompletableFuture<StatusCode> writeMaxWhereClauseParametersAsync(@Nullable UInteger value);
+
+  /**
+   * Resolves the optional MaxSelectClauseParameters child, a PropertyType with DataType UInt32.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyType getMaxSelectClauseParametersNode() throws UaException;
+
+  /** Asynchronous form of {@link #getMaxSelectClauseParametersNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getMaxSelectClauseParametersNodeAsync();
+
+  /**
+   * Reads the Value of the MaxSelectClauseParameters child from the server.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable UInteger readMaxSelectClauseParameters() throws UaException;
+
+  /**
+   * Writes the Value of the MaxSelectClauseParameters child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeMaxSelectClauseParameters(@Nullable UInteger value) throws UaException;
+
+  /** Asynchronous form of {@link #readMaxSelectClauseParameters()}. */
+  CompletableFuture<? extends @Nullable UInteger> readMaxSelectClauseParametersAsync();
+
+  /**
+   * Asynchronous form of {@link #writeMaxSelectClauseParameters}; completes with the operation
+   * status.
+   */
+  CompletableFuture<StatusCode> writeMaxSelectClauseParametersAsync(@Nullable UInteger value);
+
+  /**
+   * Resolves the optional MaxMonitoredItemsQueueSize child, a PropertyType with DataType UInt32.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyType getMaxMonitoredItemsQueueSizeNode() throws UaException;
+
+  /** Asynchronous form of {@link #getMaxMonitoredItemsQueueSizeNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getMaxMonitoredItemsQueueSizeNodeAsync();
+
+  /**
+   * Reads the Value of the MaxMonitoredItemsQueueSize child from the server.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable UInteger readMaxMonitoredItemsQueueSize() throws UaException;
+
+  /**
+   * Writes the Value of the MaxMonitoredItemsQueueSize child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeMaxMonitoredItemsQueueSize(@Nullable UInteger value) throws UaException;
+
+  /** Asynchronous form of {@link #readMaxMonitoredItemsQueueSize()}. */
+  CompletableFuture<? extends @Nullable UInteger> readMaxMonitoredItemsQueueSizeAsync();
+
+  /**
+   * Asynchronous form of {@link #writeMaxMonitoredItemsQueueSize}; completes with the operation
+   * status.
+   */
+  CompletableFuture<StatusCode> writeMaxMonitoredItemsQueueSizeAsync(@Nullable UInteger value);
+
+  /**
+   * Resolves the mandatory MaxQueryContinuationPoints child, a PropertyType with DataType UInt16.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getMaxQueryContinuationPointsNode() throws UaException;
+
+  /** Asynchronous form of {@link #getMaxQueryContinuationPointsNode()}. */
+  CompletableFuture<? extends PropertyType> getMaxQueryContinuationPointsNodeAsync();
+
+  /**
+   * Reads the Value of the MaxQueryContinuationPoints child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable UShort readMaxQueryContinuationPoints() throws UaException;
+
+  /**
+   * Writes the Value of the MaxQueryContinuationPoints child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeMaxQueryContinuationPoints(@Nullable UShort value) throws UaException;
+
+  /** Asynchronous form of {@link #readMaxQueryContinuationPoints()}. */
+  CompletableFuture<? extends @Nullable UShort> readMaxQueryContinuationPointsAsync();
+
+  /**
+   * Asynchronous form of {@link #writeMaxQueryContinuationPoints}; completes with the operation
+   * status.
+   */
+  CompletableFuture<StatusCode> writeMaxQueryContinuationPointsAsync(@Nullable UShort value);
+
+  /**
+   * Resolves the optional MaxSubscriptionsPerSession child, a PropertyType with DataType UInt32.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyType getMaxSubscriptionsPerSessionNode() throws UaException;
+
+  /** Asynchronous form of {@link #getMaxSubscriptionsPerSessionNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getMaxSubscriptionsPerSessionNodeAsync();
+
+  /**
+   * Reads the Value of the MaxSubscriptionsPerSession child from the server.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable UInteger readMaxSubscriptionsPerSession() throws UaException;
+
+  /**
+   * Writes the Value of the MaxSubscriptionsPerSession child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeMaxSubscriptionsPerSession(@Nullable UInteger value) throws UaException;
+
+  /** Asynchronous form of {@link #readMaxSubscriptionsPerSession()}. */
+  CompletableFuture<? extends @Nullable UInteger> readMaxSubscriptionsPerSessionAsync();
+
+  /**
+   * Asynchronous form of {@link #writeMaxSubscriptionsPerSession}; completes with the operation
+   * status.
+   */
+  CompletableFuture<StatusCode> writeMaxSubscriptionsPerSessionAsync(@Nullable UInteger value);
+
+  /**
+   * Resolves the mandatory MaxBrowseContinuationPoints child, a PropertyType with DataType UInt16.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getMaxBrowseContinuationPointsNode() throws UaException;
+
+  /** Asynchronous form of {@link #getMaxBrowseContinuationPointsNode()}. */
+  CompletableFuture<? extends PropertyType> getMaxBrowseContinuationPointsNodeAsync();
+
+  /**
+   * Reads the Value of the MaxBrowseContinuationPoints child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable UShort readMaxBrowseContinuationPoints() throws UaException;
+
+  /**
+   * Writes the Value of the MaxBrowseContinuationPoints child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeMaxBrowseContinuationPoints(@Nullable UShort value) throws UaException;
+
+  /** Asynchronous form of {@link #readMaxBrowseContinuationPoints()}. */
+  CompletableFuture<? extends @Nullable UShort> readMaxBrowseContinuationPointsAsync();
+
+  /**
+   * Asynchronous form of {@link #writeMaxBrowseContinuationPoints}; completes with the operation
+   * status.
+   */
+  CompletableFuture<StatusCode> writeMaxBrowseContinuationPointsAsync(@Nullable UShort value);
+
+  /**
+   * Resolves the mandatory MaxHistoryContinuationPoints child, a PropertyType with DataType UInt16.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getMaxHistoryContinuationPointsNode() throws UaException;
+
+  /** Asynchronous form of {@link #getMaxHistoryContinuationPointsNode()}. */
+  CompletableFuture<? extends PropertyType> getMaxHistoryContinuationPointsNodeAsync();
+
+  /**
+   * Reads the Value of the MaxHistoryContinuationPoints child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable UShort readMaxHistoryContinuationPoints() throws UaException;
+
+  /**
+   * Writes the Value of the MaxHistoryContinuationPoints child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeMaxHistoryContinuationPoints(@Nullable UShort value) throws UaException;
+
+  /** Asynchronous form of {@link #readMaxHistoryContinuationPoints()}. */
+  CompletableFuture<? extends @Nullable UShort> readMaxHistoryContinuationPointsAsync();
+
+  /**
+   * Asynchronous form of {@link #writeMaxHistoryContinuationPoints}; completes with the operation
+   * status.
+   */
+  CompletableFuture<StatusCode> writeMaxHistoryContinuationPointsAsync(@Nullable UShort value);
+
+  /**
+   * Resolves the optional MaxLogObjectContinuationPoints child, a PropertyType with DataType
+   * UInt16.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyType getMaxLogObjectContinuationPointsNode() throws UaException;
+
+  /** Asynchronous form of {@link #getMaxLogObjectContinuationPointsNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getMaxLogObjectContinuationPointsNodeAsync();
+
+  /**
+   * Reads the Value of the MaxLogObjectContinuationPoints child from the server.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable UShort readMaxLogObjectContinuationPoints() throws UaException;
+
+  /**
+   * Writes the Value of the MaxLogObjectContinuationPoints child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeMaxLogObjectContinuationPoints(@Nullable UShort value) throws UaException;
+
+  /** Asynchronous form of {@link #readMaxLogObjectContinuationPoints()}. */
+  CompletableFuture<? extends @Nullable UShort> readMaxLogObjectContinuationPointsAsync();
+
+  /**
+   * Asynchronous form of {@link #writeMaxLogObjectContinuationPoints}; completes with the operation
+   * status.
+   */
+  CompletableFuture<StatusCode> writeMaxLogObjectContinuationPointsAsync(@Nullable UShort value);
+
+  /**
+   * Resolves the optional MaxMonitoredItemsPerSubscription child, a PropertyType with DataType
+   * UInt32.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyType getMaxMonitoredItemsPerSubscriptionNode() throws UaException;
+
+  /** Asynchronous form of {@link #getMaxMonitoredItemsPerSubscriptionNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType>
+      getMaxMonitoredItemsPerSubscriptionNodeAsync();
+
+  /**
+   * Reads the Value of the MaxMonitoredItemsPerSubscription child from the server.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable UInteger readMaxMonitoredItemsPerSubscription() throws UaException;
+
+  /**
+   * Writes the Value of the MaxMonitoredItemsPerSubscription child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeMaxMonitoredItemsPerSubscription(@Nullable UInteger value) throws UaException;
+
+  /** Asynchronous form of {@link #readMaxMonitoredItemsPerSubscription()}. */
+  CompletableFuture<? extends @Nullable UInteger> readMaxMonitoredItemsPerSubscriptionAsync();
+
+  /**
+   * Asynchronous form of {@link #writeMaxMonitoredItemsPerSubscription}; completes with the
+   * operation status.
+   */
+  CompletableFuture<StatusCode> writeMaxMonitoredItemsPerSubscriptionAsync(
+      @Nullable UInteger value);
+
+  /**
+   * Resolves the optional RoleSet child, a RoleSetType.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part18/4.2.1">RoleSetType
+   *     documentation</a>
+   */
+  @Nullable RoleSetType getRoleSetNode() throws UaException;
+
+  /** Asynchronous form of {@link #getRoleSetNode()}. */
+  CompletableFuture<? extends @Nullable RoleSetType> getRoleSetNodeAsync();
 }

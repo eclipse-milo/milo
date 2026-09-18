@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
@@ -23,321 +13,175 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.structured.SessionDiagnosticsDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SessionSecurityDiagnosticsDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SubscriptionDiagnosticsDataType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.5">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.5</a>
+ * Client API for the SessionDiagnosticsObjectType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.5">Model
+ *     documentation</a>
  */
 public interface SessionDiagnosticsObjectType extends BaseObjectType {
-  QualifiedProperty<NodeId[]> CURRENT_ROLE_IDS =
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2029L);
+
+  QualifiedProperty<NodeId[]> CurrentRoleIds_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "CurrentRoleIds",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 17L),
           1,
           NodeId[].class);
 
   /**
-   * Get the local value of the CurrentRoleIds Node.
+   * Resolves the optional CurrentRoleIds child, a PropertyType with DataType NodeId.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the CurrentRoleIds Node.
-   * @throws UaException if an error occurs creating or getting the CurrentRoleIds Node.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  NodeId[] getCurrentRoleIds() throws UaException;
+  @Nullable PropertyType getCurrentRoleIdsNode() throws UaException;
+
+  /** Asynchronous form of {@link #getCurrentRoleIdsNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getCurrentRoleIdsNodeAsync();
 
   /**
-   * Set the local value of the CurrentRoleIds Node.
+   * Reads the Value of the CurrentRoleIds child from the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the CurrentRoleIds Node.
-   * @throws UaException if an error occurs creating or getting the CurrentRoleIds Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setCurrentRoleIds(NodeId[] value) throws UaException;
+  NodeId @Nullable [] readCurrentRoleIds() throws UaException;
 
   /**
-   * Read the value of the CurrentRoleIds Node from the server and update the local value if the
-   * operation succeeds.
+   * Writes the Value of the CurrentRoleIds child to the server.
    *
-   * @return the {@link NodeId[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  NodeId[] readCurrentRoleIds() throws UaException;
+  void writeCurrentRoleIds(NodeId @Nullable [] value) throws UaException;
+
+  /** Asynchronous form of {@link #readCurrentRoleIds()}. */
+  CompletableFuture<? extends NodeId @Nullable []> readCurrentRoleIdsAsync();
+
+  /** Asynchronous form of {@link #writeCurrentRoleIds}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeCurrentRoleIdsAsync(NodeId @Nullable [] value);
 
   /**
-   * Write a new value for the CurrentRoleIds Node to the server and update the local value if the
-   * operation succeeds.
+   * Resolves the mandatory SessionDiagnostics child, a SessionDiagnosticsVariableType with DataType
+   * SessionDiagnosticsDataType.
    *
-   * @param value the {@link NodeId[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeCurrentRoleIds(NodeId[] value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readCurrentRoleIds}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends NodeId[]> readCurrentRoleIdsAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeCurrentRoleIds}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeCurrentRoleIdsAsync(NodeId[] value);
-
-  /**
-   * Get the CurrentRoleIds {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the CurrentRoleIds {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getCurrentRoleIdsNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getCurrentRoleIdsNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getCurrentRoleIdsNodeAsync();
-
-  /**
-   * Get the local value of the SessionDiagnostics Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SessionDiagnostics Node.
-   * @throws UaException if an error occurs creating or getting the SessionDiagnostics Node.
-   */
-  SessionDiagnosticsDataType getSessionDiagnostics() throws UaException;
-
-  /**
-   * Set the local value of the SessionDiagnostics Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SessionDiagnostics Node.
-   * @throws UaException if an error occurs creating or getting the SessionDiagnostics Node.
-   */
-  void setSessionDiagnostics(SessionDiagnosticsDataType value) throws UaException;
-
-  /**
-   * Read the value of the SessionDiagnostics Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link SessionDiagnosticsDataType} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  SessionDiagnosticsDataType readSessionDiagnostics() throws UaException;
-
-  /**
-   * Write a new value for the SessionDiagnostics Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link SessionDiagnosticsDataType} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeSessionDiagnostics(SessionDiagnosticsDataType value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readSessionDiagnostics}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends SessionDiagnosticsDataType> readSessionDiagnosticsAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeSessionDiagnostics}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeSessionDiagnosticsAsync(SessionDiagnosticsDataType value);
-
-  /**
-   * Get the SessionDiagnostics {@link SessionDiagnosticsVariableType} Node, or {@code null} if it
-   * does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SessionDiagnostics {@link SessionDiagnosticsVariableType} Node, or {@code null} if
-   *     it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.14">SessionDiagnosticsVariableType
+   *     documentation</a>
    */
   SessionDiagnosticsVariableType getSessionDiagnosticsNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getSessionDiagnosticsNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the SessionDiagnosticsVariableType
-   *     Node or completes exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getSessionDiagnosticsNode()}. */
   CompletableFuture<? extends SessionDiagnosticsVariableType> getSessionDiagnosticsNodeAsync();
 
   /**
-   * Get the local value of the SessionSecurityDiagnostics Node.
+   * Reads the Value of the SessionDiagnostics child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SessionSecurityDiagnostics Node.
-   * @throws UaException if an error occurs creating or getting the SessionSecurityDiagnostics Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  SessionSecurityDiagnosticsDataType getSessionSecurityDiagnostics() throws UaException;
+  @Nullable SessionDiagnosticsDataType readSessionDiagnostics() throws UaException;
 
   /**
-   * Set the local value of the SessionSecurityDiagnostics Node.
+   * Writes the Value of the SessionDiagnostics child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SessionSecurityDiagnostics Node.
-   * @throws UaException if an error occurs creating or getting the SessionSecurityDiagnostics Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setSessionSecurityDiagnostics(SessionSecurityDiagnosticsDataType value) throws UaException;
+  void writeSessionDiagnostics(@Nullable SessionDiagnosticsDataType value) throws UaException;
+
+  /** Asynchronous form of {@link #readSessionDiagnostics()}. */
+  CompletableFuture<? extends @Nullable SessionDiagnosticsDataType> readSessionDiagnosticsAsync();
+
+  /** Asynchronous form of {@link #writeSessionDiagnostics}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeSessionDiagnosticsAsync(
+      @Nullable SessionDiagnosticsDataType value);
 
   /**
-   * Read the value of the SessionSecurityDiagnostics Node from the server and update the local
-   * value if the operation succeeds.
+   * Resolves the mandatory SessionSecurityDiagnostics child, a SessionSecurityDiagnosticsType with
+   * DataType SessionSecurityDiagnosticsDataType.
    *
-   * @return the {@link SessionSecurityDiagnosticsDataType} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  SessionSecurityDiagnosticsDataType readSessionSecurityDiagnostics() throws UaException;
-
-  /**
-   * Write a new value for the SessionSecurityDiagnostics Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link SessionSecurityDiagnosticsDataType} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeSessionSecurityDiagnostics(SessionSecurityDiagnosticsDataType value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readSessionSecurityDiagnostics}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends SessionSecurityDiagnosticsDataType>
-      readSessionSecurityDiagnosticsAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeSessionSecurityDiagnostics}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeSessionSecurityDiagnosticsAsync(
-      SessionSecurityDiagnosticsDataType value);
-
-  /**
-   * Get the SessionSecurityDiagnostics {@link SessionSecurityDiagnosticsType} Node, or {@code null}
-   * if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SessionSecurityDiagnostics {@link SessionSecurityDiagnosticsType} Node, or {@code
-   *     null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.16">SessionSecurityDiagnosticsType
+   *     documentation</a>
    */
   SessionSecurityDiagnosticsType getSessionSecurityDiagnosticsNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getSessionSecurityDiagnosticsNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the SessionSecurityDiagnosticsType
-   *     Node or completes exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getSessionSecurityDiagnosticsNode()}. */
   CompletableFuture<? extends SessionSecurityDiagnosticsType>
       getSessionSecurityDiagnosticsNodeAsync();
 
   /**
-   * Get the local value of the SubscriptionDiagnosticsArray Node.
+   * Reads the Value of the SessionSecurityDiagnostics child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SubscriptionDiagnosticsArray Node.
-   * @throws UaException if an error occurs creating or getting the SubscriptionDiagnosticsArray
-   *     Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  SubscriptionDiagnosticsDataType[] getSubscriptionDiagnosticsArray() throws UaException;
+  @Nullable SessionSecurityDiagnosticsDataType readSessionSecurityDiagnostics() throws UaException;
 
   /**
-   * Set the local value of the SubscriptionDiagnosticsArray Node.
+   * Writes the Value of the SessionSecurityDiagnostics child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SubscriptionDiagnosticsArray Node.
-   * @throws UaException if an error occurs creating or getting the SubscriptionDiagnosticsArray
-   *     Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setSubscriptionDiagnosticsArray(SubscriptionDiagnosticsDataType[] value) throws UaException;
-
-  /**
-   * Read the value of the SubscriptionDiagnosticsArray Node from the server and update the local
-   * value if the operation succeeds.
-   *
-   * @return the {@link SubscriptionDiagnosticsDataType[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  SubscriptionDiagnosticsDataType[] readSubscriptionDiagnosticsArray() throws UaException;
-
-  /**
-   * Write a new value for the SubscriptionDiagnosticsArray Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link SubscriptionDiagnosticsDataType[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeSubscriptionDiagnosticsArray(SubscriptionDiagnosticsDataType[] value)
+  void writeSessionSecurityDiagnostics(@Nullable SessionSecurityDiagnosticsDataType value)
       throws UaException;
 
-  /**
-   * An asynchronous implementation of {@link #readSubscriptionDiagnosticsArray}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends SubscriptionDiagnosticsDataType[]>
-      readSubscriptionDiagnosticsArrayAsync();
+  /** Asynchronous form of {@link #readSessionSecurityDiagnostics()}. */
+  CompletableFuture<? extends @Nullable SessionSecurityDiagnosticsDataType>
+      readSessionSecurityDiagnosticsAsync();
 
   /**
-   * An asynchronous implementation of {@link #writeSubscriptionDiagnosticsArray}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * Asynchronous form of {@link #writeSessionSecurityDiagnostics}; completes with the operation
+   * status.
    */
-  CompletableFuture<StatusCode> writeSubscriptionDiagnosticsArrayAsync(
-      SubscriptionDiagnosticsDataType[] value);
+  CompletableFuture<StatusCode> writeSessionSecurityDiagnosticsAsync(
+      @Nullable SessionSecurityDiagnosticsDataType value);
 
   /**
-   * Get the SubscriptionDiagnosticsArray {@link SubscriptionDiagnosticsArrayType} Node, or {@code
-   * null} if it does not exist.
+   * Resolves the mandatory SubscriptionDiagnosticsArray child, a SubscriptionDiagnosticsArrayType
+   * with DataType SubscriptionDiagnosticsDataType.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SubscriptionDiagnosticsArray {@link SubscriptionDiagnosticsArrayType} Node, or
-   *     {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.11">SubscriptionDiagnosticsArrayType
+   *     documentation</a>
    */
   SubscriptionDiagnosticsArrayType getSubscriptionDiagnosticsArrayNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getSubscriptionDiagnosticsArrayNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the
-   *     SubscriptionDiagnosticsArrayType Node or completes exceptionally if an error occurs
-   *     creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getSubscriptionDiagnosticsArrayNode()}. */
   CompletableFuture<? extends SubscriptionDiagnosticsArrayType>
       getSubscriptionDiagnosticsArrayNodeAsync();
+
+  /**
+   * Reads the Value of the SubscriptionDiagnosticsArray child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable SubscriptionDiagnosticsDataType @Nullable [] readSubscriptionDiagnosticsArray()
+      throws UaException;
+
+  /**
+   * Writes the Value of the SubscriptionDiagnosticsArray child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeSubscriptionDiagnosticsArray(
+      @Nullable SubscriptionDiagnosticsDataType @Nullable [] value) throws UaException;
+
+  /** Asynchronous form of {@link #readSubscriptionDiagnosticsArray()}. */
+  CompletableFuture<? extends @Nullable SubscriptionDiagnosticsDataType @Nullable []>
+      readSubscriptionDiagnosticsArrayAsync();
+
+  /**
+   * Asynchronous form of {@link #writeSubscriptionDiagnosticsArray}; completes with the operation
+   * status.
+   */
+  CompletableFuture<StatusCode> writeSubscriptionDiagnosticsArrayAsync(
+      @Nullable SubscriptionDiagnosticsDataType @Nullable [] value);
 }

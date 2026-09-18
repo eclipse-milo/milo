@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
@@ -19,514 +9,279 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.PortIdSubtype;
 import org.eclipse.milo.opcua.stack.core.types.structured.LldpManagementAddressTxPortType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.5.5">https://reference.opcfoundation.org/v105/Core/docs/Part22/5.5.5</a>
+ * Client API for the LldpPortInformationType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.5.5">Model
+ *     documentation</a>
  */
 public interface LldpPortInformationType extends BaseObjectType {
-  QualifiedProperty<String> IETF_BASE_NETWORK_INTERFACE_NAME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "IetfBaseNetworkInterfaceName",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 19009L);
 
-  QualifiedProperty<UByte[]> DEST_MAC_ADDRESS =
+  QualifiedProperty<PortIdSubtype> PortIdSubtype_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "DestMacAddress",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=3"),
-          1,
-          UByte[].class);
-
-  QualifiedProperty<PortIdSubtype> PORT_ID_SUBTYPE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "PortIdSubtype",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=18949"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 18949L),
           -1,
           PortIdSubtype.class);
 
-  QualifiedProperty<String> PORT_ID =
+  QualifiedProperty<UByte[]> DestMacAddress_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "PortId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+          Namespaces.OPC_UA,
+          "DestMacAddress",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 3L),
+          1,
+          UByte[].class);
 
-  QualifiedProperty<String> PORT_DESCRIPTION =
+  QualifiedProperty<String> PortDescription_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "PortDescription",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
           -1,
           String.class);
 
-  QualifiedProperty<LldpManagementAddressTxPortType[]> MANAGEMENT_ADDRESS_TX_PORT =
+  QualifiedProperty<LldpManagementAddressTxPortType[]> ManagementAddressTxPort_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "ManagementAddressTxPort",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=18953"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 18953L),
           1,
           LldpManagementAddressTxPortType[].class);
 
-  /**
-   * Get the local value of the IetfBaseNetworkInterfaceName Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the IetfBaseNetworkInterfaceName Node.
-   * @throws UaException if an error occurs creating or getting the IetfBaseNetworkInterfaceName
-   *     Node.
-   */
-  String getIetfBaseNetworkInterfaceName() throws UaException;
+  QualifiedProperty<String> IetfBaseNetworkInterfaceName_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "IetfBaseNetworkInterfaceName",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+          -1,
+          String.class);
+
+  QualifiedProperty<String> PortId_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA, "PortId", ExpandedNodeId.of(Namespaces.OPC_UA, 12L), -1, String.class);
 
   /**
-   * Set the local value of the IetfBaseNetworkInterfaceName Node.
+   * Resolves the mandatory PortIdSubtype child, a PropertyType with DataType PortIdSubtype.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the IetfBaseNetworkInterfaceName Node.
-   * @throws UaException if an error occurs creating or getting the IetfBaseNetworkInterfaceName
-   *     Node.
-   */
-  void setIetfBaseNetworkInterfaceName(String value) throws UaException;
-
-  /**
-   * Read the value of the IetfBaseNetworkInterfaceName Node from the server and update the local
-   * value if the operation succeeds.
-   *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String readIetfBaseNetworkInterfaceName() throws UaException;
-
-  /**
-   * Write a new value for the IetfBaseNetworkInterfaceName Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeIetfBaseNetworkInterfaceName(String value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readIetfBaseNetworkInterfaceName}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String> readIetfBaseNetworkInterfaceNameAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeIetfBaseNetworkInterfaceName}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeIetfBaseNetworkInterfaceNameAsync(String value);
-
-  /**
-   * Get the IetfBaseNetworkInterfaceName {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the IetfBaseNetworkInterfaceName {@link PropertyType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getIetfBaseNetworkInterfaceNameNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getIetfBaseNetworkInterfaceNameNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getIetfBaseNetworkInterfaceNameNodeAsync();
-
-  /**
-   * Get the local value of the DestMacAddress Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the DestMacAddress Node.
-   * @throws UaException if an error occurs creating or getting the DestMacAddress Node.
-   */
-  UByte[] getDestMacAddress() throws UaException;
-
-  /**
-   * Set the local value of the DestMacAddress Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the DestMacAddress Node.
-   * @throws UaException if an error occurs creating or getting the DestMacAddress Node.
-   */
-  void setDestMacAddress(UByte[] value) throws UaException;
-
-  /**
-   * Read the value of the DestMacAddress Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link UByte[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UByte[] readDestMacAddress() throws UaException;
-
-  /**
-   * Write a new value for the DestMacAddress Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link UByte[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeDestMacAddress(UByte[] value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readDestMacAddress}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UByte[]> readDestMacAddressAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeDestMacAddress}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeDestMacAddressAsync(UByte[] value);
-
-  /**
-   * Get the DestMacAddress {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the DestMacAddress {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getDestMacAddressNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getDestMacAddressNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getDestMacAddressNodeAsync();
-
-  /**
-   * Get the local value of the PortIdSubtype Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the PortIdSubtype Node.
-   * @throws UaException if an error occurs creating or getting the PortIdSubtype Node.
-   */
-  PortIdSubtype getPortIdSubtype() throws UaException;
-
-  /**
-   * Set the local value of the PortIdSubtype Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the PortIdSubtype Node.
-   * @throws UaException if an error occurs creating or getting the PortIdSubtype Node.
-   */
-  void setPortIdSubtype(PortIdSubtype value) throws UaException;
-
-  /**
-   * Read the value of the PortIdSubtype Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link PortIdSubtype} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  PortIdSubtype readPortIdSubtype() throws UaException;
-
-  /**
-   * Write a new value for the PortIdSubtype Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link PortIdSubtype} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writePortIdSubtype(PortIdSubtype value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readPortIdSubtype}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends PortIdSubtype> readPortIdSubtypeAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writePortIdSubtype}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writePortIdSubtypeAsync(PortIdSubtype value);
-
-  /**
-   * Get the PortIdSubtype {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the PortIdSubtype {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getPortIdSubtypeNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getPortIdSubtypeNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getPortIdSubtypeNode()}. */
   CompletableFuture<? extends PropertyType> getPortIdSubtypeNodeAsync();
 
   /**
-   * Get the local value of the PortId Node.
+   * Reads the Value of the PortIdSubtype child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the PortId Node.
-   * @throws UaException if an error occurs creating or getting the PortId Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  String getPortId() throws UaException;
+  @Nullable PortIdSubtype readPortIdSubtype() throws UaException;
 
   /**
-   * Set the local value of the PortId Node.
+   * Writes the Value of the PortIdSubtype child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the PortId Node.
-   * @throws UaException if an error occurs creating or getting the PortId Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setPortId(String value) throws UaException;
+  void writePortIdSubtype(@Nullable PortIdSubtype value) throws UaException;
+
+  /** Asynchronous form of {@link #readPortIdSubtype()}. */
+  CompletableFuture<? extends @Nullable PortIdSubtype> readPortIdSubtypeAsync();
+
+  /** Asynchronous form of {@link #writePortIdSubtype}; completes with the operation status. */
+  CompletableFuture<StatusCode> writePortIdSubtypeAsync(@Nullable PortIdSubtype value);
 
   /**
-   * Read the value of the PortId Node from the server and update the local value if the operation
-   * succeeds.
+   * Resolves the mandatory DestMacAddress child, a PropertyType with DataType Byte.
    *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  String readPortId() throws UaException;
+  PropertyType getDestMacAddressNode() throws UaException;
+
+  /** Asynchronous form of {@link #getDestMacAddressNode()}. */
+  CompletableFuture<? extends PropertyType> getDestMacAddressNodeAsync();
 
   /**
-   * Write a new value for the PortId Node to the server and update the local value if the operation
-   * succeeds.
+   * Reads the Value of the DestMacAddress child from the server.
    *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writePortId(String value) throws UaException;
+  UByte @Nullable [] readDestMacAddress() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readPortId}.
+   * Writes the Value of the DestMacAddress child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends String> readPortIdAsync();
+  void writeDestMacAddress(UByte @Nullable [] value) throws UaException;
+
+  /** Asynchronous form of {@link #readDestMacAddress()}. */
+  CompletableFuture<? extends UByte @Nullable []> readDestMacAddressAsync();
+
+  /** Asynchronous form of {@link #writeDestMacAddress}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeDestMacAddressAsync(UByte @Nullable [] value);
 
   /**
-   * An asynchronous implementation of {@link #writePortId}.
+   * Resolves the optional PortDescription child, a PropertyType with DataType String.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  CompletableFuture<StatusCode> writePortIdAsync(String value);
+  @Nullable PropertyType getPortDescriptionNode() throws UaException;
+
+  /** Asynchronous form of {@link #getPortDescriptionNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getPortDescriptionNodeAsync();
 
   /**
-   * Get the PortId {@link PropertyType} Node, or {@code null} if it does not exist.
+   * Reads the Value of the PortDescription child from the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable String readPortDescription() throws UaException;
+
+  /**
+   * Writes the Value of the PortDescription child to the server.
    *
-   * @return the PortId {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writePortDescription(@Nullable String value) throws UaException;
+
+  /** Asynchronous form of {@link #readPortDescription()}. */
+  CompletableFuture<? extends @Nullable String> readPortDescriptionAsync();
+
+  /** Asynchronous form of {@link #writePortDescription}; completes with the operation status. */
+  CompletableFuture<StatusCode> writePortDescriptionAsync(@Nullable String value);
+
+  /**
+   * Resolves the optional RemoteSystemsData child, a FolderType.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.6">FolderType
+   *     documentation</a>
+   */
+  @Nullable FolderType getRemoteSystemsDataNode() throws UaException;
+
+  /** Asynchronous form of {@link #getRemoteSystemsDataNode()}. */
+  CompletableFuture<? extends @Nullable FolderType> getRemoteSystemsDataNodeAsync();
+
+  /**
+   * Resolves the optional ManagementAddressTxPort child, a PropertyType with DataType
+   * LldpManagementAddressTxPortType.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyType getManagementAddressTxPortNode() throws UaException;
+
+  /** Asynchronous form of {@link #getManagementAddressTxPortNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getManagementAddressTxPortNodeAsync();
+
+  /**
+   * Reads the Value of the ManagementAddressTxPort child from the server.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable LldpManagementAddressTxPortType @Nullable [] readManagementAddressTxPort()
+      throws UaException;
+
+  /**
+   * Writes the Value of the ManagementAddressTxPort child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeManagementAddressTxPort(@Nullable LldpManagementAddressTxPortType @Nullable [] value)
+      throws UaException;
+
+  /** Asynchronous form of {@link #readManagementAddressTxPort()}. */
+  CompletableFuture<? extends @Nullable LldpManagementAddressTxPortType @Nullable []>
+      readManagementAddressTxPortAsync();
+
+  /**
+   * Asynchronous form of {@link #writeManagementAddressTxPort}; completes with the operation
+   * status.
+   */
+  CompletableFuture<StatusCode> writeManagementAddressTxPortAsync(
+      @Nullable LldpManagementAddressTxPortType @Nullable [] value);
+
+  /**
+   * Resolves the mandatory IetfBaseNetworkInterfaceName child, a PropertyType with DataType String.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getIetfBaseNetworkInterfaceNameNode() throws UaException;
+
+  /** Asynchronous form of {@link #getIetfBaseNetworkInterfaceNameNode()}. */
+  CompletableFuture<? extends PropertyType> getIetfBaseNetworkInterfaceNameNodeAsync();
+
+  /**
+   * Reads the Value of the IetfBaseNetworkInterfaceName child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable String readIetfBaseNetworkInterfaceName() throws UaException;
+
+  /**
+   * Writes the Value of the IetfBaseNetworkInterfaceName child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeIetfBaseNetworkInterfaceName(@Nullable String value) throws UaException;
+
+  /** Asynchronous form of {@link #readIetfBaseNetworkInterfaceName()}. */
+  CompletableFuture<? extends @Nullable String> readIetfBaseNetworkInterfaceNameAsync();
+
+  /**
+   * Asynchronous form of {@link #writeIetfBaseNetworkInterfaceName}; completes with the operation
+   * status.
+   */
+  CompletableFuture<StatusCode> writeIetfBaseNetworkInterfaceNameAsync(@Nullable String value);
+
+  /**
+   * Resolves the mandatory PortId child, a PropertyType with DataType String.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getPortIdNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getPortIdNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getPortIdNode()}. */
   CompletableFuture<? extends PropertyType> getPortIdNodeAsync();
 
   /**
-   * Get the local value of the PortDescription Node.
+   * Reads the Value of the PortId child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the PortDescription Node.
-   * @throws UaException if an error occurs creating or getting the PortDescription Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  String getPortDescription() throws UaException;
+  @Nullable String readPortId() throws UaException;
 
   /**
-   * Set the local value of the PortDescription Node.
+   * Writes the Value of the PortId child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the PortDescription Node.
-   * @throws UaException if an error occurs creating or getting the PortDescription Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setPortDescription(String value) throws UaException;
+  void writePortId(@Nullable String value) throws UaException;
 
-  /**
-   * Read the value of the PortDescription Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String readPortDescription() throws UaException;
+  /** Asynchronous form of {@link #readPortId()}. */
+  CompletableFuture<? extends @Nullable String> readPortIdAsync();
 
-  /**
-   * Write a new value for the PortDescription Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writePortDescription(String value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readPortDescription}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String> readPortDescriptionAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writePortDescription}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writePortDescriptionAsync(String value);
-
-  /**
-   * Get the PortDescription {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the PortDescription {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getPortDescriptionNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getPortDescriptionNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getPortDescriptionNodeAsync();
-
-  /**
-   * Get the local value of the ManagementAddressTxPort Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ManagementAddressTxPort Node.
-   * @throws UaException if an error occurs creating or getting the ManagementAddressTxPort Node.
-   */
-  LldpManagementAddressTxPortType[] getManagementAddressTxPort() throws UaException;
-
-  /**
-   * Set the local value of the ManagementAddressTxPort Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ManagementAddressTxPort Node.
-   * @throws UaException if an error occurs creating or getting the ManagementAddressTxPort Node.
-   */
-  void setManagementAddressTxPort(LldpManagementAddressTxPortType[] value) throws UaException;
-
-  /**
-   * Read the value of the ManagementAddressTxPort Node from the server and update the local value
-   * if the operation succeeds.
-   *
-   * @return the {@link LldpManagementAddressTxPortType[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  LldpManagementAddressTxPortType[] readManagementAddressTxPort() throws UaException;
-
-  /**
-   * Write a new value for the ManagementAddressTxPort Node to the server and update the local value
-   * if the operation succeeds.
-   *
-   * @param value the {@link LldpManagementAddressTxPortType[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeManagementAddressTxPort(LldpManagementAddressTxPortType[] value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readManagementAddressTxPort}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends LldpManagementAddressTxPortType[]> readManagementAddressTxPortAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeManagementAddressTxPort}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeManagementAddressTxPortAsync(
-      LldpManagementAddressTxPortType[] value);
-
-  /**
-   * Get the ManagementAddressTxPort {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ManagementAddressTxPort {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getManagementAddressTxPortNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getManagementAddressTxPortNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getManagementAddressTxPortNodeAsync();
-
-  /**
-   * Get the RemoteSystemsData {@link FolderType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the RemoteSystemsData {@link FolderType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  FolderType getRemoteSystemsDataNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getRemoteSystemsDataNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the FolderType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends FolderType> getRemoteSystemsDataNodeAsync();
+  /** Asynchronous form of {@link #writePortId}; completes with the operation status. */
+  CompletableFuture<StatusCode> writePortIdAsync(@Nullable String value);
 }

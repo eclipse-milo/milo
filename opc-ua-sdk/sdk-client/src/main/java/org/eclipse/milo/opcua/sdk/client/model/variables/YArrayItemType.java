@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.variables;
 
 import java.util.concurrent.CompletableFuture;
@@ -15,90 +5,77 @@ import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.structured.AxisInformation;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.4/#5.3.4.2">https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.4/#5.3.4.2</a>
+ * Client API for the YArrayItemType VariableType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.4/#5.3.4.2">Model
+ *     documentation</a>
  */
 public interface YArrayItemType extends ArrayItemType {
-  QualifiedProperty<AxisInformation> X_AXIS_DEFINITION =
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 12029L);
+
+  QualifiedProperty<AxisInformation> XAxisDefinition_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "XAxisDefinition",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12079"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12079L),
           -1,
           AxisInformation.class);
 
   /**
-   * Get the local value of the XAxisDefinition Node.
+   * Resolves the mandatory XAxisDefinition child, a PropertyType with DataType AxisInformation.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the XAxisDefinition Node.
-   * @throws UaException if an error occurs creating or getting the XAxisDefinition Node.
-   */
-  AxisInformation getXAxisDefinition() throws UaException;
-
-  /**
-   * Set the local value of the XAxisDefinition Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the XAxisDefinition Node.
-   * @throws UaException if an error occurs creating or getting the XAxisDefinition Node.
-   */
-  void setXAxisDefinition(AxisInformation value) throws UaException;
-
-  /**
-   * Read the value of the XAxisDefinition Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link AxisInformation} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  AxisInformation readXAxisDefinition() throws UaException;
-
-  /**
-   * Write a new value for the XAxisDefinition Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link AxisInformation} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeXAxisDefinition(AxisInformation value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readXAxisDefinition}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends AxisInformation> readXAxisDefinitionAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeXAxisDefinition}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeXAxisDefinitionAsync(AxisInformation value);
-
-  /**
-   * Get the XAxisDefinition {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the XAxisDefinition {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getXAxisDefinitionNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getXAxisDefinitionNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getXAxisDefinitionNode()}. */
   CompletableFuture<? extends PropertyType> getXAxisDefinitionNodeAsync();
+
+  /**
+   * Reads the Value of the XAxisDefinition child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable AxisInformation readXAxisDefinition() throws UaException;
+
+  /**
+   * Writes the Value of the XAxisDefinition child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeXAxisDefinition(@Nullable AxisInformation value) throws UaException;
+
+  /** Asynchronous form of {@link #readXAxisDefinition()}. */
+  CompletableFuture<? extends @Nullable AxisInformation> readXAxisDefinitionAsync();
+
+  /** Asynchronous form of {@link #writeXAxisDefinition}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeXAxisDefinitionAsync(@Nullable AxisInformation value);
+
+  /**
+   * Reads the Value of this node from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable Variant @Nullable [] readYArrayItemValue() throws UaException;
+
+  /**
+   * Writes the Value of this node to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeYArrayItemValue(@Nullable Variant @Nullable [] value) throws UaException;
+
+  /** Asynchronous form of {@link #readYArrayItemValue()}. */
+  CompletableFuture<? extends @Nullable Variant @Nullable []> readYArrayItemValueAsync();
+
+  /** Asynchronous form of {@link #writeYArrayItemValue}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeYArrayItemValueAsync(@Nullable Variant @Nullable [] value);
 }

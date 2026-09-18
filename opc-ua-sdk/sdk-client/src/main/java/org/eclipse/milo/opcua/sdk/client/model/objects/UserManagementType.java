@@ -1,17 +1,10 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallOptions;
+import org.eclipse.milo.opcua.sdk.client.methods.MethodCallResult;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.client.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
@@ -19,331 +12,443 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.structured.PasswordOptionsMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.Range;
+import org.eclipse.milo.opcua.stack.core.types.structured.UserConfigurationMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserManagementDataType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.1">https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.1</a>
+ * Client API for the UserManagementType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.1">Model
+ *     documentation</a>
  */
 public interface UserManagementType extends BaseObjectType {
-  QualifiedProperty<UserManagementDataType[]> USERS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Users",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24281"),
-          1,
-          UserManagementDataType[].class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 24264L);
 
-  QualifiedProperty<Range> PASSWORD_LENGTH =
+  QualifiedProperty<Range> PasswordLength_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "PasswordLength",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=884"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 884L),
           -1,
           Range.class);
 
-  QualifiedProperty<PasswordOptionsMask> PASSWORD_OPTIONS =
+  QualifiedProperty<PasswordOptionsMask> PasswordOptions_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "PasswordOptions",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24277"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 24277L),
           -1,
           PasswordOptionsMask.class);
 
-  QualifiedProperty<LocalizedText> PASSWORD_RESTRICTIONS =
+  QualifiedProperty<LocalizedText> PasswordRestrictions_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "PasswordRestrictions",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 21L),
           -1,
           LocalizedText.class);
 
-  /**
-   * Get the local value of the Users Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the Users Node.
-   * @throws UaException if an error occurs creating or getting the Users Node.
-   */
-  UserManagementDataType[] getUsers() throws UaException;
+  QualifiedProperty<UserManagementDataType[]> Users_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "Users",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 24281L),
+          1,
+          UserManagementDataType[].class);
 
   /**
-   * Set the local value of the Users Node.
+   * Resolves the mandatory PasswordLength child, a PropertyType with DataType Range.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the Users Node.
-   * @throws UaException if an error occurs creating or getting the Users Node.
-   */
-  void setUsers(UserManagementDataType[] value) throws UaException;
-
-  /**
-   * Read the value of the Users Node from the server and update the local value if the operation
-   * succeeds.
-   *
-   * @return the {@link UserManagementDataType[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  UserManagementDataType[] readUsers() throws UaException;
-
-  /**
-   * Write a new value for the Users Node to the server and update the local value if the operation
-   * succeeds.
-   *
-   * @param value the {@link UserManagementDataType[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeUsers(UserManagementDataType[] value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readUsers}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends UserManagementDataType[]> readUsersAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeUsers}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeUsersAsync(UserManagementDataType[] value);
-
-  /**
-   * Get the Users {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the Users {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getUsersNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getUsersNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getUsersNodeAsync();
-
-  /**
-   * Get the local value of the PasswordLength Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the PasswordLength Node.
-   * @throws UaException if an error occurs creating or getting the PasswordLength Node.
-   */
-  Range getPasswordLength() throws UaException;
-
-  /**
-   * Set the local value of the PasswordLength Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the PasswordLength Node.
-   * @throws UaException if an error occurs creating or getting the PasswordLength Node.
-   */
-  void setPasswordLength(Range value) throws UaException;
-
-  /**
-   * Read the value of the PasswordLength Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link Range} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  Range readPasswordLength() throws UaException;
-
-  /**
-   * Write a new value for the PasswordLength Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link Range} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writePasswordLength(Range value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readPasswordLength}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends Range> readPasswordLengthAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writePasswordLength}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writePasswordLengthAsync(Range value);
-
-  /**
-   * Get the PasswordLength {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the PasswordLength {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getPasswordLengthNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getPasswordLengthNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getPasswordLengthNode()}. */
   CompletableFuture<? extends PropertyType> getPasswordLengthNodeAsync();
 
   /**
-   * Get the local value of the PasswordOptions Node.
+   * Reads the Value of the PasswordLength child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the PasswordOptions Node.
-   * @throws UaException if an error occurs creating or getting the PasswordOptions Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  PasswordOptionsMask getPasswordOptions() throws UaException;
+  @Nullable Range readPasswordLength() throws UaException;
 
   /**
-   * Set the local value of the PasswordOptions Node.
+   * Writes the Value of the PasswordLength child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the PasswordOptions Node.
-   * @throws UaException if an error occurs creating or getting the PasswordOptions Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setPasswordOptions(PasswordOptionsMask value) throws UaException;
+  void writePasswordLength(@Nullable Range value) throws UaException;
+
+  /** Asynchronous form of {@link #readPasswordLength()}. */
+  CompletableFuture<? extends @Nullable Range> readPasswordLengthAsync();
+
+  /** Asynchronous form of {@link #writePasswordLength}; completes with the operation status. */
+  CompletableFuture<StatusCode> writePasswordLengthAsync(@Nullable Range value);
 
   /**
-   * Read the value of the PasswordOptions Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the mandatory PasswordOptions child, a PropertyType with DataType PasswordOptionsMask.
    *
-   * @return the {@link PasswordOptionsMask} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  PasswordOptionsMask readPasswordOptions() throws UaException;
-
-  /**
-   * Write a new value for the PasswordOptions Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link PasswordOptionsMask} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writePasswordOptions(PasswordOptionsMask value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readPasswordOptions}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends PasswordOptionsMask> readPasswordOptionsAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writePasswordOptions}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writePasswordOptionsAsync(PasswordOptionsMask value);
-
-  /**
-   * Get the PasswordOptions {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the PasswordOptions {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getPasswordOptionsNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getPasswordOptionsNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getPasswordOptionsNode()}. */
   CompletableFuture<? extends PropertyType> getPasswordOptionsNodeAsync();
 
   /**
-   * Get the local value of the PasswordRestrictions Node.
+   * Reads the Value of the PasswordOptions child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the PasswordRestrictions Node.
-   * @throws UaException if an error occurs creating or getting the PasswordRestrictions Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  LocalizedText getPasswordRestrictions() throws UaException;
+  @Nullable PasswordOptionsMask readPasswordOptions() throws UaException;
 
   /**
-   * Set the local value of the PasswordRestrictions Node.
+   * Writes the Value of the PasswordOptions child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the PasswordRestrictions Node.
-   * @throws UaException if an error occurs creating or getting the PasswordRestrictions Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setPasswordRestrictions(LocalizedText value) throws UaException;
+  void writePasswordOptions(@Nullable PasswordOptionsMask value) throws UaException;
+
+  /** Asynchronous form of {@link #readPasswordOptions()}. */
+  CompletableFuture<? extends @Nullable PasswordOptionsMask> readPasswordOptionsAsync();
+
+  /** Asynchronous form of {@link #writePasswordOptions}; completes with the operation status. */
+  CompletableFuture<StatusCode> writePasswordOptionsAsync(@Nullable PasswordOptionsMask value);
 
   /**
-   * Read the value of the PasswordRestrictions Node from the server and update the local value if
-   * the operation succeeds.
+   * Resolves the optional PasswordRestrictions child, a PropertyType with DataType LocalizedText.
    *
-   * @return the {@link LocalizedText} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  LocalizedText readPasswordRestrictions() throws UaException;
+  @Nullable PropertyType getPasswordRestrictionsNode() throws UaException;
+
+  /** Asynchronous form of {@link #getPasswordRestrictionsNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getPasswordRestrictionsNodeAsync();
 
   /**
-   * Write a new value for the PasswordRestrictions Node to the server and update the local value if
-   * the operation succeeds.
+   * Reads the Value of the PasswordRestrictions child from the server.
    *
-   * @param value the {@link LocalizedText} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writePasswordRestrictions(LocalizedText value) throws UaException;
+  @Nullable LocalizedText readPasswordRestrictions() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readPasswordRestrictions}.
+   * Writes the Value of the PasswordRestrictions child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends LocalizedText> readPasswordRestrictionsAsync();
+  void writePasswordRestrictions(@Nullable LocalizedText value) throws UaException;
+
+  /** Asynchronous form of {@link #readPasswordRestrictions()}. */
+  CompletableFuture<? extends @Nullable LocalizedText> readPasswordRestrictionsAsync();
 
   /**
-   * An asynchronous implementation of {@link #writePasswordRestrictions}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * Asynchronous form of {@link #writePasswordRestrictions}; completes with the operation status.
    */
-  CompletableFuture<StatusCode> writePasswordRestrictionsAsync(LocalizedText value);
+  CompletableFuture<StatusCode> writePasswordRestrictionsAsync(@Nullable LocalizedText value);
 
   /**
-   * Get the PasswordRestrictions {@link PropertyType} Node, or {@code null} if it does not exist.
+   * Resolves the mandatory Users child, a PropertyType with DataType UserManagementDataType.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the PasswordRestrictions {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  PropertyType getPasswordRestrictionsNode() throws UaException;
+  PropertyType getUsersNode() throws UaException;
+
+  /** Asynchronous form of {@link #getUsersNode()}. */
+  CompletableFuture<? extends PropertyType> getUsersNodeAsync();
 
   /**
-   * Asynchronous implementation of {@link #getPasswordRestrictionsNode()}.
+   * Reads the Value of the Users child from the server.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends PropertyType> getPasswordRestrictionsNodeAsync();
+  @Nullable UserManagementDataType @Nullable [] readUsers() throws UaException;
+
+  /**
+   * Writes the Value of the Users child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeUsers(@Nullable UserManagementDataType @Nullable [] value) throws UaException;
+
+  /** Asynchronous form of {@link #readUsers()}. */
+  CompletableFuture<? extends @Nullable UserManagementDataType @Nullable []> readUsersAsync();
+
+  /** Asynchronous form of {@link #writeUsers}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeUsersAsync(
+      @Nullable UserManagementDataType @Nullable [] value);
+
+  /**
+   * Resolves the mandatory AddUser Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.5">Model
+   *     documentation</a>
+   */
+  UaMethodNode getAddUserMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getAddUserMethodNode()}. */
+  CompletableFuture<UaMethodNode> getAddUserMethodNodeAsync();
+
+  /**
+   * Calls the AddUser Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.5">Model
+   *     documentation</a>
+   */
+  void addUser(
+      @Nullable String userName,
+      @Nullable String password,
+      @Nullable UserConfigurationMask userConfiguration,
+      @Nullable String description)
+      throws UaException;
+
+  /**
+   * Calls the AddUser Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callAddUser(
+      @Nullable String userName,
+      @Nullable String password,
+      @Nullable UserConfigurationMask userConfiguration,
+      @Nullable String description)
+      throws UaException;
+
+  /**
+   * Calls the AddUser Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callAddUserWith(
+      MethodCallOptions options,
+      @Nullable String userName,
+      @Nullable String password,
+      @Nullable UserConfigurationMask userConfiguration,
+      @Nullable String description)
+      throws UaException;
+
+  /** Asynchronous form of {@link #addUser}. */
+  CompletableFuture<Void> addUserAsync(
+      @Nullable String userName,
+      @Nullable String password,
+      @Nullable UserConfigurationMask userConfiguration,
+      @Nullable String description);
+
+  /** Asynchronous form of {@link #callAddUser}. */
+  CompletableFuture<MethodCallResult<Void>> callAddUserAsync(
+      @Nullable String userName,
+      @Nullable String password,
+      @Nullable UserConfigurationMask userConfiguration,
+      @Nullable String description);
+
+  /** Asynchronous form of {@link #callAddUserWith}. */
+  CompletableFuture<MethodCallResult<Void>> callAddUserWithAsync(
+      MethodCallOptions options,
+      @Nullable String userName,
+      @Nullable String password,
+      @Nullable UserConfigurationMask userConfiguration,
+      @Nullable String description);
+
+  /**
+   * Resolves the mandatory ChangePassword Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.8">Model
+   *     documentation</a>
+   */
+  UaMethodNode getChangePasswordMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getChangePasswordMethodNode()}. */
+  CompletableFuture<UaMethodNode> getChangePasswordMethodNodeAsync();
+
+  /**
+   * Calls the ChangePassword Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.8">Model
+   *     documentation</a>
+   */
+  void changePassword(@Nullable String oldPassword, @Nullable String newPassword)
+      throws UaException;
+
+  /**
+   * Calls the ChangePassword Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callChangePassword(
+      @Nullable String oldPassword, @Nullable String newPassword) throws UaException;
+
+  /**
+   * Calls the ChangePassword Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callChangePasswordWith(
+      MethodCallOptions options, @Nullable String oldPassword, @Nullable String newPassword)
+      throws UaException;
+
+  /** Asynchronous form of {@link #changePassword}. */
+  CompletableFuture<Void> changePasswordAsync(
+      @Nullable String oldPassword, @Nullable String newPassword);
+
+  /** Asynchronous form of {@link #callChangePassword}. */
+  CompletableFuture<MethodCallResult<Void>> callChangePasswordAsync(
+      @Nullable String oldPassword, @Nullable String newPassword);
+
+  /** Asynchronous form of {@link #callChangePasswordWith}. */
+  CompletableFuture<MethodCallResult<Void>> callChangePasswordWithAsync(
+      MethodCallOptions options, @Nullable String oldPassword, @Nullable String newPassword);
+
+  /**
+   * Resolves the mandatory ModifyUser Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.6">Model
+   *     documentation</a>
+   */
+  UaMethodNode getModifyUserMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getModifyUserMethodNode()}. */
+  CompletableFuture<UaMethodNode> getModifyUserMethodNodeAsync();
+
+  /**
+   * Calls the ModifyUser Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.6">Model
+   *     documentation</a>
+   */
+  void modifyUser(
+      @Nullable String userName,
+      @Nullable Boolean modifyPassword,
+      @Nullable String password,
+      @Nullable Boolean modifyUserConfiguration,
+      @Nullable UserConfigurationMask userConfiguration,
+      @Nullable Boolean modifyDescription,
+      @Nullable String description)
+      throws UaException;
+
+  /**
+   * Calls the ModifyUser Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callModifyUser(
+      @Nullable String userName,
+      @Nullable Boolean modifyPassword,
+      @Nullable String password,
+      @Nullable Boolean modifyUserConfiguration,
+      @Nullable UserConfigurationMask userConfiguration,
+      @Nullable Boolean modifyDescription,
+      @Nullable String description)
+      throws UaException;
+
+  /**
+   * Calls the ModifyUser Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callModifyUserWith(
+      MethodCallOptions options,
+      @Nullable String userName,
+      @Nullable Boolean modifyPassword,
+      @Nullable String password,
+      @Nullable Boolean modifyUserConfiguration,
+      @Nullable UserConfigurationMask userConfiguration,
+      @Nullable Boolean modifyDescription,
+      @Nullable String description)
+      throws UaException;
+
+  /** Asynchronous form of {@link #modifyUser}. */
+  CompletableFuture<Void> modifyUserAsync(
+      @Nullable String userName,
+      @Nullable Boolean modifyPassword,
+      @Nullable String password,
+      @Nullable Boolean modifyUserConfiguration,
+      @Nullable UserConfigurationMask userConfiguration,
+      @Nullable Boolean modifyDescription,
+      @Nullable String description);
+
+  /** Asynchronous form of {@link #callModifyUser}. */
+  CompletableFuture<MethodCallResult<Void>> callModifyUserAsync(
+      @Nullable String userName,
+      @Nullable Boolean modifyPassword,
+      @Nullable String password,
+      @Nullable Boolean modifyUserConfiguration,
+      @Nullable UserConfigurationMask userConfiguration,
+      @Nullable Boolean modifyDescription,
+      @Nullable String description);
+
+  /** Asynchronous form of {@link #callModifyUserWith}. */
+  CompletableFuture<MethodCallResult<Void>> callModifyUserWithAsync(
+      MethodCallOptions options,
+      @Nullable String userName,
+      @Nullable Boolean modifyPassword,
+      @Nullable String password,
+      @Nullable Boolean modifyUserConfiguration,
+      @Nullable UserConfigurationMask userConfiguration,
+      @Nullable Boolean modifyDescription,
+      @Nullable String description);
+
+  /**
+   * Resolves the mandatory RemoveUser Method node.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.7">Model
+   *     documentation</a>
+   */
+  UaMethodNode getRemoveUserMethodNode() throws UaException;
+
+  /** Asynchronous form of {@link #getRemoveUserMethodNode()}. */
+  CompletableFuture<UaMethodNode> getRemoveUserMethodNodeAsync();
+
+  /**
+   * Calls the RemoveUser Method and returns its outputs; requires a Good result.
+   *
+   * @throws UaException if lookup, transport or conversion fails or the result is not Good.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.7">Model
+   *     documentation</a>
+   */
+  void removeUser(@Nullable String userName) throws UaException;
+
+  /**
+   * Calls the RemoveUser Method and returns the complete result, including a Bad status.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callRemoveUser(@Nullable String userName) throws UaException;
+
+  /**
+   * Calls the RemoveUser Method with explicit options and returns the complete result.
+   *
+   * @throws UaException if lookup, transport or conversion fails.
+   */
+  MethodCallResult<Void> callRemoveUserWith(MethodCallOptions options, @Nullable String userName)
+      throws UaException;
+
+  /** Asynchronous form of {@link #removeUser}. */
+  CompletableFuture<Void> removeUserAsync(@Nullable String userName);
+
+  /** Asynchronous form of {@link #callRemoveUser}. */
+  CompletableFuture<MethodCallResult<Void>> callRemoveUserAsync(@Nullable String userName);
+
+  /** Asynchronous form of {@link #callRemoveUserWith}. */
+  CompletableFuture<MethodCallResult<Void>> callRemoveUserWithAsync(
+      MethodCallOptions options, @Nullable String userName);
 }

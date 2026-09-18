@@ -1,38 +1,30 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyTypeNode;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.DeleteReferencesItem;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link AuditDeleteReferencesEventType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.23">Model
+ *     documentation</a>
+ */
 public class AuditDeleteReferencesEventTypeNode extends AuditNodeManagementEventTypeNode
     implements AuditDeleteReferencesEventType {
   public AuditDeleteReferencesEventTypeNode(
@@ -41,12 +33,12 @@ public class AuditDeleteReferencesEventTypeNode extends AuditNodeManagementEvent
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         client,
@@ -64,83 +56,79 @@ public class AuditDeleteReferencesEventTypeNode extends AuditNodeManagementEvent
   }
 
   @Override
-  public DeleteReferencesItem[] getReferencesToDelete() throws UaException {
-    PropertyTypeNode node = getReferencesToDeleteNode();
-    return cast(node.getValue().getValue().getValue(), DeleteReferencesItem[].class);
-  }
-
-  @Override
-  public void setReferencesToDelete(DeleteReferencesItem[] value) throws UaException {
-    PropertyTypeNode node = getReferencesToDeleteNode();
-    ExtensionObject[] encoded =
-        ExtensionObject.encodeArray(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
-  }
-
-  @Override
-  public DeleteReferencesItem[] readReferencesToDelete() throws UaException {
-    try {
-      return readReferencesToDeleteAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeReferencesToDelete(DeleteReferencesItem[] value) throws UaException {
-    try {
-      StatusCode statusCode = writeReferencesToDeleteAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends DeleteReferencesItem[]> readReferencesToDeleteAsync() {
-    return getReferencesToDeleteNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), DeleteReferencesItem[].class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeReferencesToDeleteAsync(
-      DeleteReferencesItem[] referencesToDelete) {
-    ExtensionObject[] encoded =
-        ExtensionObject.encodeArray(client.getStaticEncodingContext(), referencesToDelete);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getReferencesToDeleteNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
   public PropertyTypeNode getReferencesToDeleteNode() throws UaException {
-    try {
-      return getReferencesToDeleteNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getReferencesToDeleteNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends PropertyTypeNode> getReferencesToDeleteNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "ReferencesToDelete",
-            ExpandedNodeId.parse("i=46"),
-            false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "ReferencesToDelete",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
+  }
+
+  @Override
+  public @Nullable DeleteReferencesItem @Nullable [] readReferencesToDelete() throws UaException {
+    return ClientNodeSupport.await(readReferencesToDeleteAsync());
+  }
+
+  @Override
+  public void writeReferencesToDelete(@Nullable DeleteReferencesItem @Nullable [] value)
+      throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeReferencesToDeleteAsync(value)),
+        "http://opcfoundation.org/UA/}ReferencesToDelete");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable DeleteReferencesItem @Nullable []>
+      readReferencesToDeleteAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getReferencesToDeleteNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}ReferencesToDelete",
+                            true,
+                            DeleteReferencesItem.class,
+                            1,
+                            null)),
+                v ->
+                    CompletableFuture.completedFuture(
+                        (@Nullable DeleteReferencesItem @Nullable []) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeReferencesToDeleteAsync(
+      @Nullable DeleteReferencesItem @Nullable [] value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getReferencesToDeleteNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}ReferencesToDelete",
+                        value,
+                        DeleteReferencesItem.class,
+                        1,
+                        null)));
   }
 }

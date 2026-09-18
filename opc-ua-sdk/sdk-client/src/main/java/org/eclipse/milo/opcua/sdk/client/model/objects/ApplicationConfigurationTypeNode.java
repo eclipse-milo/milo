@@ -1,37 +1,29 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyTypeNode;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
-import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link ApplicationConfigurationType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.14">Model
+ *     documentation</a>
+ */
 public class ApplicationConfigurationTypeNode extends ServerConfigurationTypeNode
     implements ApplicationConfigurationType {
   public ApplicationConfigurationTypeNode(
@@ -40,12 +32,12 @@ public class ApplicationConfigurationTypeNode extends ServerConfigurationTypeNod
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         client,
@@ -63,432 +55,259 @@ public class ApplicationConfigurationTypeNode extends ServerConfigurationTypeNod
   }
 
   @Override
-  public String getApplicationUri() throws UaException {
-    PropertyTypeNode node = getApplicationUriNode();
-    return (String) node.getValue().getValue().getValue();
-  }
-
-  @Override
-  public void setApplicationUri(String value) throws UaException {
-    PropertyTypeNode node = getApplicationUriNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public String readApplicationUri() throws UaException {
-    try {
-      return readApplicationUriAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeApplicationUri(String value) throws UaException {
-    try {
-      StatusCode statusCode = writeApplicationUriAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends String> readApplicationUriAsync() {
-    return getApplicationUriNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (String) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeApplicationUriAsync(String applicationUri) {
-    DataValue value = DataValue.valueOnly(new Variant(applicationUri));
-    return getApplicationUriNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public PropertyTypeNode getApplicationUriNode() throws UaException {
-    try {
-      return getApplicationUriNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends PropertyTypeNode> getApplicationUriNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "ApplicationUri", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
-  }
-
-  @Override
-  public String getProductUri() throws UaException {
-    PropertyTypeNode node = getProductUriNode();
-    return (String) node.getValue().getValue().getValue();
-  }
-
-  @Override
-  public void setProductUri(String value) throws UaException {
-    PropertyTypeNode node = getProductUriNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public String readProductUri() throws UaException {
-    try {
-      return readProductUriAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeProductUri(String value) throws UaException {
-    try {
-      StatusCode statusCode = writeProductUriAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends String> readProductUriAsync() {
-    return getProductUriNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (String) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeProductUriAsync(String productUri) {
-    DataValue value = DataValue.valueOnly(new Variant(productUri));
-    return getProductUriNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
   public PropertyTypeNode getProductUriNode() throws UaException {
-    try {
-      return getProductUriNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getProductUriNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends PropertyTypeNode> getProductUriNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "ProductUri", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "ProductUri",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public ApplicationType getApplicationType() throws UaException {
-    PropertyTypeNode node = getApplicationTypeNode();
-    Object value = node.getValue().getValue().getValue();
-
-    if (value instanceof Integer) {
-      return ApplicationType.from((Integer) value);
-    } else if (value instanceof ApplicationType) {
-      return (ApplicationType) value;
-    } else {
-      return null;
-    }
+  public PropertyTypeNode getApplicationUriNode() throws UaException {
+    return ClientNodeSupport.await(getApplicationUriNodeAsync());
   }
 
   @Override
-  public void setApplicationType(ApplicationType value) throws UaException {
-    PropertyTypeNode node = getApplicationTypeNode();
-    node.setValue(new Variant(value));
+  public CompletableFuture<? extends PropertyTypeNode> getApplicationUriNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "ApplicationUri",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public ApplicationType readApplicationType() throws UaException {
-    try {
-      return readApplicationTypeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable KeyCredentialConfigurationFolderTypeNode getKeyCredentialsNode()
+      throws UaException {
+    return ClientNodeSupport.await(getKeyCredentialsNodeAsync());
   }
 
   @Override
-  public void writeApplicationType(ApplicationType value) throws UaException {
-    try {
-      StatusCode statusCode = writeApplicationTypeAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends ApplicationType> readApplicationTypeAsync() {
-    return getApplicationTypeNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(
-            v -> {
-              Object value = v.getValue().getValue();
-              if (value instanceof Integer) {
-                return ApplicationType.from((Integer) value);
-              } else {
-                return null;
-              }
-            });
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeApplicationTypeAsync(ApplicationType applicationType) {
-    DataValue value = DataValue.valueOnly(new Variant(applicationType));
-    return getApplicationTypeNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<? extends @Nullable KeyCredentialConfigurationFolderTypeNode>
+      getKeyCredentialsNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "KeyCredentials",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Object,
+                        KeyCredentialConfigurationFolderTypeNode.class)));
   }
 
   @Override
   public PropertyTypeNode getApplicationTypeNode() throws UaException {
-    try {
-      return getApplicationTypeNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getApplicationTypeNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends PropertyTypeNode> getApplicationTypeNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "ApplicationType", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "ApplicationType",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public Boolean getEnabled() throws UaException {
-    PropertyTypeNode node = getEnabledNode();
-    return (Boolean) node.getValue().getValue().getValue();
+  public @Nullable PropertyTypeNode getIsNonUaApplicationNode() throws UaException {
+    return ClientNodeSupport.await(getIsNonUaApplicationNodeAsync());
   }
 
   @Override
-  public void setEnabled(Boolean value) throws UaException {
-    PropertyTypeNode node = getEnabledNode();
-    node.setValue(new Variant(value));
+  public CompletableFuture<? extends @Nullable PropertyTypeNode> getIsNonUaApplicationNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "IsNonUaApplication",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public Boolean readEnabled() throws UaException {
-    try {
-      return readEnabledAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable Boolean readIsNonUaApplication() throws UaException {
+    return ClientNodeSupport.await(readIsNonUaApplicationAsync());
   }
 
   @Override
-  public void writeEnabled(Boolean value) throws UaException {
-    try {
-      StatusCode statusCode = writeEnabledAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public void writeIsNonUaApplication(@Nullable Boolean value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeIsNonUaApplicationAsync(value)),
+        "http://opcfoundation.org/UA/}IsNonUaApplication");
   }
 
   @Override
-  public CompletableFuture<? extends Boolean> readEnabledAsync() {
-    return getEnabledNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (Boolean) v.getValue().getValue());
+  public CompletableFuture<? extends @Nullable Boolean> readIsNonUaApplicationAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getIsNonUaApplicationNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}IsNonUaApplication",
+                            false,
+                            Boolean.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable Boolean) v)));
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeEnabledAsync(Boolean enabled) {
-    DataValue value = DataValue.valueOnly(new Variant(enabled));
-    return getEnabledNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<StatusCode> writeIsNonUaApplicationAsync(@Nullable Boolean value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getIsNonUaApplicationNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}IsNonUaApplication",
+                        value,
+                        Boolean.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public @Nullable AuthorizationServicesConfigurationFolderTypeNode getAuthorizationServicesNode()
+      throws UaException {
+    return ClientNodeSupport.await(getAuthorizationServicesNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable AuthorizationServicesConfigurationFolderTypeNode>
+      getAuthorizationServicesNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "AuthorizationServices",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+                        NodeClass.Object,
+                        AuthorizationServicesConfigurationFolderTypeNode.class)));
   }
 
   @Override
   public PropertyTypeNode getEnabledNode() throws UaException {
-    try {
-      return getEnabledNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientNodeSupport.await(getEnabledNodeAsync());
   }
 
   @Override
   public CompletableFuture<? extends PropertyTypeNode> getEnabledNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Enabled", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.mandatoryChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "Enabled",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public Boolean getIsNonUaApplication() throws UaException {
-    PropertyTypeNode node = getIsNonUaApplicationNode();
-    return (Boolean) node.getValue().getValue().getValue();
+  public @Nullable Boolean readEnabled() throws UaException {
+    return ClientNodeSupport.await(readEnabledAsync());
   }
 
   @Override
-  public void setIsNonUaApplication(Boolean value) throws UaException {
-    PropertyTypeNode node = getIsNonUaApplicationNode();
-    node.setValue(new Variant(value));
+  public void writeEnabled(@Nullable Boolean value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeEnabledAsync(value)), "http://opcfoundation.org/UA/}Enabled");
   }
 
   @Override
-  public Boolean readIsNonUaApplication() throws UaException {
-    try {
-      return readIsNonUaApplicationAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable Boolean> readEnabledAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getEnabledNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}Enabled",
+                            true,
+                            Boolean.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable Boolean) v)));
   }
 
   @Override
-  public void writeIsNonUaApplication(Boolean value) throws UaException {
-    try {
-      StatusCode statusCode = writeIsNonUaApplicationAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends Boolean> readIsNonUaApplicationAsync() {
-    return getIsNonUaApplicationNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (Boolean) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeIsNonUaApplicationAsync(Boolean isNonUaApplication) {
-    DataValue value = DataValue.valueOnly(new Variant(isNonUaApplication));
-    return getIsNonUaApplicationNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public PropertyTypeNode getIsNonUaApplicationNode() throws UaException {
-    try {
-      return getIsNonUaApplicationNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends PropertyTypeNode> getIsNonUaApplicationNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "IsNonUaApplication",
-            ExpandedNodeId.parse("i=46"),
-            false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
-  }
-
-  @Override
-  public KeyCredentialConfigurationFolderTypeNode getKeyCredentialsNode() throws UaException {
-    try {
-      return getKeyCredentialsNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends KeyCredentialConfigurationFolderTypeNode>
-      getKeyCredentialsNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "KeyCredentials", ExpandedNodeId.parse("i=47"), false);
-    return future.thenApply(node -> (KeyCredentialConfigurationFolderTypeNode) node);
-  }
-
-  @Override
-  public AuthorizationServicesConfigurationFolderTypeNode getAuthorizationServicesNode()
-      throws UaException {
-    try {
-      return getAuthorizationServicesNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends AuthorizationServicesConfigurationFolderTypeNode>
-      getAuthorizationServicesNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "AuthorizationServices",
-            ExpandedNodeId.parse("i=47"),
-            false);
-    return future.thenApply(node -> (AuthorizationServicesConfigurationFolderTypeNode) node);
+  public CompletableFuture<StatusCode> writeEnabledAsync(@Nullable Boolean value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getEnabledNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}Enabled",
+                        value,
+                        Boolean.class,
+                        -1,
+                        null)));
   }
 }

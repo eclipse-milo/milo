@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
@@ -19,575 +9,304 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.SecurityTokenRequestType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.6">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.6</a>
+ * Client API for the AuditOpenSecureChannelEventType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.6">Model
+ *     documentation</a>
  */
 public interface AuditOpenSecureChannelEventType extends AuditChannelEventType {
-  QualifiedProperty<ByteString> CLIENT_CERTIFICATE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ClientCertificate",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15"),
-          -1,
-          ByteString.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2060L);
 
-  QualifiedProperty<String> CLIENT_CERTIFICATE_THUMBPRINT =
+  QualifiedProperty<SecurityTokenRequestType> RequestType_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ClientCertificateThumbprint",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
-
-  QualifiedProperty<SecurityTokenRequestType> REQUEST_TYPE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "RequestType",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=315"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 315L),
           -1,
           SecurityTokenRequestType.class);
 
-  QualifiedProperty<String> SECURITY_POLICY_URI =
+  QualifiedProperty<MessageSecurityMode> SecurityMode_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "SecurityPolicyUri",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
-
-  QualifiedProperty<MessageSecurityMode> SECURITY_MODE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "SecurityMode",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=302"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 302L),
           -1,
           MessageSecurityMode.class);
 
-  QualifiedProperty<Double> REQUESTED_LIFETIME =
+  QualifiedProperty<ByteString> ClientCertificate_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "RequestedLifetime",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
-          -1,
-          Double.class);
-
-  QualifiedProperty<ByteString> CERTIFICATE_ERROR_EVENT_ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "CertificateErrorEventId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15"),
+          Namespaces.OPC_UA,
+          "ClientCertificate",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 15L),
           -1,
           ByteString.class);
 
-  /**
-   * Get the local value of the ClientCertificate Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ClientCertificate Node.
-   * @throws UaException if an error occurs creating or getting the ClientCertificate Node.
-   */
-  ByteString getClientCertificate() throws UaException;
+  QualifiedProperty<Double> RequestedLifetime_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "RequestedLifetime",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 290L),
+          -1,
+          Double.class);
+
+  QualifiedProperty<String> SecurityPolicyUri_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "SecurityPolicyUri",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+          -1,
+          String.class);
+
+  QualifiedProperty<ByteString> CertificateErrorEventId_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "CertificateErrorEventId",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 15L),
+          -1,
+          ByteString.class);
+
+  QualifiedProperty<String> ClientCertificateThumbprint_PROPERTY =
+      new QualifiedProperty<>(
+          Namespaces.OPC_UA,
+          "ClientCertificateThumbprint",
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+          -1,
+          String.class);
 
   /**
-   * Set the local value of the ClientCertificate Node.
+   * Resolves the mandatory RequestType child, a PropertyType with DataType
+   * SecurityTokenRequestType.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ClientCertificate Node.
-   * @throws UaException if an error occurs creating or getting the ClientCertificate Node.
-   */
-  void setClientCertificate(ByteString value) throws UaException;
-
-  /**
-   * Read the value of the ClientCertificate Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link ByteString} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  ByteString readClientCertificate() throws UaException;
-
-  /**
-   * Write a new value for the ClientCertificate Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link ByteString} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeClientCertificate(ByteString value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readClientCertificate}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends ByteString> readClientCertificateAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeClientCertificate}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeClientCertificateAsync(ByteString value);
-
-  /**
-   * Get the ClientCertificate {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ClientCertificate {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getClientCertificateNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getClientCertificateNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getClientCertificateNodeAsync();
-
-  /**
-   * Get the local value of the ClientCertificateThumbprint Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the ClientCertificateThumbprint Node.
-   * @throws UaException if an error occurs creating or getting the ClientCertificateThumbprint
-   *     Node.
-   */
-  String getClientCertificateThumbprint() throws UaException;
-
-  /**
-   * Set the local value of the ClientCertificateThumbprint Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the ClientCertificateThumbprint Node.
-   * @throws UaException if an error occurs creating or getting the ClientCertificateThumbprint
-   *     Node.
-   */
-  void setClientCertificateThumbprint(String value) throws UaException;
-
-  /**
-   * Read the value of the ClientCertificateThumbprint Node from the server and update the local
-   * value if the operation succeeds.
-   *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String readClientCertificateThumbprint() throws UaException;
-
-  /**
-   * Write a new value for the ClientCertificateThumbprint Node to the server and update the local
-   * value if the operation succeeds.
-   *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeClientCertificateThumbprint(String value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readClientCertificateThumbprint}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String> readClientCertificateThumbprintAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeClientCertificateThumbprint}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeClientCertificateThumbprintAsync(String value);
-
-  /**
-   * Get the ClientCertificateThumbprint {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the ClientCertificateThumbprint {@link PropertyType} Node, or {@code null} if it does
-   *     not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getClientCertificateThumbprintNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getClientCertificateThumbprintNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getClientCertificateThumbprintNodeAsync();
-
-  /**
-   * Get the local value of the RequestType Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the RequestType Node.
-   * @throws UaException if an error occurs creating or getting the RequestType Node.
-   */
-  SecurityTokenRequestType getRequestType() throws UaException;
-
-  /**
-   * Set the local value of the RequestType Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the RequestType Node.
-   * @throws UaException if an error occurs creating or getting the RequestType Node.
-   */
-  void setRequestType(SecurityTokenRequestType value) throws UaException;
-
-  /**
-   * Read the value of the RequestType Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link SecurityTokenRequestType} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  SecurityTokenRequestType readRequestType() throws UaException;
-
-  /**
-   * Write a new value for the RequestType Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link SecurityTokenRequestType} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeRequestType(SecurityTokenRequestType value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readRequestType}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends SecurityTokenRequestType> readRequestTypeAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeRequestType}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeRequestTypeAsync(SecurityTokenRequestType value);
-
-  /**
-   * Get the RequestType {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the RequestType {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getRequestTypeNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getRequestTypeNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getRequestTypeNode()}. */
   CompletableFuture<? extends PropertyType> getRequestTypeNodeAsync();
 
   /**
-   * Get the local value of the SecurityPolicyUri Node.
+   * Reads the Value of the RequestType child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SecurityPolicyUri Node.
-   * @throws UaException if an error occurs creating or getting the SecurityPolicyUri Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  String getSecurityPolicyUri() throws UaException;
+  @Nullable SecurityTokenRequestType readRequestType() throws UaException;
 
   /**
-   * Set the local value of the SecurityPolicyUri Node.
+   * Writes the Value of the RequestType child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SecurityPolicyUri Node.
-   * @throws UaException if an error occurs creating or getting the SecurityPolicyUri Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setSecurityPolicyUri(String value) throws UaException;
+  void writeRequestType(@Nullable SecurityTokenRequestType value) throws UaException;
+
+  /** Asynchronous form of {@link #readRequestType()}. */
+  CompletableFuture<? extends @Nullable SecurityTokenRequestType> readRequestTypeAsync();
+
+  /** Asynchronous form of {@link #writeRequestType}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeRequestTypeAsync(@Nullable SecurityTokenRequestType value);
 
   /**
-   * Read the value of the SecurityPolicyUri Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the mandatory SecurityMode child, a PropertyType with DataType MessageSecurityMode.
    *
-   * @return the {@link String} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  String readSecurityPolicyUri() throws UaException;
-
-  /**
-   * Write a new value for the SecurityPolicyUri Node to the server and update the local value if
-   * the operation succeeds.
-   *
-   * @param value the {@link String} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeSecurityPolicyUri(String value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readSecurityPolicyUri}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends String> readSecurityPolicyUriAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeSecurityPolicyUri}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeSecurityPolicyUriAsync(String value);
-
-  /**
-   * Get the SecurityPolicyUri {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SecurityPolicyUri {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
-   */
-  PropertyType getSecurityPolicyUriNode() throws UaException;
-
-  /**
-   * Asynchronous implementation of {@link #getSecurityPolicyUriNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
-  CompletableFuture<? extends PropertyType> getSecurityPolicyUriNodeAsync();
-
-  /**
-   * Get the local value of the SecurityMode Node.
-   *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the SecurityMode Node.
-   * @throws UaException if an error occurs creating or getting the SecurityMode Node.
-   */
-  MessageSecurityMode getSecurityMode() throws UaException;
-
-  /**
-   * Set the local value of the SecurityMode Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the SecurityMode Node.
-   * @throws UaException if an error occurs creating or getting the SecurityMode Node.
-   */
-  void setSecurityMode(MessageSecurityMode value) throws UaException;
-
-  /**
-   * Read the value of the SecurityMode Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link MessageSecurityMode} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  MessageSecurityMode readSecurityMode() throws UaException;
-
-  /**
-   * Write a new value for the SecurityMode Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link MessageSecurityMode} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeSecurityMode(MessageSecurityMode value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readSecurityMode}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends MessageSecurityMode> readSecurityModeAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeSecurityMode}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeSecurityModeAsync(MessageSecurityMode value);
-
-  /**
-   * Get the SecurityMode {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the SecurityMode {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getSecurityModeNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getSecurityModeNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getSecurityModeNode()}. */
   CompletableFuture<? extends PropertyType> getSecurityModeNodeAsync();
 
   /**
-   * Get the local value of the RequestedLifetime Node.
+   * Reads the Value of the SecurityMode child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the RequestedLifetime Node.
-   * @throws UaException if an error occurs creating or getting the RequestedLifetime Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  Double getRequestedLifetime() throws UaException;
+  @Nullable MessageSecurityMode readSecurityMode() throws UaException;
 
   /**
-   * Set the local value of the RequestedLifetime Node.
+   * Writes the Value of the SecurityMode child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the RequestedLifetime Node.
-   * @throws UaException if an error occurs creating or getting the RequestedLifetime Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setRequestedLifetime(Double value) throws UaException;
+  void writeSecurityMode(@Nullable MessageSecurityMode value) throws UaException;
+
+  /** Asynchronous form of {@link #readSecurityMode()}. */
+  CompletableFuture<? extends @Nullable MessageSecurityMode> readSecurityModeAsync();
+
+  /** Asynchronous form of {@link #writeSecurityMode}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeSecurityModeAsync(@Nullable MessageSecurityMode value);
 
   /**
-   * Read the value of the RequestedLifetime Node from the server and update the local value if the
-   * operation succeeds.
+   * Resolves the mandatory ClientCertificate child, a PropertyType with DataType ByteString.
    *
-   * @return the {@link Double} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  Double readRequestedLifetime() throws UaException;
+  PropertyType getClientCertificateNode() throws UaException;
+
+  /** Asynchronous form of {@link #getClientCertificateNode()}. */
+  CompletableFuture<? extends PropertyType> getClientCertificateNodeAsync();
 
   /**
-   * Write a new value for the RequestedLifetime Node to the server and update the local value if
-   * the operation succeeds.
+   * Reads the Value of the ClientCertificate child from the server.
    *
-   * @param value the {@link Double} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeRequestedLifetime(Double value) throws UaException;
+  @Nullable ByteString readClientCertificate() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readRequestedLifetime}.
+   * Writes the Value of the ClientCertificate child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends Double> readRequestedLifetimeAsync();
+  void writeClientCertificate(@Nullable ByteString value) throws UaException;
+
+  /** Asynchronous form of {@link #readClientCertificate()}. */
+  CompletableFuture<? extends @Nullable ByteString> readClientCertificateAsync();
+
+  /** Asynchronous form of {@link #writeClientCertificate}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeClientCertificateAsync(@Nullable ByteString value);
 
   /**
-   * An asynchronous implementation of {@link #writeRequestedLifetime}.
+   * Resolves the mandatory RequestedLifetime child, a PropertyType with DataType Duration.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeRequestedLifetimeAsync(Double value);
-
-  /**
-   * Get the RequestedLifetime {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the RequestedLifetime {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getRequestedLifetimeNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getRequestedLifetimeNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getRequestedLifetimeNode()}. */
   CompletableFuture<? extends PropertyType> getRequestedLifetimeNodeAsync();
 
   /**
-   * Get the local value of the CertificateErrorEventId Node.
+   * Reads the Value of the RequestedLifetime child from the server.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the CertificateErrorEventId Node.
-   * @throws UaException if an error occurs creating or getting the CertificateErrorEventId Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  ByteString getCertificateErrorEventId() throws UaException;
+  @Nullable Double readRequestedLifetime() throws UaException;
 
   /**
-   * Set the local value of the CertificateErrorEventId Node.
+   * Writes the Value of the RequestedLifetime child to the server.
    *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the CertificateErrorEventId Node.
-   * @throws UaException if an error occurs creating or getting the CertificateErrorEventId Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void setCertificateErrorEventId(ByteString value) throws UaException;
+  void writeRequestedLifetime(@Nullable Double value) throws UaException;
+
+  /** Asynchronous form of {@link #readRequestedLifetime()}. */
+  CompletableFuture<? extends @Nullable Double> readRequestedLifetimeAsync();
+
+  /** Asynchronous form of {@link #writeRequestedLifetime}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeRequestedLifetimeAsync(@Nullable Double value);
 
   /**
-   * Read the value of the CertificateErrorEventId Node from the server and update the local value
-   * if the operation succeeds.
+   * Resolves the mandatory SecurityPolicyUri child, a PropertyType with DataType String.
    *
-   * @return the {@link ByteString} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  ByteString readCertificateErrorEventId() throws UaException;
+  PropertyType getSecurityPolicyUriNode() throws UaException;
+
+  /** Asynchronous form of {@link #getSecurityPolicyUriNode()}. */
+  CompletableFuture<? extends PropertyType> getSecurityPolicyUriNodeAsync();
 
   /**
-   * Write a new value for the CertificateErrorEventId Node to the server and update the local value
-   * if the operation succeeds.
+   * Reads the Value of the SecurityPolicyUri child from the server.
    *
-   * @param value the {@link ByteString} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  void writeCertificateErrorEventId(ByteString value) throws UaException;
+  @Nullable String readSecurityPolicyUri() throws UaException;
 
   /**
-   * An asynchronous implementation of {@link #readCertificateErrorEventId}.
+   * Writes the Value of the SecurityPolicyUri child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends ByteString> readCertificateErrorEventIdAsync();
+  void writeSecurityPolicyUri(@Nullable String value) throws UaException;
+
+  /** Asynchronous form of {@link #readSecurityPolicyUri()}. */
+  CompletableFuture<? extends @Nullable String> readSecurityPolicyUriAsync();
+
+  /** Asynchronous form of {@link #writeSecurityPolicyUri}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeSecurityPolicyUriAsync(@Nullable String value);
 
   /**
-   * An asynchronous implementation of {@link #writeCertificateErrorEventId}.
+   * Resolves the optional CertificateErrorEventId child, a PropertyType with DataType ByteString.
    *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
+   * @return the child, or null if it is absent.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
-  CompletableFuture<StatusCode> writeCertificateErrorEventIdAsync(ByteString value);
+  @Nullable PropertyType getCertificateErrorEventIdNode() throws UaException;
+
+  /** Asynchronous form of {@link #getCertificateErrorEventIdNode()}. */
+  CompletableFuture<? extends @Nullable PropertyType> getCertificateErrorEventIdNodeAsync();
 
   /**
-   * Get the CertificateErrorEventId {@link PropertyType} Node, or {@code null} if it does not
-   * exist.
+   * Reads the Value of the CertificateErrorEventId child from the server.
    *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the CertificateErrorEventId {@link PropertyType} Node, or {@code null} if it does not
-   *     exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  PropertyType getCertificateErrorEventIdNode() throws UaException;
+  @Nullable ByteString readCertificateErrorEventId() throws UaException;
 
   /**
-   * Asynchronous implementation of {@link #getCertificateErrorEventIdNode()}.
+   * Writes the Value of the CertificateErrorEventId child to the server.
    *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
+   * @throws UaException if lookup, conversion or the operation fails.
    */
-  CompletableFuture<? extends PropertyType> getCertificateErrorEventIdNodeAsync();
+  void writeCertificateErrorEventId(@Nullable ByteString value) throws UaException;
+
+  /** Asynchronous form of {@link #readCertificateErrorEventId()}. */
+  CompletableFuture<? extends @Nullable ByteString> readCertificateErrorEventIdAsync();
+
+  /**
+   * Asynchronous form of {@link #writeCertificateErrorEventId}; completes with the operation
+   * status.
+   */
+  CompletableFuture<StatusCode> writeCertificateErrorEventIdAsync(@Nullable ByteString value);
+
+  /**
+   * Resolves the mandatory ClientCertificateThumbprint child, a PropertyType with DataType String.
+   *
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyType getClientCertificateThumbprintNode() throws UaException;
+
+  /** Asynchronous form of {@link #getClientCertificateThumbprintNode()}. */
+  CompletableFuture<? extends PropertyType> getClientCertificateThumbprintNodeAsync();
+
+  /**
+   * Reads the Value of the ClientCertificateThumbprint child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable String readClientCertificateThumbprint() throws UaException;
+
+  /**
+   * Writes the Value of the ClientCertificateThumbprint child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeClientCertificateThumbprint(@Nullable String value) throws UaException;
+
+  /** Asynchronous form of {@link #readClientCertificateThumbprint()}. */
+  CompletableFuture<? extends @Nullable String> readClientCertificateThumbprintAsync();
+
+  /**
+   * Asynchronous form of {@link #writeClientCertificateThumbprint}; completes with the operation
+   * status.
+   */
+  CompletableFuture<StatusCode> writeClientCertificateThumbprintAsync(@Nullable String value);
 }

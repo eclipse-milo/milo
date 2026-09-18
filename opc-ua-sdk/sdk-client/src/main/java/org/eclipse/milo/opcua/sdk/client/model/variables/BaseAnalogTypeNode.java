@@ -1,25 +1,11 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.variables;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.sdk.client.model.ClientNodeSupport;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -34,7 +20,15 @@ import org.eclipse.milo.opcua.stack.core.types.structured.EUInformation;
 import org.eclipse.milo.opcua.stack.core.types.structured.NumberRange;
 import org.eclipse.milo.opcua.stack.core.types.structured.Range;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link BaseAnalogType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.2/#5.3.2.2">Model
+ *     documentation</a>
+ */
 public class BaseAnalogTypeNode extends DataItemTypeNode implements BaseAnalogType {
   public BaseAnalogTypeNode(
       OpcUaClient client,
@@ -42,21 +36,21 @@ public class BaseAnalogTypeNode extends DataItemTypeNode implements BaseAnalogTy
       NodeClass nodeClass,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       DataValue value,
       NodeId dataType,
       Integer valueRank,
-      UInteger[] arrayDimensions,
+      UInteger @Nullable [] arrayDimensions,
       UByte accessLevel,
       UByte userAccessLevel,
       Double minimumSamplingInterval,
       Boolean historizing,
-      AccessLevelExType accessLevelEx) {
+      @Nullable AccessLevelExType accessLevelEx) {
     super(
         client,
         nodeId,
@@ -81,388 +75,397 @@ public class BaseAnalogTypeNode extends DataItemTypeNode implements BaseAnalogTy
   }
 
   @Override
-  public Range getInstrumentRange() throws UaException {
-    PropertyTypeNode node = getInstrumentRangeNode();
-    return cast(node.getValue().getValue().getValue(), Range.class);
+  public @Nullable PropertyTypeNode getEUNumberRangeNode() throws UaException {
+    return ClientNodeSupport.await(getEUNumberRangeNodeAsync());
   }
 
   @Override
-  public void setInstrumentRange(Range value) throws UaException {
-    PropertyTypeNode node = getInstrumentRangeNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
+  public CompletableFuture<? extends @Nullable PropertyTypeNode> getEUNumberRangeNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "EUNumberRange",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public Range readInstrumentRange() throws UaException {
-    try {
-      return readInstrumentRangeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable NumberRange readEUNumberRange() throws UaException {
+    return ClientNodeSupport.await(readEUNumberRangeAsync());
   }
 
   @Override
-  public void writeInstrumentRange(Range value) throws UaException {
-    try {
-      StatusCode statusCode = writeInstrumentRangeAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public void writeEUNumberRange(@Nullable NumberRange value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeEUNumberRangeAsync(value)),
+        "http://opcfoundation.org/UA/}EUNumberRange");
   }
 
   @Override
-  public CompletableFuture<? extends Range> readInstrumentRangeAsync() {
-    return getInstrumentRangeNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), Range.class));
+  public CompletableFuture<? extends @Nullable NumberRange> readEUNumberRangeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getEUNumberRangeNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}EUNumberRange",
+                            false,
+                            NumberRange.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable NumberRange) v)));
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeInstrumentRangeAsync(Range instrumentRange) {
-    ExtensionObject encoded =
-        ExtensionObject.encode(client.getStaticEncodingContext(), instrumentRange);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getInstrumentRangeNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public CompletableFuture<StatusCode> writeEUNumberRangeAsync(@Nullable NumberRange value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getEUNumberRangeNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}EUNumberRange",
+                        value,
+                        NumberRange.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public PropertyTypeNode getInstrumentRangeNode() throws UaException {
-    try {
-      return getInstrumentRangeNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable PropertyTypeNode getInstrumentRangeNode() throws UaException {
+    return ClientNodeSupport.await(getInstrumentRangeNodeAsync());
   }
 
   @Override
-  public CompletableFuture<? extends PropertyTypeNode> getInstrumentRangeNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "InstrumentRange", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+  public CompletableFuture<? extends @Nullable PropertyTypeNode> getInstrumentRangeNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "InstrumentRange",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public NumberRange getInstrumentNumberRange() throws UaException {
-    PropertyTypeNode node = getInstrumentNumberRangeNode();
-    return cast(node.getValue().getValue().getValue(), NumberRange.class);
+  public @Nullable Range readInstrumentRange() throws UaException {
+    return ClientNodeSupport.await(readInstrumentRangeAsync());
   }
 
   @Override
-  public void setInstrumentNumberRange(NumberRange value) throws UaException {
-    PropertyTypeNode node = getInstrumentNumberRangeNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
+  public void writeInstrumentRange(@Nullable Range value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeInstrumentRangeAsync(value)),
+        "http://opcfoundation.org/UA/}InstrumentRange");
   }
 
   @Override
-  public NumberRange readInstrumentNumberRange() throws UaException {
-    try {
-      return readInstrumentNumberRangeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable Range> readInstrumentRangeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getInstrumentRangeNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}InstrumentRange",
+                            false,
+                            Range.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable Range) v)));
   }
 
   @Override
-  public void writeInstrumentNumberRange(NumberRange value) throws UaException {
-    try {
-      StatusCode statusCode = writeInstrumentNumberRangeAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<StatusCode> writeInstrumentRangeAsync(@Nullable Range value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getInstrumentRangeNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}InstrumentRange",
+                        value,
+                        Range.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public CompletableFuture<? extends NumberRange> readInstrumentNumberRangeAsync() {
-    return getInstrumentNumberRangeNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), NumberRange.class));
+  public @Nullable PropertyTypeNode getEngineeringUnits_Node() throws UaException {
+    return ClientNodeSupport.await(getEngineeringUnits_NodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable PropertyTypeNode> getEngineeringUnits_NodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "EngineeringUnits",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
+  }
+
+  @Override
+  public @Nullable EUInformation readEngineeringUnits_() throws UaException {
+    return ClientNodeSupport.await(readEngineeringUnits_Async());
+  }
+
+  @Override
+  public void writeEngineeringUnits_(@Nullable EUInformation value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeEngineeringUnits_Async(value)),
+        "http://opcfoundation.org/UA/}EngineeringUnits");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable EUInformation> readEngineeringUnits_Async() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getEngineeringUnits_NodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}EngineeringUnits",
+                            false,
+                            EUInformation.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable EUInformation) v)));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeEngineeringUnits_Async(@Nullable EUInformation value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getEngineeringUnits_NodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}EngineeringUnits",
+                        value,
+                        EUInformation.class,
+                        -1,
+                        null)));
+  }
+
+  @Override
+  public @Nullable PropertyTypeNode getInstrumentNumberRangeNode() throws UaException {
+    return ClientNodeSupport.await(getInstrumentNumberRangeNodeAsync());
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable PropertyTypeNode>
+      getInstrumentNumberRangeNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "InstrumentNumberRange",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
+  }
+
+  @Override
+  public @Nullable NumberRange readInstrumentNumberRange() throws UaException {
+    return ClientNodeSupport.await(readInstrumentNumberRangeAsync());
+  }
+
+  @Override
+  public void writeInstrumentNumberRange(@Nullable NumberRange value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeInstrumentNumberRangeAsync(value)),
+        "http://opcfoundation.org/UA/}InstrumentNumberRange");
+  }
+
+  @Override
+  public CompletableFuture<? extends @Nullable NumberRange> readInstrumentNumberRangeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getInstrumentNumberRangeNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}InstrumentNumberRange",
+                            false,
+                            NumberRange.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable NumberRange) v)));
   }
 
   @Override
   public CompletableFuture<StatusCode> writeInstrumentNumberRangeAsync(
-      NumberRange instrumentNumberRange) {
-    ExtensionObject encoded =
-        ExtensionObject.encode(client.getStaticEncodingContext(), instrumentNumberRange);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getInstrumentNumberRangeNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+      @Nullable NumberRange value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getInstrumentNumberRangeNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}InstrumentNumberRange",
+                        value,
+                        NumberRange.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public PropertyTypeNode getInstrumentNumberRangeNode() throws UaException {
-    try {
-      return getInstrumentNumberRangeNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public @Nullable PropertyTypeNode getEURangeNode() throws UaException {
+    return ClientNodeSupport.await(getEURangeNodeAsync());
   }
 
   @Override
-  public CompletableFuture<? extends PropertyTypeNode> getInstrumentNumberRangeNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "InstrumentNumberRange",
-            ExpandedNodeId.parse("i=46"),
-            false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+  public CompletableFuture<? extends @Nullable PropertyTypeNode> getEURangeNodeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                parent ->
+                    ClientNodeSupport.optionalChild(
+                        client,
+                        parent,
+                        Namespaces.OPC_UA,
+                        "EURange",
+                        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+                        NodeClass.Variable,
+                        PropertyTypeNode.class)));
   }
 
   @Override
-  public Range getEuRange() throws UaException {
-    PropertyTypeNode node = getEuRangeNode();
-    return cast(node.getValue().getValue().getValue(), Range.class);
+  public @Nullable Range readEURange() throws UaException {
+    return ClientNodeSupport.await(readEURangeAsync());
   }
 
   @Override
-  public void setEuRange(Range value) throws UaException {
-    PropertyTypeNode node = getEuRangeNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
+  public void writeEURange(@Nullable Range value) throws UaException {
+    ClientNodeSupport.good(
+        ClientNodeSupport.await(writeEURangeAsync(value)), "http://opcfoundation.org/UA/}EURange");
   }
 
   @Override
-  public Range readEuRange() throws UaException {
-    try {
-      return readEuRangeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable Range> readEURangeAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    getEURangeNodeAsync(),
+                    n ->
+                        ClientNodeSupport.read(
+                            client,
+                            n,
+                            this,
+                            "http://opcfoundation.org/UA/}EURange",
+                            false,
+                            Range.class,
+                            -1,
+                            null)),
+                v -> CompletableFuture.completedFuture((@Nullable Range) v)));
   }
 
   @Override
-  public void writeEuRange(Range value) throws UaException {
-    try {
-      StatusCode statusCode = writeEuRangeAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<StatusCode> writeEURangeAsync(@Nullable Range value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                getEURangeNodeAsync(),
+                n ->
+                    ClientNodeSupport.write(
+                        client,
+                        n,
+                        this,
+                        "http://opcfoundation.org/UA/}EURange",
+                        value,
+                        Range.class,
+                        -1,
+                        null)));
   }
 
   @Override
-  public CompletableFuture<? extends Range> readEuRangeAsync() {
-    return getEuRangeNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), Range.class));
+  public @Nullable Variant readTypedValue() throws UaException {
+    return ClientNodeSupport.await(readTypedValueAsync());
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeEuRangeAsync(Range euRange) {
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), euRange);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getEuRangeNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  public void writeTypedValue(@Nullable Variant value) throws UaException {
+    ClientNodeSupport.good(ClientNodeSupport.await(writeTypedValueAsync(value)), "Value");
   }
 
   @Override
-  public PropertyTypeNode getEuRangeNode() throws UaException {
-    try {
-      return getEuRangeNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+  public CompletableFuture<? extends @Nullable Variant> readTypedValueAsync() {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                ClientNodeSupport.compose(
+                    CompletableFuture.completedFuture(this),
+                    n ->
+                        ClientNodeSupport.read(
+                            client, n, this, "Value", true, Variant.class, -2, null)),
+                v -> CompletableFuture.completedFuture((@Nullable Variant) v)));
   }
 
   @Override
-  public CompletableFuture<? extends PropertyTypeNode> getEuRangeNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "EURange", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
-  }
-
-  @Override
-  public NumberRange getEuNumberRange() throws UaException {
-    PropertyTypeNode node = getEuNumberRangeNode();
-    return cast(node.getValue().getValue().getValue(), NumberRange.class);
-  }
-
-  @Override
-  public void setEuNumberRange(NumberRange value) throws UaException {
-    PropertyTypeNode node = getEuNumberRangeNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
-  }
-
-  @Override
-  public NumberRange readEuNumberRange() throws UaException {
-    try {
-      return readEuNumberRangeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeEuNumberRange(NumberRange value) throws UaException {
-    try {
-      StatusCode statusCode = writeEuNumberRangeAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends NumberRange> readEuNumberRangeAsync() {
-    return getEuNumberRangeNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), NumberRange.class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeEuNumberRangeAsync(NumberRange euNumberRange) {
-    ExtensionObject encoded =
-        ExtensionObject.encode(client.getStaticEncodingContext(), euNumberRange);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getEuNumberRangeNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public PropertyTypeNode getEuNumberRangeNode() throws UaException {
-    try {
-      return getEuNumberRangeNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends PropertyTypeNode> getEuNumberRangeNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "EUNumberRange", ExpandedNodeId.parse("i=46"), false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
-  }
-
-  @Override
-  public EUInformation getEngineeringUnits() throws UaException {
-    PropertyTypeNode node = getEngineeringUnitsNode();
-    return cast(node.getValue().getValue().getValue(), EUInformation.class);
-  }
-
-  @Override
-  public void setEngineeringUnits(EUInformation value) throws UaException {
-    PropertyTypeNode node = getEngineeringUnitsNode();
-    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
-  }
-
-  @Override
-  public EUInformation readEngineeringUnits() throws UaException {
-    try {
-      return readEngineeringUnitsAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public void writeEngineeringUnits(EUInformation value) throws UaException {
-    try {
-      StatusCode statusCode = writeEngineeringUnitsAsync(value).get();
-      if (statusCode != null && !statusCode.isGood()) {
-        throw new UaException(statusCode);
-      }
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends EUInformation> readEngineeringUnitsAsync() {
-    return getEngineeringUnitsNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), EUInformation.class));
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeEngineeringUnitsAsync(EUInformation engineeringUnits) {
-    ExtensionObject encoded =
-        ExtensionObject.encode(client.getStaticEncodingContext(), engineeringUnits);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
-    return getEngineeringUnitsNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public PropertyTypeNode getEngineeringUnitsNode() throws UaException {
-    try {
-      return getEngineeringUnitsNodeAsync().get();
-    } catch (ExecutionException e) {
-      throw new UaException(e.getCause());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends PropertyTypeNode> getEngineeringUnitsNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "EngineeringUnits",
-            ExpandedNodeId.parse("i=46"),
-            false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
+  public CompletableFuture<StatusCode> writeTypedValueAsync(@Nullable Variant value) {
+    return ClientNodeSupport.defer(
+        () ->
+            ClientNodeSupport.compose(
+                CompletableFuture.completedFuture(this),
+                n ->
+                    ClientNodeSupport.write(
+                        client, n, this, "Value", value, Variant.class, -2, null)));
   }
 }

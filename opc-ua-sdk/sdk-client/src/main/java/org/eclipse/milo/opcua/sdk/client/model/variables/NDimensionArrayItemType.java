@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.model.variables;
 
 import java.util.concurrent.CompletableFuture;
@@ -16,89 +6,56 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.structured.AxisInformation;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.4/#5.3.4.6">https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.4/#5.3.4.6</a>
+ * Client API for the NDimensionArrayItemType VariableType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.4/#5.3.4.6">Model
+ *     documentation</a>
  */
 public interface NDimensionArrayItemType extends ArrayItemType {
-  QualifiedProperty<AxisInformation[]> AXIS_DEFINITION =
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 12068L);
+
+  QualifiedProperty<AxisInformation[]> AxisDefinition_PROPERTY =
       new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
+          Namespaces.OPC_UA,
           "AxisDefinition",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12079"),
+          ExpandedNodeId.of(Namespaces.OPC_UA, 12079L),
           1,
           AxisInformation[].class);
 
   /**
-   * Get the local value of the AxisDefinition Node.
+   * Resolves the mandatory AxisDefinition child, a PropertyType with DataType AxisInformation.
    *
-   * <p>The returned value is the last seen; it is not read live from the server.
-   *
-   * @return the local value of the AxisDefinition Node.
-   * @throws UaException if an error occurs creating or getting the AxisDefinition Node.
-   */
-  AxisInformation[] getAxisDefinition() throws UaException;
-
-  /**
-   * Set the local value of the AxisDefinition Node.
-   *
-   * <p>The value is only updated locally; it is not written to the server.
-   *
-   * @param value the local value to set for the AxisDefinition Node.
-   * @throws UaException if an error occurs creating or getting the AxisDefinition Node.
-   */
-  void setAxisDefinition(AxisInformation[] value) throws UaException;
-
-  /**
-   * Read the value of the AxisDefinition Node from the server and update the local value if the
-   * operation succeeds.
-   *
-   * @return the {@link AxisInformation[]} value read from the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  AxisInformation[] readAxisDefinition() throws UaException;
-
-  /**
-   * Write a new value for the AxisDefinition Node to the server and update the local value if the
-   * operation succeeds.
-   *
-   * @param value the {@link AxisInformation[]} value to write to the server.
-   * @throws UaException if a service- or operation-level error occurs.
-   */
-  void writeAxisDefinition(AxisInformation[] value) throws UaException;
-
-  /**
-   * An asynchronous implementation of {@link #readAxisDefinition}.
-   *
-   * @return a CompletableFuture that completes successfully with the value or completes
-   *     exceptionally if an operation- or service-level error occurs.
-   */
-  CompletableFuture<? extends AxisInformation[]> readAxisDefinitionAsync();
-
-  /**
-   * An asynchronous implementation of {@link #writeAxisDefinition}.
-   *
-   * @return a CompletableFuture that completes successfully with the operation result or completes
-   *     exceptionally if a service-level error occurs.
-   */
-  CompletableFuture<StatusCode> writeAxisDefinitionAsync(AxisInformation[] value);
-
-  /**
-   * Get the AxisDefinition {@link PropertyType} Node, or {@code null} if it does not exist.
-   *
-   * <p>The Node is created when first accessed and cached for subsequent calls.
-   *
-   * @return the AxisDefinition {@link PropertyType} Node, or {@code null} if it does not exist.
-   * @throws UaException if an error occurs creating or getting the Node.
+   * @throws UaException if lookup or validation fails.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
    */
   PropertyType getAxisDefinitionNode() throws UaException;
 
-  /**
-   * Asynchronous implementation of {@link #getAxisDefinitionNode()}.
-   *
-   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
-   *     exceptionally if an error occurs creating or getting the Node.
-   */
+  /** Asynchronous form of {@link #getAxisDefinitionNode()}. */
   CompletableFuture<? extends PropertyType> getAxisDefinitionNodeAsync();
+
+  /**
+   * Reads the Value of the AxisDefinition child from the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  @Nullable AxisInformation @Nullable [] readAxisDefinition() throws UaException;
+
+  /**
+   * Writes the Value of the AxisDefinition child to the server.
+   *
+   * @throws UaException if lookup, conversion or the operation fails.
+   */
+  void writeAxisDefinition(@Nullable AxisInformation @Nullable [] value) throws UaException;
+
+  /** Asynchronous form of {@link #readAxisDefinition()}. */
+  CompletableFuture<? extends @Nullable AxisInformation @Nullable []> readAxisDefinitionAsync();
+
+  /** Asynchronous form of {@link #writeAxisDefinition}; completes with the operation status. */
+  CompletableFuture<StatusCode> writeAxisDefinitionAsync(
+      @Nullable AxisInformation @Nullable [] value);
 }
