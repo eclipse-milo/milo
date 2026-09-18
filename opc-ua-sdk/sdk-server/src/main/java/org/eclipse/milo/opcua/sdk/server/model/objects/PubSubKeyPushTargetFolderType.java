@@ -1,316 +1,227 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.nodes.MethodNode;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
-import org.eclipse.milo.opcua.sdk.server.methods.Out;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
-import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
-import org.eclipse.milo.opcua.stack.core.util.Lazy;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.1">https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.1</a>
+ * Server API for the PubSubKeyPushTargetFolderType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.1">Model
+ *     documentation</a>
  */
 public interface PubSubKeyPushTargetFolderType extends FolderType {
-  MethodNode getAddPushTargetMethodNode();
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 25346L);
 
-  MethodNode getRemovePushTargetMethodNode();
+  /**
+   * Returns the mandatory AddPushTarget Method node.
+   *
+   * @throws UaRuntimeException if the Method is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.2">Model
+   *     documentation</a>
+   */
+  UaMethodNode getAddPushTargetMethodNode();
 
-  MethodNode getAddPushTargetFolderMethodNode();
+  /**
+   * Sets this instance's AddPushTarget handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setAddPushTargetHandler(@Nullable AddPushTargetHandler handler);
 
-  MethodNode getRemovePushTargetFolderMethodNode();
+  /**
+   * Returns the optional AddPushTargetFolder Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.4">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getAddPushTargetFolderMethodNode();
 
-  abstract class AddPushTargetMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+  /**
+   * Sets this instance's AddPushTargetFolder handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setAddPushTargetFolderHandler(@Nullable AddPushTargetFolderHandler handler);
 
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
+  /**
+   * Returns the mandatory RemovePushTarget Method node.
+   *
+   * @throws UaRuntimeException if the Method is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.3">Model
+   *     documentation</a>
+   */
+  UaMethodNode getRemovePushTargetMethodNode();
 
-    public AddPushTargetMethod(UaMethodNode node) {
-      super(node);
-    }
+  /**
+   * Sets this instance's RemovePushTarget handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setRemovePushTargetHandler(@Nullable RemovePushTargetHandler handler);
 
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+  /**
+   * Returns the optional RemovePushTargetFolder Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.5">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getRemovePushTargetFolderMethodNode();
 
-            return new Argument[] {
-              new Argument(
-                  "ApplicationUri",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "EndpointUrl",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "SecurityPolicyUri",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "UserTokenType",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=304")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "RequestedKeyCount",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "RetryInterval",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
+  /**
+   * Sets this instance's RemovePushTargetFolder handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setRemovePushTargetFolderHandler(@Nullable RemovePushTargetFolderHandler handler);
 
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+  /**
+   * Sets this instance's Method handlers, including inherited handlers, from one implementation;
+   * null clears them and restores Method-node fallback. Absent optional Methods are skipped.
+   * Changes are applied in order; a failure does not roll back earlier changes.
+   *
+   * @throws UaRuntimeException if a mandatory Method is absent, or a Method is ambiguous or
+   *     incompatible.
+   */
+  void setMethods(@Nullable Methods methods);
 
-            return new Argument[] {
-              new Argument(
-                  "PushTargetId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      String applicationUri = (String) inputValues[0].getValue();
-      String endpointUrl = (String) inputValues[1].getValue();
-      String securityPolicyUri = (String) inputValues[2].getValue();
-      UserTokenPolicy userTokenType = (UserTokenPolicy) inputValues[3].getValue();
-      UShort requestedKeyCount = (UShort) inputValues[4].getValue();
-      Double retryInterval = (Double) inputValues[5].getValue();
-      Out<NodeId> pushTargetId = new Out<>();
-      invoke(
-          context,
-          applicationUri,
-          endpointUrl,
-          securityPolicyUri,
-          userTokenType,
-          requestedKeyCount,
-          retryInterval,
-          pushTargetId);
-      return new Variant[] {new Variant(pushTargetId.get())};
-    }
-
-    protected abstract void invoke(
+  /**
+   * Handles calls to the AddPushTarget Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.2">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface AddPushTargetHandler {
+    /**
+     * Handles a call to the AddPushTarget Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    @Nullable NodeId addPushTarget(
         AbstractMethodInvocationHandler.InvocationContext context,
-        String applicationUri,
-        String endpointUrl,
-        String securityPolicyUri,
-        UserTokenPolicy userTokenType,
-        UShort requestedKeyCount,
-        Double retryInterval,
-        Out<NodeId> pushTargetId)
+        @Nullable String applicationUri,
+        @Nullable String endpointUrl,
+        @Nullable String securityPolicyUri,
+        @Nullable UserTokenPolicy userTokenType,
+        @Nullable UShort requestedKeyCount,
+        @Nullable Double retryInterval)
         throws UaException;
   }
 
-  abstract class RemovePushTargetMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    public RemovePushTargetMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "PushTargetId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      NodeId pushTargetId = (NodeId) inputValues[0].getValue();
-      invoke(context, pushTargetId);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, NodeId pushTargetId)
+  /**
+   * Handles calls to the AddPushTargetFolder Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.4">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface AddPushTargetFolderHandler {
+    /**
+     * Handles a call to the AddPushTargetFolder Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    @Nullable NodeId addPushTargetFolder(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable String name)
         throws UaException;
   }
 
-  abstract class AddPushTargetFolderMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+  /**
+   * Handles calls to the RemovePushTarget Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.3">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface RemovePushTargetHandler {
+    /**
+     * Handles a call to the RemovePushTarget Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void removePushTarget(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable NodeId pushTargetId)
+        throws UaException;
+  }
 
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-    public AddPushTargetFolderMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "Name",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "PushTargetFolderNodeId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      String name = (String) inputValues[0].getValue();
-      Out<NodeId> pushTargetFolderNodeId = new Out<>();
-      invoke(context, name, pushTargetFolderNodeId);
-      return new Variant[] {new Variant(pushTargetFolderNodeId.get())};
-    }
-
-    protected abstract void invoke(
+  /**
+   * Handles calls to the RemovePushTargetFolder Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.5">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface RemovePushTargetFolderHandler {
+    /**
+     * Handles a call to the RemovePushTargetFolder Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void removePushTargetFolder(
         AbstractMethodInvocationHandler.InvocationContext context,
-        String name,
-        Out<NodeId> pushTargetFolderNodeId)
+        @Nullable NodeId pushTargetFolderNodeId)
         throws UaException;
   }
 
-  abstract class RemovePushTargetFolderMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    public RemovePushTargetFolderMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "PushTargetFolderNodeId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+  /** Implements this type's Methods. Unimplemented Methods report Bad_NotImplemented. */
+  interface Methods {
+    /**
+     * Handles a call to the AddPushTarget Method; see {@link AddPushTargetHandler#addPushTarget}.
+     */
+    default @Nullable NodeId addPushTarget(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable String applicationUri,
+        @Nullable String endpointUrl,
+        @Nullable String securityPolicyUri,
+        @Nullable UserTokenPolicy userTokenType,
+        @Nullable UShort requestedKeyCount,
+        @Nullable Double retryInterval)
         throws UaException {
-      NodeId pushTargetFolderNodeId = (NodeId) inputValues[0].getValue();
-      invoke(context, pushTargetFolderNodeId);
-      return new Variant[] {};
+      throw new UaException(StatusCodes.Bad_NotImplemented);
     }
 
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, NodeId pushTargetFolderNodeId)
-        throws UaException;
+    /**
+     * Handles a call to the AddPushTargetFolder Method; see {@link
+     * AddPushTargetFolderHandler#addPushTargetFolder}.
+     */
+    default @Nullable NodeId addPushTargetFolder(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable String name)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /**
+     * Handles a call to the RemovePushTarget Method; see {@link
+     * RemovePushTargetHandler#removePushTarget}.
+     */
+    default void removePushTarget(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable NodeId pushTargetId)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /**
+     * Handles a call to the RemovePushTargetFolder Method; see {@link
+     * RemovePushTargetFolderHandler#removePushTargetFolder}.
+     */
+    default void removePushTargetFolder(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable NodeId pushTargetFolderNodeId)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
   }
 }

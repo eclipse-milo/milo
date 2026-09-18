@@ -1,28 +1,27 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link AuditUpdateMethodEventType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.27">Model
+ *     documentation</a>
+ */
 public class AuditUpdateMethodEventTypeNode extends AuditEventTypeNode
     implements AuditUpdateMethodEventType {
   public AuditUpdateMethodEventTypeNode(
@@ -30,12 +29,36 @@ public class AuditUpdateMethodEventTypeNode extends AuditEventTypeNode
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions);
+  }
+
+  public AuditUpdateMethodEventTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         context,
@@ -51,94 +74,113 @@ public class AuditUpdateMethodEventTypeNode extends AuditEventTypeNode
         eventNotifier);
   }
 
-  public AuditUpdateMethodEventTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions);
+  @Override
+  public PropertyTypeNode getInputArgumentsNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "InputArguments",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 24L),
+        1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable Variant @Nullable [] getInputArguments() {
+    return ServerNodeSupport.readArray(this, getInputArgumentsNode(), Variant.class, null);
+  }
+
+  @Override
+  public void setInputArguments(@Nullable Variant @Nullable [] value) {
+    ServerNodeSupport.write(this, getInputArgumentsNode(), value, true, false, false);
   }
 
   @Override
   public PropertyTypeNode getMethodIdNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(AuditUpdateMethodEventType.METHOD_ID);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "MethodId",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 17L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public NodeId getMethodId() {
-    return getProperty(AuditUpdateMethodEventType.METHOD_ID).orElse(null);
+  public @Nullable NodeId getMethodId() {
+    return ServerNodeSupport.read(this, getMethodIdNode(), NodeId.class, null);
   }
 
   @Override
-  public void setMethodId(NodeId value) {
-    setProperty(AuditUpdateMethodEventType.METHOD_ID, value);
+  public void setMethodId(@Nullable NodeId value) {
+    ServerNodeSupport.write(this, getMethodIdNode(), value, false, false, false);
   }
 
   @Override
-  public PropertyTypeNode getStatusCodeIdNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(AuditUpdateMethodEventType.STATUS_CODE_ID);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable PropertyTypeNode getOutputArgumentsNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "OutputArguments",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 24L),
+        1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public StatusCode getStatusCodeId() {
-    return getProperty(AuditUpdateMethodEventType.STATUS_CODE_ID).orElse(null);
+  public @Nullable Variant @Nullable [] getOutputArguments() {
+    return ServerNodeSupport.readArray(this, getOutputArgumentsNode(), Variant.class, null);
   }
 
   @Override
-  public void setStatusCodeId(StatusCode value) {
-    setProperty(AuditUpdateMethodEventType.STATUS_CODE_ID, value);
+  public void setOutputArguments(@Nullable Variant @Nullable [] value) {
+    ServerNodeSupport.write(
+        this,
+        getOutputArgumentsNode(),
+        Namespaces.OPC_UA,
+        "OutputArguments",
+        value,
+        true,
+        false,
+        false);
   }
 
   @Override
-  public PropertyTypeNode getInputArgumentsNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(AuditUpdateMethodEventType.INPUT_ARGUMENTS);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable PropertyTypeNode getStatusCodeIdNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "StatusCodeId",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 19L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public Object[] getInputArguments() {
-    return getProperty(AuditUpdateMethodEventType.INPUT_ARGUMENTS).orElse(null);
+  public @Nullable StatusCode getStatusCodeId() {
+    return ServerNodeSupport.read(this, getStatusCodeIdNode(), StatusCode.class, null);
   }
 
   @Override
-  public void setInputArguments(Object[] value) {
-    setProperty(AuditUpdateMethodEventType.INPUT_ARGUMENTS, value);
+  public void setStatusCodeId(@Nullable StatusCode value) {
+    ServerNodeSupport.write(
+        this, getStatusCodeIdNode(), Namespaces.OPC_UA, "StatusCodeId", value, false, false, false);
   }
 
   @Override
-  public PropertyTypeNode getOutputArgumentsNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(AuditUpdateMethodEventType.OUTPUT_ARGUMENTS);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public Object[] getOutputArguments() {
-    return getProperty(AuditUpdateMethodEventType.OUTPUT_ARGUMENTS).orElse(null);
-  }
-
-  @Override
-  public void setOutputArguments(Object[] value) {
-    setProperty(AuditUpdateMethodEventType.OUTPUT_ARGUMENTS, value);
+  public void validateChildren() {
+    super.validateChildren();
+    getInputArgumentsNode();
+    getMethodIdNode();
+    getOutputArgumentsNode();
+    getStatusCodeIdNode();
   }
 }

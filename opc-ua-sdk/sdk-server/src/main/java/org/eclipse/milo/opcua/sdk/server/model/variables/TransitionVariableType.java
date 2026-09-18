@@ -1,93 +1,158 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.variables;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part16/4.4.4">https://reference.opcfoundation.org/v105/Core/docs/Part16/4.4.4</a>
+ * Server API for the TransitionVariableType VariableType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part16/4.4.4">Model
+ *     documentation</a>
  */
 public interface TransitionVariableType extends BaseDataVariableType {
-  QualifiedProperty<Object> ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Id",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24"),
-          -1,
-          Object.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2762L);
 
-  QualifiedProperty<QualifiedName> NAME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Name",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=20"),
-          -1,
-          QualifiedName.class);
+  /**
+   * Returns the optional EffectiveTransitionTime child, a PropertyType with DataType UtcTime.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getEffectiveTransitionTimeNode();
 
-  QualifiedProperty<UInteger> NUMBER =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Number",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  /**
+   * Returns the Value of the EffectiveTransitionTime child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable DateTime getEffectiveTransitionTime();
 
-  QualifiedProperty<DateTime> TRANSITION_TIME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "TransitionTime",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
-          -1,
-          DateTime.class);
+  /**
+   * Sets the Value of the EffectiveTransitionTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setEffectiveTransitionTime(@Nullable DateTime value);
 
-  QualifiedProperty<DateTime> EFFECTIVE_TRANSITION_TIME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "EffectiveTransitionTime",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
-          -1,
-          DateTime.class);
+  /**
+   * Returns the mandatory Id child, a PropertyType with DataType BaseDataType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getIdNode();
 
-  Object getId();
+  /**
+   * Returns the Value of the Id child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Variant getId();
 
-  void setId(Object value);
+  /**
+   * Sets the Value of the Id child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setId(@Nullable Variant value);
 
-  PropertyType getIdNode();
+  /**
+   * Returns the optional Name child, a PropertyType with DataType QualifiedName.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getNameNode();
 
-  QualifiedName getName();
+  /**
+   * Returns the Value of the Name child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable QualifiedName getName();
 
-  void setName(QualifiedName value);
+  /**
+   * Sets the Value of the Name child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setName(@Nullable QualifiedName value);
 
-  PropertyType getNameNode();
+  /**
+   * Returns the optional Number child, a PropertyType with DataType UInt32.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getNumberNode();
 
-  UInteger getNumber();
+  /**
+   * Returns the Value of the Number child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getNumber();
 
-  void setNumber(UInteger value);
+  /**
+   * Sets the Value of the Number child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setNumber(@Nullable UInteger value);
 
-  PropertyType getNumberNode();
+  /**
+   * Returns the optional TransitionTime child, a PropertyType with DataType UtcTime.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getTransitionTimeNode();
 
-  DateTime getTransitionTime();
+  /**
+   * Returns the Value of the TransitionTime child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable DateTime getTransitionTime();
 
-  void setTransitionTime(DateTime value);
+  /**
+   * Sets the Value of the TransitionTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setTransitionTime(@Nullable DateTime value);
 
-  PropertyType getTransitionTimeNode();
+  /**
+   * Returns this node's Value.
+   *
+   * @throws UaRuntimeException if the Value does not convert.
+   */
+  @Nullable LocalizedText getTypedValue();
 
-  DateTime getEffectiveTransitionTime();
-
-  void setEffectiveTransitionTime(DateTime value);
-
-  PropertyType getEffectiveTransitionTimeNode();
+  /**
+   * Sets this node's Value.
+   *
+   * @throws UaRuntimeException if the value does not convert.
+   */
+  void setTypedValue(@Nullable LocalizedText value);
 }

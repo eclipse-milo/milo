@@ -865,7 +865,6 @@ public class ConditionBuilder {
 
     Set<String> optionalIncludes = new HashSet<>();
     optionalIncludes.add("TransitionTime");
-    optionalIncludes.add("SupportsFilteredRetain");
 
     if (adopting
         && (assignedNodeIds.containsKey(BrowsePath.of(new QualifiedName(0, "ConfirmedState")))
@@ -1056,7 +1055,6 @@ public class ConditionBuilder {
     node.setConditionClassName(conditionClassName);
     node.setBranchId(NodeId.NULL_VALUE);
     node.setRetain(false);
-    node.setSupportsFilteredRetain(false);
 
     if (node instanceof AlarmConditionTypeNode alarmNode) {
       initializeAlarmNode(alarmNode);
@@ -1078,49 +1076,46 @@ public class ConditionBuilder {
       node.setDisplayName(requireNonNull(displayName));
     }
 
-    if (node.getEventType() == null) {
+    if (!Condition.hasValue(node.getEventTypeNode())) {
       node.setEventType(typeDefinitionId);
     }
-    if (node.getEventId() == null) {
+    if (!Condition.hasValue(node.getEventIdNode())) {
       node.setEventId(ByteString.NULL_VALUE);
     }
-    if (node.getTime() == null) {
+    if (!Condition.hasValue(node.getTimeNode())) {
       node.setTime(DateTime.now());
     }
-    if (node.getReceiveTime() == null) {
+    if (!Condition.hasValue(node.getReceiveTimeNode())) {
       node.setReceiveTime(DateTime.NULL_VALUE);
     }
-    if (node.getMessage() == null) {
+    if (!Condition.hasValue(node.getMessageNode())) {
       node.setMessage(LocalizedText.NULL_VALUE);
     }
-    if (severityConfigured || node.getSeverity() == null) {
+    if (severityConfigured || !Condition.hasValue(node.getSeverityNode())) {
       node.setSeverity(severity);
     }
 
-    if (conditionNameConfigured || node.getConditionName() == null) {
+    if (conditionNameConfigured || !Condition.hasValue(node.getConditionNameNode())) {
       node.setConditionName(conditionName != null ? conditionName : browseName.name());
     }
-    if (conditionClassConfigured || node.getConditionClassId() == null) {
+    if (conditionClassConfigured || !Condition.hasValue(node.getConditionClassIdNode())) {
       node.setConditionClassId(conditionClassId);
     }
-    if (conditionClassConfigured || node.getConditionClassName() == null) {
+    if (conditionClassConfigured || !Condition.hasValue(node.getConditionClassNameNode())) {
       node.setConditionClassName(conditionClassName);
     }
-    if (node.getBranchId() == null) {
+    if (!Condition.hasValue(node.getBranchIdNode())) {
       node.setBranchId(NodeId.NULL_VALUE);
     }
-    if (node.getRetain() == null) {
+    if (!Condition.hasValue(node.getRetainNode())) {
       node.setRetain(false);
-    }
-    if (node.getSupportsFilteredRetain() == null) {
-      node.setSupportsFilteredRetain(false);
     }
 
     if (node instanceof AlarmConditionTypeNode alarmNode) {
-      if (inputNodeConfigured || alarmNode.getInputNode() == null) {
+      if (inputNodeConfigured || !Condition.hasValue(alarmNode.getInputNodeNode())) {
         alarmNode.setInputNode(inputNode != null ? inputNode : NodeId.NULL_VALUE);
       }
-      if (alarmNode.getSuppressedOrShelved() == null) {
+      if (!Condition.hasValue(alarmNode.getSuppressedOrShelvedNode())) {
         alarmNode.setSuppressedOrShelved(false);
       }
       if (maxTimeShelvedConfigured) {
@@ -1129,7 +1124,7 @@ public class ConditionBuilder {
     }
 
     if (node instanceof OffNormalAlarmTypeNode offNormalNode
-        && (normalStateConfigured || offNormalNode.getNormalState() == null)) {
+        && (normalStateConfigured || !Condition.hasValue(offNormalNode.getNormalStateNode()))) {
       offNormalNode.setNormalState(normalState != null ? normalState : NodeId.NULL_VALUE);
     }
 

@@ -59,7 +59,7 @@ public class AlarmCondition extends AcknowledgeableCondition {
     activeState = node.getActiveStateNode();
 
     ensureTwoStateDefaults(activeState, false, ACTIVE_TEXTS);
-    if (node.getSuppressedOrShelved() == null) {
+    if (!Condition.hasValue(node.getSuppressedOrShelvedNode())) {
       node.setSuppressedOrShelved(false);
     }
 

@@ -1,46 +1,76 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.variables;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelExType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
+import org.eclipse.milo.opcua.stack.core.types.structured.BuildInfo;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link BuildInfoType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.7">Model
+ *     documentation</a>
+ */
 public class BuildInfoTypeNode extends BaseDataVariableTypeNode implements BuildInfoType {
   public BuildInfoTypeNode(
       UaNodeContext context,
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       DataValue value,
       NodeId dataType,
       Integer valueRank,
-      UInteger[] arrayDimensions,
+      UInteger @Nullable [] arrayDimensions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions,
+        value,
+        dataType,
+        valueRank,
+        arrayDimensions);
+  }
+
+  public BuildInfoTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
+      DataValue value,
+      NodeId dataType,
+      Integer valueRank,
+      UInteger @Nullable [] arrayDimensions,
       UByte accessLevel,
       UByte userAccessLevel,
       Double minimumSamplingInterval,
@@ -68,155 +98,162 @@ public class BuildInfoTypeNode extends BaseDataVariableTypeNode implements Build
         accessLevelEx);
   }
 
-  public BuildInfoTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
-      DataValue value,
-      NodeId dataType,
-      Integer valueRank,
-      UInteger[] arrayDimensions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions,
-        value,
-        dataType,
-        valueRank,
-        arrayDimensions);
+  @Override
+  public BaseDataVariableTypeNode getBuildDateNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "BuildDate",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 294L),
+        -1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public BaseDataVariableTypeNode getProductUriNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "ProductUri");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+  public @Nullable DateTime getBuildDate() {
+    return ServerNodeSupport.read(this, getBuildDateNode(), DateTime.class, null);
   }
 
   @Override
-  public String getProductUri() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "ProductUri");
-    return component.map(node -> (String) node.getValue().getValue().getValue()).orElse(null);
-  }
-
-  @Override
-  public void setProductUri(String value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "ProductUri")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getManufacturerNameNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "ManufacturerName");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public String getManufacturerName() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "ManufacturerName");
-    return component.map(node -> (String) node.getValue().getValue().getValue()).orElse(null);
-  }
-
-  @Override
-  public void setManufacturerName(String value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "ManufacturerName")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getProductNameNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "ProductName");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public String getProductName() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "ProductName");
-    return component.map(node -> (String) node.getValue().getValue().getValue()).orElse(null);
-  }
-
-  @Override
-  public void setProductName(String value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "ProductName")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getSoftwareVersionNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "SoftwareVersion");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public String getSoftwareVersion() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "SoftwareVersion");
-    return component.map(node -> (String) node.getValue().getValue().getValue()).orElse(null);
-  }
-
-  @Override
-  public void setSoftwareVersion(String value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "SoftwareVersion")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setBuildDate(@Nullable DateTime value) {
+    ServerNodeSupport.write(this, getBuildDateNode(), value, false, false, false);
   }
 
   @Override
   public BaseDataVariableTypeNode getBuildNumberNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "BuildNumber");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "BuildNumber",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public String getBuildNumber() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "BuildNumber");
-    return component.map(node -> (String) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable String getBuildNumber() {
+    return ServerNodeSupport.read(this, getBuildNumberNode(), String.class, null);
   }
 
   @Override
-  public void setBuildNumber(String value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "BuildNumber")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setBuildNumber(@Nullable String value) {
+    ServerNodeSupport.write(this, getBuildNumberNode(), value, false, false, false);
   }
 
   @Override
-  public BaseDataVariableTypeNode getBuildDateNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "BuildDate");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+  public BaseDataVariableTypeNode getManufacturerNameNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "ManufacturerName",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public DateTime getBuildDate() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "BuildDate");
-    return component.map(node -> (DateTime) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable String getManufacturerName() {
+    return ServerNodeSupport.read(this, getManufacturerNameNode(), String.class, null);
   }
 
   @Override
-  public void setBuildDate(DateTime value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "BuildDate")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setManufacturerName(@Nullable String value) {
+    ServerNodeSupport.write(this, getManufacturerNameNode(), value, false, false, false);
+  }
+
+  @Override
+  public BaseDataVariableTypeNode getProductNameNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "ProductName",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable String getProductName() {
+    return ServerNodeSupport.read(this, getProductNameNode(), String.class, null);
+  }
+
+  @Override
+  public void setProductName(@Nullable String value) {
+    ServerNodeSupport.write(this, getProductNameNode(), value, false, false, false);
+  }
+
+  @Override
+  public BaseDataVariableTypeNode getProductUriNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "ProductUri",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable String getProductUri() {
+    return ServerNodeSupport.read(this, getProductUriNode(), String.class, null);
+  }
+
+  @Override
+  public void setProductUri(@Nullable String value) {
+    ServerNodeSupport.write(this, getProductUriNode(), value, false, false, false);
+  }
+
+  @Override
+  public BaseDataVariableTypeNode getSoftwareVersionNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "SoftwareVersion",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable String getSoftwareVersion() {
+    return ServerNodeSupport.read(this, getSoftwareVersionNode(), String.class, null);
+  }
+
+  @Override
+  public void setSoftwareVersion(@Nullable String value) {
+    ServerNodeSupport.write(this, getSoftwareVersionNode(), value, false, false, false);
+  }
+
+  @Override
+  public void validateChildren() {
+    super.validateChildren();
+    getBuildDateNode();
+    getBuildNumberNode();
+    getManufacturerNameNode();
+    getProductNameNode();
+    getProductUriNode();
+    getSoftwareVersionNode();
+  }
+
+  @Override
+  public @Nullable BuildInfo getTypedValue() {
+    return ServerNodeSupport.read(this, this, BuildInfo.class, null);
+  }
+
+  @Override
+  public void setTypedValue(@Nullable BuildInfo value) {
+    ServerNodeSupport.write(this, this, value, false, false, true);
   }
 }

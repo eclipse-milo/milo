@@ -1,19 +1,9 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.variables;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -21,9 +11,13 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelExType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
+import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescriptionDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceListEntryDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/** Node implementation of {@link ReferenceDescriptionVariableType}. */
 public class ReferenceDescriptionVariableTypeNode extends BaseDataVariableTypeNode
     implements ReferenceDescriptionVariableType {
   public ReferenceDescriptionVariableTypeNode(
@@ -31,16 +25,48 @@ public class ReferenceDescriptionVariableTypeNode extends BaseDataVariableTypeNo
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       DataValue value,
       NodeId dataType,
       Integer valueRank,
-      UInteger[] arrayDimensions,
+      UInteger @Nullable [] arrayDimensions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions,
+        value,
+        dataType,
+        valueRank,
+        arrayDimensions);
+  }
+
+  public ReferenceDescriptionVariableTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
+      DataValue value,
+      NodeId dataType,
+      Integer valueRank,
+      UInteger @Nullable [] arrayDimensions,
       UByte accessLevel,
       UByte userAccessLevel,
       Double minimumSamplingInterval,
@@ -68,52 +94,51 @@ public class ReferenceDescriptionVariableTypeNode extends BaseDataVariableTypeNo
         accessLevelEx);
   }
 
-  public ReferenceDescriptionVariableTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
-      DataValue value,
-      NodeId dataType,
-      Integer valueRank,
-      UInteger[] arrayDimensions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions,
+  @Override
+  public @Nullable PropertyTypeNode getReferenceRefinementNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "ReferenceRefinement",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 32660L),
+        1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable ReferenceListEntryDataType @Nullable [] getReferenceRefinement() {
+    return ServerNodeSupport.readArray(
+        this, getReferenceRefinementNode(), ReferenceListEntryDataType.class, null);
+  }
+
+  @Override
+  public void setReferenceRefinement(@Nullable ReferenceListEntryDataType @Nullable [] value) {
+    ServerNodeSupport.write(
+        this,
+        getReferenceRefinementNode(),
+        Namespaces.OPC_UA,
+        "ReferenceRefinement",
         value,
-        dataType,
-        valueRank,
-        arrayDimensions);
+        true,
+        false,
+        true);
   }
 
   @Override
-  public PropertyTypeNode getReferenceRefinementNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(ReferenceDescriptionVariableType.REFERENCE_REFINEMENT);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public void validateChildren() {
+    super.validateChildren();
+    getReferenceRefinementNode();
   }
 
   @Override
-  public ReferenceListEntryDataType[] getReferenceRefinement() {
-    return getProperty(ReferenceDescriptionVariableType.REFERENCE_REFINEMENT).orElse(null);
+  public @Nullable ReferenceDescriptionDataType getTypedValue() {
+    return ServerNodeSupport.read(this, this, ReferenceDescriptionDataType.class, null);
   }
 
   @Override
-  public void setReferenceRefinement(ReferenceListEntryDataType[] value) {
-    setProperty(ReferenceDescriptionVariableType.REFERENCE_REFINEMENT, value);
+  public void setTypedValue(@Nullable ReferenceDescriptionDataType value) {
+    ServerNodeSupport.write(this, this, value, false, false, true);
   }
 }

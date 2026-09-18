@@ -1,278 +1,229 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
 import java.util.UUID;
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.core.nodes.MethodNode;
+import org.eclipse.milo.opcua.sdk.core.model.methods.ConfigurationFileTypeCloseAndUpdate;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
-import org.eclipse.milo.opcua.sdk.server.methods.Out;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
-import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.types.structured.ConfigurationUpdateTargetType;
-import org.eclipse.milo.opcua.stack.core.util.Lazy;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.5/#7.8.5.1">https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.5/#7.8.5.1</a>
+ * Server API for the ConfigurationFileType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.5/#7.8.5.1">Model
+ *     documentation</a>
  */
 public interface ConfigurationFileType extends FileType {
-  QualifiedProperty<DateTime> LAST_UPDATE_TIME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "LastUpdateTime",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
-          -1,
-          DateTime.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 15437L);
 
-  QualifiedProperty<UInteger> CURRENT_VERSION =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "CurrentVersion",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=20998"),
-          -1,
-          UInteger.class);
+  /**
+   * Returns the mandatory ActivityTimeout child, a PropertyType with DataType Duration.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getActivityTimeoutNode();
 
-  QualifiedProperty<Double> ACTIVITY_TIMEOUT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ActivityTimeout",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
-          -1,
-          Double.class);
+  /**
+   * Returns the Value of the ActivityTimeout child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Double getActivityTimeout();
 
-  QualifiedProperty<NodeId> SUPPORTED_DATA_TYPE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "SupportedDataType",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-          -1,
-          NodeId.class);
+  /**
+   * Sets the Value of the ActivityTimeout child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setActivityTimeout(@Nullable Double value);
 
-  DateTime getLastUpdateTime();
+  /**
+   * Returns the mandatory CurrentVersion child, a PropertyType with DataType VersionTime.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getCurrentVersionNode();
 
-  void setLastUpdateTime(DateTime value);
+  /**
+   * Returns the Value of the CurrentVersion child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getCurrentVersion();
 
-  PropertyType getLastUpdateTimeNode();
+  /**
+   * Sets the Value of the CurrentVersion child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setCurrentVersion(@Nullable UInteger value);
 
-  UInteger getCurrentVersion();
+  /**
+   * Returns the mandatory LastUpdateTime child, a PropertyType with DataType UtcTime.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getLastUpdateTimeNode();
 
-  void setCurrentVersion(UInteger value);
+  /**
+   * Returns the Value of the LastUpdateTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable DateTime getLastUpdateTime();
 
-  PropertyType getCurrentVersionNode();
+  /**
+   * Sets the Value of the LastUpdateTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setLastUpdateTime(@Nullable DateTime value);
 
-  Double getActivityTimeout();
+  /**
+   * Returns the mandatory SupportedDataType child, a PropertyType with DataType NodeId.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getSupportedDataTypeNode();
 
-  void setActivityTimeout(Double value);
+  /**
+   * Returns the Value of the SupportedDataType child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable NodeId getSupportedDataType();
 
-  PropertyType getActivityTimeoutNode();
+  /**
+   * Sets the Value of the SupportedDataType child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setSupportedDataType(@Nullable NodeId value);
 
-  NodeId getSupportedDataType();
+  /**
+   * Returns the mandatory CloseAndUpdate Method node.
+   *
+   * @throws UaRuntimeException if the Method is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.5/#7.8.5.2">Model
+   *     documentation</a>
+   */
+  UaMethodNode getCloseAndUpdateMethodNode();
 
-  void setSupportedDataType(NodeId value);
+  /**
+   * Sets this instance's CloseAndUpdate handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setCloseAndUpdateHandler(@Nullable CloseAndUpdateHandler handler);
 
-  PropertyType getSupportedDataTypeNode();
+  /**
+   * Returns the mandatory ConfirmUpdate Method node.
+   *
+   * @throws UaRuntimeException if the Method is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.5/#7.8.5.3">Model
+   *     documentation</a>
+   */
+  UaMethodNode getConfirmUpdateMethodNode();
 
-  MethodNode getConfirmUpdateMethodNode();
+  /**
+   * Sets this instance's ConfirmUpdate handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setConfirmUpdateHandler(@Nullable ConfirmUpdateHandler handler);
 
-  MethodNode getCloseAndUpdateMethodNode();
+  /**
+   * Sets this instance's Method handlers, including inherited handlers, from one implementation;
+   * null clears them and restores Method-node fallback. Absent optional Methods are skipped.
+   * Changes are applied in order; a failure does not roll back earlier changes.
+   *
+   * @throws UaRuntimeException if a mandatory Method is absent, or a Method is ambiguous or
+   *     incompatible.
+   */
+  void setMethods(@Nullable Methods methods);
 
-  abstract class ConfirmUpdateMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    public ConfirmUpdateMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "UpdateId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      UUID updateId = (UUID) inputValues[0].getValue();
-      invoke(context, updateId);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, UUID updateId)
+  /**
+   * Handles calls to the CloseAndUpdate Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.5/#7.8.5.2">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface CloseAndUpdateHandler {
+    /**
+     * Handles a call to the CloseAndUpdate Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    ConfigurationFileTypeCloseAndUpdate.Outputs closeAndUpdate(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable UInteger fileHandle,
+        @Nullable UInteger versionToUpdate,
+        @Nullable ConfigurationUpdateTargetType @Nullable [] targets,
+        @Nullable Double revertAfterTime,
+        @Nullable Double restartDelayTime)
         throws UaException;
   }
 
-  abstract class CloseAndUpdateMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-    public CloseAndUpdateMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "FileHandle",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "VersionToUpdate",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=20998")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "Targets",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15538")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", "")),
-              new Argument(
-                  "RevertAfterTime",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "RestartDelayTime",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "UpdateResults",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=19")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", "")),
-              new Argument(
-                  "NewVersion",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=20998")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "UpdateId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      UInteger fileHandle = (UInteger) inputValues[0].getValue();
-      UInteger versionToUpdate = (UInteger) inputValues[1].getValue();
-      ConfigurationUpdateTargetType[] targets =
-          (ConfigurationUpdateTargetType[]) inputValues[2].getValue();
-      Double revertAfterTime = (Double) inputValues[3].getValue();
-      Double restartDelayTime = (Double) inputValues[4].getValue();
-      Out<StatusCode[]> updateResults = new Out<>();
-      Out<UInteger> newVersion = new Out<>();
-      Out<UUID> updateId = new Out<>();
-      invoke(
-          context,
-          fileHandle,
-          versionToUpdate,
-          targets,
-          revertAfterTime,
-          restartDelayTime,
-          updateResults,
-          newVersion,
-          updateId);
-      return new Variant[] {
-        new Variant(updateResults.get()), new Variant(newVersion.get()), new Variant(updateId.get())
-      };
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context,
-        UInteger fileHandle,
-        UInteger versionToUpdate,
-        ConfigurationUpdateTargetType[] targets,
-        Double revertAfterTime,
-        Double restartDelayTime,
-        Out<StatusCode[]> updateResults,
-        Out<UInteger> newVersion,
-        Out<UUID> updateId)
+  /**
+   * Handles calls to the ConfirmUpdate Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.5/#7.8.5.3">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface ConfirmUpdateHandler {
+    /**
+     * Handles a call to the ConfirmUpdate Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void confirmUpdate(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable UUID updateId)
         throws UaException;
+  }
+
+  /** Implements this type's Methods. Unimplemented Methods report Bad_NotImplemented. */
+  interface Methods extends FileType.Methods {
+    /**
+     * Handles a call to the CloseAndUpdate Method; see {@link
+     * CloseAndUpdateHandler#closeAndUpdate}.
+     */
+    default ConfigurationFileTypeCloseAndUpdate.Outputs closeAndUpdate(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable UInteger fileHandle,
+        @Nullable UInteger versionToUpdate,
+        @Nullable ConfigurationUpdateTargetType @Nullable [] targets,
+        @Nullable Double revertAfterTime,
+        @Nullable Double restartDelayTime)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /**
+     * Handles a call to the ConfirmUpdate Method; see {@link ConfirmUpdateHandler#confirmUpdate}.
+     */
+    default void confirmUpdate(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable UUID updateId)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
   }
 }

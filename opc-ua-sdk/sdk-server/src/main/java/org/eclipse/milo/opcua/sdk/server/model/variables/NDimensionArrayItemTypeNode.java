@@ -1,19 +1,9 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.variables;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -23,7 +13,15 @@ import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelExType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AxisInformation;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link NDimensionArrayItemType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.4/#5.3.4.6">Model
+ *     documentation</a>
+ */
 public class NDimensionArrayItemTypeNode extends ArrayItemTypeNode
     implements NDimensionArrayItemType {
   public NDimensionArrayItemTypeNode(
@@ -31,16 +29,48 @@ public class NDimensionArrayItemTypeNode extends ArrayItemTypeNode
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       DataValue value,
       NodeId dataType,
       Integer valueRank,
-      UInteger[] arrayDimensions,
+      UInteger @Nullable [] arrayDimensions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions,
+        value,
+        dataType,
+        valueRank,
+        arrayDimensions);
+  }
+
+  public NDimensionArrayItemTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
+      DataValue value,
+      NodeId dataType,
+      Integer valueRank,
+      UInteger @Nullable [] arrayDimensions,
       UByte accessLevel,
       UByte userAccessLevel,
       Double minimumSamplingInterval,
@@ -68,51 +98,32 @@ public class NDimensionArrayItemTypeNode extends ArrayItemTypeNode
         accessLevelEx);
   }
 
-  public NDimensionArrayItemTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
-      DataValue value,
-      NodeId dataType,
-      Integer valueRank,
-      UInteger[] arrayDimensions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions,
-        value,
-        dataType,
-        valueRank,
-        arrayDimensions);
-  }
-
   @Override
   public PropertyTypeNode getAxisDefinitionNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(NDimensionArrayItemType.AXIS_DEFINITION);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "AxisDefinition",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12079L),
+        1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public AxisInformation[] getAxisDefinition() {
-    return getProperty(NDimensionArrayItemType.AXIS_DEFINITION).orElse(null);
+  public @Nullable AxisInformation @Nullable [] getAxisDefinition() {
+    return ServerNodeSupport.readArray(this, getAxisDefinitionNode(), AxisInformation.class, null);
   }
 
   @Override
-  public void setAxisDefinition(AxisInformation[] value) {
-    setProperty(NDimensionArrayItemType.AXIS_DEFINITION, value);
+  public void setAxisDefinition(@Nullable AxisInformation @Nullable [] value) {
+    ServerNodeSupport.write(this, getAxisDefinitionNode(), value, true, false, true);
+  }
+
+  @Override
+  public void validateChildren() {
+    super.validateChildren();
+    getAxisDefinitionNode();
   }
 }

@@ -1,35 +1,24 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.variables;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.structured.NumberRange;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.2/#5.3.2.6">https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.2/#5.3.2.6</a>
+ * Server API for the AnalogNumberItemType VariableType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.2/#5.3.2.6">Model
+ *     documentation</a>
  */
 public interface AnalogNumberItemType extends AnalogItemType {
-  QualifiedProperty<NumberRange> EU_NUMBER_RANGE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "EUNumberRange",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=23903"),
-          -1,
-          NumberRange.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 23906L);
 
-  NumberRange getEuNumberRange();
-
-  void setEuNumberRange(NumberRange value);
-
-  PropertyType getEuNumberRangeNode();
+  /**
+   * Returns the mandatory EUNumberRange child, a PropertyType with DataType NumberRange.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getEUNumberRangeNode();
 }

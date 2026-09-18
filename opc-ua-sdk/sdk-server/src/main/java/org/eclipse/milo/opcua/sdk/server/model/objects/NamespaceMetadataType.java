@@ -1,196 +1,323 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.IdType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.13">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.13</a>
+ * Server API for the NamespaceMetadataType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.13">Model
+ *     documentation</a>
  */
 public interface NamespaceMetadataType extends BaseObjectType {
-  QualifiedProperty<String> NAMESPACE_URI =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "NamespaceUri",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 11616L);
 
-  QualifiedProperty<String> NAMESPACE_VERSION =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "NamespaceVersion",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  /**
+   * Returns the optional ConfigurationVersion child, a PropertyType with DataType VersionTime.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getConfigurationVersionNode();
 
-  QualifiedProperty<DateTime> NAMESPACE_PUBLICATION_DATE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "NamespacePublicationDate",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=13"),
-          -1,
-          DateTime.class);
+  /**
+   * Returns the Value of the ConfigurationVersion child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getConfigurationVersion();
 
-  QualifiedProperty<Boolean> IS_NAMESPACE_SUBSET =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "IsNamespaceSubset",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
+  /**
+   * Sets the Value of the ConfigurationVersion child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setConfigurationVersion(@Nullable UInteger value);
 
-  QualifiedProperty<IdType[]> STATIC_NODE_ID_TYPES =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "StaticNodeIdTypes",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=256"),
-          1,
-          IdType[].class);
+  /**
+   * Returns the optional DefaultAccessRestrictions child, a PropertyType with DataType
+   * AccessRestrictionType.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getDefaultAccessRestrictionsNode();
 
-  QualifiedProperty<String[]> STATIC_NUMERIC_NODE_ID_RANGE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "StaticNumericNodeIdRange",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=291"),
-          1,
-          String[].class);
+  /**
+   * Returns the Value of the DefaultAccessRestrictions child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable AccessRestrictionType getDefaultAccessRestrictions();
 
-  QualifiedProperty<String> STATIC_STRING_NODE_ID_PATTERN =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "StaticStringNodeIdPattern",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  /**
+   * Sets the Value of the DefaultAccessRestrictions child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setDefaultAccessRestrictions(@Nullable AccessRestrictionType value);
 
-  QualifiedProperty<RolePermissionType[]> DEFAULT_ROLE_PERMISSIONS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "DefaultRolePermissions",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=96"),
-          1,
-          RolePermissionType[].class);
+  /**
+   * Returns the optional DefaultRolePermissions child, a PropertyType with DataType
+   * RolePermissionType.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getDefaultRolePermissionsNode();
 
-  QualifiedProperty<RolePermissionType[]> DEFAULT_USER_ROLE_PERMISSIONS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "DefaultUserRolePermissions",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=96"),
-          1,
-          RolePermissionType[].class);
+  /**
+   * Returns the Value of the DefaultRolePermissions child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable RolePermissionType @Nullable [] getDefaultRolePermissions();
 
-  QualifiedProperty<AccessRestrictionType> DEFAULT_ACCESS_RESTRICTIONS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "DefaultAccessRestrictions",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=95"),
-          -1,
-          AccessRestrictionType.class);
+  /**
+   * Sets the Value of the DefaultRolePermissions child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setDefaultRolePermissions(@Nullable RolePermissionType @Nullable [] value);
 
-  QualifiedProperty<UInteger> CONFIGURATION_VERSION =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ConfigurationVersion",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=20998"),
-          -1,
-          UInteger.class);
+  /**
+   * Returns the optional DefaultUserRolePermissions child, a PropertyType with DataType
+   * RolePermissionType.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getDefaultUserRolePermissionsNode();
 
-  QualifiedProperty<String> MODEL_VERSION =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ModelVersion",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24263"),
-          -1,
-          String.class);
+  /**
+   * Returns the Value of the DefaultUserRolePermissions child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable RolePermissionType @Nullable [] getDefaultUserRolePermissions();
 
-  String getNamespaceUri();
+  /**
+   * Sets the Value of the DefaultUserRolePermissions child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setDefaultUserRolePermissions(@Nullable RolePermissionType @Nullable [] value);
 
-  void setNamespaceUri(String value);
+  /**
+   * Returns the mandatory IsNamespaceSubset child, a PropertyType with DataType Boolean.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getIsNamespaceSubsetNode();
 
-  PropertyType getNamespaceUriNode();
+  /**
+   * Returns the Value of the IsNamespaceSubset child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Boolean getIsNamespaceSubset();
 
-  String getNamespaceVersion();
+  /**
+   * Sets the Value of the IsNamespaceSubset child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setIsNamespaceSubset(@Nullable Boolean value);
 
-  void setNamespaceVersion(String value);
+  /**
+   * Returns the optional ModelVersion child, a PropertyType with DataType SemanticVersionString.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getModelVersionNode();
 
-  PropertyType getNamespaceVersionNode();
+  /**
+   * Returns the Value of the ModelVersion child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getModelVersion();
 
-  DateTime getNamespacePublicationDate();
+  /**
+   * Sets the Value of the ModelVersion child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setModelVersion(@Nullable String value);
 
-  void setNamespacePublicationDate(DateTime value);
+  /**
+   * Returns the optional NamespaceFile child, a AddressSpaceFileType.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.12">AddressSpaceFileType
+   *     documentation</a>
+   */
+  @Nullable AddressSpaceFileTypeNode getNamespaceFileNode();
 
-  PropertyType getNamespacePublicationDateNode();
+  /**
+   * Returns the mandatory NamespacePublicationDate child, a PropertyType with DataType DateTime.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getNamespacePublicationDateNode();
 
-  Boolean getIsNamespaceSubset();
+  /**
+   * Returns the Value of the NamespacePublicationDate child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable DateTime getNamespacePublicationDate();
 
-  void setIsNamespaceSubset(Boolean value);
+  /**
+   * Sets the Value of the NamespacePublicationDate child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setNamespacePublicationDate(@Nullable DateTime value);
 
-  PropertyType getIsNamespaceSubsetNode();
+  /**
+   * Returns the mandatory NamespaceUri child, a PropertyType with DataType String.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getNamespaceUriNode();
 
-  IdType[] getStaticNodeIdTypes();
+  /**
+   * Returns the Value of the NamespaceUri child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getNamespaceUri();
 
-  void setStaticNodeIdTypes(IdType[] value);
+  /**
+   * Sets the Value of the NamespaceUri child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setNamespaceUri(@Nullable String value);
 
-  PropertyType getStaticNodeIdTypesNode();
+  /**
+   * Returns the mandatory NamespaceVersion child, a PropertyType with DataType String.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getNamespaceVersionNode();
 
-  String[] getStaticNumericNodeIdRange();
+  /**
+   * Returns the Value of the NamespaceVersion child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getNamespaceVersion();
 
-  void setStaticNumericNodeIdRange(String[] value);
+  /**
+   * Sets the Value of the NamespaceVersion child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setNamespaceVersion(@Nullable String value);
 
-  PropertyType getStaticNumericNodeIdRangeNode();
+  /**
+   * Returns the mandatory StaticNodeIdTypes child, a PropertyType with DataType IdType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getStaticNodeIdTypesNode();
 
-  String getStaticStringNodeIdPattern();
+  /**
+   * Returns the Value of the StaticNodeIdTypes child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  IdType @Nullable [] getStaticNodeIdTypes();
 
-  void setStaticStringNodeIdPattern(String value);
+  /**
+   * Sets the Value of the StaticNodeIdTypes child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setStaticNodeIdTypes(IdType @Nullable [] value);
 
-  PropertyType getStaticStringNodeIdPatternNode();
+  /**
+   * Returns the mandatory StaticNumericNodeIdRange child, a PropertyType with DataType
+   * NumericRange.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getStaticNumericNodeIdRangeNode();
 
-  RolePermissionType[] getDefaultRolePermissions();
+  /**
+   * Returns the Value of the StaticNumericNodeIdRange child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String @Nullable [] getStaticNumericNodeIdRange();
 
-  void setDefaultRolePermissions(RolePermissionType[] value);
+  /**
+   * Sets the Value of the StaticNumericNodeIdRange child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setStaticNumericNodeIdRange(@Nullable String @Nullable [] value);
 
-  PropertyType getDefaultRolePermissionsNode();
+  /**
+   * Returns the mandatory StaticStringNodeIdPattern child, a PropertyType with DataType String.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getStaticStringNodeIdPatternNode();
 
-  RolePermissionType[] getDefaultUserRolePermissions();
+  /**
+   * Returns the Value of the StaticStringNodeIdPattern child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getStaticStringNodeIdPattern();
 
-  void setDefaultUserRolePermissions(RolePermissionType[] value);
-
-  PropertyType getDefaultUserRolePermissionsNode();
-
-  AccessRestrictionType getDefaultAccessRestrictions();
-
-  void setDefaultAccessRestrictions(AccessRestrictionType value);
-
-  PropertyType getDefaultAccessRestrictionsNode();
-
-  UInteger getConfigurationVersion();
-
-  void setConfigurationVersion(UInteger value);
-
-  PropertyType getConfigurationVersionNode();
-
-  String getModelVersion();
-
-  void setModelVersion(String value);
-
-  PropertyType getModelVersionNode();
-
-  AddressSpaceFileType getNamespaceFileNode();
+  /**
+   * Sets the Value of the StaticStringNodeIdPattern child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setStaticStringNodeIdPattern(@Nullable String value);
 }

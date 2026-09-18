@@ -1,94 +1,152 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.variables;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.AxisScaleEnumeration;
 import org.eclipse.milo.opcua.stack.core.types.structured.EUInformation;
 import org.eclipse.milo.opcua.stack.core.types.structured.Range;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.4/#5.3.4.1">https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.4/#5.3.4.1</a>
+ * Server API for the ArrayItemType VariableType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.4/#5.3.4.1">Model
+ *     documentation</a>
  */
 public interface ArrayItemType extends DataItemType {
-  QualifiedProperty<Range> INSTRUMENT_RANGE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "InstrumentRange",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=884"),
-          -1,
-          Range.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 12021L);
 
-  QualifiedProperty<Range> EU_RANGE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "EURange",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=884"),
-          -1,
-          Range.class);
+  /**
+   * Returns the mandatory AxisScaleType child, a PropertyType with DataType AxisScaleEnumeration.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getAxisScaleTypeNode();
 
-  QualifiedProperty<EUInformation> ENGINEERING_UNITS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "EngineeringUnits",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=887"),
-          -1,
-          EUInformation.class);
+  /**
+   * Returns the Value of the AxisScaleType child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable AxisScaleEnumeration getAxisScaleType();
 
-  QualifiedProperty<LocalizedText> TITLE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Title",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
-          -1,
-          LocalizedText.class);
+  /**
+   * Sets the Value of the AxisScaleType child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setAxisScaleType(@Nullable AxisScaleEnumeration value);
 
-  QualifiedProperty<AxisScaleEnumeration> AXIS_SCALE_TYPE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "AxisScaleType",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12077"),
-          -1,
-          AxisScaleEnumeration.class);
+  /**
+   * Returns the mandatory EURange child, a PropertyType with DataType Range.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getEURangeNode();
 
-  Range getInstrumentRange();
+  /**
+   * Returns the Value of the EURange child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Range getEURange();
 
-  void setInstrumentRange(Range value);
+  /**
+   * Sets the Value of the EURange child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setEURange(@Nullable Range value);
 
-  PropertyType getInstrumentRangeNode();
+  /**
+   * Returns the mandatory EngineeringUnits child, a PropertyType with DataType EUInformation.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getEngineeringUnits_Node();
 
-  Range getEuRange();
+  /**
+   * Returns the Value of the EngineeringUnits child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable EUInformation getEngineeringUnits_();
 
-  void setEuRange(Range value);
+  /**
+   * Sets the Value of the EngineeringUnits child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setEngineeringUnits_(@Nullable EUInformation value);
 
-  PropertyType getEuRangeNode();
+  /**
+   * Returns the optional InstrumentRange child, a PropertyType with DataType Range.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getInstrumentRangeNode();
 
-  EUInformation getEngineeringUnits();
+  /**
+   * Returns the Value of the InstrumentRange child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Range getInstrumentRange();
 
-  void setEngineeringUnits(EUInformation value);
+  /**
+   * Sets the Value of the InstrumentRange child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setInstrumentRange(@Nullable Range value);
 
-  PropertyType getEngineeringUnitsNode();
+  /**
+   * Returns the mandatory Title child, a PropertyType with DataType LocalizedText.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getTitleNode();
 
-  LocalizedText getTitle();
+  /**
+   * Returns the Value of the Title child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable LocalizedText getTitle();
 
-  void setTitle(LocalizedText value);
+  /**
+   * Sets the Value of the Title child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setTitle(@Nullable LocalizedText value);
 
-  PropertyType getTitleNode();
+  /**
+   * Returns this node's Value.
+   *
+   * @throws UaRuntimeException if the Value does not convert.
+   */
+  @Nullable Variant getTypedValue();
 
-  AxisScaleEnumeration getAxisScaleType();
-
-  void setAxisScaleType(AxisScaleEnumeration value);
-
-  PropertyType getAxisScaleTypeNode();
+  /**
+   * Sets this node's Value.
+   *
+   * @throws UaRuntimeException if the value does not convert.
+   */
+  void setTypedValue(@Nullable Variant value);
 }

@@ -1,36 +1,41 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.structured.DeleteNodesItem;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.21">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.21</a>
+ * Server API for the AuditDeleteNodesEventType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.21">Model
+ *     documentation</a>
  */
 public interface AuditDeleteNodesEventType extends AuditNodeManagementEventType {
-  QualifiedProperty<DeleteNodesItem[]> NODES_TO_DELETE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "NodesToDelete",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=382"),
-          1,
-          DeleteNodesItem[].class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2093L);
 
-  DeleteNodesItem[] getNodesToDelete();
+  /**
+   * Returns the mandatory NodesToDelete child, a PropertyType with DataType DeleteNodesItem.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getNodesToDeleteNode();
 
-  void setNodesToDelete(DeleteNodesItem[] value);
+  /**
+   * Returns the Value of the NodesToDelete child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable DeleteNodesItem @Nullable [] getNodesToDelete();
 
-  PropertyType getNodesToDeleteNode();
+  /**
+   * Sets the Value of the NodesToDelete child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setNodesToDelete(@Nullable DeleteNodesItem @Nullable [] value);
 }

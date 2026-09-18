@@ -1,80 +1,115 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.structured.SignedSoftwareCertificate;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserIdentityToken;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.10">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.10</a>
+ * Server API for the AuditActivateSessionEventType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.10">Model
+ *     documentation</a>
  */
 public interface AuditActivateSessionEventType extends AuditSessionEventType {
-  QualifiedProperty<SignedSoftwareCertificate[]> CLIENT_SOFTWARE_CERTIFICATES =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ClientSoftwareCertificates",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=344"),
-          1,
-          SignedSoftwareCertificate[].class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2075L);
 
-  QualifiedProperty<UserIdentityToken> USER_IDENTITY_TOKEN =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "UserIdentityToken",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=316"),
-          -1,
-          UserIdentityToken.class);
+  /**
+   * Returns the mandatory ClientSoftwareCertificates child, a PropertyType with DataType
+   * SignedSoftwareCertificate.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getClientSoftwareCertificatesNode();
 
-  QualifiedProperty<String> SECURE_CHANNEL_ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "SecureChannelId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  /**
+   * Returns the Value of the ClientSoftwareCertificates child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable SignedSoftwareCertificate @Nullable [] getClientSoftwareCertificates();
 
-  QualifiedProperty<NodeId[]> CURRENT_ROLE_IDS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "CurrentRoleIds",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-          1,
-          NodeId[].class);
+  /**
+   * Sets the Value of the ClientSoftwareCertificates child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setClientSoftwareCertificates(@Nullable SignedSoftwareCertificate @Nullable [] value);
 
-  SignedSoftwareCertificate[] getClientSoftwareCertificates();
+  /**
+   * Returns the optional CurrentRoleIds child, a PropertyType with DataType NodeId.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getCurrentRoleIdsNode();
 
-  void setClientSoftwareCertificates(SignedSoftwareCertificate[] value);
+  /**
+   * Returns the Value of the CurrentRoleIds child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  NodeId @Nullable [] getCurrentRoleIds();
 
-  PropertyType getClientSoftwareCertificatesNode();
+  /**
+   * Sets the Value of the CurrentRoleIds child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setCurrentRoleIds(NodeId @Nullable [] value);
 
-  UserIdentityToken getUserIdentityToken();
+  /**
+   * Returns the mandatory SecureChannelId child, a PropertyType with DataType String.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getSecureChannelIdNode();
 
-  void setUserIdentityToken(UserIdentityToken value);
+  /**
+   * Returns the Value of the SecureChannelId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getSecureChannelId();
 
-  PropertyType getUserIdentityTokenNode();
+  /**
+   * Sets the Value of the SecureChannelId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setSecureChannelId(@Nullable String value);
 
-  String getSecureChannelId();
+  /**
+   * Returns the mandatory UserIdentityToken child, a PropertyType with DataType UserIdentityToken.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getUserIdentityTokenNode();
 
-  void setSecureChannelId(String value);
+  /**
+   * Returns the Value of the UserIdentityToken child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UserIdentityToken getUserIdentityToken();
 
-  PropertyType getSecureChannelIdNode();
-
-  NodeId[] getCurrentRoleIds();
-
-  void setCurrentRoleIds(NodeId[] value);
-
-  PropertyType getCurrentRoleIdsNode();
+  /**
+   * Sets the Value of the UserIdentityToken child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setUserIdentityToken(@Nullable UserIdentityToken value);
 }

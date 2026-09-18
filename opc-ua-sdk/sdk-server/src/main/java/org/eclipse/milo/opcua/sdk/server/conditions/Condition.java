@@ -22,13 +22,15 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.eclipse.milo.opcua.sdk.core.Reference;
+import org.eclipse.milo.opcua.sdk.core.model.methods.ConditionTypeAddComment;
+import org.eclipse.milo.opcua.sdk.core.model.methods.ConditionTypeDisable;
+import org.eclipse.milo.opcua.sdk.core.model.methods.ConditionTypeEnable;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.conditions.ConditionNodeTraversal.DiscoveredMethod;
 import org.eclipse.milo.opcua.sdk.server.conditions.ConditionNodeTraversal.MethodSurface;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext;
 import org.eclipse.milo.opcua.sdk.server.methods.MethodInvocationHandler;
-import org.eclipse.milo.opcua.sdk.server.model.objects.ConditionType;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ConditionTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.ConditionVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
@@ -41,6 +43,7 @@ import org.eclipse.milo.opcua.sdk.server.nodes.filters.AttributeFilter;
 import org.eclipse.milo.opcua.sdk.server.nodes.filters.AttributeFilterChain;
 import org.eclipse.milo.opcua.sdk.server.nodes.filters.AttributeFilterContext;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
+import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
@@ -52,6 +55,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.util.NonceUtil;
 import org.jspecify.annotations.Nullable;
 
@@ -435,9 +439,9 @@ public class Condition {
    * with the full historical acceptance window.
    */
   final void rehydrateCurrentBranch() {
-    ByteString eventId = node.getEventId();
+    ByteString eventId = storedValue(node.getEventIdNode(), ByteString.class);
     if (eventId != null && !eventId.isNull()) {
-      DateTime time = node.getTime();
+      DateTime time = storedValue(node.getTimeNode(), DateTime.class);
       trunk.recordEvent(eventId, time != null ? time : DateTime.NULL_VALUE);
     }
   }
@@ -711,7 +715,7 @@ public class Condition {
               ? statusCode
               : null,
           comment != null && currentValue(comment) instanceof LocalizedText text ? text : null,
-          node.getClientUserId(),
+          storedValue(node.getClientUserIdNode(), String.class),
           captureShelving(),
           List.of(captureBranch(trunk)));
     } finally {
@@ -980,42 +984,49 @@ public class Condition {
     deleteUnsupportedMethod(methodSurface, "ConditionRefresh");
     deleteUnsupportedMethod(methodSurface, "ConditionRefresh2");
 
-    DiscoveredMethod enable = methodSurface.get("Enable");
-    if (enable != null) {
-      installMethodHandler(
-          enable,
-          new ConditionType.EnableMethod(enable.node()) {
-            @Override
-            protected void invoke(InvocationContext context) throws UaException {
-              handleEnable(context);
-            }
-          });
-    }
+    installMethodHandler(
+        methodSurface,
+        "Enable",
+        ConditionTypeEnable::inputArguments,
+        ConditionTypeEnable::outputArguments,
+        (context, values) -> handleEnable(context));
 
-    DiscoveredMethod disable = methodSurface.get("Disable");
-    if (disable != null) {
-      installMethodHandler(
-          disable,
-          new ConditionType.DisableMethod(disable.node()) {
-            @Override
-            protected void invoke(InvocationContext context) throws UaException {
-              handleDisable(context);
-            }
-          });
-    }
+    installMethodHandler(
+        methodSurface,
+        "Disable",
+        ConditionTypeDisable::inputArguments,
+        ConditionTypeDisable::outputArguments,
+        (context, values) -> handleDisable(context));
 
-    DiscoveredMethod addComment = methodSurface.get("AddComment");
-    if (addComment != null) {
+    installMethodHandler(
+        methodSurface,
+        "AddComment",
+        ConditionTypeAddComment::inputArguments,
+        ConditionTypeAddComment::outputArguments,
+        (context, values) -> {
+          ConditionTypeAddComment.Inputs input =
+              ConditionTypeAddComment.Inputs.fromVariants(
+                  context.getServer().getStaticEncodingContext(), values);
+          handleAddComment(context, input.eventId(), input.comment());
+        });
+  }
+
+  /**
+   * Install a {@link ConditionMethodHandler} for the Method named {@code browseName}, if this
+   * instance has one.
+   */
+  final void installMethodHandler(
+      MethodSurface methodSurface,
+      String browseName,
+      Function<NamespaceTable, Argument[]> inputArguments,
+      Function<NamespaceTable, Argument[]> outputArguments,
+      ConditionMethodHandler.Body body) {
+
+    DiscoveredMethod discovered = methodSurface.get(browseName);
+    if (discovered != null) {
       installMethodHandler(
-          addComment,
-          new ConditionType.AddCommentMethod(addComment.node()) {
-            @Override
-            protected void invoke(
-                InvocationContext context, ByteString eventId, LocalizedText comment)
-                throws UaException {
-              handleAddComment(context, eventId, comment);
-            }
-          });
+          discovered,
+          new ConditionMethodHandler(discovered.node(), inputArguments, outputArguments, body));
     }
   }
 
@@ -1152,8 +1163,11 @@ public class Condition {
     LocalizedText text = LocalizedText.english(texts.forState(value));
 
     state.setValue(new DataValue(new Variant(text)));
-    state.setId(value);
-    state.setTransitionTime(time);
+    state.setTwoStateVariableTypeId(value);
+    PropertyTypeNode transitionTime = state.getTransitionTimeNode();
+    if (transitionTime != null) {
+      transitionTime.setValue(new DataValue(new Variant(time)));
+    }
 
     PropertyTypeNode effectiveDisplayName = state.getEffectiveDisplayNameNode();
     if (effectiveDisplayName != null) {
@@ -1172,13 +1186,23 @@ public class Condition {
     variable.setSourceTimestamp(time);
   }
 
+  /** Reads stored initialization state without requiring Good quality from an unset Variable. */
+  static <T> @Nullable T storedValue(@Nullable UaVariableNode variable, Class<T> type) {
+    if (variable == null) return null;
+    return type.cast(variable.getValue().getValue().getValue());
+  }
+
+  static boolean hasValue(@Nullable UaVariableNode variable) {
+    return storedValue(variable, Object.class) != null;
+  }
+
   /**
    * Resolve a TwoStateVariable's boolean Id, treating a null node or an unset Id as {@code
    * defaultValue}. The default differs by state — EnabledState/AckedState/ConfirmedState default
    * {@code true}, ActiveState defaults {@code false} — so it is spelled out at each call site.
    */
   static boolean booleanId(@Nullable TwoStateVariableTypeNode state, boolean defaultValue) {
-    Boolean id = state != null ? state.getId() : null;
+    Boolean id = state != null ? storedValue(state.getIdNode(), Boolean.class) : null;
     return id != null ? id : defaultValue;
   }
 
@@ -1189,7 +1213,7 @@ public class Condition {
   final void ensureTwoStateDefaults(
       @Nullable TwoStateVariableTypeNode state, boolean value, StateTexts texts) {
 
-    if (state != null && state.getId() == null) {
+    if (state != null && !hasValue(state.getIdNode())) {
       setTwoState(state, value, texts, DateTime.now());
     }
   }
@@ -1201,7 +1225,7 @@ public class Condition {
   final void ensureConditionVariableDefaults(
       @Nullable ConditionVariableTypeNode variable, Variant initialValue) {
 
-    if (variable != null && variable.getSourceTimestamp() == null) {
+    if (variable != null && !hasValue(variable.getSourceTimestampNode())) {
       DataValue current = variable.getValue();
       DateTime now = DateTime.now();
       if (current == null || current.getValue().isNull()) {

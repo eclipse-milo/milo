@@ -1,32 +1,37 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.Reference;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.core.model.methods.PublishedEventsTypeModifyFieldSelection;
+import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
+import org.eclipse.milo.opcua.sdk.server.methods.InvalidArgumentException;
+import org.eclipse.milo.opcua.sdk.server.methods.MethodArgumentValidator;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaArgumentConversionException;
+import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
+import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.types.structured.ContentFilter;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SimpleAttributeOperand;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link PublishedEventsType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.4.1">Model
+ *     documentation</a>
+ */
 public class PublishedEventsTypeNode extends PublishedDataSetTypeNode
     implements PublishedEventsType {
   public PublishedEventsTypeNode(
@@ -34,12 +39,36 @@ public class PublishedEventsTypeNode extends PublishedDataSetTypeNode
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions);
+  }
+
+  public PublishedEventsTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         context,
@@ -55,87 +84,178 @@ public class PublishedEventsTypeNode extends PublishedDataSetTypeNode
         eventNotifier);
   }
 
-  public PublishedEventsTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions);
+  @Override
+  public PropertyTypeNode getEventNotifier_Node() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "EventNotifier",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 17L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getPubSubEventNotifierNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(PublishedEventsType.PUB_SUB_EVENT_NOTIFIER);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable NodeId getEventNotifier_() {
+    return ServerNodeSupport.read(this, getEventNotifier_Node(), NodeId.class, null);
   }
 
   @Override
-  public NodeId getPubSubEventNotifier() {
-    return getProperty(PublishedEventsType.PUB_SUB_EVENT_NOTIFIER).orElse(null);
-  }
-
-  @Override
-  public void setPubSubEventNotifier(NodeId value) {
-    setProperty(PublishedEventsType.PUB_SUB_EVENT_NOTIFIER, value);
-  }
-
-  @Override
-  public PropertyTypeNode getSelectedFieldsNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(PublishedEventsType.SELECTED_FIELDS);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public SimpleAttributeOperand[] getSelectedFields() {
-    return getProperty(PublishedEventsType.SELECTED_FIELDS).orElse(null);
-  }
-
-  @Override
-  public void setSelectedFields(SimpleAttributeOperand[] value) {
-    setProperty(PublishedEventsType.SELECTED_FIELDS, value);
+  public void setEventNotifier_(@Nullable NodeId value) {
+    ServerNodeSupport.write(this, getEventNotifier_Node(), value, false, false, false);
   }
 
   @Override
   public PropertyTypeNode getFilterNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(PublishedEventsType.FILTER);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "Filter",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 586L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public ContentFilter getFilter() {
-    return getProperty(PublishedEventsType.FILTER).orElse(null);
+  public @Nullable ContentFilter getFilter() {
+    return ServerNodeSupport.read(this, getFilterNode(), ContentFilter.class, null);
   }
 
   @Override
-  public void setFilter(ContentFilter value) {
-    setProperty(PublishedEventsType.FILTER, value);
+  public void setFilter(@Nullable ContentFilter value) {
+    ServerNodeSupport.write(this, getFilterNode(), value, false, false, true);
   }
 
   @Override
-  public UaMethodNode getModifyFieldSelectionMethodNode() {
-    Optional<UaNode> methodNode =
-        findNode(
+  public PropertyTypeNode getSelectedFieldsNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "SelectedFields",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 601L),
+        1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable SimpleAttributeOperand @Nullable [] getSelectedFields() {
+    return ServerNodeSupport.readArray(
+        this, getSelectedFieldsNode(), SimpleAttributeOperand.class, null);
+  }
+
+  @Override
+  public void setSelectedFields(@Nullable SimpleAttributeOperand @Nullable [] value) {
+    ServerNodeSupport.write(this, getSelectedFieldsNode(), value, true, false, true);
+  }
+
+  @Override
+  public void validateChildren() {
+    super.validateChildren();
+    getEventNotifier_Node();
+    getFilterNode();
+    getSelectedFieldsNode();
+  }
+
+  @Override
+  public @Nullable UaMethodNode getModifyFieldSelectionMethodNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        "http://opcfoundation.org/UA/",
+        "ModifyFieldSelection",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.NULL_VALUE,
+        null,
+        -1,
+        UaMethodNode.class);
+  }
+
+  @Override
+  public void setModifyFieldSelectionHandler(
+      PublishedEventsType.@Nullable ModifyFieldSelectionHandler handler) {
+    UaMethodNode method =
+        ServerNodeSupport.present(
+            this,
+            getModifyFieldSelectionMethodNode(),
             "http://opcfoundation.org/UA/",
-            "ModifyFieldSelection",
-            node -> node instanceof UaMethodNode,
-            Reference.HAS_COMPONENT_PREDICATE);
-    return (UaMethodNode) methodNode.orElse(null);
+            "ModifyFieldSelection");
+    setMethodHandler(
+        method.getNodeId(),
+        handler == null
+            ? null
+            : new AbstractMethodInvocationHandler(method) {
+              private final MethodArgumentValidator outputValidator =
+                  new MethodArgumentValidator(getNodeContext().getServer());
+
+              @Override
+              public Argument[] getInputArguments() {
+                Argument[] declared = method.getInputArguments();
+                return declared != null
+                    ? declared
+                    : PublishedEventsTypeModifyFieldSelection.inputArguments(
+                        getNodeContext().getServer().getNamespaceTable());
+              }
+
+              @Override
+              public Argument[] getOutputArguments() {
+                Argument[] declared = method.getOutputArguments();
+                return declared != null
+                    ? declared
+                    : PublishedEventsTypeModifyFieldSelection.outputArguments(
+                        getNodeContext().getServer().getNamespaceTable());
+              }
+
+              @Override
+              protected int getRequiredInputArgumentCount(Argument[] arguments) {
+                return 4;
+              }
+
+              @Override
+              protected Variant[] invoke(
+                  AbstractMethodInvocationHandler.InvocationContext context, Variant[] values)
+                  throws UaException {
+                PublishedEventsTypeModifyFieldSelection.Inputs input;
+                try {
+                  input =
+                      PublishedEventsTypeModifyFieldSelection.Inputs.fromVariants(
+                          getNodeContext().getServer().getStaticEncodingContext(), values);
+                } catch (UaArgumentConversionException failure) {
+                  throw InvalidArgumentException.builder()
+                      .argument(
+                          failure.getArgumentIndex(),
+                          StatusCodes.Bad_TypeMismatch,
+                          failure.getMessage())
+                      .build();
+                }
+                PublishedEventsTypeModifyFieldSelection.Outputs output =
+                    new PublishedEventsTypeModifyFieldSelection.Outputs(
+                        handler.modifyFieldSelection(
+                            context,
+                            input.configurationVersion(),
+                            input.fieldNameAliases(),
+                            input.promotedFields(),
+                            input.selectedFields()));
+                Variant[] encoded =
+                    output.toVariants(getNodeContext().getServer().getStaticEncodingContext());
+                try {
+                  outputValidator.validate(getOutputArguments(), encoded);
+                } catch (UaException failure) {
+                  throw new UaException(StatusCodes.Bad_TypeMismatch, failure);
+                }
+                return encoded;
+              }
+            });
+  }
+
+  @Override
+  public void setMethods(PublishedEventsType.@Nullable Methods methods) {
+    if (getModifyFieldSelectionMethodNode() != null) {
+      setModifyFieldSelectionHandler(methods == null ? null : methods::modifyFieldSelection);
+    }
   }
 }

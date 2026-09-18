@@ -1,238 +1,303 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.core.nodes.MethodNode;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
-import org.eclipse.milo.opcua.sdk.server.methods.Out;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
-import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetWriterDataType;
-import org.eclipse.milo.opcua.stack.core.util.Lazy;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.6/#9.1.6.3">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.6/#9.1.6.3</a>
+ * Server API for the WriterGroupType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.6/#9.1.6.3">Model
+ *     documentation</a>
  */
 public interface WriterGroupType extends PubSubGroupType {
-  QualifiedProperty<UShort> WRITER_GROUP_ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "WriterGroupId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-          -1,
-          UShort.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 17725L);
 
-  QualifiedProperty<Double> PUBLISHING_INTERVAL =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "PublishingInterval",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
-          -1,
-          Double.class);
+  /**
+   * Returns the optional Diagnostics child, a PubSubDiagnosticsWriterGroupType.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.11/#9.1.11.9">PubSubDiagnosticsWriterGroupType
+   *     documentation</a>
+   */
+  @Nullable PubSubDiagnosticsWriterGroupTypeNode getDiagnosticsNode();
 
-  QualifiedProperty<Double> KEEP_ALIVE_TIME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "KeepAliveTime",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
-          -1,
-          Double.class);
+  /**
+   * Returns the mandatory HeaderLayoutUri child, a PropertyType with DataType String.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getHeaderLayoutUriNode();
 
-  QualifiedProperty<UByte> PRIORITY =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Priority",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=3"),
-          -1,
-          UByte.class);
+  /**
+   * Returns the Value of the HeaderLayoutUri child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getHeaderLayoutUri();
 
-  QualifiedProperty<String[]> LOCALE_IDS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "LocaleIds",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=295"),
-          1,
-          String[].class);
+  /**
+   * Sets the Value of the HeaderLayoutUri child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setHeaderLayoutUri(@Nullable String value);
 
-  QualifiedProperty<String> HEADER_LAYOUT_URI =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "HeaderLayoutUri",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  /**
+   * Returns the mandatory KeepAliveTime child, a PropertyType with DataType Duration.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getKeepAliveTimeNode();
 
-  UShort getWriterGroupId();
+  /**
+   * Returns the Value of the KeepAliveTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Double getKeepAliveTime();
 
-  void setWriterGroupId(UShort value);
+  /**
+   * Sets the Value of the KeepAliveTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setKeepAliveTime(@Nullable Double value);
 
-  PropertyType getWriterGroupIdNode();
+  /**
+   * Returns the mandatory LocaleIds child, a PropertyType with DataType LocaleId.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getLocaleIdsNode();
 
-  Double getPublishingInterval();
+  /**
+   * Returns the Value of the LocaleIds child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String @Nullable [] getLocaleIds();
 
-  void setPublishingInterval(Double value);
+  /**
+   * Sets the Value of the LocaleIds child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setLocaleIds(@Nullable String @Nullable [] value);
 
-  PropertyType getPublishingIntervalNode();
+  /**
+   * Returns the optional MessageSettings child, a WriterGroupMessageType.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.6/#9.1.6.8">WriterGroupMessageType
+   *     documentation</a>
+   */
+  @Nullable WriterGroupMessageTypeNode getMessageSettingsNode();
 
-  Double getKeepAliveTime();
+  /**
+   * Returns the mandatory Priority child, a PropertyType with DataType Byte.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getPriorityNode();
 
-  void setKeepAliveTime(Double value);
+  /**
+   * Returns the Value of the Priority child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UByte getPriority();
 
-  PropertyType getKeepAliveTimeNode();
+  /**
+   * Sets the Value of the Priority child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setPriority(@Nullable UByte value);
 
-  UByte getPriority();
+  /**
+   * Returns the mandatory PublishingInterval child, a PropertyType with DataType Duration.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getPublishingIntervalNode();
 
-  void setPriority(UByte value);
+  /**
+   * Returns the Value of the PublishingInterval child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Double getPublishingInterval();
 
-  PropertyType getPriorityNode();
+  /**
+   * Sets the Value of the PublishingInterval child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setPublishingInterval(@Nullable Double value);
 
-  String[] getLocaleIds();
+  /**
+   * Returns the optional TransportSettings child, a WriterGroupTransportType.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.6/#9.1.6.7">WriterGroupTransportType
+   *     documentation</a>
+   */
+  @Nullable WriterGroupTransportTypeNode getTransportSettingsNode();
 
-  void setLocaleIds(String[] value);
+  /**
+   * Returns the mandatory WriterGroupId child, a PropertyType with DataType UInt16.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getWriterGroupIdNode();
 
-  PropertyType getLocaleIdsNode();
+  /**
+   * Returns the Value of the WriterGroupId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UShort getWriterGroupId();
 
-  String getHeaderLayoutUri();
+  /**
+   * Sets the Value of the WriterGroupId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setWriterGroupId(@Nullable UShort value);
 
-  void setHeaderLayoutUri(String value);
+  /**
+   * Returns the optional AddDataSetWriter Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.6/#9.1.6.4">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getAddDataSetWriterMethodNode();
 
-  PropertyType getHeaderLayoutUriNode();
+  /**
+   * Sets this instance's AddDataSetWriter handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setAddDataSetWriterHandler(@Nullable AddDataSetWriterHandler handler);
 
-  WriterGroupTransportType getTransportSettingsNode();
+  /**
+   * Returns the optional RemoveDataSetWriter Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.6/#9.1.6.5">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getRemoveDataSetWriterMethodNode();
 
-  WriterGroupMessageType getMessageSettingsNode();
+  /**
+   * Sets this instance's RemoveDataSetWriter handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setRemoveDataSetWriterHandler(@Nullable RemoveDataSetWriterHandler handler);
 
-  PubSubDiagnosticsWriterGroupType getDiagnosticsNode();
+  /**
+   * Sets this instance's Method handlers, including inherited handlers, from one implementation;
+   * null clears them and restores Method-node fallback. Absent optional Methods are skipped.
+   * Changes are applied in order; a failure does not roll back earlier changes.
+   *
+   * @throws UaRuntimeException if a mandatory Method is absent, or a Method is ambiguous or
+   *     incompatible.
+   */
+  void setMethods(@Nullable Methods methods);
 
-  MethodNode getAddDataSetWriterMethodNode();
-
-  MethodNode getRemoveDataSetWriterMethodNode();
-
-  abstract class AddDataSetWriterMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-    public AddDataSetWriterMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "Configuration",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15597")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "DataSetWriterNodeId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      DataSetWriterDataType configuration = (DataSetWriterDataType) inputValues[0].getValue();
-      Out<NodeId> dataSetWriterNodeId = new Out<>();
-      invoke(context, configuration, dataSetWriterNodeId);
-      return new Variant[] {new Variant(dataSetWriterNodeId.get())};
-    }
-
-    protected abstract void invoke(
+  /**
+   * Handles calls to the AddDataSetWriter Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.6/#9.1.6.4">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface AddDataSetWriterHandler {
+    /**
+     * Handles a call to the AddDataSetWriter Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    @Nullable NodeId addDataSetWriter(
         AbstractMethodInvocationHandler.InvocationContext context,
-        DataSetWriterDataType configuration,
-        Out<NodeId> dataSetWriterNodeId)
+        @Nullable DataSetWriterDataType configuration)
         throws UaException;
   }
 
-  abstract class RemoveDataSetWriterMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    public RemoveDataSetWriterMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "DataSetWriterNodeId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      NodeId dataSetWriterNodeId = (NodeId) inputValues[0].getValue();
-      invoke(context, dataSetWriterNodeId);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, NodeId dataSetWriterNodeId)
+  /**
+   * Handles calls to the RemoveDataSetWriter Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.6/#9.1.6.5">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface RemoveDataSetWriterHandler {
+    /**
+     * Handles a call to the RemoveDataSetWriter Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void removeDataSetWriter(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable NodeId dataSetWriterNodeId)
         throws UaException;
+  }
+
+  /** Implements this type's Methods. Unimplemented Methods report Bad_NotImplemented. */
+  interface Methods {
+    /**
+     * Handles a call to the AddDataSetWriter Method; see {@link
+     * AddDataSetWriterHandler#addDataSetWriter}.
+     */
+    default @Nullable NodeId addDataSetWriter(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable DataSetWriterDataType configuration)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /**
+     * Handles a call to the RemoveDataSetWriter Method; see {@link
+     * RemoveDataSetWriterHandler#removeDataSetWriter}.
+     */
+    default void removeDataSetWriter(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable NodeId dataSetWriterNodeId)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
   }
 }

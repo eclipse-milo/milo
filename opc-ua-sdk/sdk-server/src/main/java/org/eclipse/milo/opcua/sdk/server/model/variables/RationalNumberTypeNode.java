@@ -1,45 +1,75 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.variables;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelExType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
+import org.eclipse.milo.opcua.stack.core.types.structured.RationalNumber;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link RationalNumberType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.20">Model
+ *     documentation</a>
+ */
 public class RationalNumberTypeNode extends BaseDataVariableTypeNode implements RationalNumberType {
   public RationalNumberTypeNode(
       UaNodeContext context,
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       DataValue value,
       NodeId dataType,
       Integer valueRank,
-      UInteger[] arrayDimensions,
+      UInteger @Nullable [] arrayDimensions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions,
+        value,
+        dataType,
+        valueRank,
+        arrayDimensions);
+  }
+
+  public RationalNumberTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
+      DataValue value,
+      NodeId dataType,
+      Integer valueRank,
+      UInteger @Nullable [] arrayDimensions,
       UByte accessLevel,
       UByte userAccessLevel,
       Double minimumSamplingInterval,
@@ -67,75 +97,66 @@ public class RationalNumberTypeNode extends BaseDataVariableTypeNode implements 
         accessLevelEx);
   }
 
-  public RationalNumberTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
-      DataValue value,
-      NodeId dataType,
-      Integer valueRank,
-      UInteger[] arrayDimensions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions,
-        value,
-        dataType,
-        valueRank,
-        arrayDimensions);
+  @Override
+  public BaseDataVariableTypeNode getDenominatorNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "Denominator",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+        -1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable UInteger getDenominator() {
+    return ServerNodeSupport.read(this, getDenominatorNode(), UInteger.class, null);
+  }
+
+  @Override
+  public void setDenominator(@Nullable UInteger value) {
+    ServerNodeSupport.write(this, getDenominatorNode(), value, false, false, false);
   }
 
   @Override
   public BaseDataVariableTypeNode getNumeratorNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "Numerator");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "Numerator",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 6L),
+        -1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public Integer getNumerator() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "Numerator");
-    return component.map(node -> (Integer) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable Integer getNumerator() {
+    return ServerNodeSupport.read(this, getNumeratorNode(), Integer.class, null);
   }
 
   @Override
-  public void setNumerator(Integer value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "Numerator")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setNumerator(@Nullable Integer value) {
+    ServerNodeSupport.write(this, getNumeratorNode(), value, false, false, false);
   }
 
   @Override
-  public BaseDataVariableTypeNode getDenominatorNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "Denominator");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+  public void validateChildren() {
+    super.validateChildren();
+    getDenominatorNode();
+    getNumeratorNode();
   }
 
   @Override
-  public UInteger getDenominator() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "Denominator");
-    return component.map(node -> (UInteger) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable RationalNumber getTypedValue() {
+    return ServerNodeSupport.read(this, this, RationalNumber.class, null);
   }
 
   @Override
-  public void setDenominator(UInteger value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "Denominator")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setTypedValue(@Nullable RationalNumber value) {
+    ServerNodeSupport.write(this, this, value, false, false, true);
   }
 }

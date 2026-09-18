@@ -1,110 +1,181 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.TransmitQosDataType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.3.1/#9.3.1.2">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.3.1/#9.3.1.2</a>
+ * Server API for the DatagramWriterGroupTransportType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.3.1/#9.3.1.2">Model
+ *     documentation</a>
  */
 public interface DatagramWriterGroupTransportType extends WriterGroupTransportType {
-  QualifiedProperty<UByte> MESSAGE_REPEAT_COUNT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MessageRepeatCount",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=3"),
-          -1,
-          UByte.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 21133L);
 
-  QualifiedProperty<Double> MESSAGE_REPEAT_DELAY =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MessageRepeatDelay",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
-          -1,
-          Double.class);
+  /**
+   * Returns the optional Address child, a NetworkAddressType.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.6">NetworkAddressType
+   *     documentation</a>
+   */
+  @Nullable NetworkAddressTypeNode getAddressNode();
 
-  QualifiedProperty<String> QOS_CATEGORY =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "QosCategory",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  /**
+   * Returns the optional DatagramQos child, a PropertyType with DataType TransmitQosDataType.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getDatagramQosNode();
 
-  QualifiedProperty<TransmitQosDataType[]> DATAGRAM_QOS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "DatagramQos",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=23604"),
-          1,
-          TransmitQosDataType[].class);
+  /**
+   * Returns the Value of the DatagramQos child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable TransmitQosDataType @Nullable [] getDatagramQos();
 
-  QualifiedProperty<UInteger> DISCOVERY_ANNOUNCE_RATE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "DiscoveryAnnounceRate",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  /**
+   * Sets the Value of the DatagramQos child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setDatagramQos(@Nullable TransmitQosDataType @Nullable [] value);
 
-  QualifiedProperty<String> TOPIC =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Topic",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  /**
+   * Returns the optional DiscoveryAnnounceRate child, a PropertyType with DataType UInt32.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getDiscoveryAnnounceRateNode();
 
-  UByte getMessageRepeatCount();
+  /**
+   * Returns the Value of the DiscoveryAnnounceRate child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getDiscoveryAnnounceRate();
 
-  void setMessageRepeatCount(UByte value);
+  /**
+   * Sets the Value of the DiscoveryAnnounceRate child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setDiscoveryAnnounceRate(@Nullable UInteger value);
 
-  PropertyType getMessageRepeatCountNode();
+  /**
+   * Returns the optional MessageRepeatCount child, a PropertyType with DataType Byte.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getMessageRepeatCountNode();
 
-  Double getMessageRepeatDelay();
+  /**
+   * Returns the Value of the MessageRepeatCount child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UByte getMessageRepeatCount();
 
-  void setMessageRepeatDelay(Double value);
+  /**
+   * Sets the Value of the MessageRepeatCount child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMessageRepeatCount(@Nullable UByte value);
 
-  PropertyType getMessageRepeatDelayNode();
+  /**
+   * Returns the optional MessageRepeatDelay child, a PropertyType with DataType Duration.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getMessageRepeatDelayNode();
 
-  String getQosCategory();
+  /**
+   * Returns the Value of the MessageRepeatDelay child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Double getMessageRepeatDelay();
 
-  void setQosCategory(String value);
+  /**
+   * Sets the Value of the MessageRepeatDelay child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMessageRepeatDelay(@Nullable Double value);
 
-  PropertyType getQosCategoryNode();
+  /**
+   * Returns the optional QosCategory child, a PropertyType with DataType String.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getQosCategoryNode();
 
-  TransmitQosDataType[] getDatagramQos();
+  /**
+   * Returns the Value of the QosCategory child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getQosCategory();
 
-  void setDatagramQos(TransmitQosDataType[] value);
+  /**
+   * Sets the Value of the QosCategory child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setQosCategory(@Nullable String value);
 
-  PropertyType getDatagramQosNode();
+  /**
+   * Returns the optional Topic child, a PropertyType with DataType String.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getTopicNode();
 
-  UInteger getDiscoveryAnnounceRate();
+  /**
+   * Returns the Value of the Topic child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getTopic();
 
-  void setDiscoveryAnnounceRate(UInteger value);
-
-  PropertyType getDiscoveryAnnounceRateNode();
-
-  String getTopic();
-
-  void setTopic(String value);
-
-  PropertyType getTopicNode();
-
-  NetworkAddressType getAddressNode();
+  /**
+   * Sets the Value of the Topic child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setTopic(@Nullable String value);
 }

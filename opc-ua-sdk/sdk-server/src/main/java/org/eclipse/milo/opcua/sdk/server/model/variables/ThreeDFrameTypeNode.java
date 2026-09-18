@@ -1,47 +1,77 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.variables;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelExType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ThreeDCartesianCoordinates;
+import org.eclipse.milo.opcua.stack.core.types.structured.ThreeDFrame;
 import org.eclipse.milo.opcua.stack.core.types.structured.ThreeDOrientation;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link ThreeDFrameType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.28">Model
+ *     documentation</a>
+ */
 public class ThreeDFrameTypeNode extends FrameTypeNode implements ThreeDFrameType {
   public ThreeDFrameTypeNode(
       UaNodeContext context,
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       DataValue value,
       NodeId dataType,
       Integer valueRank,
-      UInteger[] arrayDimensions,
+      UInteger @Nullable [] arrayDimensions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions,
+        value,
+        dataType,
+        valueRank,
+        arrayDimensions);
+  }
+
+  public ThreeDFrameTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
+      DataValue value,
+      NodeId dataType,
+      Integer valueRank,
+      UInteger @Nullable [] arrayDimensions,
       UByte accessLevel,
       UByte userAccessLevel,
       Double minimumSamplingInterval,
@@ -69,79 +99,60 @@ public class ThreeDFrameTypeNode extends FrameTypeNode implements ThreeDFrameTyp
         accessLevelEx);
   }
 
-  public ThreeDFrameTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
-      DataValue value,
-      NodeId dataType,
-      Integer valueRank,
-      UInteger[] arrayDimensions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions,
-        value,
-        dataType,
-        valueRank,
-        arrayDimensions);
-  }
-
   @Override
   public ThreeDCartesianCoordinatesTypeNode getCartesianCoordinatesNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "CartesianCoordinates");
-    return (ThreeDCartesianCoordinatesTypeNode) component.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "CartesianCoordinates",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 18774L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 18810L),
+        -1,
+        ThreeDCartesianCoordinatesTypeNode.class);
   }
 
   @Override
-  public ThreeDCartesianCoordinates getCartesianCoordinates() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "CartesianCoordinates");
-    return component
-        .map(node -> (ThreeDCartesianCoordinates) node.getValue().getValue().getValue())
-        .orElse(null);
+  public @Nullable ThreeDCartesianCoordinates getThreeDFrameTypeCartesianCoordinates() {
+    return ServerNodeSupport.read(
+        this, getCartesianCoordinatesNode(), ThreeDCartesianCoordinates.class, null);
   }
 
   @Override
-  public void setCartesianCoordinates(ThreeDCartesianCoordinates value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "CartesianCoordinates")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setThreeDFrameTypeCartesianCoordinates(@Nullable ThreeDCartesianCoordinates value) {
+    ServerNodeSupport.write(this, getCartesianCoordinatesNode(), value, false, false, true);
   }
 
   @Override
   public ThreeDOrientationTypeNode getOrientationNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "Orientation");
-    return (ThreeDOrientationTypeNode) component.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "Orientation",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 18781L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 18812L),
+        -1,
+        ThreeDOrientationTypeNode.class);
   }
 
   @Override
-  public ThreeDOrientation getOrientation() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "Orientation");
-    return component
-        .map(node -> (ThreeDOrientation) node.getValue().getValue().getValue())
-        .orElse(null);
+  public @Nullable ThreeDOrientation getThreeDFrameTypeOrientation() {
+    return ServerNodeSupport.read(this, getOrientationNode(), ThreeDOrientation.class, null);
   }
 
   @Override
-  public void setOrientation(ThreeDOrientation value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "Orientation")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setThreeDFrameTypeOrientation(@Nullable ThreeDOrientation value) {
+    ServerNodeSupport.write(this, getOrientationNode(), value, false, false, true);
+  }
+
+  @Override
+  public @Nullable ThreeDFrame getThreeDFrameValue() {
+    return ServerNodeSupport.read(this, this, ThreeDFrame.class, null);
+  }
+
+  @Override
+  public void setThreeDFrameValue(@Nullable ThreeDFrame value) {
+    ServerNodeSupport.write(this, this, value, false, false, true);
   }
 }

@@ -1,20 +1,10 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.variables;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -25,8 +15,17 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelExType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
+import org.eclipse.milo.opcua.stack.core.types.structured.ProgramDiagnostic2DataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link ProgramDiagnostic2Type}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part10/5.2.9">Model
+ *     documentation</a>
+ */
 public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
     implements ProgramDiagnostic2Type {
   public ProgramDiagnostic2TypeNode(
@@ -34,16 +33,48 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       DataValue value,
       NodeId dataType,
       Integer valueRank,
-      UInteger[] arrayDimensions,
+      UInteger @Nullable [] arrayDimensions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions,
+        value,
+        dataType,
+        valueRank,
+        arrayDimensions);
+  }
+
+  public ProgramDiagnostic2TypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
+      DataValue value,
+      NodeId dataType,
+      Integer valueRank,
+      UInteger @Nullable [] arrayDimensions,
       UByte accessLevel,
       UByte userAccessLevel,
       Double minimumSamplingInterval,
@@ -71,272 +102,308 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
         accessLevelEx);
   }
 
-  public ProgramDiagnostic2TypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
-      DataValue value,
-      NodeId dataType,
-      Integer valueRank,
-      UInteger[] arrayDimensions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions,
-        value,
-        dataType,
-        valueRank,
-        arrayDimensions);
+  @Override
+  public BaseDataVariableTypeNode getCreateClientNameNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "CreateClientName",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getLastTransitionTimeNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(ProgramDiagnostic2Type.LAST_TRANSITION_TIME);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable String getCreateClientName() {
+    return ServerNodeSupport.read(this, getCreateClientNameNode(), String.class, null);
   }
 
   @Override
-  public DateTime getLastTransitionTime() {
-    return getProperty(ProgramDiagnostic2Type.LAST_TRANSITION_TIME).orElse(null);
-  }
-
-  @Override
-  public void setLastTransitionTime(DateTime value) {
-    setProperty(ProgramDiagnostic2Type.LAST_TRANSITION_TIME, value);
+  public void setCreateClientName(@Nullable String value) {
+    ServerNodeSupport.write(this, getCreateClientNameNode(), value, false, false, false);
   }
 
   @Override
   public BaseDataVariableTypeNode getCreateSessionIdNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "CreateSessionId");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "CreateSessionId",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 17L),
+        -1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public NodeId getCreateSessionId() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "CreateSessionId");
-    return component.map(node -> (NodeId) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable NodeId getCreateSessionId() {
+    return ServerNodeSupport.read(this, getCreateSessionIdNode(), NodeId.class, null);
   }
 
   @Override
-  public void setCreateSessionId(NodeId value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "CreateSessionId")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getCreateClientNameNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "CreateClientName");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public String getCreateClientName() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "CreateClientName");
-    return component.map(node -> (String) node.getValue().getValue().getValue()).orElse(null);
-  }
-
-  @Override
-  public void setCreateClientName(String value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "CreateClientName")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setCreateSessionId(@Nullable NodeId value) {
+    ServerNodeSupport.write(this, getCreateSessionIdNode(), value, false, false, false);
   }
 
   @Override
   public BaseDataVariableTypeNode getInvocationCreationTimeNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "InvocationCreationTime");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "InvocationCreationTime",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 294L),
+        -1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public DateTime getInvocationCreationTime() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "InvocationCreationTime");
-    return component.map(node -> (DateTime) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable DateTime getInvocationCreationTime() {
+    return ServerNodeSupport.read(this, getInvocationCreationTimeNode(), DateTime.class, null);
   }
 
   @Override
-  public void setInvocationCreationTime(DateTime value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "InvocationCreationTime")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setInvocationCreationTime(@Nullable DateTime value) {
+    ServerNodeSupport.write(this, getInvocationCreationTimeNode(), value, false, false, false);
   }
 
   @Override
   public BaseDataVariableTypeNode getLastMethodCallNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "LastMethodCall");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "LastMethodCall",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public String getLastMethodCall() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "LastMethodCall");
-    return component.map(node -> (String) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable String getLastMethodCall() {
+    return ServerNodeSupport.read(this, getLastMethodCallNode(), String.class, null);
   }
 
   @Override
-  public void setLastMethodCall(String value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "LastMethodCall")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getLastMethodSessionIdNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "LastMethodSessionId");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public NodeId getLastMethodSessionId() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "LastMethodSessionId");
-    return component.map(node -> (NodeId) node.getValue().getValue().getValue()).orElse(null);
-  }
-
-  @Override
-  public void setLastMethodSessionId(NodeId value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "LastMethodSessionId")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getLastMethodInputArgumentsNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "LastMethodInputArguments");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public Argument[] getLastMethodInputArguments() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "LastMethodInputArguments");
-    return component.map(node -> (Argument[]) node.getValue().getValue().getValue()).orElse(null);
-  }
-
-  @Override
-  public void setLastMethodInputArguments(Argument[] value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "LastMethodInputArguments")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getLastMethodOutputArgumentsNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "LastMethodOutputArguments");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public Argument[] getLastMethodOutputArguments() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "LastMethodOutputArguments");
-    return component.map(node -> (Argument[]) node.getValue().getValue().getValue()).orElse(null);
-  }
-
-  @Override
-  public void setLastMethodOutputArguments(Argument[] value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "LastMethodOutputArguments")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getLastMethodInputValuesNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "LastMethodInputValues");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public Object[] getLastMethodInputValues() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "LastMethodInputValues");
-    return component.map(node -> (Object[]) node.getValue().getValue().getValue()).orElse(null);
-  }
-
-  @Override
-  public void setLastMethodInputValues(Object[] value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "LastMethodInputValues")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getLastMethodOutputValuesNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "LastMethodOutputValues");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public Object[] getLastMethodOutputValues() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "LastMethodOutputValues");
-    return component.map(node -> (Object[]) node.getValue().getValue().getValue()).orElse(null);
-  }
-
-  @Override
-  public void setLastMethodOutputValues(Object[] value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "LastMethodOutputValues")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setLastMethodCall(@Nullable String value) {
+    ServerNodeSupport.write(this, getLastMethodCallNode(), value, false, false, false);
   }
 
   @Override
   public BaseDataVariableTypeNode getLastMethodCallTimeNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "LastMethodCallTime");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "LastMethodCallTime",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 294L),
+        -1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public DateTime getLastMethodCallTime() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "LastMethodCallTime");
-    return component.map(node -> (DateTime) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable DateTime getLastMethodCallTime() {
+    return ServerNodeSupport.read(this, getLastMethodCallTimeNode(), DateTime.class, null);
   }
 
   @Override
-  public void setLastMethodCallTime(DateTime value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "LastMethodCallTime")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setLastMethodCallTime(@Nullable DateTime value) {
+    ServerNodeSupport.write(this, getLastMethodCallTimeNode(), value, false, false, false);
+  }
+
+  @Override
+  public BaseDataVariableTypeNode getLastMethodInputArgumentsNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "LastMethodInputArguments",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 296L),
+        1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable Argument @Nullable [] getLastMethodInputArguments() {
+    return ServerNodeSupport.readArray(
+        this, getLastMethodInputArgumentsNode(), Argument.class, null);
+  }
+
+  @Override
+  public void setLastMethodInputArguments(@Nullable Argument @Nullable [] value) {
+    ServerNodeSupport.write(this, getLastMethodInputArgumentsNode(), value, true, false, true);
+  }
+
+  @Override
+  public BaseDataVariableTypeNode getLastMethodInputValuesNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "LastMethodInputValues",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 24L),
+        1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable Variant @Nullable [] getLastMethodInputValues() {
+    return ServerNodeSupport.readArray(this, getLastMethodInputValuesNode(), Variant.class, null);
+  }
+
+  @Override
+  public void setLastMethodInputValues(@Nullable Variant @Nullable [] value) {
+    ServerNodeSupport.write(this, getLastMethodInputValuesNode(), value, true, false, false);
+  }
+
+  @Override
+  public BaseDataVariableTypeNode getLastMethodOutputArgumentsNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "LastMethodOutputArguments",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 296L),
+        1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable Argument @Nullable [] getLastMethodOutputArguments() {
+    return ServerNodeSupport.readArray(
+        this, getLastMethodOutputArgumentsNode(), Argument.class, null);
+  }
+
+  @Override
+  public void setLastMethodOutputArguments(@Nullable Argument @Nullable [] value) {
+    ServerNodeSupport.write(this, getLastMethodOutputArgumentsNode(), value, true, false, true);
+  }
+
+  @Override
+  public BaseDataVariableTypeNode getLastMethodOutputValuesNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "LastMethodOutputValues",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 24L),
+        1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable Variant @Nullable [] getLastMethodOutputValues() {
+    return ServerNodeSupport.readArray(this, getLastMethodOutputValuesNode(), Variant.class, null);
+  }
+
+  @Override
+  public void setLastMethodOutputValues(@Nullable Variant @Nullable [] value) {
+    ServerNodeSupport.write(this, getLastMethodOutputValuesNode(), value, true, false, false);
   }
 
   @Override
   public BaseDataVariableTypeNode getLastMethodReturnStatusNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "LastMethodReturnStatus");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "LastMethodReturnStatus",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 19L),
+        -1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public StatusCode getLastMethodReturnStatus() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "LastMethodReturnStatus");
-    return component.map(node -> (StatusCode) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable StatusCode getLastMethodReturnStatus() {
+    return ServerNodeSupport.read(this, getLastMethodReturnStatusNode(), StatusCode.class, null);
   }
 
   @Override
-  public void setLastMethodReturnStatus(StatusCode value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "LastMethodReturnStatus")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setLastMethodReturnStatus(@Nullable StatusCode value) {
+    ServerNodeSupport.write(this, getLastMethodReturnStatusNode(), value, false, false, false);
+  }
+
+  @Override
+  public BaseDataVariableTypeNode getLastMethodSessionIdNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "LastMethodSessionId",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 17L),
+        -1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable NodeId getLastMethodSessionId() {
+    return ServerNodeSupport.read(this, getLastMethodSessionIdNode(), NodeId.class, null);
+  }
+
+  @Override
+  public void setLastMethodSessionId(@Nullable NodeId value) {
+    ServerNodeSupport.write(this, getLastMethodSessionIdNode(), value, false, false, false);
+  }
+
+  @Override
+  public PropertyTypeNode getLastTransitionTimeNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "LastTransitionTime",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 294L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable DateTime getLastTransitionTime() {
+    return ServerNodeSupport.read(this, getLastTransitionTimeNode(), DateTime.class, null);
+  }
+
+  @Override
+  public void setLastTransitionTime(@Nullable DateTime value) {
+    ServerNodeSupport.write(this, getLastTransitionTimeNode(), value, false, false, false);
+  }
+
+  @Override
+  public void validateChildren() {
+    super.validateChildren();
+    getCreateClientNameNode();
+    getCreateSessionIdNode();
+    getInvocationCreationTimeNode();
+    getLastMethodCallNode();
+    getLastMethodCallTimeNode();
+    getLastMethodInputArgumentsNode();
+    getLastMethodInputValuesNode();
+    getLastMethodOutputArgumentsNode();
+    getLastMethodOutputValuesNode();
+    getLastMethodReturnStatusNode();
+    getLastMethodSessionIdNode();
+    getLastTransitionTimeNode();
+  }
+
+  @Override
+  public @Nullable ProgramDiagnostic2DataType getTypedValue() {
+    return ServerNodeSupport.read(this, this, ProgramDiagnostic2DataType.class, null);
+  }
+
+  @Override
+  public void setTypedValue(@Nullable ProgramDiagnostic2DataType value) {
+    ServerNodeSupport.write(this, this, value, false, false, true);
   }
 }

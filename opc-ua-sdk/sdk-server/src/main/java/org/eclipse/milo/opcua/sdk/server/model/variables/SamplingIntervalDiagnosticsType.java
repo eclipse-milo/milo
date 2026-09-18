@@ -1,43 +1,131 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.variables;
 
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.structured.SamplingIntervalDiagnosticsDataType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.10">https://reference.opcfoundation.org/v105/Core/docs/Part5/7.10</a>
+ * Server API for the SamplingIntervalDiagnosticsType VariableType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.10">Model
+ *     documentation</a>
  */
 public interface SamplingIntervalDiagnosticsType extends BaseDataVariableType {
-  BaseDataVariableType getSamplingIntervalNode();
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2165L);
 
-  Double getSamplingInterval();
+  /**
+   * Returns the mandatory DisabledMonitoredItemsSamplingCount child, a BaseDataVariableType with
+   * DataType UInt32.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  BaseDataVariableTypeNode getDisabledMonitoredItemsSamplingCountNode();
 
-  void setSamplingInterval(Double value);
+  /**
+   * Returns the Value of the DisabledMonitoredItemsSamplingCount child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getDisabledMonitoredItemsSamplingCount();
 
-  BaseDataVariableType getSampledMonitoredItemsCountNode();
+  /**
+   * Sets the Value of the DisabledMonitoredItemsSamplingCount child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setDisabledMonitoredItemsSamplingCount(@Nullable UInteger value);
 
-  UInteger getSampledMonitoredItemsCount();
+  /**
+   * Returns the mandatory MaxSampledMonitoredItemsCount child, a BaseDataVariableType with DataType
+   * UInt32.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  BaseDataVariableTypeNode getMaxSampledMonitoredItemsCountNode();
 
-  void setSampledMonitoredItemsCount(UInteger value);
+  /**
+   * Returns the Value of the MaxSampledMonitoredItemsCount child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getMaxSampledMonitoredItemsCount();
 
-  BaseDataVariableType getMaxSampledMonitoredItemsCountNode();
+  /**
+   * Sets the Value of the MaxSampledMonitoredItemsCount child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMaxSampledMonitoredItemsCount(@Nullable UInteger value);
 
-  UInteger getMaxSampledMonitoredItemsCount();
+  /**
+   * Returns the mandatory SampledMonitoredItemsCount child, a BaseDataVariableType with DataType
+   * UInt32.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  BaseDataVariableTypeNode getSampledMonitoredItemsCountNode();
 
-  void setMaxSampledMonitoredItemsCount(UInteger value);
+  /**
+   * Returns the Value of the SampledMonitoredItemsCount child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getSampledMonitoredItemsCount();
 
-  BaseDataVariableType getDisabledMonitoredItemsSamplingCountNode();
+  /**
+   * Sets the Value of the SampledMonitoredItemsCount child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setSampledMonitoredItemsCount(@Nullable UInteger value);
 
-  UInteger getDisabledMonitoredItemsSamplingCount();
+  /**
+   * Returns the mandatory SamplingInterval child, a BaseDataVariableType with DataType Duration.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  BaseDataVariableTypeNode getSamplingIntervalNode();
 
-  void setDisabledMonitoredItemsSamplingCount(UInteger value);
+  /**
+   * Returns the Value of the SamplingInterval child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Double getSamplingInterval();
+
+  /**
+   * Sets the Value of the SamplingInterval child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setSamplingInterval(@Nullable Double value);
+
+  /**
+   * Returns this node's Value.
+   *
+   * @throws UaRuntimeException if the Value does not convert.
+   */
+  @Nullable SamplingIntervalDiagnosticsDataType getTypedValue();
+
+  /**
+   * Sets this node's Value.
+   *
+   * @throws UaRuntimeException if the value does not convert.
+   */
+  void setTypedValue(@Nullable SamplingIntervalDiagnosticsDataType value);
 }

@@ -1,49 +1,78 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.variables;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.3/#5.3.3.2">https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.3/#5.3.3.2</a>
+ * Server API for the TwoStateDiscreteType VariableType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.3/#5.3.3.2">Model
+ *     documentation</a>
  */
 public interface TwoStateDiscreteType extends DiscreteItemType {
-  QualifiedProperty<LocalizedText> FALSE_STATE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "FalseState",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
-          -1,
-          LocalizedText.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2373L);
 
-  QualifiedProperty<LocalizedText> TRUE_STATE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "TrueState",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
-          -1,
-          LocalizedText.class);
+  /**
+   * Returns the mandatory FalseState child, a PropertyType with DataType LocalizedText.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getFalseStateNode();
 
-  LocalizedText getFalseState();
+  /**
+   * Returns the Value of the FalseState child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable LocalizedText getFalseState();
 
-  void setFalseState(LocalizedText value);
+  /**
+   * Sets the Value of the FalseState child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setFalseState(@Nullable LocalizedText value);
 
-  PropertyType getFalseStateNode();
+  /**
+   * Returns the mandatory TrueState child, a PropertyType with DataType LocalizedText.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getTrueStateNode();
 
-  LocalizedText getTrueState();
+  /**
+   * Returns the Value of the TrueState child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable LocalizedText getTrueState();
 
-  void setTrueState(LocalizedText value);
+  /**
+   * Sets the Value of the TrueState child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setTrueState(@Nullable LocalizedText value);
 
-  PropertyType getTrueStateNode();
+  /**
+   * Returns this node's Value.
+   *
+   * @throws UaRuntimeException if the Value does not convert.
+   */
+  @Nullable Variant getTypedValue();
+
+  /**
+   * Sets this node's Value.
+   *
+   * @throws UaRuntimeException if the value does not convert.
+   */
+  void setTypedValue(@Nullable Variant value);
 }

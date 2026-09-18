@@ -1,64 +1,89 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part8/6.4.2/#6.4.2.2">https://reference.opcfoundation.org/v105/Core/docs/Part8/6.4.2/#6.4.2.2</a>
+ * Server API for the UnitType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part8/6.4.2/#6.4.2.2">Model
+ *     documentation</a>
  */
 public interface UnitType extends BaseObjectType {
-  QualifiedProperty<LocalizedText> SYMBOL =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Symbol",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
-          -1,
-          LocalizedText.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 32442L);
 
-  QualifiedProperty<String> UNIT_SYSTEM =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "UnitSystem",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  /**
+   * Returns the optional Discipline child, a PropertyType with DataType String.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getDisciplineNode();
 
-  QualifiedProperty<String> DISCIPLINE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Discipline",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  /**
+   * Returns the Value of the Discipline child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getDiscipline();
 
-  LocalizedText getSymbol();
+  /**
+   * Sets the Value of the Discipline child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setDiscipline(@Nullable String value);
 
-  void setSymbol(LocalizedText value);
+  /**
+   * Returns the mandatory Symbol child, a PropertyType with DataType LocalizedText.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getSymbolNode();
 
-  PropertyType getSymbolNode();
+  /**
+   * Returns the Value of the Symbol child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable LocalizedText getSymbol();
 
-  String getUnitSystem();
+  /**
+   * Sets the Value of the Symbol child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setSymbol(@Nullable LocalizedText value);
 
-  void setUnitSystem(String value);
+  /**
+   * Returns the mandatory UnitSystem child, a PropertyType with DataType String.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getUnitSystemNode();
 
-  PropertyType getUnitSystemNode();
+  /**
+   * Returns the Value of the UnitSystem child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getUnitSystem();
 
-  String getDiscipline();
-
-  void setDiscipline(String value);
-
-  PropertyType getDisciplineNode();
+  /**
+   * Sets the Value of the UnitSystem child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setUnitSystem(@Nullable String value);
 }

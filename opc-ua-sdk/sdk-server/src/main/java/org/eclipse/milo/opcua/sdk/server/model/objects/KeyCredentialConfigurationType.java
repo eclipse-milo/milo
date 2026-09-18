@@ -1,299 +1,303 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.core.nodes.MethodNode;
+import org.eclipse.milo.opcua.sdk.core.model.methods.KeyCredentialConfigurationTypeGetEncryptingKey;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
-import org.eclipse.milo.opcua.sdk.server.methods.Out;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
-import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
-import org.eclipse.milo.opcua.stack.core.util.Lazy;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/8.6.5">https://reference.opcfoundation.org/v105/Core/docs/Part12/8.6.5</a>
+ * Server API for the KeyCredentialConfigurationType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/8.6.5">Model
+ *     documentation</a>
  */
 public interface KeyCredentialConfigurationType extends BaseObjectType {
-  QualifiedProperty<String> RESOURCE_URI =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ResourceUri",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 18001L);
 
-  QualifiedProperty<String> PROFILE_URI =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ProfileUri",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  /**
+   * Returns the optional CredentialId child, a PropertyType with DataType String.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getCredentialIdNode();
 
-  QualifiedProperty<String[]> ENDPOINT_URLS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "EndpointUrls",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          1,
-          String[].class);
+  /**
+   * Returns the Value of the CredentialId child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getCredentialId();
 
-  QualifiedProperty<String> CREDENTIAL_ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "CredentialId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  /**
+   * Sets the Value of the CredentialId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setCredentialId(@Nullable String value);
 
-  QualifiedProperty<StatusCode> SERVICE_STATUS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ServiceStatus",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=19"),
-          -1,
-          StatusCode.class);
+  /**
+   * Returns the optional EndpointUrls child, a PropertyType with DataType String.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getEndpointUrlsNode();
 
-  String getResourceUri();
+  /**
+   * Returns the Value of the EndpointUrls child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String @Nullable [] getEndpointUrls();
 
-  void setResourceUri(String value);
+  /**
+   * Sets the Value of the EndpointUrls child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setEndpointUrls(@Nullable String @Nullable [] value);
 
-  PropertyType getResourceUriNode();
+  /**
+   * Returns the mandatory ProfileUri child, a PropertyType with DataType String.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getProfileUriNode();
 
-  String getProfileUri();
+  /**
+   * Returns the Value of the ProfileUri child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getProfileUri();
 
-  void setProfileUri(String value);
+  /**
+   * Sets the Value of the ProfileUri child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setProfileUri(@Nullable String value);
 
-  PropertyType getProfileUriNode();
+  /**
+   * Returns the mandatory ResourceUri child, a PropertyType with DataType String.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getResourceUriNode();
 
-  String[] getEndpointUrls();
+  /**
+   * Returns the Value of the ResourceUri child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getResourceUri();
 
-  void setEndpointUrls(String[] value);
+  /**
+   * Sets the Value of the ResourceUri child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setResourceUri(@Nullable String value);
 
-  PropertyType getEndpointUrlsNode();
+  /**
+   * Returns the optional ServiceStatus child, a PropertyType with DataType StatusCode.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getServiceStatusNode();
 
-  String getCredentialId();
+  /**
+   * Returns the Value of the ServiceStatus child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable StatusCode getServiceStatus();
 
-  void setCredentialId(String value);
+  /**
+   * Sets the Value of the ServiceStatus child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setServiceStatus(@Nullable StatusCode value);
 
-  PropertyType getCredentialIdNode();
+  /**
+   * Returns the optional DeleteCredential Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/8.6.8">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getDeleteCredentialMethodNode();
 
-  StatusCode getServiceStatus();
+  /**
+   * Sets this instance's DeleteCredential handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setDeleteCredentialHandler(@Nullable DeleteCredentialHandler handler);
 
-  void setServiceStatus(StatusCode value);
+  /**
+   * Returns the optional GetEncryptingKey Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/8.6.6">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getGetEncryptingKeyMethodNode();
 
-  PropertyType getServiceStatusNode();
+  /**
+   * Sets this instance's GetEncryptingKey handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setGetEncryptingKeyHandler(@Nullable GetEncryptingKeyHandler handler);
 
-  MethodNode getGetEncryptingKeyMethodNode();
+  /**
+   * Returns the optional UpdateCredential Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/8.6.7">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getUpdateCredentialMethodNode();
 
-  MethodNode getUpdateCredentialMethodNode();
+  /**
+   * Sets this instance's UpdateCredential handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setUpdateCredentialHandler(@Nullable UpdateCredentialHandler handler);
 
-  MethodNode getDeleteCredentialMethodNode();
+  /**
+   * Sets this instance's Method handlers, including inherited handlers, from one implementation;
+   * null clears them and restores Method-node fallback. Absent optional Methods are skipped.
+   * Changes are applied in order; a failure does not roll back earlier changes.
+   *
+   * @throws UaRuntimeException if a mandatory Method is absent, or a Method is ambiguous or
+   *     incompatible.
+   */
+  void setMethods(@Nullable Methods methods);
 
-  abstract class GetEncryptingKeyMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-    public GetEncryptingKeyMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "CredentialId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "RequestedSecurityPolicyUri",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "PublicKey",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "RevisedSecurityPolicyUri",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      String credentialId = (String) inputValues[0].getValue();
-      String requestedSecurityPolicyUri = (String) inputValues[1].getValue();
-      Out<ByteString> publicKey = new Out<>();
-      Out<String> revisedSecurityPolicyUri = new Out<>();
-      invoke(
-          context, credentialId, requestedSecurityPolicyUri, publicKey, revisedSecurityPolicyUri);
-      return new Variant[] {
-        new Variant(publicKey.get()), new Variant(revisedSecurityPolicyUri.get())
-      };
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context,
-        String credentialId,
-        String requestedSecurityPolicyUri,
-        Out<ByteString> publicKey,
-        Out<String> revisedSecurityPolicyUri)
+  /**
+   * Handles calls to the DeleteCredential Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/8.6.8">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface DeleteCredentialHandler {
+    /**
+     * Handles a call to the DeleteCredential Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void deleteCredential(AbstractMethodInvocationHandler.InvocationContext context)
         throws UaException;
   }
 
-  abstract class UpdateCredentialMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    public UpdateCredentialMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "CredentialId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "CredentialSecret",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "CertificateThumbprint",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "SecurityPolicyUri",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      String credentialId = (String) inputValues[0].getValue();
-      ByteString credentialSecret = (ByteString) inputValues[1].getValue();
-      String certificateThumbprint = (String) inputValues[2].getValue();
-      String securityPolicyUri = (String) inputValues[3].getValue();
-      invoke(context, credentialId, credentialSecret, certificateThumbprint, securityPolicyUri);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(
+  /**
+   * Handles calls to the GetEncryptingKey Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/8.6.6">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface GetEncryptingKeyHandler {
+    /**
+     * Handles a call to the GetEncryptingKey Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    KeyCredentialConfigurationTypeGetEncryptingKey.Outputs getEncryptingKey(
         AbstractMethodInvocationHandler.InvocationContext context,
-        String credentialId,
-        ByteString credentialSecret,
-        String certificateThumbprint,
-        String securityPolicyUri)
+        @Nullable String credentialId,
+        @Nullable String requestedSecurityPolicyUri)
         throws UaException;
   }
 
-  abstract class DeleteCredentialMethod extends AbstractMethodInvocationHandler {
-    public DeleteCredentialMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      invoke(context);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context)
+  /**
+   * Handles calls to the UpdateCredential Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/8.6.7">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface UpdateCredentialHandler {
+    /**
+     * Handles a call to the UpdateCredential Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void updateCredential(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable String credentialId,
+        @Nullable ByteString credentialSecret,
+        @Nullable String certificateThumbprint,
+        @Nullable String securityPolicyUri)
         throws UaException;
+  }
+
+  /** Implements this type's Methods. Unimplemented Methods report Bad_NotImplemented. */
+  interface Methods {
+    /**
+     * Handles a call to the DeleteCredential Method; see {@link
+     * DeleteCredentialHandler#deleteCredential}.
+     */
+    default void deleteCredential(AbstractMethodInvocationHandler.InvocationContext context)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /**
+     * Handles a call to the GetEncryptingKey Method; see {@link
+     * GetEncryptingKeyHandler#getEncryptingKey}.
+     */
+    default KeyCredentialConfigurationTypeGetEncryptingKey.Outputs getEncryptingKey(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable String credentialId,
+        @Nullable String requestedSecurityPolicyUri)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /**
+     * Handles a call to the UpdateCredential Method; see {@link
+     * UpdateCredentialHandler#updateCredential}.
+     */
+    default void updateCredential(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable String credentialId,
+        @Nullable ByteString credentialSecret,
+        @Nullable String certificateThumbprint,
+        @Nullable String securityPolicyUri)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
   }
 }

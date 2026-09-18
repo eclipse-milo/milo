@@ -1,190 +1,319 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.11">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.11</a>
+ * Server API for the OperationLimitsType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.11">Model
+ *     documentation</a>
  */
 public interface OperationLimitsType extends FolderType {
-  QualifiedProperty<UInteger> MAX_NODES_PER_READ =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxNodesPerRead",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 11564L);
 
-  QualifiedProperty<UInteger> MAX_NODES_PER_HISTORY_READ_DATA =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxNodesPerHistoryReadData",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  /**
+   * Returns the optional MaxMonitoredItemsPerCall child, a PropertyType with DataType UInt32.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getMaxMonitoredItemsPerCallNode();
 
-  QualifiedProperty<UInteger> MAX_NODES_PER_HISTORY_READ_EVENTS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxNodesPerHistoryReadEvents",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  /**
+   * Returns the Value of the MaxMonitoredItemsPerCall child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getMaxMonitoredItemsPerCall();
 
-  QualifiedProperty<UInteger> MAX_NODES_PER_WRITE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxNodesPerWrite",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  /**
+   * Sets the Value of the MaxMonitoredItemsPerCall child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMaxMonitoredItemsPerCall(@Nullable UInteger value);
 
-  QualifiedProperty<UInteger> MAX_NODES_PER_HISTORY_UPDATE_DATA =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxNodesPerHistoryUpdateData",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  /**
+   * Returns the optional MaxNodesPerBrowse child, a PropertyType with DataType UInt32.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getMaxNodesPerBrowseNode();
 
-  QualifiedProperty<UInteger> MAX_NODES_PER_HISTORY_UPDATE_EVENTS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxNodesPerHistoryUpdateEvents",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  /**
+   * Returns the Value of the MaxNodesPerBrowse child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getMaxNodesPerBrowse();
 
-  QualifiedProperty<UInteger> MAX_NODES_PER_METHOD_CALL =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxNodesPerMethodCall",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  /**
+   * Sets the Value of the MaxNodesPerBrowse child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMaxNodesPerBrowse(@Nullable UInteger value);
 
-  QualifiedProperty<UInteger> MAX_NODES_PER_BROWSE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxNodesPerBrowse",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  /**
+   * Returns the optional MaxNodesPerHistoryReadData child, a PropertyType with DataType UInt32.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getMaxNodesPerHistoryReadDataNode();
 
-  QualifiedProperty<UInteger> MAX_NODES_PER_REGISTER_NODES =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxNodesPerRegisterNodes",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  /**
+   * Returns the Value of the MaxNodesPerHistoryReadData child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getMaxNodesPerHistoryReadData();
 
-  QualifiedProperty<UInteger> MAX_NODES_PER_TRANSLATE_BROWSE_PATHS_TO_NODE_IDS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxNodesPerTranslateBrowsePathsToNodeIds",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  /**
+   * Sets the Value of the MaxNodesPerHistoryReadData child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMaxNodesPerHistoryReadData(@Nullable UInteger value);
 
-  QualifiedProperty<UInteger> MAX_NODES_PER_NODE_MANAGEMENT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxNodesPerNodeManagement",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  /**
+   * Returns the optional MaxNodesPerHistoryReadEvents child, a PropertyType with DataType UInt32.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getMaxNodesPerHistoryReadEventsNode();
 
-  QualifiedProperty<UInteger> MAX_MONITORED_ITEMS_PER_CALL =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxMonitoredItemsPerCall",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  /**
+   * Returns the Value of the MaxNodesPerHistoryReadEvents child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getMaxNodesPerHistoryReadEvents();
 
-  UInteger getMaxNodesPerRead();
+  /**
+   * Sets the Value of the MaxNodesPerHistoryReadEvents child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMaxNodesPerHistoryReadEvents(@Nullable UInteger value);
 
-  void setMaxNodesPerRead(UInteger value);
+  /**
+   * Returns the optional MaxNodesPerHistoryUpdateData child, a PropertyType with DataType UInt32.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getMaxNodesPerHistoryUpdateDataNode();
 
-  PropertyType getMaxNodesPerReadNode();
+  /**
+   * Returns the Value of the MaxNodesPerHistoryUpdateData child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getMaxNodesPerHistoryUpdateData();
 
-  UInteger getMaxNodesPerHistoryReadData();
+  /**
+   * Sets the Value of the MaxNodesPerHistoryUpdateData child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMaxNodesPerHistoryUpdateData(@Nullable UInteger value);
 
-  void setMaxNodesPerHistoryReadData(UInteger value);
+  /**
+   * Returns the optional MaxNodesPerHistoryUpdateEvents child, a PropertyType with DataType UInt32.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getMaxNodesPerHistoryUpdateEventsNode();
 
-  PropertyType getMaxNodesPerHistoryReadDataNode();
+  /**
+   * Returns the Value of the MaxNodesPerHistoryUpdateEvents child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getMaxNodesPerHistoryUpdateEvents();
 
-  UInteger getMaxNodesPerHistoryReadEvents();
+  /**
+   * Sets the Value of the MaxNodesPerHistoryUpdateEvents child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMaxNodesPerHistoryUpdateEvents(@Nullable UInteger value);
 
-  void setMaxNodesPerHistoryReadEvents(UInteger value);
+  /**
+   * Returns the optional MaxNodesPerMethodCall child, a PropertyType with DataType UInt32.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getMaxNodesPerMethodCallNode();
 
-  PropertyType getMaxNodesPerHistoryReadEventsNode();
+  /**
+   * Returns the Value of the MaxNodesPerMethodCall child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getMaxNodesPerMethodCall();
 
-  UInteger getMaxNodesPerWrite();
+  /**
+   * Sets the Value of the MaxNodesPerMethodCall child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMaxNodesPerMethodCall(@Nullable UInteger value);
 
-  void setMaxNodesPerWrite(UInteger value);
+  /**
+   * Returns the optional MaxNodesPerNodeManagement child, a PropertyType with DataType UInt32.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getMaxNodesPerNodeManagementNode();
 
-  PropertyType getMaxNodesPerWriteNode();
+  /**
+   * Returns the Value of the MaxNodesPerNodeManagement child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getMaxNodesPerNodeManagement();
 
-  UInteger getMaxNodesPerHistoryUpdateData();
+  /**
+   * Sets the Value of the MaxNodesPerNodeManagement child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMaxNodesPerNodeManagement(@Nullable UInteger value);
 
-  void setMaxNodesPerHistoryUpdateData(UInteger value);
+  /**
+   * Returns the optional MaxNodesPerRead child, a PropertyType with DataType UInt32.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getMaxNodesPerReadNode();
 
-  PropertyType getMaxNodesPerHistoryUpdateDataNode();
+  /**
+   * Returns the Value of the MaxNodesPerRead child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getMaxNodesPerRead();
 
-  UInteger getMaxNodesPerHistoryUpdateEvents();
+  /**
+   * Sets the Value of the MaxNodesPerRead child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMaxNodesPerRead(@Nullable UInteger value);
 
-  void setMaxNodesPerHistoryUpdateEvents(UInteger value);
+  /**
+   * Returns the optional MaxNodesPerRegisterNodes child, a PropertyType with DataType UInt32.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getMaxNodesPerRegisterNodesNode();
 
-  PropertyType getMaxNodesPerHistoryUpdateEventsNode();
+  /**
+   * Returns the Value of the MaxNodesPerRegisterNodes child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getMaxNodesPerRegisterNodes();
 
-  UInteger getMaxNodesPerMethodCall();
+  /**
+   * Sets the Value of the MaxNodesPerRegisterNodes child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMaxNodesPerRegisterNodes(@Nullable UInteger value);
 
-  void setMaxNodesPerMethodCall(UInteger value);
+  /**
+   * Returns the optional MaxNodesPerTranslateBrowsePathsToNodeIds child, a PropertyType with
+   * DataType UInt32.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getMaxNodesPerTranslateBrowsePathsToNodeIdsNode();
 
-  PropertyType getMaxNodesPerMethodCallNode();
+  /**
+   * Returns the Value of the MaxNodesPerTranslateBrowsePathsToNodeIds child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getMaxNodesPerTranslateBrowsePathsToNodeIds();
 
-  UInteger getMaxNodesPerBrowse();
+  /**
+   * Sets the Value of the MaxNodesPerTranslateBrowsePathsToNodeIds child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMaxNodesPerTranslateBrowsePathsToNodeIds(@Nullable UInteger value);
 
-  void setMaxNodesPerBrowse(UInteger value);
+  /**
+   * Returns the optional MaxNodesPerWrite child, a PropertyType with DataType UInt32.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getMaxNodesPerWriteNode();
 
-  PropertyType getMaxNodesPerBrowseNode();
+  /**
+   * Returns the Value of the MaxNodesPerWrite child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getMaxNodesPerWrite();
 
-  UInteger getMaxNodesPerRegisterNodes();
-
-  void setMaxNodesPerRegisterNodes(UInteger value);
-
-  PropertyType getMaxNodesPerRegisterNodesNode();
-
-  UInteger getMaxNodesPerTranslateBrowsePathsToNodeIds();
-
-  void setMaxNodesPerTranslateBrowsePathsToNodeIds(UInteger value);
-
-  PropertyType getMaxNodesPerTranslateBrowsePathsToNodeIdsNode();
-
-  UInteger getMaxNodesPerNodeManagement();
-
-  void setMaxNodesPerNodeManagement(UInteger value);
-
-  PropertyType getMaxNodesPerNodeManagementNode();
-
-  UInteger getMaxMonitoredItemsPerCall();
-
-  void setMaxMonitoredItemsPerCall(UInteger value);
-
-  PropertyType getMaxMonitoredItemsPerCallNode();
+  /**
+   * Sets the Value of the MaxNodesPerWrite child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMaxNodesPerWrite(@Nullable UInteger value);
 }

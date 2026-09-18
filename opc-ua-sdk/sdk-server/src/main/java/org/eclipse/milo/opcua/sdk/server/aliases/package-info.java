@@ -53,6 +53,9 @@
  * lock cannot mutate after shutdown completes. Removing a manager-created category detaches its
  * surviving aliases and child categories before deleting the category itself.
  *
+ * <p>Method-node adapters use shared generated argument descriptors while this manager owns
+ * installation, rollback and removal. Generated node constructors do not install behavior.
+ *
  * <h2>Data flow</h2>
  *
  * <p>The AddressSpace is the single source of truth; there is no shadow index. Lookup walks forward

@@ -1,33 +1,40 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.Reference;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.core.model.methods.PubSubKeyPushTargetTypeConnectSecurityGroups;
+import org.eclipse.milo.opcua.sdk.core.model.methods.PubSubKeyPushTargetTypeDisconnectSecurityGroups;
+import org.eclipse.milo.opcua.sdk.core.model.methods.PubSubKeyPushTargetTypeTriggerKeyUpdate;
+import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
+import org.eclipse.milo.opcua.sdk.server.methods.InvalidArgumentException;
+import org.eclipse.milo.opcua.sdk.server.methods.MethodArgumentValidator;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaArgumentConversionException;
+import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
+import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link PubSubKeyPushTargetType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/8.6.1">Model
+ *     documentation</a>
+ */
 public class PubSubKeyPushTargetTypeNode extends BaseObjectTypeNode
     implements PubSubKeyPushTargetType {
   public PubSubKeyPushTargetTypeNode(
@@ -35,12 +42,36 @@ public class PubSubKeyPushTargetTypeNode extends BaseObjectTypeNode
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions);
+  }
+
+  public PubSubKeyPushTargetTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         context,
@@ -56,192 +87,431 @@ public class PubSubKeyPushTargetTypeNode extends BaseObjectTypeNode
         eventNotifier);
   }
 
-  public PubSubKeyPushTargetTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions);
-  }
-
   @Override
   public PropertyTypeNode getApplicationUriNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(PubSubKeyPushTargetType.APPLICATION_URI);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "ApplicationUri",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public String getApplicationUri() {
-    return getProperty(PubSubKeyPushTargetType.APPLICATION_URI).orElse(null);
+  public @Nullable String getApplicationUri() {
+    return ServerNodeSupport.read(this, getApplicationUriNode(), String.class, null);
   }
 
   @Override
-  public void setApplicationUri(String value) {
-    setProperty(PubSubKeyPushTargetType.APPLICATION_URI, value);
+  public void setApplicationUri(@Nullable String value) {
+    ServerNodeSupport.write(this, getApplicationUriNode(), value, false, false, false);
   }
 
   @Override
   public PropertyTypeNode getEndpointUrlNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(PubSubKeyPushTargetType.ENDPOINT_URL);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "EndpointUrl",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public String getEndpointUrl() {
-    return getProperty(PubSubKeyPushTargetType.ENDPOINT_URL).orElse(null);
+  public @Nullable String getEndpointUrl() {
+    return ServerNodeSupport.read(this, getEndpointUrlNode(), String.class, null);
   }
 
   @Override
-  public void setEndpointUrl(String value) {
-    setProperty(PubSubKeyPushTargetType.ENDPOINT_URL, value);
-  }
-
-  @Override
-  public PropertyTypeNode getSecurityPolicyUriNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(PubSubKeyPushTargetType.SECURITY_POLICY_URI);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public String getSecurityPolicyUri() {
-    return getProperty(PubSubKeyPushTargetType.SECURITY_POLICY_URI).orElse(null);
-  }
-
-  @Override
-  public void setSecurityPolicyUri(String value) {
-    setProperty(PubSubKeyPushTargetType.SECURITY_POLICY_URI, value);
-  }
-
-  @Override
-  public PropertyTypeNode getUserTokenTypeNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(PubSubKeyPushTargetType.USER_TOKEN_TYPE);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public UserTokenPolicy getUserTokenType() {
-    return getProperty(PubSubKeyPushTargetType.USER_TOKEN_TYPE).orElse(null);
-  }
-
-  @Override
-  public void setUserTokenType(UserTokenPolicy value) {
-    setProperty(PubSubKeyPushTargetType.USER_TOKEN_TYPE, value);
-  }
-
-  @Override
-  public PropertyTypeNode getRequestedKeyCountNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(PubSubKeyPushTargetType.REQUESTED_KEY_COUNT);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public UShort getRequestedKeyCount() {
-    return getProperty(PubSubKeyPushTargetType.REQUESTED_KEY_COUNT).orElse(null);
-  }
-
-  @Override
-  public void setRequestedKeyCount(UShort value) {
-    setProperty(PubSubKeyPushTargetType.REQUESTED_KEY_COUNT, value);
-  }
-
-  @Override
-  public PropertyTypeNode getRetryIntervalNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(PubSubKeyPushTargetType.RETRY_INTERVAL);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public Double getRetryInterval() {
-    return getProperty(PubSubKeyPushTargetType.RETRY_INTERVAL).orElse(null);
-  }
-
-  @Override
-  public void setRetryInterval(Double value) {
-    setProperty(PubSubKeyPushTargetType.RETRY_INTERVAL, value);
-  }
-
-  @Override
-  public PropertyTypeNode getLastPushExecutionTimeNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(PubSubKeyPushTargetType.LAST_PUSH_EXECUTION_TIME);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public DateTime getLastPushExecutionTime() {
-    return getProperty(PubSubKeyPushTargetType.LAST_PUSH_EXECUTION_TIME).orElse(null);
-  }
-
-  @Override
-  public void setLastPushExecutionTime(DateTime value) {
-    setProperty(PubSubKeyPushTargetType.LAST_PUSH_EXECUTION_TIME, value);
+  public void setEndpointUrl(@Nullable String value) {
+    ServerNodeSupport.write(this, getEndpointUrlNode(), value, false, false, false);
   }
 
   @Override
   public PropertyTypeNode getLastPushErrorTimeNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(PubSubKeyPushTargetType.LAST_PUSH_ERROR_TIME);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "LastPushErrorTime",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 13L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public DateTime getLastPushErrorTime() {
-    return getProperty(PubSubKeyPushTargetType.LAST_PUSH_ERROR_TIME).orElse(null);
+  public @Nullable DateTime getLastPushErrorTime() {
+    return ServerNodeSupport.read(this, getLastPushErrorTimeNode(), DateTime.class, null);
   }
 
   @Override
-  public void setLastPushErrorTime(DateTime value) {
-    setProperty(PubSubKeyPushTargetType.LAST_PUSH_ERROR_TIME, value);
+  public void setLastPushErrorTime(@Nullable DateTime value) {
+    ServerNodeSupport.write(this, getLastPushErrorTimeNode(), value, false, false, false);
+  }
+
+  @Override
+  public PropertyTypeNode getLastPushExecutionTimeNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "LastPushExecutionTime",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 13L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable DateTime getLastPushExecutionTime() {
+    return ServerNodeSupport.read(this, getLastPushExecutionTimeNode(), DateTime.class, null);
+  }
+
+  @Override
+  public void setLastPushExecutionTime(@Nullable DateTime value) {
+    ServerNodeSupport.write(this, getLastPushExecutionTimeNode(), value, false, false, false);
+  }
+
+  @Override
+  public PropertyTypeNode getRequestedKeyCountNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "RequestedKeyCount",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 5L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable UShort getRequestedKeyCount() {
+    return ServerNodeSupport.read(this, getRequestedKeyCountNode(), UShort.class, null);
+  }
+
+  @Override
+  public void setRequestedKeyCount(@Nullable UShort value) {
+    ServerNodeSupport.write(this, getRequestedKeyCountNode(), value, false, false, false);
+  }
+
+  @Override
+  public PropertyTypeNode getRetryIntervalNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "RetryInterval",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 290L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable Double getRetryInterval() {
+    return ServerNodeSupport.read(this, getRetryIntervalNode(), Double.class, null);
+  }
+
+  @Override
+  public void setRetryInterval(@Nullable Double value) {
+    ServerNodeSupport.write(this, getRetryIntervalNode(), value, false, false, false);
+  }
+
+  @Override
+  public PropertyTypeNode getSecurityPolicyUriNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "SecurityPolicyUri",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable String getSecurityPolicyUri() {
+    return ServerNodeSupport.read(this, getSecurityPolicyUriNode(), String.class, null);
+  }
+
+  @Override
+  public void setSecurityPolicyUri(@Nullable String value) {
+    ServerNodeSupport.write(this, getSecurityPolicyUriNode(), value, false, false, false);
+  }
+
+  @Override
+  public PropertyTypeNode getUserTokenTypeNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "UserTokenType",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 304L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable UserTokenPolicy getUserTokenType() {
+    return ServerNodeSupport.read(this, getUserTokenTypeNode(), UserTokenPolicy.class, null);
+  }
+
+  @Override
+  public void setUserTokenType(@Nullable UserTokenPolicy value) {
+    ServerNodeSupport.write(this, getUserTokenTypeNode(), value, false, false, true);
+  }
+
+  @Override
+  public void validateChildren() {
+    super.validateChildren();
+    getApplicationUriNode();
+    getEndpointUrlNode();
+    getLastPushErrorTimeNode();
+    getLastPushExecutionTimeNode();
+    getRequestedKeyCountNode();
+    getRetryIntervalNode();
+    getSecurityPolicyUriNode();
+    getUserTokenTypeNode();
   }
 
   @Override
   public UaMethodNode getConnectSecurityGroupsMethodNode() {
-    Optional<UaNode> methodNode =
-        findNode(
-            "http://opcfoundation.org/UA/",
-            "ConnectSecurityGroups",
-            node -> node instanceof UaMethodNode,
-            Reference.HAS_COMPONENT_PREDICATE);
-    return (UaMethodNode) methodNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        "http://opcfoundation.org/UA/",
+        "ConnectSecurityGroups",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.NULL_VALUE,
+        null,
+        -1,
+        UaMethodNode.class);
+  }
+
+  @Override
+  public void setConnectSecurityGroupsHandler(
+      PubSubKeyPushTargetType.@Nullable ConnectSecurityGroupsHandler handler) {
+    UaMethodNode method = getConnectSecurityGroupsMethodNode();
+    setMethodHandler(
+        method.getNodeId(),
+        handler == null
+            ? null
+            : new AbstractMethodInvocationHandler(method) {
+              private final MethodArgumentValidator outputValidator =
+                  new MethodArgumentValidator(getNodeContext().getServer());
+
+              @Override
+              public Argument[] getInputArguments() {
+                Argument[] declared = method.getInputArguments();
+                return declared != null
+                    ? declared
+                    : PubSubKeyPushTargetTypeConnectSecurityGroups.inputArguments(
+                        getNodeContext().getServer().getNamespaceTable());
+              }
+
+              @Override
+              public Argument[] getOutputArguments() {
+                Argument[] declared = method.getOutputArguments();
+                return declared != null
+                    ? declared
+                    : PubSubKeyPushTargetTypeConnectSecurityGroups.outputArguments(
+                        getNodeContext().getServer().getNamespaceTable());
+              }
+
+              @Override
+              protected int getRequiredInputArgumentCount(Argument[] arguments) {
+                return 1;
+              }
+
+              @Override
+              protected Variant[] invoke(
+                  AbstractMethodInvocationHandler.InvocationContext context, Variant[] values)
+                  throws UaException {
+                PubSubKeyPushTargetTypeConnectSecurityGroups.Inputs input;
+                try {
+                  input =
+                      PubSubKeyPushTargetTypeConnectSecurityGroups.Inputs.fromVariants(
+                          getNodeContext().getServer().getStaticEncodingContext(), values);
+                } catch (UaArgumentConversionException failure) {
+                  throw InvalidArgumentException.builder()
+                      .argument(
+                          failure.getArgumentIndex(),
+                          StatusCodes.Bad_TypeMismatch,
+                          failure.getMessage())
+                      .build();
+                }
+                PubSubKeyPushTargetTypeConnectSecurityGroups.Outputs output =
+                    new PubSubKeyPushTargetTypeConnectSecurityGroups.Outputs(
+                        handler.connectSecurityGroups(context, input.securityGroupIds()));
+                Variant[] encoded =
+                    output.toVariants(getNodeContext().getServer().getStaticEncodingContext());
+                try {
+                  outputValidator.validate(getOutputArguments(), encoded);
+                } catch (UaException failure) {
+                  throw new UaException(StatusCodes.Bad_TypeMismatch, failure);
+                }
+                return encoded;
+              }
+            });
   }
 
   @Override
   public UaMethodNode getDisconnectSecurityGroupsMethodNode() {
-    Optional<UaNode> methodNode =
-        findNode(
-            "http://opcfoundation.org/UA/",
-            "DisconnectSecurityGroups",
-            node -> node instanceof UaMethodNode,
-            Reference.HAS_COMPONENT_PREDICATE);
-    return (UaMethodNode) methodNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        "http://opcfoundation.org/UA/",
+        "DisconnectSecurityGroups",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.NULL_VALUE,
+        null,
+        -1,
+        UaMethodNode.class);
+  }
+
+  @Override
+  public void setDisconnectSecurityGroupsHandler(
+      PubSubKeyPushTargetType.@Nullable DisconnectSecurityGroupsHandler handler) {
+    UaMethodNode method = getDisconnectSecurityGroupsMethodNode();
+    setMethodHandler(
+        method.getNodeId(),
+        handler == null
+            ? null
+            : new AbstractMethodInvocationHandler(method) {
+              private final MethodArgumentValidator outputValidator =
+                  new MethodArgumentValidator(getNodeContext().getServer());
+
+              @Override
+              public Argument[] getInputArguments() {
+                Argument[] declared = method.getInputArguments();
+                return declared != null
+                    ? declared
+                    : PubSubKeyPushTargetTypeDisconnectSecurityGroups.inputArguments(
+                        getNodeContext().getServer().getNamespaceTable());
+              }
+
+              @Override
+              public Argument[] getOutputArguments() {
+                Argument[] declared = method.getOutputArguments();
+                return declared != null
+                    ? declared
+                    : PubSubKeyPushTargetTypeDisconnectSecurityGroups.outputArguments(
+                        getNodeContext().getServer().getNamespaceTable());
+              }
+
+              @Override
+              protected int getRequiredInputArgumentCount(Argument[] arguments) {
+                return 1;
+              }
+
+              @Override
+              protected Variant[] invoke(
+                  AbstractMethodInvocationHandler.InvocationContext context, Variant[] values)
+                  throws UaException {
+                PubSubKeyPushTargetTypeDisconnectSecurityGroups.Inputs input;
+                try {
+                  input =
+                      PubSubKeyPushTargetTypeDisconnectSecurityGroups.Inputs.fromVariants(
+                          getNodeContext().getServer().getStaticEncodingContext(), values);
+                } catch (UaArgumentConversionException failure) {
+                  throw InvalidArgumentException.builder()
+                      .argument(
+                          failure.getArgumentIndex(),
+                          StatusCodes.Bad_TypeMismatch,
+                          failure.getMessage())
+                      .build();
+                }
+                PubSubKeyPushTargetTypeDisconnectSecurityGroups.Outputs output =
+                    new PubSubKeyPushTargetTypeDisconnectSecurityGroups.Outputs(
+                        handler.disconnectSecurityGroups(context, input.securityGroupIds()));
+                Variant[] encoded =
+                    output.toVariants(getNodeContext().getServer().getStaticEncodingContext());
+                try {
+                  outputValidator.validate(getOutputArguments(), encoded);
+                } catch (UaException failure) {
+                  throw new UaException(StatusCodes.Bad_TypeMismatch, failure);
+                }
+                return encoded;
+              }
+            });
   }
 
   @Override
   public UaMethodNode getTriggerKeyUpdateMethodNode() {
-    Optional<UaNode> methodNode =
-        findNode(
-            "http://opcfoundation.org/UA/",
-            "TriggerKeyUpdate",
-            node -> node instanceof UaMethodNode,
-            Reference.HAS_COMPONENT_PREDICATE);
-    return (UaMethodNode) methodNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        "http://opcfoundation.org/UA/",
+        "TriggerKeyUpdate",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.NULL_VALUE,
+        null,
+        -1,
+        UaMethodNode.class);
+  }
+
+  @Override
+  public void setTriggerKeyUpdateHandler(
+      PubSubKeyPushTargetType.@Nullable TriggerKeyUpdateHandler handler) {
+    UaMethodNode method = getTriggerKeyUpdateMethodNode();
+    setMethodHandler(
+        method.getNodeId(),
+        handler == null
+            ? null
+            : new AbstractMethodInvocationHandler(method) {
+              private final MethodArgumentValidator outputValidator =
+                  new MethodArgumentValidator(getNodeContext().getServer());
+
+              @Override
+              public Argument[] getInputArguments() {
+                Argument[] declared = method.getInputArguments();
+                return declared != null
+                    ? declared
+                    : PubSubKeyPushTargetTypeTriggerKeyUpdate.inputArguments(
+                        getNodeContext().getServer().getNamespaceTable());
+              }
+
+              @Override
+              public Argument[] getOutputArguments() {
+                Argument[] declared = method.getOutputArguments();
+                return declared != null
+                    ? declared
+                    : PubSubKeyPushTargetTypeTriggerKeyUpdate.outputArguments(
+                        getNodeContext().getServer().getNamespaceTable());
+              }
+
+              @Override
+              protected int getRequiredInputArgumentCount(Argument[] arguments) {
+                return 0;
+              }
+
+              @Override
+              protected Variant[] invoke(
+                  AbstractMethodInvocationHandler.InvocationContext context, Variant[] values)
+                  throws UaException {
+                handler.triggerKeyUpdate(context);
+                Variant[] encoded = new Variant[0];
+                try {
+                  outputValidator.validate(getOutputArguments(), encoded);
+                } catch (UaException failure) {
+                  throw new UaException(StatusCodes.Bad_TypeMismatch, failure);
+                }
+                return encoded;
+              }
+            });
+  }
+
+  @Override
+  public void setMethods(PubSubKeyPushTargetType.@Nullable Methods methods) {
+    setConnectSecurityGroupsHandler(methods == null ? null : methods::connectSecurityGroups);
+    setDisconnectSecurityGroupsHandler(methods == null ? null : methods::disconnectSecurityGroups);
+    setTriggerKeyUpdateHandler(methods == null ? null : methods::triggerKeyUpdate);
   }
 }

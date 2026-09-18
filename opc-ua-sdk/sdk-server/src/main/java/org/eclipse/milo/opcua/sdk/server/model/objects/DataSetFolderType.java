@@ -1,669 +1,396 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.nodes.MethodNode;
+import org.eclipse.milo.opcua.sdk.core.model.methods.DataSetFolderTypeAddPublishedDataItems;
+import org.eclipse.milo.opcua.sdk.core.model.methods.DataSetFolderTypeAddPublishedDataItemsTemplate;
+import org.eclipse.milo.opcua.sdk.core.model.methods.DataSetFolderTypeAddPublishedEvents;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
-import org.eclipse.milo.opcua.sdk.server.methods.Out;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
-import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
-import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
-import org.eclipse.milo.opcua.stack.core.types.structured.ConfigurationVersionDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ContentFilter;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetFieldFlags;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetMetaDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedVariableDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SimpleAttributeOperand;
-import org.eclipse.milo.opcua.stack.core.util.Lazy;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.1">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.1</a>
+ * Server API for the DataSetFolderType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.1">Model
+ *     documentation</a>
  */
 public interface DataSetFolderType extends FolderType {
-  MethodNode getAddPublishedDataItemsMethodNode();
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 14477L);
 
-  MethodNode getAddPublishedEventsMethodNode();
+  /**
+   * Returns the optional AddDataSetFolder Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.7">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getAddDataSetFolderMethodNode();
 
-  MethodNode getAddPublishedDataItemsTemplateMethodNode();
+  /**
+   * Sets this instance's AddDataSetFolder handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setAddDataSetFolderHandler(@Nullable AddDataSetFolderHandler handler);
 
-  MethodNode getAddPublishedEventsTemplateMethodNode();
+  /**
+   * Returns the optional AddPublishedDataItems Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.2">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getAddPublishedDataItemsMethodNode();
 
-  MethodNode getRemovePublishedDataSetMethodNode();
+  /**
+   * Sets this instance's AddPublishedDataItems handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setAddPublishedDataItemsHandler(@Nullable AddPublishedDataItemsHandler handler);
 
-  MethodNode getAddDataSetFolderMethodNode();
+  /**
+   * Returns the optional AddPublishedDataItemsTemplate Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.4">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getAddPublishedDataItemsTemplateMethodNode();
 
-  MethodNode getRemoveDataSetFolderMethodNode();
+  /**
+   * Sets this instance's AddPublishedDataItemsTemplate handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setAddPublishedDataItemsTemplateHandler(
+      @Nullable AddPublishedDataItemsTemplateHandler handler);
 
-  abstract class AddPublishedDataItemsMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+  /**
+   * Returns the optional AddPublishedEvents Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.3">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getAddPublishedEventsMethodNode();
 
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
+  /**
+   * Sets this instance's AddPublishedEvents handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setAddPublishedEventsHandler(@Nullable AddPublishedEventsHandler handler);
 
-    public AddPublishedDataItemsMethod(UaMethodNode node) {
-      super(node);
-    }
+  /**
+   * Returns the optional AddPublishedEventsTemplate Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.5">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getAddPublishedEventsTemplateMethodNode();
 
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+  /**
+   * Sets this instance's AddPublishedEventsTemplate handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setAddPublishedEventsTemplateHandler(@Nullable AddPublishedEventsTemplateHandler handler);
 
-            return new Argument[] {
-              new Argument(
-                  "Name",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "FieldNameAliases",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", "")),
-              new Argument(
-                  "FieldFlags",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15904")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", "")),
-              new Argument(
-                  "VariablesToAdd",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14273")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", ""))
-            };
-          });
-    }
+  /**
+   * Returns the optional RemoveDataSetFolder Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.8">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getRemoveDataSetFolderMethodNode();
 
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+  /**
+   * Sets this instance's RemoveDataSetFolder handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setRemoveDataSetFolderHandler(@Nullable RemoveDataSetFolderHandler handler);
 
-            return new Argument[] {
-              new Argument(
-                  "DataSetNodeId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "ConfigurationVersion",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14593")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "AddResults",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=19")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", ""))
-            };
-          });
-    }
+  /**
+   * Returns the optional RemovePublishedDataSet Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.6">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getRemovePublishedDataSetMethodNode();
 
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      String name = (String) inputValues[0].getValue();
-      String[] fieldNameAliases = (String[]) inputValues[1].getValue();
-      DataSetFieldFlags[] fieldFlags = (DataSetFieldFlags[]) inputValues[2].getValue();
-      PublishedVariableDataType[] variablesToAdd =
-          (PublishedVariableDataType[]) inputValues[3].getValue();
-      Out<NodeId> dataSetNodeId = new Out<>();
-      Out<ConfigurationVersionDataType> configurationVersion = new Out<>();
-      Out<StatusCode[]> addResults = new Out<>();
-      invoke(
-          context,
-          name,
-          fieldNameAliases,
-          fieldFlags,
-          variablesToAdd,
-          dataSetNodeId,
-          configurationVersion,
-          addResults);
-      return new Variant[] {
-        new Variant(dataSetNodeId.get()),
-        new Variant(configurationVersion.get()),
-        new Variant(addResults.get())
-      };
-    }
+  /**
+   * Sets this instance's RemovePublishedDataSet handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setRemovePublishedDataSetHandler(@Nullable RemovePublishedDataSetHandler handler);
 
-    protected abstract void invoke(
+  /**
+   * Sets this instance's Method handlers, including inherited handlers, from one implementation;
+   * null clears them and restores Method-node fallback. Absent optional Methods are skipped.
+   * Changes are applied in order; a failure does not roll back earlier changes.
+   *
+   * @throws UaRuntimeException if a mandatory Method is absent, or a Method is ambiguous or
+   *     incompatible.
+   */
+  void setMethods(@Nullable Methods methods);
+
+  /**
+   * Handles calls to the AddDataSetFolder Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.7">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface AddDataSetFolderHandler {
+    /**
+     * Handles a call to the AddDataSetFolder Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    @Nullable NodeId addDataSetFolder(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable String name)
+        throws UaException;
+  }
+
+  /**
+   * Handles calls to the AddPublishedDataItems Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.2">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface AddPublishedDataItemsHandler {
+    /**
+     * Handles a call to the AddPublishedDataItems Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    DataSetFolderTypeAddPublishedDataItems.Outputs addPublishedDataItems(
         AbstractMethodInvocationHandler.InvocationContext context,
-        String name,
-        String[] fieldNameAliases,
-        DataSetFieldFlags[] fieldFlags,
-        PublishedVariableDataType[] variablesToAdd,
-        Out<NodeId> dataSetNodeId,
-        Out<ConfigurationVersionDataType> configurationVersion,
-        Out<StatusCode[]> addResults)
+        @Nullable String name,
+        @Nullable String @Nullable [] fieldNameAliases,
+        DataSetFieldFlags @Nullable [] fieldFlags,
+        @Nullable PublishedVariableDataType @Nullable [] variablesToAdd)
         throws UaException;
   }
 
-  abstract class AddPublishedEventsMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-    public AddPublishedEventsMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "Name",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "EventNotifier",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "FieldNameAliases",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", "")),
-              new Argument(
-                  "FieldFlags",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15904")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", "")),
-              new Argument(
-                  "SelectedFields",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=601")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", "")),
-              new Argument(
-                  "Filter",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=586")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "ConfigurationVersion",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14593")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "DataSetNodeId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      String name = (String) inputValues[0].getValue();
-      NodeId eventNotifier = (NodeId) inputValues[1].getValue();
-      String[] fieldNameAliases = (String[]) inputValues[2].getValue();
-      DataSetFieldFlags[] fieldFlags = (DataSetFieldFlags[]) inputValues[3].getValue();
-      SimpleAttributeOperand[] selectedFields =
-          (SimpleAttributeOperand[]) inputValues[4].getValue();
-      ContentFilter filter = (ContentFilter) inputValues[5].getValue();
-      Out<ConfigurationVersionDataType> configurationVersion = new Out<>();
-      Out<NodeId> dataSetNodeId = new Out<>();
-      invoke(
-          context,
-          name,
-          eventNotifier,
-          fieldNameAliases,
-          fieldFlags,
-          selectedFields,
-          filter,
-          configurationVersion,
-          dataSetNodeId);
-      return new Variant[] {
-        new Variant(configurationVersion.get()), new Variant(dataSetNodeId.get())
-      };
-    }
-
-    protected abstract void invoke(
+  /**
+   * Handles calls to the AddPublishedDataItemsTemplate Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.4">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface AddPublishedDataItemsTemplateHandler {
+    /**
+     * Handles a call to the AddPublishedDataItemsTemplate Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    DataSetFolderTypeAddPublishedDataItemsTemplate.Outputs addPublishedDataItemsTemplate(
         AbstractMethodInvocationHandler.InvocationContext context,
-        String name,
-        NodeId eventNotifier,
-        String[] fieldNameAliases,
-        DataSetFieldFlags[] fieldFlags,
-        SimpleAttributeOperand[] selectedFields,
-        ContentFilter filter,
-        Out<ConfigurationVersionDataType> configurationVersion,
-        Out<NodeId> dataSetNodeId)
+        @Nullable String name,
+        @Nullable DataSetMetaDataType dataSetMetaData,
+        @Nullable PublishedVariableDataType @Nullable [] variablesToAdd)
         throws UaException;
   }
 
-  abstract class AddPublishedDataItemsTemplateMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-    public AddPublishedDataItemsTemplateMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "Name",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "DataSetMetaData",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14523")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "VariablesToAdd",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14273")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "DataSetNodeId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "AddResults",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=19")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      String name = (String) inputValues[0].getValue();
-      DataSetMetaDataType dataSetMetaData = (DataSetMetaDataType) inputValues[1].getValue();
-      PublishedVariableDataType[] variablesToAdd =
-          (PublishedVariableDataType[]) inputValues[2].getValue();
-      Out<NodeId> dataSetNodeId = new Out<>();
-      Out<StatusCode[]> addResults = new Out<>();
-      invoke(context, name, dataSetMetaData, variablesToAdd, dataSetNodeId, addResults);
-      return new Variant[] {new Variant(dataSetNodeId.get()), new Variant(addResults.get())};
-    }
-
-    protected abstract void invoke(
+  /**
+   * Handles calls to the AddPublishedEvents Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.3">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface AddPublishedEventsHandler {
+    /**
+     * Handles a call to the AddPublishedEvents Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    DataSetFolderTypeAddPublishedEvents.Outputs addPublishedEvents(
         AbstractMethodInvocationHandler.InvocationContext context,
-        String name,
-        DataSetMetaDataType dataSetMetaData,
-        PublishedVariableDataType[] variablesToAdd,
-        Out<NodeId> dataSetNodeId,
-        Out<StatusCode[]> addResults)
+        @Nullable String name,
+        @Nullable NodeId eventNotifier,
+        @Nullable String @Nullable [] fieldNameAliases,
+        DataSetFieldFlags @Nullable [] fieldFlags,
+        @Nullable SimpleAttributeOperand @Nullable [] selectedFields,
+        @Nullable ContentFilter filter)
         throws UaException;
   }
 
-  abstract class AddPublishedEventsTemplateMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-    public AddPublishedEventsTemplateMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "Name",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "DataSetMetaData",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14523")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "EventNotifier",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "SelectedFields",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=601")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", "")),
-              new Argument(
-                  "Filter",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=586")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "DataSetNodeId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      String name = (String) inputValues[0].getValue();
-      DataSetMetaDataType dataSetMetaData = (DataSetMetaDataType) inputValues[1].getValue();
-      NodeId eventNotifier = (NodeId) inputValues[2].getValue();
-      SimpleAttributeOperand[] selectedFields =
-          (SimpleAttributeOperand[]) inputValues[3].getValue();
-      ContentFilter filter = (ContentFilter) inputValues[4].getValue();
-      Out<NodeId> dataSetNodeId = new Out<>();
-      invoke(context, name, dataSetMetaData, eventNotifier, selectedFields, filter, dataSetNodeId);
-      return new Variant[] {new Variant(dataSetNodeId.get())};
-    }
-
-    protected abstract void invoke(
+  /**
+   * Handles calls to the AddPublishedEventsTemplate Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.5">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface AddPublishedEventsTemplateHandler {
+    /**
+     * Handles a call to the AddPublishedEventsTemplate Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    @Nullable NodeId addPublishedEventsTemplate(
         AbstractMethodInvocationHandler.InvocationContext context,
-        String name,
-        DataSetMetaDataType dataSetMetaData,
-        NodeId eventNotifier,
-        SimpleAttributeOperand[] selectedFields,
-        ContentFilter filter,
-        Out<NodeId> dataSetNodeId)
+        @Nullable String name,
+        @Nullable DataSetMetaDataType dataSetMetaData,
+        @Nullable NodeId eventNotifier,
+        @Nullable SimpleAttributeOperand @Nullable [] selectedFields,
+        @Nullable ContentFilter filter)
         throws UaException;
   }
 
-  abstract class RemovePublishedDataSetMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    public RemovePublishedDataSetMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "DataSetNodeId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      NodeId dataSetNodeId = (NodeId) inputValues[0].getValue();
-      invoke(context, dataSetNodeId);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, NodeId dataSetNodeId)
-        throws UaException;
-  }
-
-  abstract class AddDataSetFolderMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-    public AddDataSetFolderMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "Name",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "DataSetFolderNodeId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      String name = (String) inputValues[0].getValue();
-      Out<NodeId> dataSetFolderNodeId = new Out<>();
-      invoke(context, name, dataSetFolderNodeId);
-      return new Variant[] {new Variant(dataSetFolderNodeId.get())};
-    }
-
-    protected abstract void invoke(
+  /**
+   * Handles calls to the RemoveDataSetFolder Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.8">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface RemoveDataSetFolderHandler {
+    /**
+     * Handles a call to the RemoveDataSetFolder Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void removeDataSetFolder(
         AbstractMethodInvocationHandler.InvocationContext context,
-        String name,
-        Out<NodeId> dataSetFolderNodeId)
+        @Nullable NodeId dataSetFolderNodeId)
         throws UaException;
   }
 
-  abstract class RemoveDataSetFolderMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    public RemoveDataSetFolderMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "DataSetFolderNodeId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      NodeId dataSetFolderNodeId = (NodeId) inputValues[0].getValue();
-      invoke(context, dataSetFolderNodeId);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, NodeId dataSetFolderNodeId)
+  /**
+   * Handles calls to the RemovePublishedDataSet Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.6">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface RemovePublishedDataSetHandler {
+    /**
+     * Handles a call to the RemovePublishedDataSet Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void removePublishedDataSet(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable NodeId dataSetNodeId)
         throws UaException;
+  }
+
+  /** Implements this type's Methods. Unimplemented Methods report Bad_NotImplemented. */
+  interface Methods {
+    /**
+     * Handles a call to the AddDataSetFolder Method; see {@link
+     * AddDataSetFolderHandler#addDataSetFolder}.
+     */
+    default @Nullable NodeId addDataSetFolder(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable String name)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /**
+     * Handles a call to the AddPublishedDataItems Method; see {@link
+     * AddPublishedDataItemsHandler#addPublishedDataItems}.
+     */
+    default DataSetFolderTypeAddPublishedDataItems.Outputs addPublishedDataItems(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable String name,
+        @Nullable String @Nullable [] fieldNameAliases,
+        DataSetFieldFlags @Nullable [] fieldFlags,
+        @Nullable PublishedVariableDataType @Nullable [] variablesToAdd)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /**
+     * Handles a call to the AddPublishedDataItemsTemplate Method; see {@link
+     * AddPublishedDataItemsTemplateHandler#addPublishedDataItemsTemplate}.
+     */
+    default DataSetFolderTypeAddPublishedDataItemsTemplate.Outputs addPublishedDataItemsTemplate(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable String name,
+        @Nullable DataSetMetaDataType dataSetMetaData,
+        @Nullable PublishedVariableDataType @Nullable [] variablesToAdd)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /**
+     * Handles a call to the AddPublishedEvents Method; see {@link
+     * AddPublishedEventsHandler#addPublishedEvents}.
+     */
+    default DataSetFolderTypeAddPublishedEvents.Outputs addPublishedEvents(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable String name,
+        @Nullable NodeId eventNotifier,
+        @Nullable String @Nullable [] fieldNameAliases,
+        DataSetFieldFlags @Nullable [] fieldFlags,
+        @Nullable SimpleAttributeOperand @Nullable [] selectedFields,
+        @Nullable ContentFilter filter)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /**
+     * Handles a call to the AddPublishedEventsTemplate Method; see {@link
+     * AddPublishedEventsTemplateHandler#addPublishedEventsTemplate}.
+     */
+    default @Nullable NodeId addPublishedEventsTemplate(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable String name,
+        @Nullable DataSetMetaDataType dataSetMetaData,
+        @Nullable NodeId eventNotifier,
+        @Nullable SimpleAttributeOperand @Nullable [] selectedFields,
+        @Nullable ContentFilter filter)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /**
+     * Handles a call to the RemoveDataSetFolder Method; see {@link
+     * RemoveDataSetFolderHandler#removeDataSetFolder}.
+     */
+    default void removeDataSetFolder(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable NodeId dataSetFolderNodeId)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /**
+     * Handles a call to the RemovePublishedDataSet Method; see {@link
+     * RemovePublishedDataSetHandler#removePublishedDataSet}.
+     */
+    default void removePublishedDataSet(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable NodeId dataSetNodeId)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
   }
 }

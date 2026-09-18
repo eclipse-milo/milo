@@ -1,27 +1,26 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link AuditUpdateStateEventType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part16/4.4.17">Model
+ *     documentation</a>
+ */
 public class AuditUpdateStateEventTypeNode extends AuditUpdateMethodEventTypeNode
     implements AuditUpdateStateEventType {
   public AuditUpdateStateEventTypeNode(
@@ -29,12 +28,36 @@ public class AuditUpdateStateEventTypeNode extends AuditUpdateMethodEventTypeNod
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions);
+  }
+
+  public AuditUpdateStateEventTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         context,
@@ -50,59 +73,56 @@ public class AuditUpdateStateEventTypeNode extends AuditUpdateMethodEventTypeNod
         eventNotifier);
   }
 
-  public AuditUpdateStateEventTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions);
+  @Override
+  public PropertyTypeNode getNewStateIdNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "NewStateId",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 24L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable Variant getNewStateId() {
+    return ServerNodeSupport.read(this, getNewStateIdNode(), Variant.class, null);
+  }
+
+  @Override
+  public void setNewStateId(@Nullable Variant value) {
+    ServerNodeSupport.write(this, getNewStateIdNode(), value, false, false, false);
   }
 
   @Override
   public PropertyTypeNode getOldStateIdNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(AuditUpdateStateEventType.OLD_STATE_ID);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "OldStateId",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 24L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public Object getOldStateId() {
-    return getProperty(AuditUpdateStateEventType.OLD_STATE_ID).orElse(null);
+  public @Nullable Variant getOldStateId() {
+    return ServerNodeSupport.read(this, getOldStateIdNode(), Variant.class, null);
   }
 
   @Override
-  public void setOldStateId(Object value) {
-    setProperty(AuditUpdateStateEventType.OLD_STATE_ID, value);
+  public void setOldStateId(@Nullable Variant value) {
+    ServerNodeSupport.write(this, getOldStateIdNode(), value, false, false, false);
   }
 
   @Override
-  public PropertyTypeNode getNewStateIdNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(AuditUpdateStateEventType.NEW_STATE_ID);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public Object getNewStateId() {
-    return getProperty(AuditUpdateStateEventType.NEW_STATE_ID).orElse(null);
-  }
-
-  @Override
-  public void setNewStateId(Object value) {
-    setProperty(AuditUpdateStateEventType.NEW_STATE_ID, value);
+  public void validateChildren() {
+    super.validateChildren();
+    getNewStateIdNode();
+    getOldStateIdNode();
   }
 }

@@ -1,32 +1,34 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.Reference;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.core.model.methods.NonTransparentBackupRedundancyTypeFailover;
+import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
+import org.eclipse.milo.opcua.sdk.server.methods.MethodArgumentValidator;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.RedundantServerMode;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
-import org.eclipse.milo.opcua.stack.core.types.structured.RedundantServerDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link NonTransparentBackupRedundancyType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.15">Model
+ *     documentation</a>
+ */
 public class NonTransparentBackupRedundancyTypeNode extends NonTransparentRedundancyTypeNode
     implements NonTransparentBackupRedundancyType {
   public NonTransparentBackupRedundancyTypeNode(
@@ -34,12 +36,36 @@ public class NonTransparentBackupRedundancyTypeNode extends NonTransparentRedund
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions);
+  }
+
+  public NonTransparentBackupRedundancyTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         context,
@@ -55,71 +81,115 @@ public class NonTransparentBackupRedundancyTypeNode extends NonTransparentRedund
         eventNotifier);
   }
 
-  public NonTransparentBackupRedundancyTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions);
+  @Override
+  public PropertyTypeNode getModeNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "Mode",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 32417L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable RedundantServerMode getMode() {
+    return ServerNodeSupport.read(
+        this, getModeNode(), RedundantServerMode.class, RedundantServerMode::from);
+  }
+
+  @Override
+  public void setMode(@Nullable RedundantServerMode value) {
+    ServerNodeSupport.write(this, getModeNode(), value, false, true, false);
   }
 
   @Override
   public PropertyTypeNode getRedundantServerArrayNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(NonTransparentBackupRedundancyType.REDUNDANT_SERVER_ARRAY);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "RedundantServerArray",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 853L),
+        1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public RedundantServerDataType[] getRedundantServerArray() {
-    return getProperty(NonTransparentBackupRedundancyType.REDUNDANT_SERVER_ARRAY).orElse(null);
-  }
-
-  @Override
-  public void setRedundantServerArray(RedundantServerDataType[] value) {
-    setProperty(NonTransparentBackupRedundancyType.REDUNDANT_SERVER_ARRAY, value);
-  }
-
-  @Override
-  public PropertyTypeNode getModeNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(NonTransparentBackupRedundancyType.MODE);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public RedundantServerMode getMode() {
-    return getProperty(NonTransparentBackupRedundancyType.MODE).orElse(null);
-  }
-
-  @Override
-  public void setMode(RedundantServerMode value) {
-    setProperty(NonTransparentBackupRedundancyType.MODE, value);
+  public void validateChildren() {
+    super.validateChildren();
+    getModeNode();
   }
 
   @Override
   public UaMethodNode getFailoverMethodNode() {
-    Optional<UaNode> methodNode =
-        findNode(
-            "http://opcfoundation.org/UA/",
-            "Failover",
-            node -> node instanceof UaMethodNode,
-            Reference.HAS_COMPONENT_PREDICATE);
-    return (UaMethodNode) methodNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        "http://opcfoundation.org/UA/",
+        "Failover",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.NULL_VALUE,
+        null,
+        -1,
+        UaMethodNode.class);
+  }
+
+  @Override
+  public void setFailoverHandler(
+      NonTransparentBackupRedundancyType.@Nullable FailoverHandler handler) {
+    UaMethodNode method = getFailoverMethodNode();
+    setMethodHandler(
+        method.getNodeId(),
+        handler == null
+            ? null
+            : new AbstractMethodInvocationHandler(method) {
+              private final MethodArgumentValidator outputValidator =
+                  new MethodArgumentValidator(getNodeContext().getServer());
+
+              @Override
+              public Argument[] getInputArguments() {
+                Argument[] declared = method.getInputArguments();
+                return declared != null
+                    ? declared
+                    : NonTransparentBackupRedundancyTypeFailover.inputArguments(
+                        getNodeContext().getServer().getNamespaceTable());
+              }
+
+              @Override
+              public Argument[] getOutputArguments() {
+                Argument[] declared = method.getOutputArguments();
+                return declared != null
+                    ? declared
+                    : NonTransparentBackupRedundancyTypeFailover.outputArguments(
+                        getNodeContext().getServer().getNamespaceTable());
+              }
+
+              @Override
+              protected int getRequiredInputArgumentCount(Argument[] arguments) {
+                return 0;
+              }
+
+              @Override
+              protected Variant[] invoke(
+                  AbstractMethodInvocationHandler.InvocationContext context, Variant[] values)
+                  throws UaException {
+                handler.failover(context);
+                Variant[] encoded = new Variant[0];
+                try {
+                  outputValidator.validate(getOutputArguments(), encoded);
+                } catch (UaException failure) {
+                  throw new UaException(StatusCodes.Bad_TypeMismatch, failure);
+                }
+                return encoded;
+              }
+            });
+  }
+
+  @Override
+  public void setMethods(NonTransparentBackupRedundancyType.@Nullable Methods methods) {
+    setFailoverHandler(methods == null ? null : methods::failover);
   }
 }

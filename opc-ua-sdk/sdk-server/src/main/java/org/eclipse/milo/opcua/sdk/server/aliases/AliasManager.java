@@ -35,7 +35,6 @@ import org.eclipse.milo.opcua.sdk.server.items.DataItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredItem;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
 import org.eclipse.milo.opcua.sdk.server.methods.MethodInvocationHandler;
-import org.eclipse.milo.opcua.sdk.server.model.objects.AliasNameCategoryType;
 import org.eclipse.milo.opcua.sdk.server.model.objects.AliasNameCategoryTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.AliasNameTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
@@ -177,7 +176,7 @@ public final class AliasManager extends AbstractLifecycle {
       for (UaMethodNode methodNode : findAliasNodes) {
         MethodInvocationHandler handler = methodNode.getInvocationHandler();
 
-        if (!(handler instanceof MethodInvocationHandler.NotImplementedHandler)) {
+        if (handler != MethodInvocationHandler.NOT_IMPLEMENTED) {
           throw new IllegalStateException(
               "FindAlias Method %s already has an invocation handler: %s"
                   .formatted(
@@ -512,7 +511,7 @@ public final class AliasManager extends AbstractLifecycle {
       }
 
       MethodInvocationHandler handler = findAliasNode.getInvocationHandler();
-      if (!(handler instanceof MethodInvocationHandler.NotImplementedHandler)) {
+      if (handler != MethodInvocationHandler.NOT_IMPLEMENTED) {
         throw new UaException(
             StatusCodes.Bad_InvalidState,
             "FindAlias Method %s already has an invocation handler: %s"
@@ -557,7 +556,7 @@ public final class AliasManager extends AbstractLifecycle {
               boundMethodNodes);
 
       boolean lastChangeEnabled =
-          categoryNode.getPropertyNode(AliasNameCategoryType.LAST_CHANGE).isPresent();
+          categoryNode.getPropertyNode(new QualifiedName(0, "LastChange")).isPresent();
 
       var category =
           new AliasCategory(
@@ -2045,8 +2044,7 @@ public final class AliasManager extends AbstractLifecycle {
       return false;
     }
 
-    if (!(methodNode.getInvocationHandler()
-        instanceof MethodInvocationHandler.NotImplementedHandler)) {
+    if (methodNode.getInvocationHandler() != MethodInvocationHandler.NOT_IMPLEMENTED) {
       return false;
     }
 

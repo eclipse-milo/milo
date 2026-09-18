@@ -1,50 +1,79 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.variables;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.structured.EnumValueType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.3/#5.3.3.4">https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.3/#5.3.3.4</a>
+ * Server API for the MultiStateValueDiscreteType VariableType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.3/#5.3.3.4">Model
+ *     documentation</a>
  */
 public interface MultiStateValueDiscreteType extends DiscreteItemType {
-  QualifiedProperty<EnumValueType[]> ENUM_VALUES =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "EnumValues",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7594"),
-          1,
-          EnumValueType[].class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 11238L);
 
-  QualifiedProperty<LocalizedText> VALUE_AS_TEXT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ValueAsText",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
-          -1,
-          LocalizedText.class);
+  /**
+   * Returns the mandatory EnumValues child, a PropertyType with DataType EnumValueType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getEnumValuesNode();
 
-  EnumValueType[] getEnumValues();
+  /**
+   * Returns the Value of the EnumValues child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable EnumValueType @Nullable [] getEnumValues();
 
-  void setEnumValues(EnumValueType[] value);
+  /**
+   * Sets the Value of the EnumValues child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setEnumValues(@Nullable EnumValueType @Nullable [] value);
 
-  PropertyType getEnumValuesNode();
+  /**
+   * Returns the mandatory ValueAsText child, a PropertyType with DataType LocalizedText.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getValueAsTextNode();
 
-  LocalizedText getValueAsText();
+  /**
+   * Returns the Value of the ValueAsText child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable LocalizedText getValueAsText();
 
-  void setValueAsText(LocalizedText value);
+  /**
+   * Sets the Value of the ValueAsText child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setValueAsText(@Nullable LocalizedText value);
 
-  PropertyType getValueAsTextNode();
+  /**
+   * Returns this node's Value.
+   *
+   * @throws UaRuntimeException if the Value does not convert.
+   */
+  @Nullable Variant getTypedValue();
+
+  /**
+   * Sets this node's Value.
+   *
+   * @throws UaRuntimeException if the value does not convert.
+   */
+  void setTypedValue(@Nullable Variant value);
 }

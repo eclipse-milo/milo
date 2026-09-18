@@ -1,50 +1,64 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.13/#9.1.13.2">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.13/#9.1.13.2</a>
+ * Server API for the PubSubTransportLimitsExceedEventType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.13/#9.1.13.2">Model
+ *     documentation</a>
  */
 public interface PubSubTransportLimitsExceedEventType extends PubSubStatusEventType {
-  QualifiedProperty<UInteger> ACTUAL =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Actual",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 15548L);
 
-  QualifiedProperty<UInteger> MAXIMUM =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Maximum",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  /**
+   * Returns the mandatory Actual child, a PropertyType with DataType UInt32.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getActualNode();
 
-  UInteger getActual();
+  /**
+   * Returns the Value of the Actual child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getActual();
 
-  void setActual(UInteger value);
+  /**
+   * Sets the Value of the Actual child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setActual(@Nullable UInteger value);
 
-  PropertyType getActualNode();
+  /**
+   * Returns the mandatory Maximum child, a PropertyType with DataType UInt32.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getMaximumNode();
 
-  UInteger getMaximum();
+  /**
+   * Returns the Value of the Maximum child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getMaximum();
 
-  void setMaximum(UInteger value);
-
-  PropertyType getMaximumNode();
+  /**
+   * Sets the Value of the Maximum child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMaximum(@Nullable UInteger value);
 }

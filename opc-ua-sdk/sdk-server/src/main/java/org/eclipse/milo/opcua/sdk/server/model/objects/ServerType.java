@@ -1,439 +1,479 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.core.nodes.MethodNode;
+import org.eclipse.milo.opcua.sdk.core.model.methods.ServerTypeGetMonitoredItems;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
-import org.eclipse.milo.opcua.sdk.server.methods.Out;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
-import org.eclipse.milo.opcua.sdk.server.model.variables.ServerStatusType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.variables.ServerStatusTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ServerState;
-import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.types.structured.ServerStatusDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.TimeZoneDataType;
-import org.eclipse.milo.opcua.stack.core.util.Lazy;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.1">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.1</a>
+ * Server API for the ServerType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.1">Model
+ *     documentation</a>
  */
 public interface ServerType extends BaseObjectType {
-  QualifiedProperty<String[]> SERVER_ARRAY =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ServerArray",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          1,
-          String[].class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2004L);
 
-  QualifiedProperty<String[]> NAMESPACE_ARRAY =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "NamespaceArray",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          1,
-          String[].class);
+  /**
+   * Returns the mandatory Auditing child, a PropertyType with DataType Boolean.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getAuditingNode();
 
-  QualifiedProperty<UInteger> URIS_VERSION =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "UrisVersion",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=20998"),
-          -1,
-          UInteger.class);
+  /**
+   * Returns the Value of the Auditing child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Boolean getAuditing();
 
-  QualifiedProperty<UByte> SERVICE_LEVEL =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ServiceLevel",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=3"),
-          -1,
-          UByte.class);
+  /**
+   * Sets the Value of the Auditing child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setAuditing(@Nullable Boolean value);
 
-  QualifiedProperty<Boolean> AUDITING =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Auditing",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
+  /**
+   * Returns the optional EstimatedReturnTime child, a PropertyType with DataType DateTime.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getEstimatedReturnTimeNode();
 
-  QualifiedProperty<DateTime> ESTIMATED_RETURN_TIME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "EstimatedReturnTime",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=13"),
-          -1,
-          DateTime.class);
+  /**
+   * Returns the Value of the EstimatedReturnTime child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable DateTime getEstimatedReturnTime();
 
-  QualifiedProperty<TimeZoneDataType> LOCAL_TIME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "LocalTime",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=8912"),
-          -1,
-          TimeZoneDataType.class);
+  /**
+   * Sets the Value of the EstimatedReturnTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setEstimatedReturnTime(@Nullable DateTime value);
 
-  String[] getServerArray();
+  /**
+   * Returns the optional LocalTime child, a PropertyType with DataType TimeZoneDataType.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getLocalTimeNode();
 
-  void setServerArray(String[] value);
+  /**
+   * Returns the Value of the LocalTime child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable TimeZoneDataType getLocalTime();
 
-  PropertyType getServerArrayNode();
+  /**
+   * Sets the Value of the LocalTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setLocalTime(@Nullable TimeZoneDataType value);
 
-  String[] getNamespaceArray();
+  /**
+   * Returns the mandatory NamespaceArray child, a PropertyType with DataType String.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getNamespaceArrayNode();
 
-  void setNamespaceArray(String[] value);
+  /**
+   * Returns the Value of the NamespaceArray child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String @Nullable [] getNamespaceArray();
 
-  PropertyType getNamespaceArrayNode();
+  /**
+   * Sets the Value of the NamespaceArray child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setNamespaceArray(@Nullable String @Nullable [] value);
 
-  UInteger getUrisVersion();
+  /**
+   * Returns the optional Namespaces child, a NamespacesType.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.14">NamespacesType
+   *     documentation</a>
+   */
+  @Nullable NamespacesTypeNode getNamespacesNode();
 
-  void setUrisVersion(UInteger value);
+  /**
+   * Returns the mandatory ServerArray child, a PropertyType with DataType String.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getServerArrayNode();
 
-  PropertyType getUrisVersionNode();
+  /**
+   * Returns the Value of the ServerArray child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String @Nullable [] getServerArray();
 
-  UByte getServiceLevel();
+  /**
+   * Sets the Value of the ServerArray child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setServerArray(@Nullable String @Nullable [] value);
 
-  void setServiceLevel(UByte value);
+  /**
+   * Returns the mandatory ServerCapabilities child, a ServerCapabilitiesType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.2">ServerCapabilitiesType
+   *     documentation</a>
+   */
+  ServerCapabilitiesTypeNode getServerCapabilitiesNode();
 
-  PropertyType getServiceLevelNode();
+  /**
+   * Returns the mandatory ServerDiagnostics child, a ServerDiagnosticsType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.3">ServerDiagnosticsType
+   *     documentation</a>
+   */
+  ServerDiagnosticsTypeNode getServerDiagnosticsNode();
 
-  Boolean getAuditing();
+  /**
+   * Returns the mandatory ServerRedundancy child, a ServerRedundancyType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.7">ServerRedundancyType
+   *     documentation</a>
+   */
+  ServerRedundancyTypeNode getServerRedundancyNode();
 
-  void setAuditing(Boolean value);
+  /**
+   * Returns the mandatory ServerStatus child, a ServerStatusType with DataType
+   * ServerStatusDataType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.6">ServerStatusType
+   *     documentation</a>
+   */
+  ServerStatusTypeNode getServerStatusNode();
 
-  PropertyType getAuditingNode();
+  /**
+   * Returns the Value of the ServerStatus child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable ServerStatusDataType getServerStatus();
 
-  DateTime getEstimatedReturnTime();
+  /**
+   * Sets the Value of the ServerStatus child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setServerStatus(@Nullable ServerStatusDataType value);
 
-  void setEstimatedReturnTime(DateTime value);
+  /**
+   * Returns the mandatory ServiceLevel child, a PropertyType with DataType Byte.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getServiceLevelNode();
 
-  PropertyType getEstimatedReturnTimeNode();
+  /**
+   * Returns the Value of the ServiceLevel child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UByte getServiceLevel();
 
-  TimeZoneDataType getLocalTime();
+  /**
+   * Sets the Value of the ServiceLevel child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setServiceLevel(@Nullable UByte value);
 
-  void setLocalTime(TimeZoneDataType value);
+  /**
+   * Returns the optional UrisVersion child, a PropertyType with DataType VersionTime.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getUrisVersionNode();
 
-  PropertyType getLocalTimeNode();
+  /**
+   * Returns the Value of the UrisVersion child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getUrisVersion();
 
-  ServerStatusType getServerStatusNode();
+  /**
+   * Sets the Value of the UrisVersion child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setUrisVersion(@Nullable UInteger value);
 
-  ServerStatusDataType getServerStatus();
+  /**
+   * Returns the mandatory VendorServerInfo child, a VendorServerInfoType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.6">VendorServerInfoType
+   *     documentation</a>
+   */
+  VendorServerInfoTypeNode getVendorServerInfoNode();
 
-  void setServerStatus(ServerStatusDataType value);
+  /**
+   * Returns the optional GetMonitoredItems Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/9.1">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getGetMonitoredItemsMethodNode();
 
-  ServerCapabilitiesType getServerCapabilitiesNode();
+  /**
+   * Sets this instance's GetMonitoredItems handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setGetMonitoredItemsHandler(@Nullable GetMonitoredItemsHandler handler);
 
-  ServerDiagnosticsType getServerDiagnosticsNode();
+  /**
+   * Returns the optional RequestServerStateChange Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/9.4">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getRequestServerStateChangeMethodNode();
 
-  VendorServerInfoType getVendorServerInfoNode();
+  /**
+   * Sets this instance's RequestServerStateChange handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setRequestServerStateChangeHandler(@Nullable RequestServerStateChangeHandler handler);
 
-  ServerRedundancyType getServerRedundancyNode();
+  /**
+   * Returns the optional ResendData Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/9.2">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getResendDataMethodNode();
 
-  NamespacesType getNamespacesNode();
+  /**
+   * Sets this instance's ResendData handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setResendDataHandler(@Nullable ResendDataHandler handler);
 
-  MethodNode getGetMonitoredItemsMethodNode();
+  /**
+   * Returns the optional SetSubscriptionDurable Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/9.3">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getSetSubscriptionDurableMethodNode();
 
-  MethodNode getResendDataMethodNode();
+  /**
+   * Sets this instance's SetSubscriptionDurable handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setSetSubscriptionDurableHandler(@Nullable SetSubscriptionDurableHandler handler);
 
-  MethodNode getSetSubscriptionDurableMethodNode();
+  /**
+   * Sets this instance's Method handlers, including inherited handlers, from one implementation;
+   * null clears them and restores Method-node fallback. Absent optional Methods are skipped.
+   * Changes are applied in order; a failure does not roll back earlier changes.
+   *
+   * @throws UaRuntimeException if a mandatory Method is absent, or a Method is ambiguous or
+   *     incompatible.
+   */
+  void setMethods(@Nullable Methods methods);
 
-  MethodNode getRequestServerStateChangeMethodNode();
-
-  abstract class GetMonitoredItemsMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-    public GetMonitoredItemsMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "SubscriptionId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "ServerHandles",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", "")),
-              new Argument(
-                  "ClientHandles",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      UInteger subscriptionId = (UInteger) inputValues[0].getValue();
-      Out<UInteger[]> serverHandles = new Out<>();
-      Out<UInteger[]> clientHandles = new Out<>();
-      invoke(context, subscriptionId, serverHandles, clientHandles);
-      return new Variant[] {new Variant(serverHandles.get()), new Variant(clientHandles.get())};
-    }
-
-    protected abstract void invoke(
+  /**
+   * Handles calls to the GetMonitoredItems Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/9.1">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface GetMonitoredItemsHandler {
+    /**
+     * Handles a call to the GetMonitoredItems Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    ServerTypeGetMonitoredItems.Outputs getMonitoredItems(
         AbstractMethodInvocationHandler.InvocationContext context,
-        UInteger subscriptionId,
-        Out<UInteger[]> serverHandles,
-        Out<UInteger[]> clientHandles)
+        @Nullable UInteger subscriptionId)
         throws UaException;
   }
 
-  abstract class ResendDataMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    public ResendDataMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "SubscriptionId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      UInteger subscriptionId = (UInteger) inputValues[0].getValue();
-      invoke(context, subscriptionId);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, UInteger subscriptionId)
+  /**
+   * Handles calls to the RequestServerStateChange Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/9.4">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface RequestServerStateChangeHandler {
+    /**
+     * Handles a call to the RequestServerStateChange Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void requestServerStateChange(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable ServerState state,
+        @Nullable DateTime estimatedReturnTime,
+        @Nullable UInteger secondsTillShutdown,
+        @Nullable LocalizedText reason,
+        @Nullable Boolean restart)
         throws UaException;
   }
 
-  abstract class SetSubscriptionDurableMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-    public SetSubscriptionDurableMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "SubscriptionId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "LifetimeInHours",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "RevisedLifetimeInHours",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      UInteger subscriptionId = (UInteger) inputValues[0].getValue();
-      UInteger lifetimeInHours = (UInteger) inputValues[1].getValue();
-      Out<UInteger> revisedLifetimeInHours = new Out<>();
-      invoke(context, subscriptionId, lifetimeInHours, revisedLifetimeInHours);
-      return new Variant[] {new Variant(revisedLifetimeInHours.get())};
-    }
-
-    protected abstract void invoke(
+  /**
+   * Handles calls to the ResendData Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/9.2">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface ResendDataHandler {
+    /**
+     * Handles a call to the ResendData Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void resendData(
         AbstractMethodInvocationHandler.InvocationContext context,
-        UInteger subscriptionId,
-        UInteger lifetimeInHours,
-        Out<UInteger> revisedLifetimeInHours)
+        @Nullable UInteger subscriptionId)
         throws UaException;
   }
 
-  abstract class RequestServerStateChangeMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    public RequestServerStateChangeMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "State",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=852")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "EstimatedReturnTime",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=13")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "SecondsTillShutdown",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "Reason",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "Restart",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      ServerState state = (ServerState) inputValues[0].getValue();
-      DateTime estimatedReturnTime = (DateTime) inputValues[1].getValue();
-      UInteger secondsTillShutdown = (UInteger) inputValues[2].getValue();
-      LocalizedText reason = (LocalizedText) inputValues[3].getValue();
-      Boolean restart = (Boolean) inputValues[4].getValue();
-      invoke(context, state, estimatedReturnTime, secondsTillShutdown, reason, restart);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(
+  /**
+   * Handles calls to the SetSubscriptionDurable Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/9.3">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface SetSubscriptionDurableHandler {
+    /**
+     * Handles a call to the SetSubscriptionDurable Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    @Nullable UInteger setSubscriptionDurable(
         AbstractMethodInvocationHandler.InvocationContext context,
-        ServerState state,
-        DateTime estimatedReturnTime,
-        UInteger secondsTillShutdown,
-        LocalizedText reason,
-        Boolean restart)
+        @Nullable UInteger subscriptionId,
+        @Nullable UInteger lifetimeInHours)
         throws UaException;
+  }
+
+  /** Implements this type's Methods. Unimplemented Methods report Bad_NotImplemented. */
+  interface Methods {
+    /**
+     * Handles a call to the GetMonitoredItems Method; see {@link
+     * GetMonitoredItemsHandler#getMonitoredItems}.
+     */
+    default ServerTypeGetMonitoredItems.Outputs getMonitoredItems(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable UInteger subscriptionId)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /**
+     * Handles a call to the RequestServerStateChange Method; see {@link
+     * RequestServerStateChangeHandler#requestServerStateChange}.
+     */
+    default void requestServerStateChange(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable ServerState state,
+        @Nullable DateTime estimatedReturnTime,
+        @Nullable UInteger secondsTillShutdown,
+        @Nullable LocalizedText reason,
+        @Nullable Boolean restart)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /** Handles a call to the ResendData Method; see {@link ResendDataHandler#resendData}. */
+    default void resendData(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable UInteger subscriptionId)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /**
+     * Handles a call to the SetSubscriptionDurable Method; see {@link
+     * SetSubscriptionDurableHandler#setSubscriptionDurable}.
+     */
+    default @Nullable UInteger setSubscriptionDurable(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable UInteger subscriptionId,
+        @Nullable UInteger lifetimeInHours)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
   }
 }

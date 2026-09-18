@@ -17,24 +17,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.eclipse.milo.opcua.sdk.server.AddressSpaceManager;
-import org.eclipse.milo.opcua.sdk.server.EventListener;
-import org.eclipse.milo.opcua.sdk.server.EventNotifier;
-import org.eclipse.milo.opcua.sdk.server.NodeManager;
-import org.eclipse.milo.opcua.sdk.server.ObjectTypeManager;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
+import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig;
 import org.eclipse.milo.opcua.sdk.server.UaNodeManager;
-import org.eclipse.milo.opcua.sdk.server.VariableTypeManager;
 import org.eclipse.milo.opcua.sdk.server.model.objects.AcknowledgeableConditionTypeNode;
-import org.eclipse.milo.opcua.sdk.server.model.objects.BaseEventTypeNode;
-import org.eclipse.milo.opcua.sdk.server.model.variables.ConditionVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.TwoStateVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
-import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
-import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.TypeModelCache;
-import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
+import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.BrowsePath;
+import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.InstantiationRequest;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateManager;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
@@ -43,21 +38,19 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
-import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.jspecify.annotations.Nullable;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 /**
  * Unit tests for the {@link Condition}/{@link AcknowledgeableCondition} behavior rules: Retain
  * recomputation, the event-emission rules of §5.5.2, the bounded accepted-EventId window, the
  * NULL-comment convention, and LastSeverity maintenance.
  *
- * <p>The condition node tree is built by hand against a mocked server so behavior is exercised
- * without the NodeFactory or a running server; a capturing {@link EventNotifier} records every
- * fired event.
+ * <p>The condition tree is instantiated from ns0 without starting a transport. A capturing listener
+ * records every fired event.
  */
 public class ConditionBehaviorTest {
 
@@ -66,63 +59,39 @@ public class ConditionBehaviorTest {
 
   private final List<CapturedEvent> events = new ArrayList<>();
 
-  private UaNodeContext nodeContext;
+  private OpcUaServer server;
   private UaNodeManager nodeManager;
 
   @BeforeEach
   void setUp() {
     events.clear();
-
-    OpcUaServer server = Mockito.mock(OpcUaServer.class);
-
-    AddressSpaceManager addressSpaceManager = new AddressSpaceManager(server);
-    NamespaceTable namespaceTable = new NamespaceTable();
-
-    Mockito.when(server.getNamespaceTable()).thenReturn(namespaceTable);
-    Mockito.when(server.getAddressSpaceManager()).thenReturn(addressSpaceManager);
-    Mockito.when(server.getObjectTypeManager()).thenReturn(new ObjectTypeManager());
-    Mockito.when(server.getVariableTypeManager()).thenReturn(new VariableTypeManager());
-    Mockito.when(server.getTypeModelCache()).thenReturn(new TypeModelCache(server));
-
-    var capturingNotifier =
-        new EventNotifier() {
-          @Override
-          public void fire(BaseEventTypeNode event) {
-            Boolean retain = ((AcknowledgeableConditionTypeNode) event).getRetain();
-            LocalizedText message = event.getMessage();
-
-            events.add(
-                new CapturedEvent(
-                    event.getEventId(),
-                    event.getTime(),
-                    message != null ? message.text() : null,
-                    retain != null && retain));
-          }
-
-          @Override
-          public void register(EventListener eventListener) {}
-
-          @Override
-          public void unregister(EventListener eventListener) {}
-        };
-
-    Mockito.when(server.getEventNotifier()).thenReturn(capturingNotifier);
-
+    server =
+        new OpcUaServer(
+            OpcUaServerConfig.builder()
+                .setCertificateManager(new DefaultCertificateManager())
+                .build(),
+            profile -> null);
+    server.getEventFactory().startup();
     nodeManager = new UaNodeManager();
-    addressSpaceManager.register(nodeManager);
+    server.getAddressSpaceManager().register(nodeManager);
+    server
+        .getEventNotifier()
+        .register(
+            event -> {
+              Boolean retain = ((AcknowledgeableConditionTypeNode) event).getRetain();
+              LocalizedText message = event.getMessage();
+              events.add(
+                  new CapturedEvent(
+                      event.getEventId(),
+                      event.getTime(),
+                      message != null ? message.text() : null,
+                      retain != null && retain));
+            });
+  }
 
-    nodeContext =
-        new UaNodeContext() {
-          @Override
-          public OpcUaServer getServer() {
-            return server;
-          }
-
-          @Override
-          public NodeManager<UaNode> getNodeManager() {
-            return nodeManager;
-          }
-        };
+  @AfterEach
+  void tearDown() throws Exception {
+    server.shutdown().get();
   }
 
   private AcknowledgeableCondition newCondition(boolean withConfirm) {
@@ -130,77 +99,31 @@ public class ConditionBehaviorTest {
   }
 
   private AcknowledgeableConditionTypeNode buildConditionNode(boolean withConfirm) {
-    var node =
-        new AcknowledgeableConditionTypeNode(
-            nodeContext,
-            new NodeId(1, "TestCondition"),
-            new QualifiedName(1, "TestCondition"),
-            LocalizedText.english("TestCondition"),
-            LocalizedText.NULL_VALUE,
-            UInteger.MIN,
-            UInteger.MIN,
-            null,
-            null,
-            null);
-
-    nodeManager.addNode(node);
-
-    addTwoStateVariable(node, "EnabledState");
-    addTwoStateVariable(node, "AckedState");
-    if (withConfirm) {
-      addTwoStateVariable(node, "ConfirmedState");
+    try {
+      var request =
+          InstantiationRequest.of(
+                  AcknowledgeableConditionTypeNode.class, NodeIds.AcknowledgeableConditionType)
+              .nodeId(new NodeId(1, "TestCondition"))
+              .browseName(new QualifiedName(1, "TestCondition"))
+              .target(nodeManager);
+      for (String state : List.of("EnabledState", "AckedState", "ConfirmedState")) {
+        if (state.equals("ConfirmedState") && !withConfirm) continue;
+        request.includeOptional(BrowsePath.of(new QualifiedName(0, state)));
+        request.includeOptional(
+            BrowsePath.of(new QualifiedName(0, state), new QualifiedName(0, "TransitionTime")));
+      }
+      AcknowledgeableConditionTypeNode node =
+          server.getNodeInstantiator().instantiate(request.build()).root();
+      // Tests start with unset values at Good quality. The generated accessors validate live
+      // declarations, so this fixture uses the actual model instead of incomplete child stubs.
+      for (UaNode child : nodeManager.getNodes()) {
+        if (child instanceof UaVariableNode variable)
+          variable.setValue(new DataValue(Variant.NULL_VALUE));
+      }
+      return node;
+    } catch (UaException failure) {
+      throw new AssertionError(failure);
     }
-
-    addConditionVariable(node, "Quality", NodeIds.StatusCode);
-    addConditionVariable(node, "LastSeverity", NodeIds.UInt16);
-    addConditionVariable(node, "Comment", NodeIds.LocalizedText);
-
-    return node;
-  }
-
-  private void addTwoStateVariable(AcknowledgeableConditionTypeNode parent, String name) {
-    var variable =
-        new TwoStateVariableTypeNode(
-            nodeContext,
-            new NodeId(1, "TestCondition/" + name),
-            new QualifiedName(0, name),
-            LocalizedText.english(name),
-            LocalizedText.NULL_VALUE,
-            UInteger.MIN,
-            UInteger.MIN,
-            null,
-            null,
-            null,
-            new DataValue(Variant.NULL_VALUE),
-            NodeIds.LocalizedText,
-            -1,
-            null);
-
-    nodeManager.addNode(variable);
-    parent.addComponent(variable);
-  }
-
-  private void addConditionVariable(
-      AcknowledgeableConditionTypeNode parent, String name, NodeId dataType) {
-    var variable =
-        new ConditionVariableTypeNode(
-            nodeContext,
-            new NodeId(1, "TestCondition/" + name),
-            new QualifiedName(0, name),
-            LocalizedText.english(name),
-            LocalizedText.NULL_VALUE,
-            UInteger.MIN,
-            UInteger.MIN,
-            null,
-            null,
-            null,
-            new DataValue(Variant.NULL_VALUE),
-            dataType,
-            -1,
-            null);
-
-    nodeManager.addNode(variable);
-    parent.addComponent(variable);
   }
 
   @Test
@@ -304,7 +227,7 @@ public class ConditionBehaviorTest {
     // A pre-existing unacknowledged state whose stored Retain property disagrees (unset/false).
     TwoStateVariableTypeNode ackedState = node.getAckedStateNode();
     ackedState.setValue(new DataValue(new Variant(LocalizedText.english("Unacknowledged"))));
-    ackedState.setId(false);
+    ackedState.setTwoStateVariableTypeId(false);
 
     var condition = new AcknowledgeableCondition(node);
 

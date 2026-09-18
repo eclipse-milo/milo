@@ -24,7 +24,6 @@ import java.util.Set;
 import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
-import org.eclipse.milo.opcua.sdk.server.model.objects.AliasNameCategoryType;
 import org.eclipse.milo.opcua.sdk.server.model.objects.AliasNameCategoryTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
@@ -33,6 +32,7 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.slf4j.Logger;
@@ -346,13 +346,13 @@ class AliasVersionManager {
     node.ifPresent(
         categoryNode -> {
           if (categoryNode instanceof AliasNameCategoryTypeNode typedNode) {
-            // setLastChange would create the Property if absent; only write where it exists.
+            // LastChange is optional; update it only where it exists.
             if (typedNode.getLastChangeNode() != null) {
               typedNode.setLastChange(value);
             }
           } else {
             Optional<VariableNode> propertyNode =
-                categoryNode.getPropertyNode(AliasNameCategoryType.LAST_CHANGE);
+                categoryNode.getPropertyNode(new QualifiedName(0, "LastChange"));
 
             propertyNode.ifPresent(
                 property -> property.setValue(new DataValue(new Variant(value))));

@@ -1,81 +1,129 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.QosDataType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.3.1/#9.3.1.1">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.3.1/#9.3.1.1</a>
+ * Server API for the DatagramConnectionTransportType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.3.1/#9.3.1.1">Model
+ *     documentation</a>
  */
 public interface DatagramConnectionTransportType extends ConnectionTransportType {
-  QualifiedProperty<UInteger> DISCOVERY_ANNOUNCE_RATE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "DiscoveryAnnounceRate",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 15064L);
 
-  QualifiedProperty<UInteger> DISCOVERY_MAX_MESSAGE_SIZE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "DiscoveryMaxMessageSize",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  /**
+   * Returns the optional DatagramQos child, a PropertyType with DataType QosDataType.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getDatagramQosNode();
 
-  QualifiedProperty<String> QOS_CATEGORY =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "QosCategory",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  /**
+   * Returns the Value of the DatagramQos child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable QosDataType @Nullable [] getDatagramQos();
 
-  QualifiedProperty<QosDataType[]> DATAGRAM_QOS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "DatagramQos",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=23603"),
-          1,
-          QosDataType[].class);
+  /**
+   * Sets the Value of the DatagramQos child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setDatagramQos(@Nullable QosDataType @Nullable [] value);
 
-  UInteger getDiscoveryAnnounceRate();
+  /**
+   * Returns the mandatory DiscoveryAddress child, a NetworkAddressType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.6">NetworkAddressType
+   *     documentation</a>
+   */
+  NetworkAddressTypeNode getDiscoveryAddressNode();
 
-  void setDiscoveryAnnounceRate(UInteger value);
+  /**
+   * Returns the optional DiscoveryAnnounceRate child, a PropertyType with DataType UInt32.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getDiscoveryAnnounceRateNode();
 
-  PropertyType getDiscoveryAnnounceRateNode();
+  /**
+   * Returns the Value of the DiscoveryAnnounceRate child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getDiscoveryAnnounceRate();
 
-  UInteger getDiscoveryMaxMessageSize();
+  /**
+   * Sets the Value of the DiscoveryAnnounceRate child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setDiscoveryAnnounceRate(@Nullable UInteger value);
 
-  void setDiscoveryMaxMessageSize(UInteger value);
+  /**
+   * Returns the optional DiscoveryMaxMessageSize child, a PropertyType with DataType UInt32.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getDiscoveryMaxMessageSizeNode();
 
-  PropertyType getDiscoveryMaxMessageSizeNode();
+  /**
+   * Returns the Value of the DiscoveryMaxMessageSize child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getDiscoveryMaxMessageSize();
 
-  String getQosCategory();
+  /**
+   * Sets the Value of the DiscoveryMaxMessageSize child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setDiscoveryMaxMessageSize(@Nullable UInteger value);
 
-  void setQosCategory(String value);
+  /**
+   * Returns the optional QosCategory child, a PropertyType with DataType String.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getQosCategoryNode();
 
-  PropertyType getQosCategoryNode();
+  /**
+   * Returns the Value of the QosCategory child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getQosCategory();
 
-  QosDataType[] getDatagramQos();
-
-  void setDatagramQos(QosDataType[] value);
-
-  PropertyType getDatagramQosNode();
-
-  NetworkAddressType getDiscoveryAddressNode();
+  /**
+   * Sets the Value of the QosCategory child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setQosCategory(@Nullable String value);
 }

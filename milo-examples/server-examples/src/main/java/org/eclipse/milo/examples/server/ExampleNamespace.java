@@ -585,9 +585,7 @@ public class ExampleNamespace extends ManagedNamespaceWithLifecycle {
             .build();
 
     SqrtMethod sqrtMethod = new SqrtMethod(methodNode);
-    methodNode.setInputArguments(sqrtMethod.getInputArguments());
-    methodNode.setOutputArguments(sqrtMethod.getOutputArguments());
-    methodNode.setInvocationHandler(sqrtMethod);
+    methodNode.bindInvocationHandler(sqrtMethod);
 
     getNodeManager().addNode(methodNode);
 
@@ -611,9 +609,7 @@ public class ExampleNamespace extends ManagedNamespaceWithLifecycle {
             .build();
 
     GenerateEventMethod generateEventMethod = new GenerateEventMethod(methodNode);
-    methodNode.setInputArguments(generateEventMethod.getInputArguments());
-    methodNode.setOutputArguments(generateEventMethod.getOutputArguments());
-    methodNode.setInvocationHandler(generateEventMethod);
+    methodNode.bindInvocationHandler(generateEventMethod);
 
     getNodeManager().addNode(methodNode);
 

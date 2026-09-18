@@ -1,27 +1,45 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.server.model.variables.BaseDataVariableType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.BaseDataVariableTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.12">https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.12</a>
+ * Server API for the IIeeeTsnInterfaceConfigurationListenerType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.12">Model
+ *     documentation</a>
  */
 public interface IIeeeTsnInterfaceConfigurationListenerType
     extends IIeeeTsnInterfaceConfigurationType {
-  BaseDataVariableType getReceiveOffsetNode();
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 24195L);
 
-  UInteger getReceiveOffset();
+  /**
+   * Returns the optional ReceiveOffset child, a BaseDataVariableType with DataType UInt32.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  @Nullable BaseDataVariableTypeNode getReceiveOffsetNode();
 
-  void setReceiveOffset(UInteger value);
+  /**
+   * Returns the Value of the ReceiveOffset child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getReceiveOffset();
+
+  /**
+   * Sets the Value of the ReceiveOffset child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setReceiveOffset(@Nullable UInteger value);
 }

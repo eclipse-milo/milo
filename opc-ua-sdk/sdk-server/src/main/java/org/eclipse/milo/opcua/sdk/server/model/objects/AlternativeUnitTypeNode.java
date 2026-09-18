@@ -1,19 +1,9 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -22,19 +12,51 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.LinearConversionDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link AlternativeUnitType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part8/6.4.2/#6.4.2.4">Model
+ *     documentation</a>
+ */
 public class AlternativeUnitTypeNode extends UnitTypeNode implements AlternativeUnitType {
   public AlternativeUnitTypeNode(
       UaNodeContext context,
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions);
+  }
+
+  public AlternativeUnitTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         context,
@@ -50,76 +72,105 @@ public class AlternativeUnitTypeNode extends UnitTypeNode implements Alternative
         eventNotifier);
   }
 
-  public AlternativeUnitTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions);
+  @Override
+  public @Nullable PropertyTypeNode getLinearConversionNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "LinearConversion",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 32435L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getLinearConversionNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(AlternativeUnitType.LINEAR_CONVERSION);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable LinearConversionDataType getLinearConversion() {
+    return ServerNodeSupport.read(
+        this, getLinearConversionNode(), LinearConversionDataType.class, null);
   }
 
   @Override
-  public LinearConversionDataType getLinearConversion() {
-    return getProperty(AlternativeUnitType.LINEAR_CONVERSION).orElse(null);
+  public void setLinearConversion(@Nullable LinearConversionDataType value) {
+    ServerNodeSupport.write(
+        this,
+        getLinearConversionNode(),
+        Namespaces.OPC_UA,
+        "LinearConversion",
+        value,
+        false,
+        false,
+        true);
   }
 
   @Override
-  public void setLinearConversion(LinearConversionDataType value) {
-    setProperty(AlternativeUnitType.LINEAR_CONVERSION, value);
+  public @Nullable PropertyTypeNode getMathMLConversionNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "MathMLConversion",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getMathMlConversionNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(AlternativeUnitType.MATH_ML_CONVERSION);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable String getMathMLConversion() {
+    return ServerNodeSupport.read(this, getMathMLConversionNode(), String.class, null);
   }
 
   @Override
-  public String getMathMlConversion() {
-    return getProperty(AlternativeUnitType.MATH_ML_CONVERSION).orElse(null);
+  public void setMathMLConversion(@Nullable String value) {
+    ServerNodeSupport.write(
+        this,
+        getMathMLConversionNode(),
+        Namespaces.OPC_UA,
+        "MathMLConversion",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
-  public void setMathMlConversion(String value) {
-    setProperty(AlternativeUnitType.MATH_ML_CONVERSION, value);
+  public @Nullable PropertyTypeNode getMathMLInverseConversionNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "MathMLInverseConversion",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getMathMlInverseConversionNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(AlternativeUnitType.MATH_ML_INVERSE_CONVERSION);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable String getMathMLInverseConversion() {
+    return ServerNodeSupport.read(this, getMathMLInverseConversionNode(), String.class, null);
   }
 
   @Override
-  public String getMathMlInverseConversion() {
-    return getProperty(AlternativeUnitType.MATH_ML_INVERSE_CONVERSION).orElse(null);
+  public void setMathMLInverseConversion(@Nullable String value) {
+    ServerNodeSupport.write(
+        this,
+        getMathMLInverseConversionNode(),
+        Namespaces.OPC_UA,
+        "MathMLInverseConversion",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
-  public void setMathMlInverseConversion(String value) {
-    setProperty(AlternativeUnitType.MATH_ML_INVERSE_CONVERSION, value);
+  public void validateChildren() {
+    super.validateChildren();
+    getLinearConversionNode();
+    getMathMLConversionNode();
+    getMathMLInverseConversionNode();
   }
 }

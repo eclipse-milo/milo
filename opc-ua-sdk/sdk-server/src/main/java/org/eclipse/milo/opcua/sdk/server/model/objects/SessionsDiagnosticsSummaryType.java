@@ -1,34 +1,71 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.server.model.variables.SessionDiagnosticsArrayType;
-import org.eclipse.milo.opcua.sdk.server.model.variables.SessionSecurityDiagnosticsArrayType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.SessionDiagnosticsArrayTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.variables.SessionSecurityDiagnosticsArrayTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.structured.SessionDiagnosticsDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SessionSecurityDiagnosticsDataType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.4">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.4</a>
+ * Server API for the SessionsDiagnosticsSummaryType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.4">Model
+ *     documentation</a>
  */
 public interface SessionsDiagnosticsSummaryType extends BaseObjectType {
-  SessionDiagnosticsArrayType getSessionDiagnosticsArrayNode();
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2026L);
 
-  SessionDiagnosticsDataType[] getSessionDiagnosticsArray();
+  /**
+   * Returns the mandatory SessionDiagnosticsArray child, a SessionDiagnosticsArrayType with
+   * DataType SessionDiagnosticsDataType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.13">SessionDiagnosticsArrayType
+   *     documentation</a>
+   */
+  SessionDiagnosticsArrayTypeNode getSessionDiagnosticsArrayNode();
 
-  void setSessionDiagnosticsArray(SessionDiagnosticsDataType[] value);
+  /**
+   * Returns the Value of the SessionDiagnosticsArray child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable SessionDiagnosticsDataType @Nullable [] getSessionDiagnosticsArray();
 
-  SessionSecurityDiagnosticsArrayType getSessionSecurityDiagnosticsArrayNode();
+  /**
+   * Sets the Value of the SessionDiagnosticsArray child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setSessionDiagnosticsArray(@Nullable SessionDiagnosticsDataType @Nullable [] value);
 
-  SessionSecurityDiagnosticsDataType[] getSessionSecurityDiagnosticsArray();
+  /**
+   * Returns the mandatory SessionSecurityDiagnosticsArray child, a
+   * SessionSecurityDiagnosticsArrayType with DataType SessionSecurityDiagnosticsDataType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.15">SessionSecurityDiagnosticsArrayType
+   *     documentation</a>
+   */
+  SessionSecurityDiagnosticsArrayTypeNode getSessionSecurityDiagnosticsArrayNode();
 
-  void setSessionSecurityDiagnosticsArray(SessionSecurityDiagnosticsDataType[] value);
+  /**
+   * Returns the Value of the SessionSecurityDiagnosticsArray child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable SessionSecurityDiagnosticsDataType @Nullable [] getSessionSecurityDiagnosticsArray();
+
+  /**
+   * Sets the Value of the SessionSecurityDiagnosticsArray child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setSessionSecurityDiagnosticsArray(
+      @Nullable SessionSecurityDiagnosticsDataType @Nullable [] value);
 }

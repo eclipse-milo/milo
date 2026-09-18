@@ -886,7 +886,7 @@ public class AppDrivenLimitAlarmStateTest extends AbstractClientServerTest {
 
     if (!coherent) {
       TwoStateVariableTypeNode activeState = activeState(created);
-      activeState.setId(false);
+      activeState.setTwoStateVariableTypeId(false);
       activeState.setValue(new DataValue(new Variant(LocalizedText.english("Inactive"))));
     }
 

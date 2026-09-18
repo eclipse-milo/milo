@@ -1,19 +1,9 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -24,7 +14,15 @@ import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.EventFilter;
 import org.eclipse.milo.opcua.stack.core.types.structured.HistoryEventFieldList;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link AuditHistoryEventUpdateEventType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.8.2">Model
+ *     documentation</a>
+ */
 public class AuditHistoryEventUpdateEventTypeNode extends AuditHistoryUpdateEventTypeNode
     implements AuditHistoryEventUpdateEventType {
   public AuditHistoryEventUpdateEventTypeNode(
@@ -32,12 +30,36 @@ public class AuditHistoryEventUpdateEventTypeNode extends AuditHistoryUpdateEven
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions);
+  }
+
+  public AuditHistoryEventUpdateEventTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         context,
@@ -53,111 +75,129 @@ public class AuditHistoryEventUpdateEventTypeNode extends AuditHistoryUpdateEven
         eventNotifier);
   }
 
-  public AuditHistoryEventUpdateEventTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions);
-  }
-
-  @Override
-  public PropertyTypeNode getUpdatedNodeNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(AuditHistoryEventUpdateEventType.UPDATED_NODE);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public NodeId getUpdatedNode() {
-    return getProperty(AuditHistoryEventUpdateEventType.UPDATED_NODE).orElse(null);
-  }
-
-  @Override
-  public void setUpdatedNode(NodeId value) {
-    setProperty(AuditHistoryEventUpdateEventType.UPDATED_NODE, value);
-  }
-
-  @Override
-  public PropertyTypeNode getPerformInsertReplaceNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(AuditHistoryEventUpdateEventType.PERFORM_INSERT_REPLACE);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public PerformUpdateType getPerformInsertReplace() {
-    return getProperty(AuditHistoryEventUpdateEventType.PERFORM_INSERT_REPLACE).orElse(null);
-  }
-
-  @Override
-  public void setPerformInsertReplace(PerformUpdateType value) {
-    setProperty(AuditHistoryEventUpdateEventType.PERFORM_INSERT_REPLACE, value);
-  }
-
   @Override
   public PropertyTypeNode getFilterNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(AuditHistoryEventUpdateEventType.FILTER);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "Filter",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 725L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public EventFilter getFilter() {
-    return getProperty(AuditHistoryEventUpdateEventType.FILTER).orElse(null);
+  public @Nullable EventFilter getFilter() {
+    return ServerNodeSupport.read(this, getFilterNode(), EventFilter.class, null);
   }
 
   @Override
-  public void setFilter(EventFilter value) {
-    setProperty(AuditHistoryEventUpdateEventType.FILTER, value);
+  public void setFilter(@Nullable EventFilter value) {
+    ServerNodeSupport.write(this, getFilterNode(), value, false, false, true);
   }
 
   @Override
   public PropertyTypeNode getNewValuesNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(AuditHistoryEventUpdateEventType.NEW_VALUES);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "NewValues",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 920L),
+        1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public HistoryEventFieldList[] getNewValues() {
-    return getProperty(AuditHistoryEventUpdateEventType.NEW_VALUES).orElse(null);
+  public @Nullable HistoryEventFieldList @Nullable [] getNewValues() {
+    return ServerNodeSupport.readArray(this, getNewValuesNode(), HistoryEventFieldList.class, null);
   }
 
   @Override
-  public void setNewValues(HistoryEventFieldList[] value) {
-    setProperty(AuditHistoryEventUpdateEventType.NEW_VALUES, value);
+  public void setNewValues(@Nullable HistoryEventFieldList @Nullable [] value) {
+    ServerNodeSupport.write(this, getNewValuesNode(), value, true, false, true);
   }
 
   @Override
   public PropertyTypeNode getOldValuesNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(AuditHistoryEventUpdateEventType.OLD_VALUES);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "OldValues",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 920L),
+        1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public HistoryEventFieldList[] getOldValues() {
-    return getProperty(AuditHistoryEventUpdateEventType.OLD_VALUES).orElse(null);
+  public @Nullable HistoryEventFieldList @Nullable [] getOldValues() {
+    return ServerNodeSupport.readArray(this, getOldValuesNode(), HistoryEventFieldList.class, null);
   }
 
   @Override
-  public void setOldValues(HistoryEventFieldList[] value) {
-    setProperty(AuditHistoryEventUpdateEventType.OLD_VALUES, value);
+  public void setOldValues(@Nullable HistoryEventFieldList @Nullable [] value) {
+    ServerNodeSupport.write(this, getOldValuesNode(), value, true, false, true);
+  }
+
+  @Override
+  public PropertyTypeNode getPerformInsertReplaceNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "PerformInsertReplace",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 11293L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable PerformUpdateType getPerformInsertReplace() {
+    return ServerNodeSupport.read(
+        this, getPerformInsertReplaceNode(), PerformUpdateType.class, PerformUpdateType::from);
+  }
+
+  @Override
+  public void setPerformInsertReplace(@Nullable PerformUpdateType value) {
+    ServerNodeSupport.write(this, getPerformInsertReplaceNode(), value, false, true, false);
+  }
+
+  @Override
+  public PropertyTypeNode getUpdatedNodeNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "UpdatedNode",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 17L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable NodeId getUpdatedNode() {
+    return ServerNodeSupport.read(this, getUpdatedNodeNode(), NodeId.class, null);
+  }
+
+  @Override
+  public void setUpdatedNode(@Nullable NodeId value) {
+    ServerNodeSupport.write(this, getUpdatedNodeNode(), value, false, false, false);
+  }
+
+  @Override
+  public void validateChildren() {
+    super.validateChildren();
+    getFilterNode();
+    getNewValuesNode();
+    getOldValuesNode();
+    getPerformInsertReplaceNode();
+    getUpdatedNodeNode();
   }
 }

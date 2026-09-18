@@ -16,10 +16,11 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import org.eclipse.milo.opcua.sdk.server.conditions.ConditionNodeTraversal.DiscoveredMethod;
+import org.eclipse.milo.opcua.sdk.core.model.methods.ShelvedStateMachineTypeOneShotShelve;
+import org.eclipse.milo.opcua.sdk.core.model.methods.ShelvedStateMachineTypeTimedShelve;
+import org.eclipse.milo.opcua.sdk.core.model.methods.ShelvedStateMachineTypeUnshelve;
 import org.eclipse.milo.opcua.sdk.server.conditions.ConditionNodeTraversal.MethodSurface;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext;
-import org.eclipse.milo.opcua.sdk.server.model.objects.ShelvedStateMachineType;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ShelvedStateMachineTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.FiniteStateVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.FiniteTransitionVariableTypeNode;
@@ -90,7 +91,8 @@ final class ShelvingRuntime {
     currentState = node.getCurrentStateNode();
     lastTransition = node.getLastTransitionNode();
 
-    NodeId currentStateId = currentState != null ? currentState.getId() : null;
+    NodeId currentStateId =
+        currentState != null ? Condition.storedValue(currentState.getIdNode(), NodeId.class) : null;
     boolean recognizedState = false;
     for (ShelvedState shelvedState : ShelvedState.values()) {
       if (shelvedState.stateId().equals(currentStateId)) {
@@ -121,11 +123,13 @@ final class ShelvingRuntime {
     setCurrentState(state);
     alarm.getNode().setSuppressedOrShelved(state != ShelvedState.UNSHELVED);
 
-    // Seed LastTransition so its property nodes exist before read filters are installed.
-    if (lastTransition != null && lastTransition.getTransitionTime() == null) {
+    // Seed stored values before read filters are installed, preserving absent optional nodes.
+    if (lastTransition != null && !Condition.hasValue(lastTransition.getTransitionTimeNode())) {
       lastTransition.setValue(new DataValue(new Variant(LocalizedText.NULL_VALUE)));
-      lastTransition.setId(NodeId.NULL_VALUE);
-      lastTransition.setTransitionTime(DateTime.NULL_VALUE);
+      lastTransition.setFiniteTransitionVariableTypeId(NodeId.NULL_VALUE);
+      if (lastTransition.getTransitionTimeNode() != null) {
+        lastTransition.setTransitionTime(DateTime.NULL_VALUE);
+      }
     }
 
     node.setUnshelveTime(0.0);
@@ -159,42 +163,31 @@ final class ShelvingRuntime {
     Condition.deleteUnsupportedMethod(methodSurface, "OneShotShelve2");
     Condition.deleteUnsupportedMethod(methodSurface, "Unshelve2");
 
-    DiscoveredMethod timedShelve = methodSurface.get("TimedShelve");
-    if (timedShelve != null) {
-      alarm.installMethodHandler(
-          timedShelve,
-          new ShelvedStateMachineType.TimedShelveMethod(timedShelve.node()) {
-            @Override
-            protected void invoke(InvocationContext context, Double shelvingTime)
-                throws UaException {
-              handleTimedShelve(context, shelvingTime);
-            }
-          });
-    }
+    alarm.installMethodHandler(
+        methodSurface,
+        "TimedShelve",
+        ShelvedStateMachineTypeTimedShelve::inputArguments,
+        ShelvedStateMachineTypeTimedShelve::outputArguments,
+        (context, values) -> {
+          ShelvedStateMachineTypeTimedShelve.Inputs input =
+              ShelvedStateMachineTypeTimedShelve.Inputs.fromVariants(
+                  context.getServer().getStaticEncodingContext(), values);
+          handleTimedShelve(context, input.shelvingTime());
+        });
 
-    DiscoveredMethod oneShotShelve = methodSurface.get("OneShotShelve");
-    if (oneShotShelve != null) {
-      alarm.installMethodHandler(
-          oneShotShelve,
-          new ShelvedStateMachineType.OneShotShelveMethod(oneShotShelve.node()) {
-            @Override
-            protected void invoke(InvocationContext context) throws UaException {
-              handleOneShotShelve(context);
-            }
-          });
-    }
+    alarm.installMethodHandler(
+        methodSurface,
+        "OneShotShelve",
+        ShelvedStateMachineTypeOneShotShelve::inputArguments,
+        ShelvedStateMachineTypeOneShotShelve::outputArguments,
+        (context, values) -> handleOneShotShelve(context));
 
-    DiscoveredMethod unshelve = methodSurface.get("Unshelve");
-    if (unshelve != null) {
-      alarm.installMethodHandler(
-          unshelve,
-          new ShelvedStateMachineType.UnshelveMethod(unshelve.node()) {
-            @Override
-            protected void invoke(InvocationContext context) throws UaException {
-              handleUnshelve(context);
-            }
-          });
-    }
+    alarm.installMethodHandler(
+        methodSurface,
+        "Unshelve",
+        ShelvedStateMachineTypeUnshelve::inputArguments,
+        ShelvedStateMachineTypeUnshelve::outputArguments,
+        (context, values) -> handleUnshelve(context));
   }
 
   void handleTimedShelve(InvocationContext context, @Nullable Double shelvingTime)
@@ -413,7 +406,7 @@ final class ShelvingRuntime {
     }
 
     currentState.setValue(new DataValue(new Variant(LocalizedText.english(target.stateName()))));
-    currentState.setId(target.stateId());
+    currentState.setFiniteStateVariableTypeId(target.stateId());
   }
 
   private void setLastTransition(ShelvedState from, ShelvedState to, DateTime time) {
@@ -424,8 +417,10 @@ final class ShelvingRuntime {
     String transitionName = from.stateName() + "To" + to.stateName();
 
     lastTransition.setValue(new DataValue(new Variant(LocalizedText.english(transitionName))));
-    lastTransition.setId(transitionId(from, to));
-    lastTransition.setTransitionTime(time);
+    lastTransition.setFiniteTransitionVariableTypeId(transitionId(from, to));
+    if (lastTransition.getTransitionTimeNode() != null) {
+      lastTransition.setTransitionTime(time);
+    }
   }
 
   private static NodeId transitionId(ShelvedState from, ShelvedState to) {
@@ -463,7 +458,7 @@ final class ShelvingRuntime {
       return null;
     }
 
-    NodeId transitionId = lastTransition.getId();
+    NodeId transitionId = lastTransition.getFiniteTransitionVariableTypeId();
     boolean enteredOneShot =
         NodeIds.ShelvedStateMachineType_UnshelvedToOneShotShelved.equals(transitionId)
             || NodeIds.ShelvedStateMachineType_TimedShelvedToOneShotShelved.equals(transitionId);

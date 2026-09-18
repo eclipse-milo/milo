@@ -1,63 +1,105 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.variables;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.18">https://reference.opcfoundation.org/v105/Core/docs/Part5/7.18</a>
+ * Server API for the SelectionListType VariableType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.18">Model
+ *     documentation</a>
  */
 public interface SelectionListType extends BaseDataVariableType {
-  QualifiedProperty<Object[]> SELECTIONS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Selections",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24"),
-          1,
-          Object[].class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 16309L);
 
-  QualifiedProperty<LocalizedText[]> SELECTION_DESCRIPTIONS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "SelectionDescriptions",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
-          1,
-          LocalizedText[].class);
+  /**
+   * Returns the optional RestrictToList child, a PropertyType with DataType Boolean.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getRestrictToListNode();
 
-  QualifiedProperty<Boolean> RESTRICT_TO_LIST =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "RestrictToList",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
+  /**
+   * Returns the Value of the RestrictToList child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Boolean getRestrictToList();
 
-  Object[] getSelections();
+  /**
+   * Sets the Value of the RestrictToList child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setRestrictToList(@Nullable Boolean value);
 
-  void setSelections(Object[] value);
+  /**
+   * Returns the optional SelectionDescriptions child, a PropertyType with DataType LocalizedText.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getSelectionDescriptionsNode();
 
-  PropertyType getSelectionsNode();
+  /**
+   * Returns the Value of the SelectionDescriptions child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  LocalizedText @Nullable [] getSelectionDescriptions();
 
-  LocalizedText[] getSelectionDescriptions();
+  /**
+   * Sets the Value of the SelectionDescriptions child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setSelectionDescriptions(LocalizedText @Nullable [] value);
 
-  void setSelectionDescriptions(LocalizedText[] value);
+  /**
+   * Returns the mandatory Selections child, a PropertyType with DataType BaseDataType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getSelectionsNode();
 
-  PropertyType getSelectionDescriptionsNode();
+  /**
+   * Returns the Value of the Selections child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Variant @Nullable [] getSelections();
 
-  Boolean getRestrictToList();
+  /**
+   * Sets the Value of the Selections child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setSelections(@Nullable Variant @Nullable [] value);
 
-  void setRestrictToList(Boolean value);
+  /**
+   * Returns this node's Value.
+   *
+   * @throws UaRuntimeException if the Value does not convert.
+   */
+  @Nullable Variant getTypedValue();
 
-  PropertyType getRestrictToListNode();
+  /**
+   * Sets this node's Value.
+   *
+   * @throws UaRuntimeException if the value does not convert.
+   */
+  void setTypedValue(@Nullable Variant value);
 }

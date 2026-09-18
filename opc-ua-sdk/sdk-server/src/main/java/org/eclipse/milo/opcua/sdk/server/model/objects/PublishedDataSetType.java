@@ -1,82 +1,128 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
 import java.util.UUID;
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.structured.ConfigurationVersionDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetMetaDataType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.2.1">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.2.1</a>
+ * Server API for the PublishedDataSetType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.2.1">Model
+ *     documentation</a>
  */
 public interface PublishedDataSetType extends BaseObjectType {
-  QualifiedProperty<ConfigurationVersionDataType> CONFIGURATION_VERSION =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ConfigurationVersion",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14593"),
-          -1,
-          ConfigurationVersionDataType.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 14509L);
 
-  QualifiedProperty<DataSetMetaDataType> DATA_SET_META_DATA =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "DataSetMetaData",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14523"),
-          -1,
-          DataSetMetaDataType.class);
+  /**
+   * Returns the mandatory ConfigurationVersion child, a PropertyType with DataType
+   * ConfigurationVersionDataType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getConfigurationVersionNode();
 
-  QualifiedProperty<UUID> DATA_SET_CLASS_ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "DataSetClassId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14"),
-          -1,
-          UUID.class);
+  /**
+   * Returns the Value of the ConfigurationVersion child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable ConfigurationVersionDataType getConfigurationVersion();
 
-  QualifiedProperty<Boolean> CYCLIC_DATA_SET =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "CyclicDataSet",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
+  /**
+   * Sets the Value of the ConfigurationVersion child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setConfigurationVersion(@Nullable ConfigurationVersionDataType value);
 
-  ConfigurationVersionDataType getConfigurationVersion();
+  /**
+   * Returns the optional CyclicDataSet child, a PropertyType with DataType Boolean.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getCyclicDataSetNode();
 
-  void setConfigurationVersion(ConfigurationVersionDataType value);
+  /**
+   * Returns the Value of the CyclicDataSet child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Boolean getCyclicDataSet();
 
-  PropertyType getConfigurationVersionNode();
+  /**
+   * Sets the Value of the CyclicDataSet child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setCyclicDataSet(@Nullable Boolean value);
 
-  DataSetMetaDataType getDataSetMetaData();
+  /**
+   * Returns the optional DataSetClassId child, a PropertyType with DataType Guid.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getDataSetClassIdNode();
 
-  void setDataSetMetaData(DataSetMetaDataType value);
+  /**
+   * Returns the Value of the DataSetClassId child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UUID getDataSetClassId();
 
-  PropertyType getDataSetMetaDataNode();
+  /**
+   * Sets the Value of the DataSetClassId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setDataSetClassId(@Nullable UUID value);
 
-  UUID getDataSetClassId();
+  /**
+   * Returns the mandatory DataSetMetaData child, a PropertyType with DataType DataSetMetaDataType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getDataSetMetaDataNode();
 
-  void setDataSetClassId(UUID value);
+  /**
+   * Returns the Value of the DataSetMetaData child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable DataSetMetaDataType getDataSetMetaData();
 
-  PropertyType getDataSetClassIdNode();
+  /**
+   * Sets the Value of the DataSetMetaData child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setDataSetMetaData(@Nullable DataSetMetaDataType value);
 
-  Boolean getCyclicDataSet();
-
-  void setCyclicDataSet(Boolean value);
-
-  PropertyType getCyclicDataSetNode();
-
-  ExtensionFieldsType getExtensionFieldsNode();
+  /**
+   * Returns the optional ExtensionFields child, a ExtensionFieldsType.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.2.2">ExtensionFieldsType
+   *     documentation</a>
+   */
+  @Nullable ExtensionFieldsTypeNode getExtensionFieldsNode();
 }

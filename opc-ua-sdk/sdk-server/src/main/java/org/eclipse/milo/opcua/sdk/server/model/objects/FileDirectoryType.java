@@ -1,326 +1,214 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.nodes.MethodNode;
+import org.eclipse.milo.opcua.sdk.core.model.methods.FileDirectoryTypeCreateFile;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
-import org.eclipse.milo.opcua.sdk.server.methods.Out;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
-import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
-import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
-import org.eclipse.milo.opcua.stack.core.util.Lazy;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.3.1">https://reference.opcfoundation.org/v105/Core/docs/Part20/4.3.1</a>
+ * Server API for the FileDirectoryType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.3.1">Model
+ *     documentation</a>
  */
 public interface FileDirectoryType extends FolderType {
-  MethodNode getCreateDirectoryMethodNode();
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 13353L);
 
-  MethodNode getCreateFileMethodNode();
+  /**
+   * Returns the mandatory CreateDirectory Method node.
+   *
+   * @throws UaRuntimeException if the Method is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.3.3">Model
+   *     documentation</a>
+   */
+  UaMethodNode getCreateDirectoryMethodNode();
 
-  MethodNode getDeleteFileSystemObjectMethodNode();
+  /**
+   * Sets this instance's CreateDirectory handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setCreateDirectoryHandler(@Nullable CreateDirectoryHandler handler);
 
-  MethodNode getMoveOrCopyMethodNode();
+  /**
+   * Returns the mandatory CreateFile Method node.
+   *
+   * @throws UaRuntimeException if the Method is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.3.4">Model
+   *     documentation</a>
+   */
+  UaMethodNode getCreateFileMethodNode();
 
-  abstract class CreateDirectoryMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+  /**
+   * Sets this instance's CreateFile handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setCreateFileHandler(@Nullable CreateFileHandler handler);
 
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
+  /**
+   * Returns the mandatory Delete Method node.
+   *
+   * @throws UaRuntimeException if the Method is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.3.5">Model
+   *     documentation</a>
+   */
+  UaMethodNode getDelete_MethodNode();
 
-    public CreateDirectoryMethod(UaMethodNode node) {
-      super(node);
-    }
+  /**
+   * Sets this instance's Delete handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setDelete_Handler(@Nullable Delete_Handler handler);
 
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+  /**
+   * Returns the mandatory MoveOrCopy Method node.
+   *
+   * @throws UaRuntimeException if the Method is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.3.6">Model
+   *     documentation</a>
+   */
+  UaMethodNode getMoveOrCopyMethodNode();
 
-            return new Argument[] {
-              new Argument(
-                  "DirectoryName",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
+  /**
+   * Sets this instance's MoveOrCopy handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setMoveOrCopyHandler(@Nullable MoveOrCopyHandler handler);
 
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+  /**
+   * Sets this instance's Method handlers, including inherited handlers, from one implementation;
+   * null clears them and restores Method-node fallback. Absent optional Methods are skipped.
+   * Changes are applied in order; a failure does not roll back earlier changes.
+   *
+   * @throws UaRuntimeException if a mandatory Method is absent, or a Method is ambiguous or
+   *     incompatible.
+   */
+  void setMethods(@Nullable Methods methods);
 
-            return new Argument[] {
-              new Argument(
-                  "DirectoryNodeId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      String directoryName = (String) inputValues[0].getValue();
-      Out<NodeId> directoryNodeId = new Out<>();
-      invoke(context, directoryName, directoryNodeId);
-      return new Variant[] {new Variant(directoryNodeId.get())};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context,
-        String directoryName,
-        Out<NodeId> directoryNodeId)
+  /**
+   * Handles calls to the CreateDirectory Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.3.3">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface CreateDirectoryHandler {
+    /**
+     * Handles a call to the CreateDirectory Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    @Nullable NodeId createDirectory(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable String directoryName)
         throws UaException;
   }
 
-  abstract class CreateFileMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-    public CreateFileMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "FileName",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "RequestFileOpen",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "FileNodeId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "FileHandle",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      String fileName = (String) inputValues[0].getValue();
-      Boolean requestFileOpen = (Boolean) inputValues[1].getValue();
-      Out<NodeId> fileNodeId = new Out<>();
-      Out<UInteger> fileHandle = new Out<>();
-      invoke(context, fileName, requestFileOpen, fileNodeId, fileHandle);
-      return new Variant[] {new Variant(fileNodeId.get()), new Variant(fileHandle.get())};
-    }
-
-    protected abstract void invoke(
+  /**
+   * Handles calls to the CreateFile Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.3.4">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface CreateFileHandler {
+    /**
+     * Handles a call to the CreateFile Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    FileDirectoryTypeCreateFile.Outputs createFile(
         AbstractMethodInvocationHandler.InvocationContext context,
-        String fileName,
-        Boolean requestFileOpen,
-        Out<NodeId> fileNodeId,
-        Out<UInteger> fileHandle)
+        @Nullable String fileName,
+        @Nullable Boolean requestFileOpen)
         throws UaException;
   }
 
-  abstract class DeleteFileSystemObjectMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    public DeleteFileSystemObjectMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "ObjectToDelete",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      NodeId objectToDelete = (NodeId) inputValues[0].getValue();
-      invoke(context, objectToDelete);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, NodeId objectToDelete)
+  /**
+   * Handles calls to the Delete Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.3.5">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface Delete_Handler {
+    /**
+     * Handles a call to the Delete Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void delete_(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable NodeId objectToDelete)
         throws UaException;
   }
 
-  abstract class MoveOrCopyMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-    public MoveOrCopyMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "ObjectToMoveOrCopy",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "TargetDirectory",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "CreateCopy",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "NewName",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "NewNodeId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      NodeId objectToMoveOrCopy = (NodeId) inputValues[0].getValue();
-      NodeId targetDirectory = (NodeId) inputValues[1].getValue();
-      Boolean createCopy = (Boolean) inputValues[2].getValue();
-      String newName = (String) inputValues[3].getValue();
-      Out<NodeId> newNodeId = new Out<>();
-      invoke(context, objectToMoveOrCopy, targetDirectory, createCopy, newName, newNodeId);
-      return new Variant[] {new Variant(newNodeId.get())};
-    }
-
-    protected abstract void invoke(
+  /**
+   * Handles calls to the MoveOrCopy Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.3.6">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface MoveOrCopyHandler {
+    /**
+     * Handles a call to the MoveOrCopy Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    @Nullable NodeId moveOrCopy(
         AbstractMethodInvocationHandler.InvocationContext context,
-        NodeId objectToMoveOrCopy,
-        NodeId targetDirectory,
-        Boolean createCopy,
-        String newName,
-        Out<NodeId> newNodeId)
+        @Nullable NodeId objectToMoveOrCopy,
+        @Nullable NodeId targetDirectory,
+        @Nullable Boolean createCopy,
+        @Nullable String newName)
         throws UaException;
+  }
+
+  /** Implements this type's Methods. Unimplemented Methods report Bad_NotImplemented. */
+  interface Methods {
+    /**
+     * Handles a call to the CreateDirectory Method; see {@link
+     * CreateDirectoryHandler#createDirectory}.
+     */
+    default @Nullable NodeId createDirectory(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable String directoryName)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /** Handles a call to the CreateFile Method; see {@link CreateFileHandler#createFile}. */
+    default FileDirectoryTypeCreateFile.Outputs createFile(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable String fileName,
+        @Nullable Boolean requestFileOpen)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /** Handles a call to the Delete Method; see {@link Delete_Handler#delete_}. */
+    default void delete_(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable NodeId objectToDelete)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /** Handles a call to the MoveOrCopy Method; see {@link MoveOrCopyHandler#moveOrCopy}. */
+    default @Nullable NodeId moveOrCopy(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable NodeId objectToMoveOrCopy,
+        @Nullable NodeId targetDirectory,
+        @Nullable Boolean createCopy,
+        @Nullable String newName)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
   }
 }

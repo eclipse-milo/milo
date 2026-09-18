@@ -17,7 +17,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
+import org.eclipse.milo.opcua.sdk.core.model.methods.ConditionTypeConditionRefresh;
+import org.eclipse.milo.opcua.sdk.core.model.methods.ConditionTypeConditionRefresh2;
+import org.eclipse.milo.opcua.sdk.core.model.methods.ServerTypeGetMonitoredItems;
 import org.eclipse.milo.opcua.sdk.server.ManagedNamespaceWithLifecycle;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfigLimits;
@@ -27,8 +29,7 @@ import org.eclipse.milo.opcua.sdk.server.items.DataItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredDataItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredItem;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
-import org.eclipse.milo.opcua.sdk.server.methods.Out;
-import org.eclipse.milo.opcua.sdk.server.model.objects.ConditionType;
+import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext;
 import org.eclipse.milo.opcua.sdk.server.model.objects.OperationLimitsTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ServerCapabilitiesTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ServerType;
@@ -53,6 +54,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.RedundancySupport;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ServerState;
+import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.types.structured.BuildInfo;
 import org.eclipse.milo.opcua.stack.core.types.structured.ServerStatusDataType;
 import org.eclipse.milo.opcua.stack.core.util.Namespaces;
@@ -88,7 +90,7 @@ public class OpcUaNamespace extends ManagedNamespaceWithLifecycle {
             () -> {
               loadNodes();
               configureServerObject();
-              configureConditionRefresh();
+              configureConditionType();
 
               // Set a reasonable value for the MinimumSamplingInterval
               // attribute on all VariableNodes, otherwise it defaults to 0.
@@ -250,8 +252,9 @@ public class OpcUaNamespace extends ManagedNamespaceWithLifecycle {
 
     serverTypeNode.getServerRedundancyNode().setRedundancySupport(RedundancySupport.None);
 
-    configureGetMonitoredItems();
-    configureResendData();
+    serverTypeNode.setGetMonitoredItemsHandler(new GetMonitoredItemsMethodImpl(server));
+    serverTypeNode.setResendDataHandler(new ResendDataMethodImpl());
+
     configureAliasMethods();
   }
 
@@ -277,31 +280,16 @@ public class OpcUaNamespace extends ManagedNamespaceWithLifecycle {
     }
   }
 
-  private void configureGetMonitoredItems() {
-    UaNode node = getNodeManager().get(NodeIds.Server_GetMonitoredItems);
-
-    if (node instanceof UaMethodNode methodNode) {
-      configureMethodNode(methodNode, GetMonitoredItemsMethodImpl::new);
-    } else {
-      logger.warn("GetMonitoredItems UaMethodNode not found.");
-    }
-  }
-
-  private void configureResendData() {
-    UaNode node = getNodeManager().get(NodeIds.Server_ResendData);
-
-    if (node instanceof UaMethodNode resendDataNode) {
-      configureMethodNode(resendDataNode, ResendDataMethodImpl::new);
-    } else {
-      logger.warn("ResendData UaMethodNode not found.");
-    }
-  }
-
-  private void configureConditionRefresh() {
+  /**
+   * Configure the ConditionType declaration: its ConditionRefresh Methods, which have no instance
+   * modelling rule and are called against the type node, and its SupportsFilteredRetain Property.
+   */
+  private void configureConditionType() {
     UaNode node = getNodeManager().get(NodeIds.ConditionType_ConditionRefresh);
 
     if (node instanceof UaMethodNode conditionRefreshNode) {
-      configureMethodNode(conditionRefreshNode, ConditionRefreshMethodImpl::new);
+      conditionRefreshNode.bindInvocationHandler(
+          new ConditionRefreshMethodImpl(conditionRefreshNode));
     } else {
       logger.warn("ConditionRefresh UaMethodNode not found.");
     }
@@ -309,76 +297,110 @@ public class OpcUaNamespace extends ManagedNamespaceWithLifecycle {
     UaNode node2 = getNodeManager().get(NodeIds.ConditionType_ConditionRefresh2);
 
     if (node2 instanceof UaMethodNode conditionRefresh2Node) {
-      configureMethodNode(conditionRefresh2Node, ConditionRefresh2MethodImpl::new);
+      conditionRefresh2Node.bindInvocationHandler(
+          new ConditionRefresh2MethodImpl(conditionRefresh2Node));
     } else {
       logger.warn("ConditionRefresh2 UaMethodNode not found.");
     }
+
+    UaNode node3 = getNodeManager().get(NodeIds.ConditionType_SupportsFilteredRetain);
+
+    if (node3 instanceof UaVariableNode supportsFilteredRetainNode) {
+      supportsFilteredRetainNode.setValue(new DataValue(new Variant(false)));
+    } else {
+      logger.warn("SupportsFilteredRetain UaVariableNode not found.");
+    }
   }
 
-  private static <T extends AbstractMethodInvocationHandler> void configureMethodNode(
-      UaMethodNode methodNode, Function<UaMethodNode, T> f) {
-
-    methodNode.bindInvocationHandler(f.apply(methodNode));
-  }
-
-  private static class ConditionRefreshMethodImpl extends ConditionType.ConditionRefreshMethod {
+  private static class ConditionRefreshMethodImpl extends AbstractMethodInvocationHandler {
 
     private final OpcUaServer server;
+    private final Argument[] inputArguments;
+    private final Argument[] outputArguments;
 
     ConditionRefreshMethodImpl(UaMethodNode node) {
       super(node);
 
       server = node.getNodeContext().getServer();
+      inputArguments = ConditionTypeConditionRefresh.inputArguments(server.getNamespaceTable());
+      outputArguments = ConditionTypeConditionRefresh.outputArguments(server.getNamespaceTable());
     }
 
     @Override
-    protected void invoke(InvocationContext context, UInteger subscriptionId) throws UaException {
+    public Argument[] getInputArguments() {
+      return inputArguments;
+    }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return outputArguments;
+    }
+
+    @Override
+    protected Variant[] invoke(InvocationContext context, Variant[] values) throws UaException {
+      ConditionTypeConditionRefresh.Inputs input =
+          ConditionTypeConditionRefresh.Inputs.fromVariants(
+              server.getStaticEncodingContext(), values);
+
       Session session =
           context.getSession().orElseThrow(() -> new UaException(StatusCodes.Bad_UserAccessDenied));
 
-      server.getConditionManager().conditionRefresh(session, subscriptionId);
+      server.getConditionManager().conditionRefresh(session, input.subscriptionId());
+      return new Variant[0];
     }
   }
 
-  private static class ConditionRefresh2MethodImpl extends ConditionType.ConditionRefresh2Method {
+  private static class ConditionRefresh2MethodImpl extends AbstractMethodInvocationHandler {
 
     private final OpcUaServer server;
+    private final Argument[] inputArguments;
+    private final Argument[] outputArguments;
 
     ConditionRefresh2MethodImpl(UaMethodNode node) {
       super(node);
 
       server = node.getNodeContext().getServer();
+      inputArguments = ConditionTypeConditionRefresh2.inputArguments(server.getNamespaceTable());
+      outputArguments = ConditionTypeConditionRefresh2.outputArguments(server.getNamespaceTable());
     }
 
     @Override
-    protected void invoke(
-        InvocationContext context, UInteger subscriptionId, UInteger monitoredItemId)
-        throws UaException {
+    public Argument[] getInputArguments() {
+      return inputArguments;
+    }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return outputArguments;
+    }
+
+    @Override
+    protected Variant[] invoke(InvocationContext context, Variant[] values) throws UaException {
+      ConditionTypeConditionRefresh2.Inputs input =
+          ConditionTypeConditionRefresh2.Inputs.fromVariants(
+              server.getStaticEncodingContext(), values);
 
       Session session =
           context.getSession().orElseThrow(() -> new UaException(StatusCodes.Bad_UserAccessDenied));
 
-      server.getConditionManager().conditionRefresh2(session, subscriptionId, monitoredItemId);
+      server
+          .getConditionManager()
+          .conditionRefresh2(session, input.subscriptionId(), input.monitoredItemId());
+      return new Variant[0];
     }
   }
 
-  private static class GetMonitoredItemsMethodImpl extends ServerType.GetMonitoredItemsMethod {
+  private static class GetMonitoredItemsMethodImpl implements ServerType.GetMonitoredItemsHandler {
 
     private final OpcUaServer server;
 
-    GetMonitoredItemsMethodImpl(UaMethodNode node) {
-      super(node);
-
-      server = node.getNodeContext().getServer();
+    GetMonitoredItemsMethodImpl(OpcUaServer server) {
+      this.server = server;
     }
 
     @Override
-    protected void invoke(
-        InvocationContext context,
-        UInteger subscriptionId,
-        Out<UInteger[]> serverHandles,
-        Out<UInteger[]> clientHandles)
-        throws UaException {
+    public ServerTypeGetMonitoredItems.Outputs getMonitoredItems(
+        InvocationContext context, UInteger subscriptionId) throws UaException {
 
       Session session =
           context.getSession().orElseThrow(() -> new UaException(StatusCodes.Bad_SessionIdInvalid));
@@ -401,19 +423,15 @@ public class OpcUaNamespace extends ManagedNamespaceWithLifecycle {
         clientHandleList.add(uint(item.getClientHandle()));
       }
 
-      serverHandles.set(serverHandleList.toArray(new UInteger[0]));
-      clientHandles.set(clientHandleList.toArray(new UInteger[0]));
+      return new ServerTypeGetMonitoredItems.Outputs(
+          serverHandleList.toArray(new UInteger[0]), clientHandleList.toArray(new UInteger[0]));
     }
   }
 
-  private static class ResendDataMethodImpl extends ServerType.ResendDataMethod {
-
-    ResendDataMethodImpl(UaMethodNode node) {
-      super(node);
-    }
+  private static class ResendDataMethodImpl implements ServerType.ResendDataHandler {
 
     @Override
-    protected void invoke(InvocationContext context, UInteger subscriptionId) throws UaException {
+    public void resendData(InvocationContext context, UInteger subscriptionId) throws UaException {
       Session session = context.getSession().orElse(null);
 
       if (session != null) {

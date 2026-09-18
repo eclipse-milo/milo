@@ -1,122 +1,183 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.SecurityTokenRequestType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.6">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.6</a>
+ * Server API for the AuditOpenSecureChannelEventType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.6">Model
+ *     documentation</a>
  */
 public interface AuditOpenSecureChannelEventType extends AuditChannelEventType {
-  QualifiedProperty<ByteString> CLIENT_CERTIFICATE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ClientCertificate",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15"),
-          -1,
-          ByteString.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2060L);
 
-  QualifiedProperty<String> CLIENT_CERTIFICATE_THUMBPRINT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ClientCertificateThumbprint",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  /**
+   * Returns the optional CertificateErrorEventId child, a PropertyType with DataType ByteString.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getCertificateErrorEventIdNode();
 
-  QualifiedProperty<SecurityTokenRequestType> REQUEST_TYPE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "RequestType",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=315"),
-          -1,
-          SecurityTokenRequestType.class);
+  /**
+   * Returns the Value of the CertificateErrorEventId child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable ByteString getCertificateErrorEventId();
 
-  QualifiedProperty<String> SECURITY_POLICY_URI =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "SecurityPolicyUri",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  /**
+   * Sets the Value of the CertificateErrorEventId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setCertificateErrorEventId(@Nullable ByteString value);
 
-  QualifiedProperty<MessageSecurityMode> SECURITY_MODE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "SecurityMode",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=302"),
-          -1,
-          MessageSecurityMode.class);
+  /**
+   * Returns the mandatory ClientCertificate child, a PropertyType with DataType ByteString.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getClientCertificateNode();
 
-  QualifiedProperty<Double> REQUESTED_LIFETIME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "RequestedLifetime",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
-          -1,
-          Double.class);
+  /**
+   * Returns the Value of the ClientCertificate child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable ByteString getClientCertificate();
 
-  QualifiedProperty<ByteString> CERTIFICATE_ERROR_EVENT_ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "CertificateErrorEventId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15"),
-          -1,
-          ByteString.class);
+  /**
+   * Sets the Value of the ClientCertificate child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setClientCertificate(@Nullable ByteString value);
 
-  ByteString getClientCertificate();
+  /**
+   * Returns the mandatory ClientCertificateThumbprint child, a PropertyType with DataType String.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getClientCertificateThumbprintNode();
 
-  void setClientCertificate(ByteString value);
+  /**
+   * Returns the Value of the ClientCertificateThumbprint child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getClientCertificateThumbprint();
 
-  PropertyType getClientCertificateNode();
+  /**
+   * Sets the Value of the ClientCertificateThumbprint child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setClientCertificateThumbprint(@Nullable String value);
 
-  String getClientCertificateThumbprint();
+  /**
+   * Returns the mandatory RequestType child, a PropertyType with DataType SecurityTokenRequestType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getRequestTypeNode();
 
-  void setClientCertificateThumbprint(String value);
+  /**
+   * Returns the Value of the RequestType child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable SecurityTokenRequestType getRequestType();
 
-  PropertyType getClientCertificateThumbprintNode();
+  /**
+   * Sets the Value of the RequestType child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setRequestType(@Nullable SecurityTokenRequestType value);
 
-  SecurityTokenRequestType getRequestType();
+  /**
+   * Returns the mandatory RequestedLifetime child, a PropertyType with DataType Duration.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getRequestedLifetimeNode();
 
-  void setRequestType(SecurityTokenRequestType value);
+  /**
+   * Returns the Value of the RequestedLifetime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Double getRequestedLifetime();
 
-  PropertyType getRequestTypeNode();
+  /**
+   * Sets the Value of the RequestedLifetime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setRequestedLifetime(@Nullable Double value);
 
-  String getSecurityPolicyUri();
+  /**
+   * Returns the mandatory SecurityMode child, a PropertyType with DataType MessageSecurityMode.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getSecurityModeNode();
 
-  void setSecurityPolicyUri(String value);
+  /**
+   * Returns the Value of the SecurityMode child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable MessageSecurityMode getSecurityMode();
 
-  PropertyType getSecurityPolicyUriNode();
+  /**
+   * Sets the Value of the SecurityMode child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setSecurityMode(@Nullable MessageSecurityMode value);
 
-  MessageSecurityMode getSecurityMode();
+  /**
+   * Returns the mandatory SecurityPolicyUri child, a PropertyType with DataType String.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getSecurityPolicyUriNode();
 
-  void setSecurityMode(MessageSecurityMode value);
+  /**
+   * Returns the Value of the SecurityPolicyUri child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getSecurityPolicyUri();
 
-  PropertyType getSecurityModeNode();
-
-  Double getRequestedLifetime();
-
-  void setRequestedLifetime(Double value);
-
-  PropertyType getRequestedLifetimeNode();
-
-  ByteString getCertificateErrorEventId();
-
-  void setCertificateErrorEventId(ByteString value);
-
-  PropertyType getCertificateErrorEventIdNode();
+  /**
+   * Sets the Value of the SecurityPolicyUri child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setSecurityPolicyUri(@Nullable String value);
 }

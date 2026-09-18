@@ -1,89 +1,159 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetFieldContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.KeyValuePair;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.7/#9.1.7.2">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.7/#9.1.7.2</a>
+ * Server API for the DataSetWriterType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.7/#9.1.7.2">Model
+ *     documentation</a>
  */
 public interface DataSetWriterType extends BaseObjectType {
-  QualifiedProperty<UShort> DATA_SET_WRITER_ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "DataSetWriterId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-          -1,
-          UShort.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 15298L);
 
-  QualifiedProperty<DataSetFieldContentMask> DATA_SET_FIELD_CONTENT_MASK =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "DataSetFieldContentMask",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15583"),
-          -1,
-          DataSetFieldContentMask.class);
+  /**
+   * Returns the mandatory DataSetFieldContentMask child, a PropertyType with DataType
+   * DataSetFieldContentMask.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getDataSetFieldContentMaskNode();
 
-  QualifiedProperty<UInteger> KEY_FRAME_COUNT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "KeyFrameCount",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  /**
+   * Returns the Value of the DataSetFieldContentMask child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable DataSetFieldContentMask getDataSetFieldContentMask();
 
-  QualifiedProperty<KeyValuePair[]> DATA_SET_WRITER_PROPERTIES =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "DataSetWriterProperties",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14533"),
-          1,
-          KeyValuePair[].class);
+  /**
+   * Sets the Value of the DataSetFieldContentMask child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setDataSetFieldContentMask(@Nullable DataSetFieldContentMask value);
 
-  UShort getDataSetWriterId();
+  /**
+   * Returns the mandatory DataSetWriterId child, a PropertyType with DataType UInt16.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getDataSetWriterIdNode();
 
-  void setDataSetWriterId(UShort value);
+  /**
+   * Returns the Value of the DataSetWriterId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UShort getDataSetWriterId();
 
-  PropertyType getDataSetWriterIdNode();
+  /**
+   * Sets the Value of the DataSetWriterId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setDataSetWriterId(@Nullable UShort value);
 
-  DataSetFieldContentMask getDataSetFieldContentMask();
+  /**
+   * Returns the mandatory DataSetWriterProperties child, a PropertyType with DataType KeyValuePair.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getDataSetWriterPropertiesNode();
 
-  void setDataSetFieldContentMask(DataSetFieldContentMask value);
+  /**
+   * Returns the Value of the DataSetWriterProperties child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable KeyValuePair @Nullable [] getDataSetWriterProperties();
 
-  PropertyType getDataSetFieldContentMaskNode();
+  /**
+   * Sets the Value of the DataSetWriterProperties child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setDataSetWriterProperties(@Nullable KeyValuePair @Nullable [] value);
 
-  UInteger getKeyFrameCount();
+  /**
+   * Returns the optional Diagnostics child, a PubSubDiagnosticsDataSetWriterType.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.11/#9.1.11.11">PubSubDiagnosticsDataSetWriterType
+   *     documentation</a>
+   */
+  @Nullable PubSubDiagnosticsDataSetWriterTypeNode getDiagnosticsNode();
 
-  void setKeyFrameCount(UInteger value);
+  /**
+   * Returns the optional KeyFrameCount child, a PropertyType with DataType UInt32.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getKeyFrameCountNode();
 
-  PropertyType getKeyFrameCountNode();
+  /**
+   * Returns the Value of the KeyFrameCount child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getKeyFrameCount();
 
-  KeyValuePair[] getDataSetWriterProperties();
+  /**
+   * Sets the Value of the KeyFrameCount child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setKeyFrameCount(@Nullable UInteger value);
 
-  void setDataSetWriterProperties(KeyValuePair[] value);
+  /**
+   * Returns the optional MessageSettings child, a DataSetWriterMessageType.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.7/#9.1.7.4">DataSetWriterMessageType
+   *     documentation</a>
+   */
+  @Nullable DataSetWriterMessageTypeNode getMessageSettingsNode();
 
-  PropertyType getDataSetWriterPropertiesNode();
+  /**
+   * Returns the mandatory Status child, a PubSubStatusType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.10/#9.1.10.1">PubSubStatusType
+   *     documentation</a>
+   */
+  PubSubStatusTypeNode getStatusNode();
 
-  DataSetWriterTransportType getTransportSettingsNode();
-
-  DataSetWriterMessageType getMessageSettingsNode();
-
-  PubSubStatusType getStatusNode();
-
-  PubSubDiagnosticsDataSetWriterType getDiagnosticsNode();
+  /**
+   * Returns the optional TransportSettings child, a DataSetWriterTransportType.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.7/#9.1.7.3">DataSetWriterTransportType
+   *     documentation</a>
+   */
+  @Nullable DataSetWriterTransportTypeNode getTransportSettingsNode();
 }

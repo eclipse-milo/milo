@@ -1,78 +1,110 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.8">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.8</a>
+ * Server API for the AuditCreateSessionEventType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.8">Model
+ *     documentation</a>
  */
 public interface AuditCreateSessionEventType extends AuditSessionEventType {
-  QualifiedProperty<String> SECURE_CHANNEL_ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "SecureChannelId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2071L);
 
-  QualifiedProperty<ByteString> CLIENT_CERTIFICATE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ClientCertificate",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15"),
-          -1,
-          ByteString.class);
+  /**
+   * Returns the mandatory ClientCertificate child, a PropertyType with DataType ByteString.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getClientCertificateNode();
 
-  QualifiedProperty<String> CLIENT_CERTIFICATE_THUMBPRINT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ClientCertificateThumbprint",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  /**
+   * Returns the Value of the ClientCertificate child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable ByteString getClientCertificate();
 
-  QualifiedProperty<Double> REVISED_SESSION_TIMEOUT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "RevisedSessionTimeout",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
-          -1,
-          Double.class);
+  /**
+   * Sets the Value of the ClientCertificate child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setClientCertificate(@Nullable ByteString value);
 
-  String getSecureChannelId();
+  /**
+   * Returns the mandatory ClientCertificateThumbprint child, a PropertyType with DataType String.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getClientCertificateThumbprintNode();
 
-  void setSecureChannelId(String value);
+  /**
+   * Returns the Value of the ClientCertificateThumbprint child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getClientCertificateThumbprint();
 
-  PropertyType getSecureChannelIdNode();
+  /**
+   * Sets the Value of the ClientCertificateThumbprint child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setClientCertificateThumbprint(@Nullable String value);
 
-  ByteString getClientCertificate();
+  /**
+   * Returns the mandatory RevisedSessionTimeout child, a PropertyType with DataType Duration.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getRevisedSessionTimeoutNode();
 
-  void setClientCertificate(ByteString value);
+  /**
+   * Returns the Value of the RevisedSessionTimeout child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Double getRevisedSessionTimeout();
 
-  PropertyType getClientCertificateNode();
+  /**
+   * Sets the Value of the RevisedSessionTimeout child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setRevisedSessionTimeout(@Nullable Double value);
 
-  String getClientCertificateThumbprint();
+  /**
+   * Returns the mandatory SecureChannelId child, a PropertyType with DataType String.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getSecureChannelIdNode();
 
-  void setClientCertificateThumbprint(String value);
+  /**
+   * Returns the Value of the SecureChannelId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getSecureChannelId();
 
-  PropertyType getClientCertificateThumbprintNode();
-
-  Double getRevisedSessionTimeout();
-
-  void setRevisedSessionTimeout(Double value);
-
-  PropertyType getRevisedSessionTimeoutNode();
+  /**
+   * Sets the Value of the SecureChannelId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setSecureChannelId(@Nullable String value);
 }

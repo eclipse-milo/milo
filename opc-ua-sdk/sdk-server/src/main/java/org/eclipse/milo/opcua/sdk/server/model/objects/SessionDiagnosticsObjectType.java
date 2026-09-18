@@ -1,60 +1,125 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
-import org.eclipse.milo.opcua.sdk.server.model.variables.SessionDiagnosticsVariableType;
-import org.eclipse.milo.opcua.sdk.server.model.variables.SessionSecurityDiagnosticsType;
-import org.eclipse.milo.opcua.sdk.server.model.variables.SubscriptionDiagnosticsArrayType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.variables.SessionDiagnosticsVariableTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.variables.SessionSecurityDiagnosticsTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.variables.SubscriptionDiagnosticsArrayTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.structured.SessionDiagnosticsDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SessionSecurityDiagnosticsDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SubscriptionDiagnosticsDataType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.5">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.5</a>
+ * Server API for the SessionDiagnosticsObjectType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.5">Model
+ *     documentation</a>
  */
 public interface SessionDiagnosticsObjectType extends BaseObjectType {
-  QualifiedProperty<NodeId[]> CURRENT_ROLE_IDS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "CurrentRoleIds",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-          1,
-          NodeId[].class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2029L);
 
-  NodeId[] getCurrentRoleIds();
+  /**
+   * Returns the optional CurrentRoleIds child, a PropertyType with DataType NodeId.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getCurrentRoleIdsNode();
 
-  void setCurrentRoleIds(NodeId[] value);
+  /**
+   * Returns the Value of the CurrentRoleIds child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  NodeId @Nullable [] getCurrentRoleIds();
 
-  PropertyType getCurrentRoleIdsNode();
+  /**
+   * Sets the Value of the CurrentRoleIds child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setCurrentRoleIds(NodeId @Nullable [] value);
 
-  SessionDiagnosticsVariableType getSessionDiagnosticsNode();
+  /**
+   * Returns the mandatory SessionDiagnostics child, a SessionDiagnosticsVariableType with DataType
+   * SessionDiagnosticsDataType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.14">SessionDiagnosticsVariableType
+   *     documentation</a>
+   */
+  SessionDiagnosticsVariableTypeNode getSessionDiagnosticsNode();
 
-  SessionDiagnosticsDataType getSessionDiagnostics();
+  /**
+   * Returns the Value of the SessionDiagnostics child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable SessionDiagnosticsDataType getSessionDiagnostics();
 
-  void setSessionDiagnostics(SessionDiagnosticsDataType value);
+  /**
+   * Sets the Value of the SessionDiagnostics child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setSessionDiagnostics(@Nullable SessionDiagnosticsDataType value);
 
-  SessionSecurityDiagnosticsType getSessionSecurityDiagnosticsNode();
+  /**
+   * Returns the mandatory SessionSecurityDiagnostics child, a SessionSecurityDiagnosticsType with
+   * DataType SessionSecurityDiagnosticsDataType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.16">SessionSecurityDiagnosticsType
+   *     documentation</a>
+   */
+  SessionSecurityDiagnosticsTypeNode getSessionSecurityDiagnosticsNode();
 
-  SessionSecurityDiagnosticsDataType getSessionSecurityDiagnostics();
+  /**
+   * Returns the Value of the SessionSecurityDiagnostics child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable SessionSecurityDiagnosticsDataType getSessionSecurityDiagnostics();
 
-  void setSessionSecurityDiagnostics(SessionSecurityDiagnosticsDataType value);
+  /**
+   * Sets the Value of the SessionSecurityDiagnostics child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setSessionSecurityDiagnostics(@Nullable SessionSecurityDiagnosticsDataType value);
 
-  SubscriptionDiagnosticsArrayType getSubscriptionDiagnosticsArrayNode();
+  /**
+   * Returns the mandatory SubscriptionDiagnosticsArray child, a SubscriptionDiagnosticsArrayType
+   * with DataType SubscriptionDiagnosticsDataType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.11">SubscriptionDiagnosticsArrayType
+   *     documentation</a>
+   */
+  SubscriptionDiagnosticsArrayTypeNode getSubscriptionDiagnosticsArrayNode();
 
-  SubscriptionDiagnosticsDataType[] getSubscriptionDiagnosticsArray();
+  /**
+   * Returns the Value of the SubscriptionDiagnosticsArray child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable SubscriptionDiagnosticsDataType @Nullable [] getSubscriptionDiagnosticsArray();
 
-  void setSubscriptionDiagnosticsArray(SubscriptionDiagnosticsDataType[] value);
+  /**
+   * Sets the Value of the SubscriptionDiagnosticsArray child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setSubscriptionDiagnosticsArray(
+      @Nullable SubscriptionDiagnosticsDataType @Nullable [] value);
 }

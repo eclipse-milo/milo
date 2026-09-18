@@ -1,389 +1,326 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.core.nodes.MethodNode;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
-import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.types.structured.PasswordOptionsMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.Range;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserConfigurationMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserManagementDataType;
-import org.eclipse.milo.opcua.stack.core.util.Lazy;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.1">https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.1</a>
+ * Server API for the UserManagementType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.1">Model
+ *     documentation</a>
  */
 public interface UserManagementType extends BaseObjectType {
-  QualifiedProperty<UserManagementDataType[]> USERS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Users",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24281"),
-          1,
-          UserManagementDataType[].class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 24264L);
 
-  QualifiedProperty<Range> PASSWORD_LENGTH =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "PasswordLength",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=884"),
-          -1,
-          Range.class);
+  /**
+   * Returns the mandatory PasswordLength child, a PropertyType with DataType Range.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getPasswordLengthNode();
 
-  QualifiedProperty<PasswordOptionsMask> PASSWORD_OPTIONS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "PasswordOptions",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24277"),
-          -1,
-          PasswordOptionsMask.class);
+  /**
+   * Returns the Value of the PasswordLength child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Range getPasswordLength();
 
-  QualifiedProperty<LocalizedText> PASSWORD_RESTRICTIONS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "PasswordRestrictions",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
-          -1,
-          LocalizedText.class);
+  /**
+   * Sets the Value of the PasswordLength child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setPasswordLength(@Nullable Range value);
 
-  UserManagementDataType[] getUsers();
+  /**
+   * Returns the mandatory PasswordOptions child, a PropertyType with DataType PasswordOptionsMask.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getPasswordOptionsNode();
 
-  void setUsers(UserManagementDataType[] value);
+  /**
+   * Returns the Value of the PasswordOptions child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable PasswordOptionsMask getPasswordOptions();
 
-  PropertyType getUsersNode();
+  /**
+   * Sets the Value of the PasswordOptions child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setPasswordOptions(@Nullable PasswordOptionsMask value);
 
-  Range getPasswordLength();
+  /**
+   * Returns the optional PasswordRestrictions child, a PropertyType with DataType LocalizedText.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getPasswordRestrictionsNode();
 
-  void setPasswordLength(Range value);
+  /**
+   * Returns the Value of the PasswordRestrictions child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable LocalizedText getPasswordRestrictions();
 
-  PropertyType getPasswordLengthNode();
+  /**
+   * Sets the Value of the PasswordRestrictions child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setPasswordRestrictions(@Nullable LocalizedText value);
 
-  PasswordOptionsMask getPasswordOptions();
+  /**
+   * Returns the mandatory Users child, a PropertyType with DataType UserManagementDataType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getUsersNode();
 
-  void setPasswordOptions(PasswordOptionsMask value);
+  /**
+   * Returns the Value of the Users child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UserManagementDataType @Nullable [] getUsers();
 
-  PropertyType getPasswordOptionsNode();
+  /**
+   * Sets the Value of the Users child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setUsers(@Nullable UserManagementDataType @Nullable [] value);
 
-  LocalizedText getPasswordRestrictions();
+  /**
+   * Returns the mandatory AddUser Method node.
+   *
+   * @throws UaRuntimeException if the Method is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.5">Model
+   *     documentation</a>
+   */
+  UaMethodNode getAddUserMethodNode();
 
-  void setPasswordRestrictions(LocalizedText value);
+  /**
+   * Sets this instance's AddUser handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setAddUserHandler(@Nullable AddUserHandler handler);
 
-  PropertyType getPasswordRestrictionsNode();
+  /**
+   * Returns the mandatory ChangePassword Method node.
+   *
+   * @throws UaRuntimeException if the Method is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.8">Model
+   *     documentation</a>
+   */
+  UaMethodNode getChangePasswordMethodNode();
 
-  MethodNode getAddUserMethodNode();
+  /**
+   * Sets this instance's ChangePassword handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setChangePasswordHandler(@Nullable ChangePasswordHandler handler);
 
-  MethodNode getModifyUserMethodNode();
+  /**
+   * Returns the mandatory ModifyUser Method node.
+   *
+   * @throws UaRuntimeException if the Method is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.6">Model
+   *     documentation</a>
+   */
+  UaMethodNode getModifyUserMethodNode();
 
-  MethodNode getRemoveUserMethodNode();
+  /**
+   * Sets this instance's ModifyUser handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setModifyUserHandler(@Nullable ModifyUserHandler handler);
 
-  MethodNode getChangePasswordMethodNode();
+  /**
+   * Returns the mandatory RemoveUser Method node.
+   *
+   * @throws UaRuntimeException if the Method is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.7">Model
+   *     documentation</a>
+   */
+  UaMethodNode getRemoveUserMethodNode();
 
-  abstract class AddUserMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+  /**
+   * Sets this instance's RemoveUser handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setRemoveUserHandler(@Nullable RemoveUserHandler handler);
 
-    public AddUserMethod(UaMethodNode node) {
-      super(node);
-    }
+  /**
+   * Sets this instance's Method handlers, including inherited handlers, from one implementation;
+   * null clears them and restores Method-node fallback. Absent optional Methods are skipped.
+   * Changes are applied in order; a failure does not roll back earlier changes.
+   *
+   * @throws UaRuntimeException if a mandatory Method is absent, or a Method is ambiguous or
+   *     incompatible.
+   */
+  void setMethods(@Nullable Methods methods);
 
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "UserName",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "Password",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "UserConfiguration",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24279")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "Description",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      String userName = (String) inputValues[0].getValue();
-      String password = (String) inputValues[1].getValue();
-      UserConfigurationMask userConfiguration = (UserConfigurationMask) inputValues[2].getValue();
-      String description = (String) inputValues[3].getValue();
-      invoke(context, userName, password, userConfiguration, description);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(
+  /**
+   * Handles calls to the AddUser Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.5">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface AddUserHandler {
+    /**
+     * Handles a call to the AddUser Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void addUser(
         AbstractMethodInvocationHandler.InvocationContext context,
-        String userName,
-        String password,
-        UserConfigurationMask userConfiguration,
-        String description)
+        @Nullable String userName,
+        @Nullable String password,
+        @Nullable UserConfigurationMask userConfiguration,
+        @Nullable String description)
         throws UaException;
   }
 
-  abstract class ModifyUserMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    public ModifyUserMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "UserName",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "ModifyPassword",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "Password",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "ModifyUserConfiguration",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "UserConfiguration",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24279")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "ModifyDescription",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "Description",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      String userName = (String) inputValues[0].getValue();
-      Boolean modifyPassword = (Boolean) inputValues[1].getValue();
-      String password = (String) inputValues[2].getValue();
-      Boolean modifyUserConfiguration = (Boolean) inputValues[3].getValue();
-      UserConfigurationMask userConfiguration = (UserConfigurationMask) inputValues[4].getValue();
-      Boolean modifyDescription = (Boolean) inputValues[5].getValue();
-      String description = (String) inputValues[6].getValue();
-      invoke(
-          context,
-          userName,
-          modifyPassword,
-          password,
-          modifyUserConfiguration,
-          userConfiguration,
-          modifyDescription,
-          description);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(
+  /**
+   * Handles calls to the ChangePassword Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.8">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface ChangePasswordHandler {
+    /**
+     * Handles a call to the ChangePassword Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void changePassword(
         AbstractMethodInvocationHandler.InvocationContext context,
-        String userName,
-        Boolean modifyPassword,
-        String password,
-        Boolean modifyUserConfiguration,
-        UserConfigurationMask userConfiguration,
-        Boolean modifyDescription,
-        String description)
+        @Nullable String oldPassword,
+        @Nullable String newPassword)
         throws UaException;
   }
 
-  abstract class RemoveUserMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    public RemoveUserMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "UserName",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      String userName = (String) inputValues[0].getValue();
-      invoke(context, userName);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, String userName)
+  /**
+   * Handles calls to the ModifyUser Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.6">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface ModifyUserHandler {
+    /**
+     * Handles a call to the ModifyUser Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void modifyUser(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable String userName,
+        @Nullable Boolean modifyPassword,
+        @Nullable String password,
+        @Nullable Boolean modifyUserConfiguration,
+        @Nullable UserConfigurationMask userConfiguration,
+        @Nullable Boolean modifyDescription,
+        @Nullable String description)
         throws UaException;
   }
 
-  abstract class ChangePasswordMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    public ChangePasswordMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "OldPassword",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "NewPassword",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      String oldPassword = (String) inputValues[0].getValue();
-      String newPassword = (String) inputValues[1].getValue();
-      invoke(context, oldPassword, newPassword);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context,
-        String oldPassword,
-        String newPassword)
+  /**
+   * Handles calls to the RemoveUser Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.7">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface RemoveUserHandler {
+    /**
+     * Handles a call to the RemoveUser Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void removeUser(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable String userName)
         throws UaException;
+  }
+
+  /** Implements this type's Methods. Unimplemented Methods report Bad_NotImplemented. */
+  interface Methods {
+    /** Handles a call to the AddUser Method; see {@link AddUserHandler#addUser}. */
+    default void addUser(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable String userName,
+        @Nullable String password,
+        @Nullable UserConfigurationMask userConfiguration,
+        @Nullable String description)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /**
+     * Handles a call to the ChangePassword Method; see {@link
+     * ChangePasswordHandler#changePassword}.
+     */
+    default void changePassword(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable String oldPassword,
+        @Nullable String newPassword)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /** Handles a call to the ModifyUser Method; see {@link ModifyUserHandler#modifyUser}. */
+    default void modifyUser(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable String userName,
+        @Nullable Boolean modifyPassword,
+        @Nullable String password,
+        @Nullable Boolean modifyUserConfiguration,
+        @Nullable UserConfigurationMask userConfiguration,
+        @Nullable Boolean modifyDescription,
+        @Nullable String description)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /** Handles a call to the RemoveUser Method; see {@link RemoveUserHandler#removeUser}. */
+    default void removeUser(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable String userName)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
   }
 }

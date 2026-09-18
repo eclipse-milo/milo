@@ -1,22 +1,13 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.variables;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelExType;
@@ -25,23 +16,63 @@ import org.eclipse.milo.opcua.stack.core.types.structured.EUInformation;
 import org.eclipse.milo.opcua.stack.core.types.structured.NumberRange;
 import org.eclipse.milo.opcua.stack.core.types.structured.Range;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link BaseAnalogType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.2/#5.3.2.2">Model
+ *     documentation</a>
+ */
 public class BaseAnalogTypeNode extends DataItemTypeNode implements BaseAnalogType {
   public BaseAnalogTypeNode(
       UaNodeContext context,
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       DataValue value,
       NodeId dataType,
       Integer valueRank,
-      UInteger[] arrayDimensions,
+      UInteger @Nullable [] arrayDimensions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions,
+        value,
+        dataType,
+        valueRank,
+        arrayDimensions);
+  }
+
+  public BaseAnalogTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
+      DataValue value,
+      NodeId dataType,
+      Integer valueRank,
+      UInteger @Nullable [] arrayDimensions,
       UByte accessLevel,
       UByte userAccessLevel,
       Double minimumSamplingInterval,
@@ -69,115 +100,171 @@ public class BaseAnalogTypeNode extends DataItemTypeNode implements BaseAnalogTy
         accessLevelEx);
   }
 
-  public BaseAnalogTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
-      DataValue value,
-      NodeId dataType,
-      Integer valueRank,
-      UInteger[] arrayDimensions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions,
+  @Override
+  public @Nullable PropertyTypeNode getEUNumberRangeNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "EUNumberRange",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 23903L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable NumberRange getEUNumberRange() {
+    return ServerNodeSupport.read(this, getEUNumberRangeNode(), NumberRange.class, null);
+  }
+
+  @Override
+  public void setEUNumberRange(@Nullable NumberRange value) {
+    ServerNodeSupport.write(
+        this,
+        getEUNumberRangeNode(),
+        Namespaces.OPC_UA,
+        "EUNumberRange",
         value,
-        dataType,
-        valueRank,
-        arrayDimensions);
+        false,
+        false,
+        true);
   }
 
   @Override
-  public PropertyTypeNode getInstrumentRangeNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(BaseAnalogType.INSTRUMENT_RANGE);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable PropertyTypeNode getEURangeNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "EURange",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 884L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public Range getInstrumentRange() {
-    return getProperty(BaseAnalogType.INSTRUMENT_RANGE).orElse(null);
+  public @Nullable Range getEURange() {
+    return ServerNodeSupport.read(this, getEURangeNode(), Range.class, null);
   }
 
   @Override
-  public void setInstrumentRange(Range value) {
-    setProperty(BaseAnalogType.INSTRUMENT_RANGE, value);
+  public void setEURange(@Nullable Range value) {
+    ServerNodeSupport.write(
+        this, getEURangeNode(), Namespaces.OPC_UA, "EURange", value, false, false, true);
   }
 
   @Override
-  public PropertyTypeNode getInstrumentNumberRangeNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(BaseAnalogType.INSTRUMENT_NUMBER_RANGE);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable PropertyTypeNode getEngineeringUnits_Node() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "EngineeringUnits",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 887L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public NumberRange getInstrumentNumberRange() {
-    return getProperty(BaseAnalogType.INSTRUMENT_NUMBER_RANGE).orElse(null);
+  public @Nullable EUInformation getEngineeringUnits_() {
+    return ServerNodeSupport.read(this, getEngineeringUnits_Node(), EUInformation.class, null);
   }
 
   @Override
-  public void setInstrumentNumberRange(NumberRange value) {
-    setProperty(BaseAnalogType.INSTRUMENT_NUMBER_RANGE, value);
+  public void setEngineeringUnits_(@Nullable EUInformation value) {
+    ServerNodeSupport.write(
+        this,
+        getEngineeringUnits_Node(),
+        Namespaces.OPC_UA,
+        "EngineeringUnits",
+        value,
+        false,
+        false,
+        true);
   }
 
   @Override
-  public PropertyTypeNode getEuRangeNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(BaseAnalogType.EU_RANGE);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable PropertyTypeNode getInstrumentNumberRangeNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "InstrumentNumberRange",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 23903L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public Range getEuRange() {
-    return getProperty(BaseAnalogType.EU_RANGE).orElse(null);
+  public @Nullable NumberRange getInstrumentNumberRange() {
+    return ServerNodeSupport.read(this, getInstrumentNumberRangeNode(), NumberRange.class, null);
   }
 
   @Override
-  public void setEuRange(Range value) {
-    setProperty(BaseAnalogType.EU_RANGE, value);
+  public void setInstrumentNumberRange(@Nullable NumberRange value) {
+    ServerNodeSupport.write(
+        this,
+        getInstrumentNumberRangeNode(),
+        Namespaces.OPC_UA,
+        "InstrumentNumberRange",
+        value,
+        false,
+        false,
+        true);
   }
 
   @Override
-  public PropertyTypeNode getEuNumberRangeNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(BaseAnalogType.EU_NUMBER_RANGE);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable PropertyTypeNode getInstrumentRangeNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "InstrumentRange",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 884L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public NumberRange getEuNumberRange() {
-    return getProperty(BaseAnalogType.EU_NUMBER_RANGE).orElse(null);
+  public @Nullable Range getInstrumentRange() {
+    return ServerNodeSupport.read(this, getInstrumentRangeNode(), Range.class, null);
   }
 
   @Override
-  public void setEuNumberRange(NumberRange value) {
-    setProperty(BaseAnalogType.EU_NUMBER_RANGE, value);
+  public void setInstrumentRange(@Nullable Range value) {
+    ServerNodeSupport.write(
+        this,
+        getInstrumentRangeNode(),
+        Namespaces.OPC_UA,
+        "InstrumentRange",
+        value,
+        false,
+        false,
+        true);
   }
 
   @Override
-  public PropertyTypeNode getEngineeringUnitsNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(BaseAnalogType.ENGINEERING_UNITS);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public void validateChildren() {
+    super.validateChildren();
+    getEUNumberRangeNode();
+    getEURangeNode();
+    getEngineeringUnits_Node();
+    getInstrumentNumberRangeNode();
+    getInstrumentRangeNode();
   }
 
   @Override
-  public EUInformation getEngineeringUnits() {
-    return getProperty(BaseAnalogType.ENGINEERING_UNITS).orElse(null);
+  public @Nullable Variant getTypedValue() {
+    return ServerNodeSupport.readVariant(this, this, -2, Variant.class, null);
   }
 
   @Override
-  public void setEngineeringUnits(EUInformation value) {
-    setProperty(BaseAnalogType.ENGINEERING_UNITS, value);
+  public void setTypedValue(@Nullable Variant value) {
+    ServerNodeSupport.writeVariant(this, this, null, "Value", value, -2, Variant.class, null);
   }
 }

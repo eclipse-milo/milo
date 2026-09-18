@@ -1,28 +1,39 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.server.model.variables.TwoStateVariableType;
-import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.19/#5.8.19.3">https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.19/#5.8.19.3</a>
+ * Server API for the ExclusiveLimitAlarmType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.19/#5.8.19.3">Model
+ *     documentation</a>
  */
 public interface ExclusiveLimitAlarmType extends LimitAlarmType {
-  TwoStateVariableType getActiveStateNode();
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 9341L);
 
-  LocalizedText getActiveState();
+  /**
+   * Returns the mandatory LimitState child, a ExclusiveLimitStateMachineType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.19/#5.8.19.2">ExclusiveLimitStateMachineType
+   *     documentation</a>
+   */
+  ExclusiveLimitStateMachineTypeNode getLimitStateNode();
 
-  void setActiveState(LocalizedText value);
+  /**
+   * Sets this instance's Method handlers, including inherited handlers, from one implementation;
+   * null clears them and restores Method-node fallback. Absent optional Methods are skipped.
+   * Changes are applied in order; a failure does not roll back earlier changes.
+   *
+   * @throws UaRuntimeException if a mandatory Method is absent, or a Method is ambiguous or
+   *     incompatible.
+   */
+  void setMethods(@Nullable Methods methods);
 
-  ExclusiveLimitStateMachineType getLimitStateNode();
+  /** Implements this type's Methods. Unimplemented Methods report Bad_NotImplemented. */
+  interface Methods extends LimitAlarmType.Methods {}
 }

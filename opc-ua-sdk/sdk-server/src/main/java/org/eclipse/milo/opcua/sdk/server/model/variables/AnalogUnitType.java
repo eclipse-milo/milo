@@ -1,35 +1,24 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.variables;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.structured.EUInformation;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.2/#5.3.2.4">https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.2/#5.3.2.4</a>
+ * Server API for the AnalogUnitType VariableType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.2/#5.3.2.4">Model
+ *     documentation</a>
  */
 public interface AnalogUnitType extends BaseAnalogType {
-  QualifiedProperty<EUInformation> ENGINEERING_UNITS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "EngineeringUnits",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=887"),
-          -1,
-          EUInformation.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 17497L);
 
-  EUInformation getEngineeringUnits();
-
-  void setEngineeringUnits(EUInformation value);
-
-  PropertyType getEngineeringUnitsNode();
+  /**
+   * Returns the mandatory EngineeringUnits child, a PropertyType with DataType EUInformation.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getEngineeringUnits_Node();
 }

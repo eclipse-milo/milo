@@ -1,19 +1,9 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.variables;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -21,9 +11,18 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelExType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
+import org.eclipse.milo.opcua.stack.core.types.structured.CartesianCoordinates;
 import org.eclipse.milo.opcua.stack.core.types.structured.EUInformation;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link CartesianCoordinatesType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.23">Model
+ *     documentation</a>
+ */
 public class CartesianCoordinatesTypeNode extends BaseDataVariableTypeNode
     implements CartesianCoordinatesType {
   public CartesianCoordinatesTypeNode(
@@ -31,16 +30,48 @@ public class CartesianCoordinatesTypeNode extends BaseDataVariableTypeNode
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       DataValue value,
       NodeId dataType,
       Integer valueRank,
-      UInteger[] arrayDimensions,
+      UInteger @Nullable [] arrayDimensions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions,
+        value,
+        dataType,
+        valueRank,
+        arrayDimensions);
+  }
+
+  public CartesianCoordinatesTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
+      DataValue value,
+      NodeId dataType,
+      Integer valueRank,
+      UInteger @Nullable [] arrayDimensions,
       UByte accessLevel,
       UByte userAccessLevel,
       Double minimumSamplingInterval,
@@ -68,51 +99,43 @@ public class CartesianCoordinatesTypeNode extends BaseDataVariableTypeNode
         accessLevelEx);
   }
 
-  public CartesianCoordinatesTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
-      DataValue value,
-      NodeId dataType,
-      Integer valueRank,
-      UInteger[] arrayDimensions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions,
-        value,
-        dataType,
-        valueRank,
-        arrayDimensions);
+  @Override
+  public @Nullable PropertyTypeNode getLengthUnitNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "LengthUnit",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 887L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getLengthUnitNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(CartesianCoordinatesType.LENGTH_UNIT);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable EUInformation getLengthUnit() {
+    return ServerNodeSupport.read(this, getLengthUnitNode(), EUInformation.class, null);
   }
 
   @Override
-  public EUInformation getLengthUnit() {
-    return getProperty(CartesianCoordinatesType.LENGTH_UNIT).orElse(null);
+  public void setLengthUnit(@Nullable EUInformation value) {
+    ServerNodeSupport.write(
+        this, getLengthUnitNode(), Namespaces.OPC_UA, "LengthUnit", value, false, false, true);
   }
 
   @Override
-  public void setLengthUnit(EUInformation value) {
-    setProperty(CartesianCoordinatesType.LENGTH_UNIT, value);
+  public void validateChildren() {
+    super.validateChildren();
+    getLengthUnitNode();
+  }
+
+  @Override
+  public @Nullable CartesianCoordinates getTypedValue() {
+    return ServerNodeSupport.read(this, this, CartesianCoordinates.class, null);
+  }
+
+  @Override
+  public void setTypedValue(@Nullable CartesianCoordinates value) {
+    ServerNodeSupport.write(this, this, value, false, false, true);
   }
 }

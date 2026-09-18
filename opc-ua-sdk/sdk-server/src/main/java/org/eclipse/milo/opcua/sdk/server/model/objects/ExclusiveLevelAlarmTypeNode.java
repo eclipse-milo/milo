@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
@@ -18,7 +8,14 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link ExclusiveLevelAlarmType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.21/#5.8.21.3">Model
+ *     documentation</a>
+ */
 public class ExclusiveLevelAlarmTypeNode extends ExclusiveLimitAlarmTypeNode
     implements ExclusiveLevelAlarmType {
   public ExclusiveLevelAlarmTypeNode(
@@ -26,12 +23,36 @@ public class ExclusiveLevelAlarmTypeNode extends ExclusiveLimitAlarmTypeNode
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions);
+  }
+
+  public ExclusiveLevelAlarmTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         context,
@@ -47,27 +68,50 @@ public class ExclusiveLevelAlarmTypeNode extends ExclusiveLimitAlarmTypeNode
         eventNotifier);
   }
 
-  public ExclusiveLevelAlarmTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions);
+  @Override
+  public void setMethods(ExclusiveLevelAlarmType.@Nullable Methods methods) {
+    setAcknowledgeHandler(methods == null ? null : methods::acknowledge);
+    setAddCommentHandler(methods == null ? null : methods::addComment);
+    if (getConfirmMethodNode() != null) {
+      setConfirmHandler(methods == null ? null : methods::confirm);
+    }
+    setDisableHandler(methods == null ? null : methods::disable);
+    setEnableHandler(methods == null ? null : methods::enable);
+    if (getGetGroupMembershipsMethodNode() != null) {
+      setGetGroupMembershipsHandler(methods == null ? null : methods::getGroupMemberships);
+    }
+    if (getPlaceInServiceMethodNode() != null) {
+      setPlaceInServiceHandler(methods == null ? null : methods::placeInService);
+    }
+    if (getPlaceInService2MethodNode() != null) {
+      setPlaceInService2Handler(methods == null ? null : methods::placeInService2);
+    }
+    if (getRemoveFromServiceMethodNode() != null) {
+      setRemoveFromServiceHandler(methods == null ? null : methods::removeFromService);
+    }
+    if (getRemoveFromService2MethodNode() != null) {
+      setRemoveFromService2Handler(methods == null ? null : methods::removeFromService2);
+    }
+    if (getResetMethodNode() != null) {
+      setResetHandler(methods == null ? null : methods::reset);
+    }
+    if (getReset2MethodNode() != null) {
+      setReset2Handler(methods == null ? null : methods::reset2);
+    }
+    if (getSilenceMethodNode() != null) {
+      setSilenceHandler(methods == null ? null : methods::silence);
+    }
+    if (getSuppressMethodNode() != null) {
+      setSuppressHandler(methods == null ? null : methods::suppress);
+    }
+    if (getSuppress2MethodNode() != null) {
+      setSuppress2Handler(methods == null ? null : methods::suppress2);
+    }
+    if (getUnsuppressMethodNode() != null) {
+      setUnsuppressHandler(methods == null ? null : methods::unsuppress);
+    }
+    if (getUnsuppress2MethodNode() != null) {
+      setUnsuppress2Handler(methods == null ? null : methods::unsuppress2);
+    }
   }
 }

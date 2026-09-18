@@ -1,86 +1,99 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.core.nodes.MethodNode;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.RedundantServerMode;
-import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
-import org.eclipse.milo.opcua.stack.core.types.structured.RedundantServerDataType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.15">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.15</a>
+ * Server API for the NonTransparentBackupRedundancyType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.15">Model
+ *     documentation</a>
  */
 public interface NonTransparentBackupRedundancyType extends NonTransparentRedundancyType {
-  QualifiedProperty<RedundantServerDataType[]> REDUNDANT_SERVER_ARRAY =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "RedundantServerArray",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=853"),
-          1,
-          RedundantServerDataType[].class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 32411L);
 
-  QualifiedProperty<RedundantServerMode> MODE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Mode",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=32417"),
-          -1,
-          RedundantServerMode.class);
+  /**
+   * Returns the mandatory Mode child, a PropertyType with DataType RedundantServerMode.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getModeNode();
 
-  RedundantServerDataType[] getRedundantServerArray();
+  /**
+   * Returns the Value of the Mode child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable RedundantServerMode getMode();
 
-  void setRedundantServerArray(RedundantServerDataType[] value);
+  /**
+   * Sets the Value of the Mode child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMode(@Nullable RedundantServerMode value);
 
-  PropertyType getRedundantServerArrayNode();
+  /**
+   * Returns the mandatory RedundantServerArray child, a PropertyType with DataType
+   * RedundantServerDataType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getRedundantServerArrayNode();
 
-  RedundantServerMode getMode();
+  /**
+   * Returns the mandatory Failover Method node.
+   *
+   * @throws UaRuntimeException if the Method is absent, ambiguous or incompatible.
+   */
+  UaMethodNode getFailoverMethodNode();
 
-  void setMode(RedundantServerMode value);
+  /**
+   * Sets this instance's Failover handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setFailoverHandler(@Nullable FailoverHandler handler);
 
-  PropertyType getModeNode();
+  /**
+   * Sets this instance's Method handlers, including inherited handlers, from one implementation;
+   * null clears them and restores Method-node fallback. Absent optional Methods are skipped.
+   * Changes are applied in order; a failure does not roll back earlier changes.
+   *
+   * @throws UaRuntimeException if a mandatory Method is absent, or a Method is ambiguous or
+   *     incompatible.
+   */
+  void setMethods(@Nullable Methods methods);
 
-  MethodNode getFailoverMethodNode();
+  /** Handles calls to the Failover Method. */
+  @FunctionalInterface
+  interface FailoverHandler {
+    /**
+     * Handles a call to the Failover Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void failover(AbstractMethodInvocationHandler.InvocationContext context) throws UaException;
+  }
 
-  abstract class FailoverMethod extends AbstractMethodInvocationHandler {
-    public FailoverMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+  /** Implements this type's Methods. Unimplemented Methods report Bad_NotImplemented. */
+  interface Methods {
+    /** Handles a call to the Failover Method; see {@link FailoverHandler#failover}. */
+    default void failover(AbstractMethodInvocationHandler.InvocationContext context)
         throws UaException {
-      invoke(context);
-      return new Variant[] {};
+      throw new UaException(StatusCodes.Bad_NotImplemented);
     }
-
-    protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context)
-        throws UaException;
   }
 }

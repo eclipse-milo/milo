@@ -1,24 +1,13 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.variables;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelExType;
@@ -26,7 +15,16 @@ import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ServiceCounterDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.SessionDiagnosticsDataType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link SessionDiagnosticsVariableType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.14">Model
+ *     documentation</a>
+ */
 public class SessionDiagnosticsVariableTypeNode extends BaseDataVariableTypeNode
     implements SessionDiagnosticsVariableType {
   public SessionDiagnosticsVariableTypeNode(
@@ -34,16 +32,48 @@ public class SessionDiagnosticsVariableTypeNode extends BaseDataVariableTypeNode
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       DataValue value,
       NodeId dataType,
       Integer valueRank,
-      UInteger[] arrayDimensions,
+      UInteger @Nullable [] arrayDimensions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions,
+        value,
+        dataType,
+        valueRank,
+        arrayDimensions);
+  }
+
+  public SessionDiagnosticsVariableTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
+      DataValue value,
+      NodeId dataType,
+      Integer valueRank,
+      UInteger @Nullable [] arrayDimensions,
       UByte accessLevel,
       UByte userAccessLevel,
       Double minimumSamplingInterval,
@@ -71,955 +101,1077 @@ public class SessionDiagnosticsVariableTypeNode extends BaseDataVariableTypeNode
         accessLevelEx);
   }
 
-  public SessionDiagnosticsVariableTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
-      DataValue value,
-      NodeId dataType,
-      Integer valueRank,
-      UInteger[] arrayDimensions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions,
-        value,
-        dataType,
-        valueRank,
-        arrayDimensions);
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getSessionIdNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "SessionId");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public NodeId getSessionId() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "SessionId");
-    return component.map(node -> (NodeId) node.getValue().getValue().getValue()).orElse(null);
-  }
-
-  @Override
-  public void setSessionId(NodeId value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "SessionId")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getSessionNameNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "SessionName");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public String getSessionName() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "SessionName");
-    return component.map(node -> (String) node.getValue().getValue().getValue()).orElse(null);
-  }
-
-  @Override
-  public void setSessionName(String value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "SessionName")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getClientDescriptionNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "ClientDescription");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public ApplicationDescription getClientDescription() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "ClientDescription");
-    return component
-        .map(node -> (ApplicationDescription) node.getValue().getValue().getValue())
-        .orElse(null);
-  }
-
-  @Override
-  public void setClientDescription(ApplicationDescription value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "ClientDescription")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getServerUriNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "ServerUri");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public String getServerUri() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "ServerUri");
-    return component.map(node -> (String) node.getValue().getValue().getValue()).orElse(null);
-  }
-
-  @Override
-  public void setServerUri(String value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "ServerUri")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getEndpointUrlNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "EndpointUrl");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public String getEndpointUrl() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "EndpointUrl");
-    return component.map(node -> (String) node.getValue().getValue().getValue()).orElse(null);
-  }
-
-  @Override
-  public void setEndpointUrl(String value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "EndpointUrl")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getLocaleIdsNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "LocaleIds");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public String[] getLocaleIds() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "LocaleIds");
-    return component.map(node -> (String[]) node.getValue().getValue().getValue()).orElse(null);
-  }
-
-  @Override
-  public void setLocaleIds(String[] value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "LocaleIds")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
   @Override
   public BaseDataVariableTypeNode getActualSessionTimeoutNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "ActualSessionTimeout");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "ActualSessionTimeout",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 290L),
+        -1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public Double getActualSessionTimeout() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "ActualSessionTimeout");
-    return component.map(node -> (Double) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable Double getActualSessionTimeout() {
+    return ServerNodeSupport.read(this, getActualSessionTimeoutNode(), Double.class, null);
   }
 
   @Override
-  public void setActualSessionTimeout(Double value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "ActualSessionTimeout")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getMaxResponseMessageSizeNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "MaxResponseMessageSize");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public UInteger getMaxResponseMessageSize() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "MaxResponseMessageSize");
-    return component.map(node -> (UInteger) node.getValue().getValue().getValue()).orElse(null);
-  }
-
-  @Override
-  public void setMaxResponseMessageSize(UInteger value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "MaxResponseMessageSize")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getClientConnectionTimeNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "ClientConnectionTime");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public DateTime getClientConnectionTime() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "ClientConnectionTime");
-    return component.map(node -> (DateTime) node.getValue().getValue().getValue()).orElse(null);
-  }
-
-  @Override
-  public void setClientConnectionTime(DateTime value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "ClientConnectionTime")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getClientLastContactTimeNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "ClientLastContactTime");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public DateTime getClientLastContactTime() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "ClientLastContactTime");
-    return component.map(node -> (DateTime) node.getValue().getValue().getValue()).orElse(null);
-  }
-
-  @Override
-  public void setClientLastContactTime(DateTime value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "ClientLastContactTime")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getCurrentSubscriptionsCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "CurrentSubscriptionsCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public UInteger getCurrentSubscriptionsCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "CurrentSubscriptionsCount");
-    return component.map(node -> (UInteger) node.getValue().getValue().getValue()).orElse(null);
-  }
-
-  @Override
-  public void setCurrentSubscriptionsCount(UInteger value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "CurrentSubscriptionsCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getCurrentMonitoredItemsCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "CurrentMonitoredItemsCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public UInteger getCurrentMonitoredItemsCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "CurrentMonitoredItemsCount");
-    return component.map(node -> (UInteger) node.getValue().getValue().getValue()).orElse(null);
-  }
-
-  @Override
-  public void setCurrentMonitoredItemsCount(UInteger value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "CurrentMonitoredItemsCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getCurrentPublishRequestsInQueueNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "CurrentPublishRequestsInQueue");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public UInteger getCurrentPublishRequestsInQueue() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "CurrentPublishRequestsInQueue");
-    return component.map(node -> (UInteger) node.getValue().getValue().getValue()).orElse(null);
-  }
-
-  @Override
-  public void setCurrentPublishRequestsInQueue(UInteger value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "CurrentPublishRequestsInQueue")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getTotalRequestCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "TotalRequestCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public ServiceCounterDataType getTotalRequestCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "TotalRequestCount");
-    return component
-        .map(node -> (ServiceCounterDataType) node.getValue().getValue().getValue())
-        .orElse(null);
-  }
-
-  @Override
-  public void setTotalRequestCount(ServiceCounterDataType value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "TotalRequestCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getUnauthorizedRequestCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "UnauthorizedRequestCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public UInteger getUnauthorizedRequestCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "UnauthorizedRequestCount");
-    return component.map(node -> (UInteger) node.getValue().getValue().getValue()).orElse(null);
-  }
-
-  @Override
-  public void setUnauthorizedRequestCount(UInteger value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "UnauthorizedRequestCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getReadCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "ReadCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public ServiceCounterDataType getReadCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "ReadCount");
-    return component
-        .map(node -> (ServiceCounterDataType) node.getValue().getValue().getValue())
-        .orElse(null);
-  }
-
-  @Override
-  public void setReadCount(ServiceCounterDataType value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "ReadCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getHistoryReadCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "HistoryReadCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public ServiceCounterDataType getHistoryReadCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "HistoryReadCount");
-    return component
-        .map(node -> (ServiceCounterDataType) node.getValue().getValue().getValue())
-        .orElse(null);
-  }
-
-  @Override
-  public void setHistoryReadCount(ServiceCounterDataType value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "HistoryReadCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getWriteCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "WriteCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public ServiceCounterDataType getWriteCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "WriteCount");
-    return component
-        .map(node -> (ServiceCounterDataType) node.getValue().getValue().getValue())
-        .orElse(null);
-  }
-
-  @Override
-  public void setWriteCount(ServiceCounterDataType value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "WriteCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getHistoryUpdateCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "HistoryUpdateCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public ServiceCounterDataType getHistoryUpdateCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "HistoryUpdateCount");
-    return component
-        .map(node -> (ServiceCounterDataType) node.getValue().getValue().getValue())
-        .orElse(null);
-  }
-
-  @Override
-  public void setHistoryUpdateCount(ServiceCounterDataType value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "HistoryUpdateCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getCallCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "CallCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public ServiceCounterDataType getCallCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "CallCount");
-    return component
-        .map(node -> (ServiceCounterDataType) node.getValue().getValue().getValue())
-        .orElse(null);
-  }
-
-  @Override
-  public void setCallCount(ServiceCounterDataType value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "CallCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getCreateMonitoredItemsCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "CreateMonitoredItemsCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public ServiceCounterDataType getCreateMonitoredItemsCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "CreateMonitoredItemsCount");
-    return component
-        .map(node -> (ServiceCounterDataType) node.getValue().getValue().getValue())
-        .orElse(null);
-  }
-
-  @Override
-  public void setCreateMonitoredItemsCount(ServiceCounterDataType value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "CreateMonitoredItemsCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getModifyMonitoredItemsCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "ModifyMonitoredItemsCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public ServiceCounterDataType getModifyMonitoredItemsCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "ModifyMonitoredItemsCount");
-    return component
-        .map(node -> (ServiceCounterDataType) node.getValue().getValue().getValue())
-        .orElse(null);
-  }
-
-  @Override
-  public void setModifyMonitoredItemsCount(ServiceCounterDataType value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "ModifyMonitoredItemsCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getSetMonitoringModeCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "SetMonitoringModeCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public ServiceCounterDataType getSetMonitoringModeCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "SetMonitoringModeCount");
-    return component
-        .map(node -> (ServiceCounterDataType) node.getValue().getValue().getValue())
-        .orElse(null);
-  }
-
-  @Override
-  public void setSetMonitoringModeCount(ServiceCounterDataType value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "SetMonitoringModeCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getSetTriggeringCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "SetTriggeringCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public ServiceCounterDataType getSetTriggeringCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "SetTriggeringCount");
-    return component
-        .map(node -> (ServiceCounterDataType) node.getValue().getValue().getValue())
-        .orElse(null);
-  }
-
-  @Override
-  public void setSetTriggeringCount(ServiceCounterDataType value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "SetTriggeringCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getDeleteMonitoredItemsCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "DeleteMonitoredItemsCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public ServiceCounterDataType getDeleteMonitoredItemsCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "DeleteMonitoredItemsCount");
-    return component
-        .map(node -> (ServiceCounterDataType) node.getValue().getValue().getValue())
-        .orElse(null);
-  }
-
-  @Override
-  public void setDeleteMonitoredItemsCount(ServiceCounterDataType value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "DeleteMonitoredItemsCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getCreateSubscriptionCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "CreateSubscriptionCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public ServiceCounterDataType getCreateSubscriptionCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "CreateSubscriptionCount");
-    return component
-        .map(node -> (ServiceCounterDataType) node.getValue().getValue().getValue())
-        .orElse(null);
-  }
-
-  @Override
-  public void setCreateSubscriptionCount(ServiceCounterDataType value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "CreateSubscriptionCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getModifySubscriptionCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "ModifySubscriptionCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public ServiceCounterDataType getModifySubscriptionCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "ModifySubscriptionCount");
-    return component
-        .map(node -> (ServiceCounterDataType) node.getValue().getValue().getValue())
-        .orElse(null);
-  }
-
-  @Override
-  public void setModifySubscriptionCount(ServiceCounterDataType value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "ModifySubscriptionCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getSetPublishingModeCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "SetPublishingModeCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public ServiceCounterDataType getSetPublishingModeCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "SetPublishingModeCount");
-    return component
-        .map(node -> (ServiceCounterDataType) node.getValue().getValue().getValue())
-        .orElse(null);
-  }
-
-  @Override
-  public void setSetPublishingModeCount(ServiceCounterDataType value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "SetPublishingModeCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getPublishCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "PublishCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public ServiceCounterDataType getPublishCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "PublishCount");
-    return component
-        .map(node -> (ServiceCounterDataType) node.getValue().getValue().getValue())
-        .orElse(null);
-  }
-
-  @Override
-  public void setPublishCount(ServiceCounterDataType value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "PublishCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getRepublishCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "RepublishCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public ServiceCounterDataType getRepublishCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "RepublishCount");
-    return component
-        .map(node -> (ServiceCounterDataType) node.getValue().getValue().getValue())
-        .orElse(null);
-  }
-
-  @Override
-  public void setRepublishCount(ServiceCounterDataType value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "RepublishCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getTransferSubscriptionsCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "TransferSubscriptionsCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public ServiceCounterDataType getTransferSubscriptionsCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "TransferSubscriptionsCount");
-    return component
-        .map(node -> (ServiceCounterDataType) node.getValue().getValue().getValue())
-        .orElse(null);
-  }
-
-  @Override
-  public void setTransferSubscriptionsCount(ServiceCounterDataType value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "TransferSubscriptionsCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getDeleteSubscriptionsCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "DeleteSubscriptionsCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public ServiceCounterDataType getDeleteSubscriptionsCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "DeleteSubscriptionsCount");
-    return component
-        .map(node -> (ServiceCounterDataType) node.getValue().getValue().getValue())
-        .orElse(null);
-  }
-
-  @Override
-  public void setDeleteSubscriptionsCount(ServiceCounterDataType value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "DeleteSubscriptionsCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setActualSessionTimeout(@Nullable Double value) {
+    ServerNodeSupport.write(this, getActualSessionTimeoutNode(), value, false, false, false);
   }
 
   @Override
   public BaseDataVariableTypeNode getAddNodesCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "AddNodesCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "AddNodesCount",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 871L),
+        -1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public ServiceCounterDataType getAddNodesCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "AddNodesCount");
-    return component
-        .map(node -> (ServiceCounterDataType) node.getValue().getValue().getValue())
-        .orElse(null);
+  public @Nullable ServiceCounterDataType getAddNodesCount() {
+    return ServerNodeSupport.read(this, getAddNodesCountNode(), ServiceCounterDataType.class, null);
   }
 
   @Override
-  public void setAddNodesCount(ServiceCounterDataType value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "AddNodesCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setAddNodesCount(@Nullable ServiceCounterDataType value) {
+    ServerNodeSupport.write(this, getAddNodesCountNode(), value, false, false, true);
   }
 
   @Override
   public BaseDataVariableTypeNode getAddReferencesCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "AddReferencesCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "AddReferencesCount",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 871L),
+        -1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public ServiceCounterDataType getAddReferencesCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "AddReferencesCount");
-    return component
-        .map(node -> (ServiceCounterDataType) node.getValue().getValue().getValue())
-        .orElse(null);
+  public @Nullable ServiceCounterDataType getAddReferencesCount() {
+    return ServerNodeSupport.read(
+        this, getAddReferencesCountNode(), ServiceCounterDataType.class, null);
   }
 
   @Override
-  public void setAddReferencesCount(ServiceCounterDataType value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "AddReferencesCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getDeleteNodesCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "DeleteNodesCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public ServiceCounterDataType getDeleteNodesCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "DeleteNodesCount");
-    return component
-        .map(node -> (ServiceCounterDataType) node.getValue().getValue().getValue())
-        .orElse(null);
-  }
-
-  @Override
-  public void setDeleteNodesCount(ServiceCounterDataType value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "DeleteNodesCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getDeleteReferencesCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "DeleteReferencesCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public ServiceCounterDataType getDeleteReferencesCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "DeleteReferencesCount");
-    return component
-        .map(node -> (ServiceCounterDataType) node.getValue().getValue().getValue())
-        .orElse(null);
-  }
-
-  @Override
-  public void setDeleteReferencesCount(ServiceCounterDataType value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "DeleteReferencesCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setAddReferencesCount(@Nullable ServiceCounterDataType value) {
+    ServerNodeSupport.write(this, getAddReferencesCountNode(), value, false, false, true);
   }
 
   @Override
   public BaseDataVariableTypeNode getBrowseCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "BrowseCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "BrowseCount",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 871L),
+        -1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public ServiceCounterDataType getBrowseCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "BrowseCount");
-    return component
-        .map(node -> (ServiceCounterDataType) node.getValue().getValue().getValue())
-        .orElse(null);
+  public @Nullable ServiceCounterDataType getBrowseCount() {
+    return ServerNodeSupport.read(this, getBrowseCountNode(), ServiceCounterDataType.class, null);
   }
 
   @Override
-  public void setBrowseCount(ServiceCounterDataType value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "BrowseCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setBrowseCount(@Nullable ServiceCounterDataType value) {
+    ServerNodeSupport.write(this, getBrowseCountNode(), value, false, false, true);
   }
 
   @Override
   public BaseDataVariableTypeNode getBrowseNextCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "BrowseNextCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "BrowseNextCount",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 871L),
+        -1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public ServiceCounterDataType getBrowseNextCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "BrowseNextCount");
-    return component
-        .map(node -> (ServiceCounterDataType) node.getValue().getValue().getValue())
-        .orElse(null);
+  public @Nullable ServiceCounterDataType getBrowseNextCount() {
+    return ServerNodeSupport.read(
+        this, getBrowseNextCountNode(), ServiceCounterDataType.class, null);
   }
 
   @Override
-  public void setBrowseNextCount(ServiceCounterDataType value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "BrowseNextCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setBrowseNextCount(@Nullable ServiceCounterDataType value) {
+    ServerNodeSupport.write(this, getBrowseNextCountNode(), value, false, false, true);
   }
 
   @Override
-  public BaseDataVariableTypeNode getTranslateBrowsePathsToNodeIdsCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "TranslateBrowsePathsToNodeIdsCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+  public BaseDataVariableTypeNode getCallCountNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "CallCount",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 871L),
+        -1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public ServiceCounterDataType getTranslateBrowsePathsToNodeIdsCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "TranslateBrowsePathsToNodeIdsCount");
-    return component
-        .map(node -> (ServiceCounterDataType) node.getValue().getValue().getValue())
-        .orElse(null);
+  public @Nullable ServiceCounterDataType getCallCount() {
+    return ServerNodeSupport.read(this, getCallCountNode(), ServiceCounterDataType.class, null);
   }
 
   @Override
-  public void setTranslateBrowsePathsToNodeIdsCount(ServiceCounterDataType value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "TranslateBrowsePathsToNodeIdsCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setCallCount(@Nullable ServiceCounterDataType value) {
+    ServerNodeSupport.write(this, getCallCountNode(), value, false, false, true);
+  }
+
+  @Override
+  public BaseDataVariableTypeNode getClientConnectionTimeNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "ClientConnectionTime",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 294L),
+        -1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable DateTime getClientConnectionTime() {
+    return ServerNodeSupport.read(this, getClientConnectionTimeNode(), DateTime.class, null);
+  }
+
+  @Override
+  public void setClientConnectionTime(@Nullable DateTime value) {
+    ServerNodeSupport.write(this, getClientConnectionTimeNode(), value, false, false, false);
+  }
+
+  @Override
+  public BaseDataVariableTypeNode getClientDescriptionNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "ClientDescription",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 308L),
+        -1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable ApplicationDescription getClientDescription() {
+    return ServerNodeSupport.read(
+        this, getClientDescriptionNode(), ApplicationDescription.class, null);
+  }
+
+  @Override
+  public void setClientDescription(@Nullable ApplicationDescription value) {
+    ServerNodeSupport.write(this, getClientDescriptionNode(), value, false, false, true);
+  }
+
+  @Override
+  public BaseDataVariableTypeNode getClientLastContactTimeNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "ClientLastContactTime",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 294L),
+        -1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable DateTime getClientLastContactTime() {
+    return ServerNodeSupport.read(this, getClientLastContactTimeNode(), DateTime.class, null);
+  }
+
+  @Override
+  public void setClientLastContactTime(@Nullable DateTime value) {
+    ServerNodeSupport.write(this, getClientLastContactTimeNode(), value, false, false, false);
+  }
+
+  @Override
+  public BaseDataVariableTypeNode getCreateMonitoredItemsCountNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "CreateMonitoredItemsCount",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 871L),
+        -1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable ServiceCounterDataType getCreateMonitoredItemsCount() {
+    return ServerNodeSupport.read(
+        this, getCreateMonitoredItemsCountNode(), ServiceCounterDataType.class, null);
+  }
+
+  @Override
+  public void setCreateMonitoredItemsCount(@Nullable ServiceCounterDataType value) {
+    ServerNodeSupport.write(this, getCreateMonitoredItemsCountNode(), value, false, false, true);
+  }
+
+  @Override
+  public BaseDataVariableTypeNode getCreateSubscriptionCountNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "CreateSubscriptionCount",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 871L),
+        -1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable ServiceCounterDataType getCreateSubscriptionCount() {
+    return ServerNodeSupport.read(
+        this, getCreateSubscriptionCountNode(), ServiceCounterDataType.class, null);
+  }
+
+  @Override
+  public void setCreateSubscriptionCount(@Nullable ServiceCounterDataType value) {
+    ServerNodeSupport.write(this, getCreateSubscriptionCountNode(), value, false, false, true);
+  }
+
+  @Override
+  public BaseDataVariableTypeNode getCurrentMonitoredItemsCountNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "CurrentMonitoredItemsCount",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+        -1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable UInteger getCurrentMonitoredItemsCount() {
+    return ServerNodeSupport.read(this, getCurrentMonitoredItemsCountNode(), UInteger.class, null);
+  }
+
+  @Override
+  public void setCurrentMonitoredItemsCount(@Nullable UInteger value) {
+    ServerNodeSupport.write(this, getCurrentMonitoredItemsCountNode(), value, false, false, false);
+  }
+
+  @Override
+  public BaseDataVariableTypeNode getCurrentPublishRequestsInQueueNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "CurrentPublishRequestsInQueue",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+        -1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable UInteger getCurrentPublishRequestsInQueue() {
+    return ServerNodeSupport.read(
+        this, getCurrentPublishRequestsInQueueNode(), UInteger.class, null);
+  }
+
+  @Override
+  public void setCurrentPublishRequestsInQueue(@Nullable UInteger value) {
+    ServerNodeSupport.write(
+        this, getCurrentPublishRequestsInQueueNode(), value, false, false, false);
+  }
+
+  @Override
+  public BaseDataVariableTypeNode getCurrentSubscriptionsCountNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "CurrentSubscriptionsCount",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+        -1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable UInteger getCurrentSubscriptionsCount() {
+    return ServerNodeSupport.read(this, getCurrentSubscriptionsCountNode(), UInteger.class, null);
+  }
+
+  @Override
+  public void setCurrentSubscriptionsCount(@Nullable UInteger value) {
+    ServerNodeSupport.write(this, getCurrentSubscriptionsCountNode(), value, false, false, false);
+  }
+
+  @Override
+  public BaseDataVariableTypeNode getDeleteMonitoredItemsCountNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "DeleteMonitoredItemsCount",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 871L),
+        -1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable ServiceCounterDataType getDeleteMonitoredItemsCount() {
+    return ServerNodeSupport.read(
+        this, getDeleteMonitoredItemsCountNode(), ServiceCounterDataType.class, null);
+  }
+
+  @Override
+  public void setDeleteMonitoredItemsCount(@Nullable ServiceCounterDataType value) {
+    ServerNodeSupport.write(this, getDeleteMonitoredItemsCountNode(), value, false, false, true);
+  }
+
+  @Override
+  public BaseDataVariableTypeNode getDeleteNodesCountNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "DeleteNodesCount",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 871L),
+        -1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable ServiceCounterDataType getDeleteNodesCount() {
+    return ServerNodeSupport.read(
+        this, getDeleteNodesCountNode(), ServiceCounterDataType.class, null);
+  }
+
+  @Override
+  public void setDeleteNodesCount(@Nullable ServiceCounterDataType value) {
+    ServerNodeSupport.write(this, getDeleteNodesCountNode(), value, false, false, true);
+  }
+
+  @Override
+  public BaseDataVariableTypeNode getDeleteReferencesCountNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "DeleteReferencesCount",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 871L),
+        -1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable ServiceCounterDataType getDeleteReferencesCount() {
+    return ServerNodeSupport.read(
+        this, getDeleteReferencesCountNode(), ServiceCounterDataType.class, null);
+  }
+
+  @Override
+  public void setDeleteReferencesCount(@Nullable ServiceCounterDataType value) {
+    ServerNodeSupport.write(this, getDeleteReferencesCountNode(), value, false, false, true);
+  }
+
+  @Override
+  public BaseDataVariableTypeNode getDeleteSubscriptionsCountNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "DeleteSubscriptionsCount",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 871L),
+        -1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable ServiceCounterDataType getDeleteSubscriptionsCount() {
+    return ServerNodeSupport.read(
+        this, getDeleteSubscriptionsCountNode(), ServiceCounterDataType.class, null);
+  }
+
+  @Override
+  public void setDeleteSubscriptionsCount(@Nullable ServiceCounterDataType value) {
+    ServerNodeSupport.write(this, getDeleteSubscriptionsCountNode(), value, false, false, true);
+  }
+
+  @Override
+  public BaseDataVariableTypeNode getEndpointUrlNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "EndpointUrl",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable String getEndpointUrl() {
+    return ServerNodeSupport.read(this, getEndpointUrlNode(), String.class, null);
+  }
+
+  @Override
+  public void setEndpointUrl(@Nullable String value) {
+    ServerNodeSupport.write(this, getEndpointUrlNode(), value, false, false, false);
+  }
+
+  @Override
+  public BaseDataVariableTypeNode getHistoryReadCountNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "HistoryReadCount",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 871L),
+        -1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable ServiceCounterDataType getHistoryReadCount() {
+    return ServerNodeSupport.read(
+        this, getHistoryReadCountNode(), ServiceCounterDataType.class, null);
+  }
+
+  @Override
+  public void setHistoryReadCount(@Nullable ServiceCounterDataType value) {
+    ServerNodeSupport.write(this, getHistoryReadCountNode(), value, false, false, true);
+  }
+
+  @Override
+  public BaseDataVariableTypeNode getHistoryUpdateCountNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "HistoryUpdateCount",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 871L),
+        -1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable ServiceCounterDataType getHistoryUpdateCount() {
+    return ServerNodeSupport.read(
+        this, getHistoryUpdateCountNode(), ServiceCounterDataType.class, null);
+  }
+
+  @Override
+  public void setHistoryUpdateCount(@Nullable ServiceCounterDataType value) {
+    ServerNodeSupport.write(this, getHistoryUpdateCountNode(), value, false, false, true);
+  }
+
+  @Override
+  public BaseDataVariableTypeNode getLocaleIdsNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "LocaleIds",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 295L),
+        1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable String @Nullable [] getLocaleIds() {
+    return ServerNodeSupport.readArray(this, getLocaleIdsNode(), String.class, null);
+  }
+
+  @Override
+  public void setLocaleIds(@Nullable String @Nullable [] value) {
+    ServerNodeSupport.write(this, getLocaleIdsNode(), value, true, false, false);
+  }
+
+  @Override
+  public BaseDataVariableTypeNode getMaxResponseMessageSizeNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "MaxResponseMessageSize",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+        -1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable UInteger getMaxResponseMessageSize() {
+    return ServerNodeSupport.read(this, getMaxResponseMessageSizeNode(), UInteger.class, null);
+  }
+
+  @Override
+  public void setMaxResponseMessageSize(@Nullable UInteger value) {
+    ServerNodeSupport.write(this, getMaxResponseMessageSizeNode(), value, false, false, false);
+  }
+
+  @Override
+  public BaseDataVariableTypeNode getModifyMonitoredItemsCountNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "ModifyMonitoredItemsCount",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 871L),
+        -1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable ServiceCounterDataType getModifyMonitoredItemsCount() {
+    return ServerNodeSupport.read(
+        this, getModifyMonitoredItemsCountNode(), ServiceCounterDataType.class, null);
+  }
+
+  @Override
+  public void setModifyMonitoredItemsCount(@Nullable ServiceCounterDataType value) {
+    ServerNodeSupport.write(this, getModifyMonitoredItemsCountNode(), value, false, false, true);
+  }
+
+  @Override
+  public BaseDataVariableTypeNode getModifySubscriptionCountNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "ModifySubscriptionCount",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 871L),
+        -1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable ServiceCounterDataType getModifySubscriptionCount() {
+    return ServerNodeSupport.read(
+        this, getModifySubscriptionCountNode(), ServiceCounterDataType.class, null);
+  }
+
+  @Override
+  public void setModifySubscriptionCount(@Nullable ServiceCounterDataType value) {
+    ServerNodeSupport.write(this, getModifySubscriptionCountNode(), value, false, false, true);
+  }
+
+  @Override
+  public BaseDataVariableTypeNode getPublishCountNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "PublishCount",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 871L),
+        -1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable ServiceCounterDataType getPublishCount() {
+    return ServerNodeSupport.read(this, getPublishCountNode(), ServiceCounterDataType.class, null);
+  }
+
+  @Override
+  public void setPublishCount(@Nullable ServiceCounterDataType value) {
+    ServerNodeSupport.write(this, getPublishCountNode(), value, false, false, true);
   }
 
   @Override
   public BaseDataVariableTypeNode getQueryFirstCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "QueryFirstCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "QueryFirstCount",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 871L),
+        -1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public ServiceCounterDataType getQueryFirstCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "QueryFirstCount");
-    return component
-        .map(node -> (ServiceCounterDataType) node.getValue().getValue().getValue())
-        .orElse(null);
+  public @Nullable ServiceCounterDataType getQueryFirstCount() {
+    return ServerNodeSupport.read(
+        this, getQueryFirstCountNode(), ServiceCounterDataType.class, null);
   }
 
   @Override
-  public void setQueryFirstCount(ServiceCounterDataType value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "QueryFirstCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setQueryFirstCount(@Nullable ServiceCounterDataType value) {
+    ServerNodeSupport.write(this, getQueryFirstCountNode(), value, false, false, true);
   }
 
   @Override
   public BaseDataVariableTypeNode getQueryNextCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "QueryNextCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "QueryNextCount",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 871L),
+        -1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public ServiceCounterDataType getQueryNextCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "QueryNextCount");
-    return component
-        .map(node -> (ServiceCounterDataType) node.getValue().getValue().getValue())
-        .orElse(null);
+  public @Nullable ServiceCounterDataType getQueryNextCount() {
+    return ServerNodeSupport.read(
+        this, getQueryNextCountNode(), ServiceCounterDataType.class, null);
   }
 
   @Override
-  public void setQueryNextCount(ServiceCounterDataType value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "QueryNextCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setQueryNextCount(@Nullable ServiceCounterDataType value) {
+    ServerNodeSupport.write(this, getQueryNextCountNode(), value, false, false, true);
+  }
+
+  @Override
+  public BaseDataVariableTypeNode getReadCountNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "ReadCount",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 871L),
+        -1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable ServiceCounterDataType getReadCount() {
+    return ServerNodeSupport.read(this, getReadCountNode(), ServiceCounterDataType.class, null);
+  }
+
+  @Override
+  public void setReadCount(@Nullable ServiceCounterDataType value) {
+    ServerNodeSupport.write(this, getReadCountNode(), value, false, false, true);
   }
 
   @Override
   public BaseDataVariableTypeNode getRegisterNodesCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "RegisterNodesCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "RegisterNodesCount",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 871L),
+        -1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public ServiceCounterDataType getRegisterNodesCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "RegisterNodesCount");
-    return component
-        .map(node -> (ServiceCounterDataType) node.getValue().getValue().getValue())
-        .orElse(null);
+  public @Nullable ServiceCounterDataType getRegisterNodesCount() {
+    return ServerNodeSupport.read(
+        this, getRegisterNodesCountNode(), ServiceCounterDataType.class, null);
   }
 
   @Override
-  public void setRegisterNodesCount(ServiceCounterDataType value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "RegisterNodesCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setRegisterNodesCount(@Nullable ServiceCounterDataType value) {
+    ServerNodeSupport.write(this, getRegisterNodesCountNode(), value, false, false, true);
+  }
+
+  @Override
+  public BaseDataVariableTypeNode getRepublishCountNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "RepublishCount",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 871L),
+        -1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable ServiceCounterDataType getRepublishCount() {
+    return ServerNodeSupport.read(
+        this, getRepublishCountNode(), ServiceCounterDataType.class, null);
+  }
+
+  @Override
+  public void setRepublishCount(@Nullable ServiceCounterDataType value) {
+    ServerNodeSupport.write(this, getRepublishCountNode(), value, false, false, true);
+  }
+
+  @Override
+  public BaseDataVariableTypeNode getServerUriNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "ServerUri",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable String getServerUri() {
+    return ServerNodeSupport.read(this, getServerUriNode(), String.class, null);
+  }
+
+  @Override
+  public void setServerUri(@Nullable String value) {
+    ServerNodeSupport.write(this, getServerUriNode(), value, false, false, false);
+  }
+
+  @Override
+  public BaseDataVariableTypeNode getSessionIdNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "SessionId",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 17L),
+        -1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable NodeId getSessionId() {
+    return ServerNodeSupport.read(this, getSessionIdNode(), NodeId.class, null);
+  }
+
+  @Override
+  public void setSessionId(@Nullable NodeId value) {
+    ServerNodeSupport.write(this, getSessionIdNode(), value, false, false, false);
+  }
+
+  @Override
+  public BaseDataVariableTypeNode getSessionNameNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "SessionName",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable String getSessionName() {
+    return ServerNodeSupport.read(this, getSessionNameNode(), String.class, null);
+  }
+
+  @Override
+  public void setSessionName(@Nullable String value) {
+    ServerNodeSupport.write(this, getSessionNameNode(), value, false, false, false);
+  }
+
+  @Override
+  public BaseDataVariableTypeNode getSetMonitoringModeCountNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "SetMonitoringModeCount",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 871L),
+        -1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable ServiceCounterDataType getSetMonitoringModeCount() {
+    return ServerNodeSupport.read(
+        this, getSetMonitoringModeCountNode(), ServiceCounterDataType.class, null);
+  }
+
+  @Override
+  public void setSetMonitoringModeCount(@Nullable ServiceCounterDataType value) {
+    ServerNodeSupport.write(this, getSetMonitoringModeCountNode(), value, false, false, true);
+  }
+
+  @Override
+  public BaseDataVariableTypeNode getSetPublishingModeCountNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "SetPublishingModeCount",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 871L),
+        -1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable ServiceCounterDataType getSetPublishingModeCount() {
+    return ServerNodeSupport.read(
+        this, getSetPublishingModeCountNode(), ServiceCounterDataType.class, null);
+  }
+
+  @Override
+  public void setSetPublishingModeCount(@Nullable ServiceCounterDataType value) {
+    ServerNodeSupport.write(this, getSetPublishingModeCountNode(), value, false, false, true);
+  }
+
+  @Override
+  public BaseDataVariableTypeNode getSetTriggeringCountNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "SetTriggeringCount",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 871L),
+        -1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable ServiceCounterDataType getSetTriggeringCount() {
+    return ServerNodeSupport.read(
+        this, getSetTriggeringCountNode(), ServiceCounterDataType.class, null);
+  }
+
+  @Override
+  public void setSetTriggeringCount(@Nullable ServiceCounterDataType value) {
+    ServerNodeSupport.write(this, getSetTriggeringCountNode(), value, false, false, true);
+  }
+
+  @Override
+  public BaseDataVariableTypeNode getTotalRequestCountNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "TotalRequestCount",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 871L),
+        -1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable ServiceCounterDataType getTotalRequestCount() {
+    return ServerNodeSupport.read(
+        this, getTotalRequestCountNode(), ServiceCounterDataType.class, null);
+  }
+
+  @Override
+  public void setTotalRequestCount(@Nullable ServiceCounterDataType value) {
+    ServerNodeSupport.write(this, getTotalRequestCountNode(), value, false, false, true);
+  }
+
+  @Override
+  public BaseDataVariableTypeNode getTransferSubscriptionsCountNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "TransferSubscriptionsCount",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 871L),
+        -1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable ServiceCounterDataType getTransferSubscriptionsCount() {
+    return ServerNodeSupport.read(
+        this, getTransferSubscriptionsCountNode(), ServiceCounterDataType.class, null);
+  }
+
+  @Override
+  public void setTransferSubscriptionsCount(@Nullable ServiceCounterDataType value) {
+    ServerNodeSupport.write(this, getTransferSubscriptionsCountNode(), value, false, false, true);
+  }
+
+  @Override
+  public BaseDataVariableTypeNode getTranslateBrowsePathsToNodeIdsCountNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "TranslateBrowsePathsToNodeIdsCount",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 871L),
+        -1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable ServiceCounterDataType getTranslateBrowsePathsToNodeIdsCount() {
+    return ServerNodeSupport.read(
+        this, getTranslateBrowsePathsToNodeIdsCountNode(), ServiceCounterDataType.class, null);
+  }
+
+  @Override
+  public void setTranslateBrowsePathsToNodeIdsCount(@Nullable ServiceCounterDataType value) {
+    ServerNodeSupport.write(
+        this, getTranslateBrowsePathsToNodeIdsCountNode(), value, false, false, true);
+  }
+
+  @Override
+  public BaseDataVariableTypeNode getUnauthorizedRequestCountNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "UnauthorizedRequestCount",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+        -1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable UInteger getUnauthorizedRequestCount() {
+    return ServerNodeSupport.read(this, getUnauthorizedRequestCountNode(), UInteger.class, null);
+  }
+
+  @Override
+  public void setUnauthorizedRequestCount(@Nullable UInteger value) {
+    ServerNodeSupport.write(this, getUnauthorizedRequestCountNode(), value, false, false, false);
   }
 
   @Override
   public BaseDataVariableTypeNode getUnregisterNodesCountNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "UnregisterNodesCount");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "UnregisterNodesCount",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 871L),
+        -1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public ServiceCounterDataType getUnregisterNodesCount() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "UnregisterNodesCount");
-    return component
-        .map(node -> (ServiceCounterDataType) node.getValue().getValue().getValue())
-        .orElse(null);
+  public @Nullable ServiceCounterDataType getUnregisterNodesCount() {
+    return ServerNodeSupport.read(
+        this, getUnregisterNodesCountNode(), ServiceCounterDataType.class, null);
   }
 
   @Override
-  public void setUnregisterNodesCount(ServiceCounterDataType value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "UnregisterNodesCount")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setUnregisterNodesCount(@Nullable ServiceCounterDataType value) {
+    ServerNodeSupport.write(this, getUnregisterNodesCountNode(), value, false, false, true);
+  }
+
+  @Override
+  public BaseDataVariableTypeNode getWriteCountNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "WriteCount",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 871L),
+        -1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable ServiceCounterDataType getWriteCount() {
+    return ServerNodeSupport.read(this, getWriteCountNode(), ServiceCounterDataType.class, null);
+  }
+
+  @Override
+  public void setWriteCount(@Nullable ServiceCounterDataType value) {
+    ServerNodeSupport.write(this, getWriteCountNode(), value, false, false, true);
+  }
+
+  @Override
+  public void validateChildren() {
+    super.validateChildren();
+    getActualSessionTimeoutNode();
+    getAddNodesCountNode();
+    getAddReferencesCountNode();
+    getBrowseCountNode();
+    getBrowseNextCountNode();
+    getCallCountNode();
+    getClientConnectionTimeNode();
+    getClientDescriptionNode();
+    getClientLastContactTimeNode();
+    getCreateMonitoredItemsCountNode();
+    getCreateSubscriptionCountNode();
+    getCurrentMonitoredItemsCountNode();
+    getCurrentPublishRequestsInQueueNode();
+    getCurrentSubscriptionsCountNode();
+    getDeleteMonitoredItemsCountNode();
+    getDeleteNodesCountNode();
+    getDeleteReferencesCountNode();
+    getDeleteSubscriptionsCountNode();
+    getEndpointUrlNode();
+    getHistoryReadCountNode();
+    getHistoryUpdateCountNode();
+    getLocaleIdsNode();
+    getMaxResponseMessageSizeNode();
+    getModifyMonitoredItemsCountNode();
+    getModifySubscriptionCountNode();
+    getPublishCountNode();
+    getQueryFirstCountNode();
+    getQueryNextCountNode();
+    getReadCountNode();
+    getRegisterNodesCountNode();
+    getRepublishCountNode();
+    getServerUriNode();
+    getSessionIdNode();
+    getSessionNameNode();
+    getSetMonitoringModeCountNode();
+    getSetPublishingModeCountNode();
+    getSetTriggeringCountNode();
+    getTotalRequestCountNode();
+    getTransferSubscriptionsCountNode();
+    getTranslateBrowsePathsToNodeIdsCountNode();
+    getUnauthorizedRequestCountNode();
+    getUnregisterNodesCountNode();
+    getWriteCountNode();
+  }
+
+  @Override
+  public @Nullable SessionDiagnosticsDataType getTypedValue() {
+    return ServerNodeSupport.read(this, this, SessionDiagnosticsDataType.class, null);
+  }
+
+  @Override
+  public void setTypedValue(@Nullable SessionDiagnosticsDataType value) {
+    ServerNodeSupport.write(this, this, value, false, false, true);
   }
 }

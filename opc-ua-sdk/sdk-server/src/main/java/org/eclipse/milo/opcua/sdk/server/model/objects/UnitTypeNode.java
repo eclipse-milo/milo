@@ -1,19 +1,9 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -21,19 +11,51 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link UnitType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part8/6.4.2/#6.4.2.2">Model
+ *     documentation</a>
+ */
 public class UnitTypeNode extends BaseObjectTypeNode implements UnitType {
   public UnitTypeNode(
       UaNodeContext context,
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions);
+  }
+
+  public UnitTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         context,
@@ -49,75 +71,81 @@ public class UnitTypeNode extends BaseObjectTypeNode implements UnitType {
         eventNotifier);
   }
 
-  public UnitTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions);
+  @Override
+  public @Nullable PropertyTypeNode getDisciplineNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "Discipline",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable String getDiscipline() {
+    return ServerNodeSupport.read(this, getDisciplineNode(), String.class, null);
+  }
+
+  @Override
+  public void setDiscipline(@Nullable String value) {
+    ServerNodeSupport.write(
+        this, getDisciplineNode(), Namespaces.OPC_UA, "Discipline", value, false, false, false);
   }
 
   @Override
   public PropertyTypeNode getSymbolNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(UnitType.SYMBOL);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "Symbol",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 21L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public LocalizedText getSymbol() {
-    return getProperty(UnitType.SYMBOL).orElse(null);
+  public @Nullable LocalizedText getSymbol() {
+    return ServerNodeSupport.read(this, getSymbolNode(), LocalizedText.class, null);
   }
 
   @Override
-  public void setSymbol(LocalizedText value) {
-    setProperty(UnitType.SYMBOL, value);
+  public void setSymbol(@Nullable LocalizedText value) {
+    ServerNodeSupport.write(this, getSymbolNode(), value, false, false, false);
   }
 
   @Override
   public PropertyTypeNode getUnitSystemNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(UnitType.UNIT_SYSTEM);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "UnitSystem",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public String getUnitSystem() {
-    return getProperty(UnitType.UNIT_SYSTEM).orElse(null);
+  public @Nullable String getUnitSystem() {
+    return ServerNodeSupport.read(this, getUnitSystemNode(), String.class, null);
   }
 
   @Override
-  public void setUnitSystem(String value) {
-    setProperty(UnitType.UNIT_SYSTEM, value);
+  public void setUnitSystem(@Nullable String value) {
+    ServerNodeSupport.write(this, getUnitSystemNode(), value, false, false, false);
   }
 
   @Override
-  public PropertyTypeNode getDisciplineNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(UnitType.DISCIPLINE);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public String getDiscipline() {
-    return getProperty(UnitType.DISCIPLINE).orElse(null);
-  }
-
-  @Override
-  public void setDiscipline(String value) {
-    setProperty(UnitType.DISCIPLINE, value);
+  public void validateChildren() {
+    super.validateChildren();
+    getDisciplineNode();
+    getSymbolNode();
+    getUnitSystemNode();
   }
 }

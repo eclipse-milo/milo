@@ -1,234 +1,375 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.7.2">https://reference.opcfoundation.org/v105/Core/docs/Part11/5.7.2</a>
+ * Server API for the HistoryServerCapabilitiesType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.7.2">Model
+ *     documentation</a>
  */
 public interface HistoryServerCapabilitiesType extends BaseObjectType {
-  QualifiedProperty<Boolean> ACCESS_HISTORY_DATA_CAPABILITY =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "AccessHistoryDataCapability",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2330L);
 
-  QualifiedProperty<Boolean> ACCESS_HISTORY_EVENTS_CAPABILITY =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "AccessHistoryEventsCapability",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
+  /**
+   * Returns the mandatory AccessHistoryDataCapability child, a PropertyType with DataType Boolean.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getAccessHistoryDataCapabilityNode();
 
-  QualifiedProperty<UInteger> MAX_RETURN_DATA_VALUES =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxReturnDataValues",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  /**
+   * Returns the Value of the AccessHistoryDataCapability child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Boolean getAccessHistoryDataCapability();
 
-  QualifiedProperty<UInteger> MAX_RETURN_EVENT_VALUES =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxReturnEventValues",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  /**
+   * Sets the Value of the AccessHistoryDataCapability child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setAccessHistoryDataCapability(@Nullable Boolean value);
 
-  QualifiedProperty<Boolean> INSERT_DATA_CAPABILITY =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "InsertDataCapability",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
+  /**
+   * Returns the mandatory AccessHistoryEventsCapability child, a PropertyType with DataType
+   * Boolean.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getAccessHistoryEventsCapabilityNode();
 
-  QualifiedProperty<Boolean> REPLACE_DATA_CAPABILITY =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ReplaceDataCapability",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
+  /**
+   * Returns the Value of the AccessHistoryEventsCapability child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Boolean getAccessHistoryEventsCapability();
 
-  QualifiedProperty<Boolean> UPDATE_DATA_CAPABILITY =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "UpdateDataCapability",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
+  /**
+   * Sets the Value of the AccessHistoryEventsCapability child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setAccessHistoryEventsCapability(@Nullable Boolean value);
 
-  QualifiedProperty<Boolean> DELETE_RAW_CAPABILITY =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "DeleteRawCapability",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
+  /**
+   * Returns the mandatory AggregateFunctions child, a FolderType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.6">FolderType
+   *     documentation</a>
+   */
+  FolderTypeNode getAggregateFunctionsNode();
 
-  QualifiedProperty<Boolean> DELETE_AT_TIME_CAPABILITY =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "DeleteAtTimeCapability",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
+  /**
+   * Returns the mandatory DeleteAtTimeCapability child, a PropertyType with DataType Boolean.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getDeleteAtTimeCapabilityNode();
 
-  QualifiedProperty<Boolean> INSERT_EVENT_CAPABILITY =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "InsertEventCapability",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
+  /**
+   * Returns the Value of the DeleteAtTimeCapability child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Boolean getDeleteAtTimeCapability();
 
-  QualifiedProperty<Boolean> REPLACE_EVENT_CAPABILITY =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ReplaceEventCapability",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
+  /**
+   * Sets the Value of the DeleteAtTimeCapability child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setDeleteAtTimeCapability(@Nullable Boolean value);
 
-  QualifiedProperty<Boolean> UPDATE_EVENT_CAPABILITY =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "UpdateEventCapability",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
+  /**
+   * Returns the mandatory DeleteEventCapability child, a PropertyType with DataType Boolean.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getDeleteEventCapabilityNode();
 
-  QualifiedProperty<Boolean> DELETE_EVENT_CAPABILITY =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "DeleteEventCapability",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
+  /**
+   * Returns the Value of the DeleteEventCapability child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Boolean getDeleteEventCapability();
 
-  QualifiedProperty<Boolean> INSERT_ANNOTATION_CAPABILITY =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "InsertAnnotationCapability",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
+  /**
+   * Sets the Value of the DeleteEventCapability child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setDeleteEventCapability(@Nullable Boolean value);
 
-  QualifiedProperty<Boolean> SERVER_TIMESTAMP_SUPPORTED =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ServerTimestampSupported",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
+  /**
+   * Returns the mandatory DeleteRawCapability child, a PropertyType with DataType Boolean.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getDeleteRawCapabilityNode();
 
-  Boolean getAccessHistoryDataCapability();
+  /**
+   * Returns the Value of the DeleteRawCapability child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Boolean getDeleteRawCapability();
 
-  void setAccessHistoryDataCapability(Boolean value);
+  /**
+   * Sets the Value of the DeleteRawCapability child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setDeleteRawCapability(@Nullable Boolean value);
 
-  PropertyType getAccessHistoryDataCapabilityNode();
+  /**
+   * Returns the mandatory InsertAnnotationCapability child, a PropertyType with DataType Boolean.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getInsertAnnotationCapabilityNode();
 
-  Boolean getAccessHistoryEventsCapability();
+  /**
+   * Returns the Value of the InsertAnnotationCapability child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Boolean getInsertAnnotationCapability();
 
-  void setAccessHistoryEventsCapability(Boolean value);
+  /**
+   * Sets the Value of the InsertAnnotationCapability child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setInsertAnnotationCapability(@Nullable Boolean value);
 
-  PropertyType getAccessHistoryEventsCapabilityNode();
+  /**
+   * Returns the mandatory InsertDataCapability child, a PropertyType with DataType Boolean.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getInsertDataCapabilityNode();
 
-  UInteger getMaxReturnDataValues();
+  /**
+   * Returns the Value of the InsertDataCapability child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Boolean getInsertDataCapability();
 
-  void setMaxReturnDataValues(UInteger value);
+  /**
+   * Sets the Value of the InsertDataCapability child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setInsertDataCapability(@Nullable Boolean value);
 
-  PropertyType getMaxReturnDataValuesNode();
+  /**
+   * Returns the mandatory InsertEventCapability child, a PropertyType with DataType Boolean.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getInsertEventCapabilityNode();
 
-  UInteger getMaxReturnEventValues();
+  /**
+   * Returns the Value of the InsertEventCapability child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Boolean getInsertEventCapability();
 
-  void setMaxReturnEventValues(UInteger value);
+  /**
+   * Sets the Value of the InsertEventCapability child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setInsertEventCapability(@Nullable Boolean value);
 
-  PropertyType getMaxReturnEventValuesNode();
+  /**
+   * Returns the mandatory MaxReturnDataValues child, a PropertyType with DataType UInt32.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getMaxReturnDataValuesNode();
 
-  Boolean getInsertDataCapability();
+  /**
+   * Returns the Value of the MaxReturnDataValues child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getMaxReturnDataValues();
 
-  void setInsertDataCapability(Boolean value);
+  /**
+   * Sets the Value of the MaxReturnDataValues child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMaxReturnDataValues(@Nullable UInteger value);
 
-  PropertyType getInsertDataCapabilityNode();
+  /**
+   * Returns the mandatory MaxReturnEventValues child, a PropertyType with DataType UInt32.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getMaxReturnEventValuesNode();
 
-  Boolean getReplaceDataCapability();
+  /**
+   * Returns the Value of the MaxReturnEventValues child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getMaxReturnEventValues();
 
-  void setReplaceDataCapability(Boolean value);
+  /**
+   * Sets the Value of the MaxReturnEventValues child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMaxReturnEventValues(@Nullable UInteger value);
 
-  PropertyType getReplaceDataCapabilityNode();
+  /**
+   * Returns the mandatory ReplaceDataCapability child, a PropertyType with DataType Boolean.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getReplaceDataCapabilityNode();
 
-  Boolean getUpdateDataCapability();
+  /**
+   * Returns the Value of the ReplaceDataCapability child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Boolean getReplaceDataCapability();
 
-  void setUpdateDataCapability(Boolean value);
+  /**
+   * Sets the Value of the ReplaceDataCapability child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setReplaceDataCapability(@Nullable Boolean value);
 
-  PropertyType getUpdateDataCapabilityNode();
+  /**
+   * Returns the mandatory ReplaceEventCapability child, a PropertyType with DataType Boolean.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getReplaceEventCapabilityNode();
 
-  Boolean getDeleteRawCapability();
+  /**
+   * Returns the Value of the ReplaceEventCapability child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Boolean getReplaceEventCapability();
 
-  void setDeleteRawCapability(Boolean value);
+  /**
+   * Sets the Value of the ReplaceEventCapability child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setReplaceEventCapability(@Nullable Boolean value);
 
-  PropertyType getDeleteRawCapabilityNode();
+  /**
+   * Returns the optional ServerTimestampSupported child, a PropertyType with DataType Boolean.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getServerTimestampSupportedNode();
 
-  Boolean getDeleteAtTimeCapability();
+  /**
+   * Returns the Value of the ServerTimestampSupported child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Boolean getServerTimestampSupported();
 
-  void setDeleteAtTimeCapability(Boolean value);
+  /**
+   * Sets the Value of the ServerTimestampSupported child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setServerTimestampSupported(@Nullable Boolean value);
 
-  PropertyType getDeleteAtTimeCapabilityNode();
+  /**
+   * Returns the mandatory UpdateDataCapability child, a PropertyType with DataType Boolean.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getUpdateDataCapabilityNode();
 
-  Boolean getInsertEventCapability();
+  /**
+   * Returns the Value of the UpdateDataCapability child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Boolean getUpdateDataCapability();
 
-  void setInsertEventCapability(Boolean value);
+  /**
+   * Sets the Value of the UpdateDataCapability child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setUpdateDataCapability(@Nullable Boolean value);
 
-  PropertyType getInsertEventCapabilityNode();
+  /**
+   * Returns the mandatory UpdateEventCapability child, a PropertyType with DataType Boolean.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getUpdateEventCapabilityNode();
 
-  Boolean getReplaceEventCapability();
+  /**
+   * Returns the Value of the UpdateEventCapability child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Boolean getUpdateEventCapability();
 
-  void setReplaceEventCapability(Boolean value);
-
-  PropertyType getReplaceEventCapabilityNode();
-
-  Boolean getUpdateEventCapability();
-
-  void setUpdateEventCapability(Boolean value);
-
-  PropertyType getUpdateEventCapabilityNode();
-
-  Boolean getDeleteEventCapability();
-
-  void setDeleteEventCapability(Boolean value);
-
-  PropertyType getDeleteEventCapabilityNode();
-
-  Boolean getInsertAnnotationCapability();
-
-  void setInsertAnnotationCapability(Boolean value);
-
-  PropertyType getInsertAnnotationCapabilityNode();
-
-  Boolean getServerTimestampSupported();
-
-  void setServerTimestampSupported(Boolean value);
-
-  PropertyType getServerTimestampSupportedNode();
-
-  FolderType getAggregateFunctionsNode();
+  /**
+   * Sets the Value of the UpdateEventCapability child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setUpdateEventCapability(@Nullable Boolean value);
 }

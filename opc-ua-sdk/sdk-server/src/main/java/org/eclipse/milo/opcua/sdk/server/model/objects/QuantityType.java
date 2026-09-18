@@ -1,82 +1,127 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.structured.AnnotationDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.QuantityDimension;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part8/6.4.1">https://reference.opcfoundation.org/v105/Core/docs/Part8/6.4.1</a>
+ * Server API for the QuantityType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part8/6.4.1">Model
+ *     documentation</a>
  */
 public interface QuantityType extends BaseObjectType {
-  QualifiedProperty<LocalizedText> SYMBOL =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Symbol",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
-          -1,
-          LocalizedText.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 32475L);
 
-  QualifiedProperty<AnnotationDataType[]> ANNOTATION =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Annotation",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=32434"),
-          1,
-          AnnotationDataType[].class);
+  /**
+   * Returns the optional Annotation child, a PropertyType with DataType AnnotationDataType.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getAnnotationNode();
 
-  QualifiedProperty<String> CONVERSION_SERVICE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ConversionService",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=23751"),
-          -1,
-          String.class);
+  /**
+   * Returns the Value of the Annotation child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable AnnotationDataType @Nullable [] getAnnotation();
 
-  QualifiedProperty<QuantityDimension> DIMENSION =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Dimension",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=32438"),
-          -1,
-          QuantityDimension.class);
+  /**
+   * Sets the Value of the Annotation child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setAnnotation(@Nullable AnnotationDataType @Nullable [] value);
 
-  LocalizedText getSymbol();
+  /**
+   * Returns the optional ConversionService child, a PropertyType with DataType UriString.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getConversionServiceNode();
 
-  void setSymbol(LocalizedText value);
+  /**
+   * Returns the Value of the ConversionService child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getConversionService();
 
-  PropertyType getSymbolNode();
+  /**
+   * Sets the Value of the ConversionService child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setConversionService(@Nullable String value);
 
-  AnnotationDataType[] getAnnotation();
+  /**
+   * Returns the mandatory Dimension child, a PropertyType with DataType QuantityDimension.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getDimensionNode();
 
-  void setAnnotation(AnnotationDataType[] value);
+  /**
+   * Returns the Value of the Dimension child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable QuantityDimension getDimension();
 
-  PropertyType getAnnotationNode();
+  /**
+   * Sets the Value of the Dimension child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setDimension(@Nullable QuantityDimension value);
 
-  String getConversionService();
+  /**
+   * Returns the mandatory ServerUnits child, a BaseObjectType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.2">BaseObjectType
+   *     documentation</a>
+   */
+  BaseObjectTypeNode getServerUnitsNode();
 
-  void setConversionService(String value);
+  /**
+   * Returns the optional Symbol child, a PropertyType with DataType LocalizedText.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getSymbolNode();
 
-  PropertyType getConversionServiceNode();
+  /**
+   * Returns the Value of the Symbol child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable LocalizedText getSymbol();
 
-  QuantityDimension getDimension();
-
-  void setDimension(QuantityDimension value);
-
-  PropertyType getDimensionNode();
-
-  BaseObjectType getServerUnitsNode();
+  /**
+   * Sets the Value of the Symbol child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setSymbol(@Nullable LocalizedText value);
 }

@@ -1,65 +1,88 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.8.10">https://reference.opcfoundation.org/v105/Core/docs/Part11/5.8.10</a>
+ * Server API for the AuditHistoryBulkInsertEventType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.8.10">Model
+ *     documentation</a>
  */
 public interface AuditHistoryBulkInsertEventType extends AuditEventType {
-  QualifiedProperty<NodeId> UPDATED_NODE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "UpdatedNode",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-          -1,
-          NodeId.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 32803L);
 
-  QualifiedProperty<DateTime> START_TIME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "StartTime",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
-          -1,
-          DateTime.class);
+  /**
+   * Returns the mandatory EndTime child, a PropertyType with DataType UtcTime.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getEndTimeNode();
 
-  QualifiedProperty<DateTime> END_TIME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "EndTime",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
-          -1,
-          DateTime.class);
+  /**
+   * Returns the Value of the EndTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable DateTime getEndTime();
 
-  NodeId getUpdatedNode();
+  /**
+   * Sets the Value of the EndTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setEndTime(@Nullable DateTime value);
 
-  void setUpdatedNode(NodeId value);
+  /**
+   * Returns the mandatory StartTime child, a PropertyType with DataType UtcTime.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getStartTimeNode();
 
-  PropertyType getUpdatedNodeNode();
+  /**
+   * Returns the Value of the StartTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable DateTime getStartTime();
 
-  DateTime getStartTime();
+  /**
+   * Sets the Value of the StartTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setStartTime(@Nullable DateTime value);
 
-  void setStartTime(DateTime value);
+  /**
+   * Returns the mandatory UpdatedNode child, a PropertyType with DataType NodeId.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getUpdatedNodeNode();
 
-  PropertyType getStartTimeNode();
+  /**
+   * Returns the Value of the UpdatedNode child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable NodeId getUpdatedNode();
 
-  DateTime getEndTime();
-
-  void setEndTime(DateTime value);
-
-  PropertyType getEndTimeNode();
+  /**
+   * Sets the Value of the UpdatedNode child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setUpdatedNode(@Nullable NodeId value);
 }

@@ -1,19 +1,9 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -21,7 +11,15 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link AuditConditionShelvingEventType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.10.8">Model
+ *     documentation</a>
+ */
 public class AuditConditionShelvingEventTypeNode extends AuditConditionEventTypeNode
     implements AuditConditionShelvingEventType {
   public AuditConditionShelvingEventTypeNode(
@@ -29,12 +27,36 @@ public class AuditConditionShelvingEventTypeNode extends AuditConditionEventType
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions);
+  }
+
+  public AuditConditionShelvingEventTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         context,
@@ -50,44 +72,33 @@ public class AuditConditionShelvingEventTypeNode extends AuditConditionEventType
         eventNotifier);
   }
 
-  public AuditConditionShelvingEventTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions);
+  @Override
+  public @Nullable PropertyTypeNode getShelvingTimeNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "ShelvingTime",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 290L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getShelvingTimeNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(AuditConditionShelvingEventType.SHELVING_TIME);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable Double getShelvingTime() {
+    return ServerNodeSupport.read(this, getShelvingTimeNode(), Double.class, null);
   }
 
   @Override
-  public Double getShelvingTime() {
-    return getProperty(AuditConditionShelvingEventType.SHELVING_TIME).orElse(null);
+  public void setShelvingTime(@Nullable Double value) {
+    ServerNodeSupport.write(
+        this, getShelvingTimeNode(), Namespaces.OPC_UA, "ShelvingTime", value, false, false, false);
   }
 
   @Override
-  public void setShelvingTime(Double value) {
-    setProperty(AuditConditionShelvingEventType.SHELVING_TIME, value);
+  public void validateChildren() {
+    super.validateChildren();
+    getShelvingTimeNode();
   }
 }

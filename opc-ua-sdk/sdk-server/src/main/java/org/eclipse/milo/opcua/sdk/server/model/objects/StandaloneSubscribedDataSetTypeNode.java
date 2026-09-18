@@ -1,20 +1,9 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.nodes.ObjectNode;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -23,7 +12,15 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetMetaDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link StandaloneSubscribedDataSetType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.9/#9.1.9.5">Model
+ *     documentation</a>
+ */
 public class StandaloneSubscribedDataSetTypeNode extends BaseObjectTypeNode
     implements StandaloneSubscribedDataSetType {
   public StandaloneSubscribedDataSetTypeNode(
@@ -31,12 +28,36 @@ public class StandaloneSubscribedDataSetTypeNode extends BaseObjectTypeNode
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions);
+  }
+
+  public StandaloneSubscribedDataSetTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         context,
@@ -52,68 +73,70 @@ public class StandaloneSubscribedDataSetTypeNode extends BaseObjectTypeNode
         eventNotifier);
   }
 
-  public StandaloneSubscribedDataSetTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions);
-  }
-
   @Override
   public PropertyTypeNode getDataSetMetaDataNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(StandaloneSubscribedDataSetType.DATA_SET_META_DATA);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "DataSetMetaData",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 14523L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public DataSetMetaDataType getDataSetMetaData() {
-    return getProperty(StandaloneSubscribedDataSetType.DATA_SET_META_DATA).orElse(null);
+  public @Nullable DataSetMetaDataType getDataSetMetaData() {
+    return ServerNodeSupport.read(this, getDataSetMetaDataNode(), DataSetMetaDataType.class, null);
   }
 
   @Override
-  public void setDataSetMetaData(DataSetMetaDataType value) {
-    setProperty(StandaloneSubscribedDataSetType.DATA_SET_META_DATA, value);
+  public void setDataSetMetaData(@Nullable DataSetMetaDataType value) {
+    ServerNodeSupport.write(this, getDataSetMetaDataNode(), value, false, false, true);
   }
 
   @Override
   public PropertyTypeNode getIsConnectedNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(StandaloneSubscribedDataSetType.IS_CONNECTED);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "IsConnected",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public Boolean getIsConnected() {
-    return getProperty(StandaloneSubscribedDataSetType.IS_CONNECTED).orElse(null);
+  public @Nullable Boolean getIsConnected() {
+    return ServerNodeSupport.read(this, getIsConnectedNode(), Boolean.class, null);
   }
 
   @Override
-  public void setIsConnected(Boolean value) {
-    setProperty(StandaloneSubscribedDataSetType.IS_CONNECTED, value);
+  public void setIsConnected(@Nullable Boolean value) {
+    ServerNodeSupport.write(this, getIsConnectedNode(), value, false, false, false);
   }
 
   @Override
   public SubscribedDataSetTypeNode getSubscribedDataSetNode() {
-    Optional<ObjectNode> component =
-        getObjectComponent("http://opcfoundation.org/UA/", "SubscribedDataSet");
-    return (SubscribedDataSetTypeNode) component.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "SubscribedDataSet",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 15108L),
+        null,
+        -1,
+        SubscribedDataSetTypeNode.class);
+  }
+
+  @Override
+  public void validateChildren() {
+    super.validateChildren();
+    getDataSetMetaDataNode();
+    getIsConnectedNode();
+    getSubscribedDataSetNode();
   }
 }

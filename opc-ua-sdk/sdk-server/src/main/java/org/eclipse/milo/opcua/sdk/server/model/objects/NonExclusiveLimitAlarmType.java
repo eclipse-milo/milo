@@ -1,50 +1,135 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.server.model.variables.TwoStateVariableType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.TwoStateVariableTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.20">https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.20</a>
+ * Server API for the NonExclusiveLimitAlarmType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.20">Model
+ *     documentation</a>
  */
 public interface NonExclusiveLimitAlarmType extends LimitAlarmType {
-  TwoStateVariableType getActiveStateNode();
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 9906L);
 
-  LocalizedText getActiveState();
+  /**
+   * Returns the optional HighHighState child, a TwoStateVariableType with DataType LocalizedText.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.2">TwoStateVariableType
+   *     documentation</a>
+   */
+  @Nullable TwoStateVariableTypeNode getHighHighStateNode();
 
-  void setActiveState(LocalizedText value);
+  /**
+   * Returns the Value of the HighHighState child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable LocalizedText getHighHighState();
 
-  TwoStateVariableType getHighHighStateNode();
+  /**
+   * Sets the Value of the HighHighState child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setHighHighState(@Nullable LocalizedText value);
 
-  LocalizedText getHighHighState();
+  /**
+   * Returns the optional HighState child, a TwoStateVariableType with DataType LocalizedText.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.2">TwoStateVariableType
+   *     documentation</a>
+   */
+  @Nullable TwoStateVariableTypeNode getHighStateNode();
 
-  void setHighHighState(LocalizedText value);
+  /**
+   * Returns the Value of the HighState child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable LocalizedText getHighState();
 
-  TwoStateVariableType getHighStateNode();
+  /**
+   * Sets the Value of the HighState child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setHighState(@Nullable LocalizedText value);
 
-  LocalizedText getHighState();
+  /**
+   * Returns the optional LowLowState child, a TwoStateVariableType with DataType LocalizedText.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.2">TwoStateVariableType
+   *     documentation</a>
+   */
+  @Nullable TwoStateVariableTypeNode getLowLowStateNode();
 
-  void setHighState(LocalizedText value);
+  /**
+   * Returns the Value of the LowLowState child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable LocalizedText getLowLowState();
 
-  TwoStateVariableType getLowStateNode();
+  /**
+   * Sets the Value of the LowLowState child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setLowLowState(@Nullable LocalizedText value);
 
-  LocalizedText getLowState();
+  /**
+   * Returns the optional LowState child, a TwoStateVariableType with DataType LocalizedText.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.2">TwoStateVariableType
+   *     documentation</a>
+   */
+  @Nullable TwoStateVariableTypeNode getLowStateNode();
 
-  void setLowState(LocalizedText value);
+  /**
+   * Returns the Value of the LowState child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable LocalizedText getLowState();
 
-  TwoStateVariableType getLowLowStateNode();
+  /**
+   * Sets the Value of the LowState child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setLowState(@Nullable LocalizedText value);
 
-  LocalizedText getLowLowState();
+  /**
+   * Sets this instance's Method handlers, including inherited handlers, from one implementation;
+   * null clears them and restores Method-node fallback. Absent optional Methods are skipped.
+   * Changes are applied in order; a failure does not roll back earlier changes.
+   *
+   * @throws UaRuntimeException if a mandatory Method is absent, or a Method is ambiguous or
+   *     incompatible.
+   */
+  void setMethods(@Nullable Methods methods);
 
-  void setLowLowState(LocalizedText value);
+  /** Implements this type's Methods. Unimplemented Methods report Bad_NotImplemented. */
+  interface Methods extends LimitAlarmType.Methods {}
 }

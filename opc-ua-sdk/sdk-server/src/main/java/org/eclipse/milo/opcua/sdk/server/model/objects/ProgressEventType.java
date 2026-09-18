@@ -1,50 +1,65 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.35">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.35</a>
+ * Server API for the ProgressEventType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.35">Model
+ *     documentation</a>
  */
 public interface ProgressEventType extends BaseEventType {
-  QualifiedProperty<Object> CONTEXT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Context",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24"),
-          -1,
-          Object.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 11436L);
 
-  QualifiedProperty<UShort> PROGRESS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Progress",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-          -1,
-          UShort.class);
+  /**
+   * Returns the mandatory Context child, a PropertyType with DataType BaseDataType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getContextNode();
 
-  Object getContext();
+  /**
+   * Returns the Value of the Context child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Variant getContext();
 
-  void setContext(Object value);
+  /**
+   * Sets the Value of the Context child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setContext(@Nullable Variant value);
 
-  PropertyType getContextNode();
+  /**
+   * Returns the mandatory Progress child, a PropertyType with DataType UInt16.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getProgressNode();
 
-  UShort getProgress();
+  /**
+   * Returns the Value of the Progress child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UShort getProgress();
 
-  void setProgress(UShort value);
-
-  PropertyType getProgressNode();
+  /**
+   * Sets the Value of the Progress child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setProgress(@Nullable UShort value);
 }

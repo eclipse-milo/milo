@@ -1,107 +1,172 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.variables;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.eclipse.milo.opcua.stack.core.types.structured.AlarmMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.ContentFilter;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/8.2">https://reference.opcfoundation.org/v105/Core/docs/Part9/8.2</a>
+ * Server API for the AlarmStateVariableType VariableType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/8.2">Model
+ *     documentation</a>
  */
 public interface AlarmStateVariableType extends BaseDataVariableType {
-  QualifiedProperty<UShort> HIGHEST_ACTIVE_SEVERITY =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "HighestActiveSeverity",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-          -1,
-          UShort.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 32244L);
 
-  QualifiedProperty<UShort> HIGHEST_UNACK_SEVERITY =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "HighestUnackSeverity",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-          -1,
-          UShort.class);
+  /**
+   * Returns the mandatory ActiveCount child, a PropertyType with DataType UInt32.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getActiveCountNode();
 
-  QualifiedProperty<UInteger> ACTIVE_COUNT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ActiveCount",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  /**
+   * Returns the Value of the ActiveCount child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getActiveCount();
 
-  QualifiedProperty<UInteger> UNACKNOWLEDGED_COUNT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "UnacknowledgedCount",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  /**
+   * Sets the Value of the ActiveCount child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setActiveCount(@Nullable UInteger value);
 
-  QualifiedProperty<UInteger> UNCONFIRMED_COUNT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "UnconfirmedCount",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  /**
+   * Returns the mandatory Filter child, a PropertyType with DataType ContentFilter.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getFilterNode();
 
-  QualifiedProperty<ContentFilter> FILTER =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Filter",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=586"),
-          -1,
-          ContentFilter.class);
+  /**
+   * Returns the Value of the Filter child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable ContentFilter getFilter();
 
-  UShort getHighestActiveSeverity();
+  /**
+   * Sets the Value of the Filter child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setFilter(@Nullable ContentFilter value);
 
-  void setHighestActiveSeverity(UShort value);
+  /**
+   * Returns the mandatory HighestActiveSeverity child, a PropertyType with DataType UInt16.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getHighestActiveSeverityNode();
 
-  PropertyType getHighestActiveSeverityNode();
+  /**
+   * Returns the Value of the HighestActiveSeverity child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UShort getHighestActiveSeverity();
 
-  UShort getHighestUnackSeverity();
+  /**
+   * Sets the Value of the HighestActiveSeverity child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setHighestActiveSeverity(@Nullable UShort value);
 
-  void setHighestUnackSeverity(UShort value);
+  /**
+   * Returns the mandatory HighestUnackSeverity child, a PropertyType with DataType UInt16.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getHighestUnackSeverityNode();
 
-  PropertyType getHighestUnackSeverityNode();
+  /**
+   * Returns the Value of the HighestUnackSeverity child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UShort getHighestUnackSeverity();
 
-  UInteger getActiveCount();
+  /**
+   * Sets the Value of the HighestUnackSeverity child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setHighestUnackSeverity(@Nullable UShort value);
 
-  void setActiveCount(UInteger value);
+  /**
+   * Returns the mandatory UnacknowledgedCount child, a PropertyType with DataType UInt32.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getUnacknowledgedCountNode();
 
-  PropertyType getActiveCountNode();
+  /**
+   * Returns the Value of the UnacknowledgedCount child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getUnacknowledgedCount();
 
-  UInteger getUnacknowledgedCount();
+  /**
+   * Sets the Value of the UnacknowledgedCount child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setUnacknowledgedCount(@Nullable UInteger value);
 
-  void setUnacknowledgedCount(UInteger value);
+  /**
+   * Returns the mandatory UnconfirmedCount child, a PropertyType with DataType UInt32.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getUnconfirmedCountNode();
 
-  PropertyType getUnacknowledgedCountNode();
+  /**
+   * Returns the Value of the UnconfirmedCount child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getUnconfirmedCount();
 
-  UInteger getUnconfirmedCount();
+  /**
+   * Sets the Value of the UnconfirmedCount child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setUnconfirmedCount(@Nullable UInteger value);
 
-  void setUnconfirmedCount(UInteger value);
+  /**
+   * Returns this node's Value.
+   *
+   * @throws UaRuntimeException if the Value does not convert.
+   */
+  @Nullable AlarmMask getTypedValue();
 
-  PropertyType getUnconfirmedCountNode();
-
-  ContentFilter getFilter();
-
-  void setFilter(ContentFilter value);
-
-  PropertyType getFilterNode();
+  /**
+   * Sets this node's Value.
+   *
+   * @throws UaRuntimeException if the value does not convert.
+   */
+  void setTypedValue(@Nullable AlarmMask value);
 }

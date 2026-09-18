@@ -1,19 +1,9 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -22,19 +12,51 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link LimitAlarmType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.18">Model
+ *     documentation</a>
+ */
 public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitAlarmType {
   public LimitAlarmTypeNode(
       UaNodeContext context,
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions);
+  }
+
+  public LimitAlarmTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         context,
@@ -50,283 +72,511 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
         eventNotifier);
   }
 
-  public LimitAlarmTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions);
+  @Override
+  public @Nullable PropertyTypeNode getBaseHighHighLimitNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "BaseHighHighLimit",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 11L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getHighHighLimitNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(LimitAlarmType.HIGH_HIGH_LIMIT);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable Double getBaseHighHighLimit() {
+    return ServerNodeSupport.read(this, getBaseHighHighLimitNode(), Double.class, null);
   }
 
   @Override
-  public Double getHighHighLimit() {
-    return getProperty(LimitAlarmType.HIGH_HIGH_LIMIT).orElse(null);
+  public void setBaseHighHighLimit(@Nullable Double value) {
+    ServerNodeSupport.write(
+        this,
+        getBaseHighHighLimitNode(),
+        Namespaces.OPC_UA,
+        "BaseHighHighLimit",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
-  public void setHighHighLimit(Double value) {
-    setProperty(LimitAlarmType.HIGH_HIGH_LIMIT, value);
+  public @Nullable PropertyTypeNode getBaseHighLimitNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "BaseHighLimit",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 11L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getHighLimitNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(LimitAlarmType.HIGH_LIMIT);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable Double getBaseHighLimit() {
+    return ServerNodeSupport.read(this, getBaseHighLimitNode(), Double.class, null);
   }
 
   @Override
-  public Double getHighLimit() {
-    return getProperty(LimitAlarmType.HIGH_LIMIT).orElse(null);
+  public void setBaseHighLimit(@Nullable Double value) {
+    ServerNodeSupport.write(
+        this,
+        getBaseHighLimitNode(),
+        Namespaces.OPC_UA,
+        "BaseHighLimit",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
-  public void setHighLimit(Double value) {
-    setProperty(LimitAlarmType.HIGH_LIMIT, value);
+  public @Nullable PropertyTypeNode getBaseLowLimitNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "BaseLowLimit",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 11L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getLowLimitNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(LimitAlarmType.LOW_LIMIT);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable Double getBaseLowLimit() {
+    return ServerNodeSupport.read(this, getBaseLowLimitNode(), Double.class, null);
   }
 
   @Override
-  public Double getLowLimit() {
-    return getProperty(LimitAlarmType.LOW_LIMIT).orElse(null);
+  public void setBaseLowLimit(@Nullable Double value) {
+    ServerNodeSupport.write(
+        this, getBaseLowLimitNode(), Namespaces.OPC_UA, "BaseLowLimit", value, false, false, false);
   }
 
   @Override
-  public void setLowLimit(Double value) {
-    setProperty(LimitAlarmType.LOW_LIMIT, value);
+  public @Nullable PropertyTypeNode getBaseLowLowLimitNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "BaseLowLowLimit",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 11L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getLowLowLimitNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(LimitAlarmType.LOW_LOW_LIMIT);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable Double getBaseLowLowLimit() {
+    return ServerNodeSupport.read(this, getBaseLowLowLimitNode(), Double.class, null);
   }
 
   @Override
-  public Double getLowLowLimit() {
-    return getProperty(LimitAlarmType.LOW_LOW_LIMIT).orElse(null);
+  public void setBaseLowLowLimit(@Nullable Double value) {
+    ServerNodeSupport.write(
+        this,
+        getBaseLowLowLimitNode(),
+        Namespaces.OPC_UA,
+        "BaseLowLowLimit",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
-  public void setLowLowLimit(Double value) {
-    setProperty(LimitAlarmType.LOW_LOW_LIMIT, value);
+  public @Nullable PropertyTypeNode getHighDeadbandNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "HighDeadband",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 11L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getBaseHighHighLimitNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(LimitAlarmType.BASE_HIGH_HIGH_LIMIT);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable Double getHighDeadband() {
+    return ServerNodeSupport.read(this, getHighDeadbandNode(), Double.class, null);
   }
 
   @Override
-  public Double getBaseHighHighLimit() {
-    return getProperty(LimitAlarmType.BASE_HIGH_HIGH_LIMIT).orElse(null);
+  public void setHighDeadband(@Nullable Double value) {
+    ServerNodeSupport.write(
+        this, getHighDeadbandNode(), Namespaces.OPC_UA, "HighDeadband", value, false, false, false);
   }
 
   @Override
-  public void setBaseHighHighLimit(Double value) {
-    setProperty(LimitAlarmType.BASE_HIGH_HIGH_LIMIT, value);
+  public @Nullable PropertyTypeNode getHighHighDeadbandNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "HighHighDeadband",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 11L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getBaseHighLimitNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(LimitAlarmType.BASE_HIGH_LIMIT);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable Double getHighHighDeadband() {
+    return ServerNodeSupport.read(this, getHighHighDeadbandNode(), Double.class, null);
   }
 
   @Override
-  public Double getBaseHighLimit() {
-    return getProperty(LimitAlarmType.BASE_HIGH_LIMIT).orElse(null);
+  public void setHighHighDeadband(@Nullable Double value) {
+    ServerNodeSupport.write(
+        this,
+        getHighHighDeadbandNode(),
+        Namespaces.OPC_UA,
+        "HighHighDeadband",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
-  public void setBaseHighLimit(Double value) {
-    setProperty(LimitAlarmType.BASE_HIGH_LIMIT, value);
+  public @Nullable PropertyTypeNode getHighHighLimitNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "HighHighLimit",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 11L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getBaseLowLimitNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(LimitAlarmType.BASE_LOW_LIMIT);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable Double getHighHighLimit() {
+    return ServerNodeSupport.read(this, getHighHighLimitNode(), Double.class, null);
   }
 
   @Override
-  public Double getBaseLowLimit() {
-    return getProperty(LimitAlarmType.BASE_LOW_LIMIT).orElse(null);
+  public void setHighHighLimit(@Nullable Double value) {
+    ServerNodeSupport.write(
+        this,
+        getHighHighLimitNode(),
+        Namespaces.OPC_UA,
+        "HighHighLimit",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
-  public void setBaseLowLimit(Double value) {
-    setProperty(LimitAlarmType.BASE_LOW_LIMIT, value);
+  public @Nullable PropertyTypeNode getHighLimitNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "HighLimit",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 11L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getBaseLowLowLimitNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(LimitAlarmType.BASE_LOW_LOW_LIMIT);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable Double getHighLimit() {
+    return ServerNodeSupport.read(this, getHighLimitNode(), Double.class, null);
   }
 
   @Override
-  public Double getBaseLowLowLimit() {
-    return getProperty(LimitAlarmType.BASE_LOW_LOW_LIMIT).orElse(null);
+  public void setHighLimit(@Nullable Double value) {
+    ServerNodeSupport.write(
+        this, getHighLimitNode(), Namespaces.OPC_UA, "HighLimit", value, false, false, false);
   }
 
   @Override
-  public void setBaseLowLowLimit(Double value) {
-    setProperty(LimitAlarmType.BASE_LOW_LOW_LIMIT, value);
+  public @Nullable PropertyTypeNode getLowDeadbandNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "LowDeadband",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 11L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getSeverityHighHighNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(LimitAlarmType.SEVERITY_HIGH_HIGH);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable Double getLowDeadband() {
+    return ServerNodeSupport.read(this, getLowDeadbandNode(), Double.class, null);
   }
 
   @Override
-  public UShort getSeverityHighHigh() {
-    return getProperty(LimitAlarmType.SEVERITY_HIGH_HIGH).orElse(null);
+  public void setLowDeadband(@Nullable Double value) {
+    ServerNodeSupport.write(
+        this, getLowDeadbandNode(), Namespaces.OPC_UA, "LowDeadband", value, false, false, false);
   }
 
   @Override
-  public void setSeverityHighHigh(UShort value) {
-    setProperty(LimitAlarmType.SEVERITY_HIGH_HIGH, value);
+  public @Nullable PropertyTypeNode getLowLimitNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "LowLimit",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 11L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getSeverityHighNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(LimitAlarmType.SEVERITY_HIGH);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable Double getLowLimit() {
+    return ServerNodeSupport.read(this, getLowLimitNode(), Double.class, null);
   }
 
   @Override
-  public UShort getSeverityHigh() {
-    return getProperty(LimitAlarmType.SEVERITY_HIGH).orElse(null);
+  public void setLowLimit(@Nullable Double value) {
+    ServerNodeSupport.write(
+        this, getLowLimitNode(), Namespaces.OPC_UA, "LowLimit", value, false, false, false);
   }
 
   @Override
-  public void setSeverityHigh(UShort value) {
-    setProperty(LimitAlarmType.SEVERITY_HIGH, value);
+  public @Nullable PropertyTypeNode getLowLowDeadbandNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "LowLowDeadband",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 11L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getSeverityLowNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(LimitAlarmType.SEVERITY_LOW);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable Double getLowLowDeadband() {
+    return ServerNodeSupport.read(this, getLowLowDeadbandNode(), Double.class, null);
   }
 
   @Override
-  public UShort getSeverityLow() {
-    return getProperty(LimitAlarmType.SEVERITY_LOW).orElse(null);
+  public void setLowLowDeadband(@Nullable Double value) {
+    ServerNodeSupport.write(
+        this,
+        getLowLowDeadbandNode(),
+        Namespaces.OPC_UA,
+        "LowLowDeadband",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
-  public void setSeverityLow(UShort value) {
-    setProperty(LimitAlarmType.SEVERITY_LOW, value);
+  public @Nullable PropertyTypeNode getLowLowLimitNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "LowLowLimit",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 11L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getSeverityLowLowNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(LimitAlarmType.SEVERITY_LOW_LOW);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable Double getLowLowLimit() {
+    return ServerNodeSupport.read(this, getLowLowLimitNode(), Double.class, null);
   }
 
   @Override
-  public UShort getSeverityLowLow() {
-    return getProperty(LimitAlarmType.SEVERITY_LOW_LOW).orElse(null);
+  public void setLowLowLimit(@Nullable Double value) {
+    ServerNodeSupport.write(
+        this, getLowLowLimitNode(), Namespaces.OPC_UA, "LowLowLimit", value, false, false, false);
   }
 
   @Override
-  public void setSeverityLowLow(UShort value) {
-    setProperty(LimitAlarmType.SEVERITY_LOW_LOW, value);
+  public @Nullable PropertyTypeNode getSeverityHighNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "SeverityHigh",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 5L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getHighHighDeadbandNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(LimitAlarmType.HIGH_HIGH_DEADBAND);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable UShort getSeverityHigh() {
+    return ServerNodeSupport.read(this, getSeverityHighNode(), UShort.class, null);
   }
 
   @Override
-  public Double getHighHighDeadband() {
-    return getProperty(LimitAlarmType.HIGH_HIGH_DEADBAND).orElse(null);
+  public void setSeverityHigh(@Nullable UShort value) {
+    ServerNodeSupport.write(
+        this, getSeverityHighNode(), Namespaces.OPC_UA, "SeverityHigh", value, false, false, false);
   }
 
   @Override
-  public void setHighHighDeadband(Double value) {
-    setProperty(LimitAlarmType.HIGH_HIGH_DEADBAND, value);
+  public @Nullable PropertyTypeNode getSeverityHighHighNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "SeverityHighHigh",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 5L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getHighDeadbandNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(LimitAlarmType.HIGH_DEADBAND);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable UShort getSeverityHighHigh() {
+    return ServerNodeSupport.read(this, getSeverityHighHighNode(), UShort.class, null);
   }
 
   @Override
-  public Double getHighDeadband() {
-    return getProperty(LimitAlarmType.HIGH_DEADBAND).orElse(null);
+  public void setSeverityHighHigh(@Nullable UShort value) {
+    ServerNodeSupport.write(
+        this,
+        getSeverityHighHighNode(),
+        Namespaces.OPC_UA,
+        "SeverityHighHigh",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
-  public void setHighDeadband(Double value) {
-    setProperty(LimitAlarmType.HIGH_DEADBAND, value);
+  public @Nullable PropertyTypeNode getSeverityLowNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "SeverityLow",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 5L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getLowDeadbandNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(LimitAlarmType.LOW_DEADBAND);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable UShort getSeverityLow() {
+    return ServerNodeSupport.read(this, getSeverityLowNode(), UShort.class, null);
   }
 
   @Override
-  public Double getLowDeadband() {
-    return getProperty(LimitAlarmType.LOW_DEADBAND).orElse(null);
+  public void setSeverityLow(@Nullable UShort value) {
+    ServerNodeSupport.write(
+        this, getSeverityLowNode(), Namespaces.OPC_UA, "SeverityLow", value, false, false, false);
   }
 
   @Override
-  public void setLowDeadband(Double value) {
-    setProperty(LimitAlarmType.LOW_DEADBAND, value);
+  public @Nullable PropertyTypeNode getSeverityLowLowNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "SeverityLowLow",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 5L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getLowLowDeadbandNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(LimitAlarmType.LOW_LOW_DEADBAND);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable UShort getSeverityLowLow() {
+    return ServerNodeSupport.read(this, getSeverityLowLowNode(), UShort.class, null);
   }
 
   @Override
-  public Double getLowLowDeadband() {
-    return getProperty(LimitAlarmType.LOW_LOW_DEADBAND).orElse(null);
+  public void setSeverityLowLow(@Nullable UShort value) {
+    ServerNodeSupport.write(
+        this,
+        getSeverityLowLowNode(),
+        Namespaces.OPC_UA,
+        "SeverityLowLow",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
-  public void setLowLowDeadband(Double value) {
-    setProperty(LimitAlarmType.LOW_LOW_DEADBAND, value);
+  public void validateChildren() {
+    super.validateChildren();
+    getBaseHighHighLimitNode();
+    getBaseHighLimitNode();
+    getBaseLowLimitNode();
+    getBaseLowLowLimitNode();
+    getHighDeadbandNode();
+    getHighHighDeadbandNode();
+    getHighHighLimitNode();
+    getHighLimitNode();
+    getLowDeadbandNode();
+    getLowLimitNode();
+    getLowLowDeadbandNode();
+    getLowLowLimitNode();
+    getSeverityHighNode();
+    getSeverityHighHighNode();
+    getSeverityLowNode();
+    getSeverityLowLowNode();
+  }
+
+  @Override
+  public void setMethods(LimitAlarmType.@Nullable Methods methods) {
+    setAcknowledgeHandler(methods == null ? null : methods::acknowledge);
+    setAddCommentHandler(methods == null ? null : methods::addComment);
+    if (getConfirmMethodNode() != null) {
+      setConfirmHandler(methods == null ? null : methods::confirm);
+    }
+    setDisableHandler(methods == null ? null : methods::disable);
+    setEnableHandler(methods == null ? null : methods::enable);
+    if (getGetGroupMembershipsMethodNode() != null) {
+      setGetGroupMembershipsHandler(methods == null ? null : methods::getGroupMemberships);
+    }
+    if (getPlaceInServiceMethodNode() != null) {
+      setPlaceInServiceHandler(methods == null ? null : methods::placeInService);
+    }
+    if (getPlaceInService2MethodNode() != null) {
+      setPlaceInService2Handler(methods == null ? null : methods::placeInService2);
+    }
+    if (getRemoveFromServiceMethodNode() != null) {
+      setRemoveFromServiceHandler(methods == null ? null : methods::removeFromService);
+    }
+    if (getRemoveFromService2MethodNode() != null) {
+      setRemoveFromService2Handler(methods == null ? null : methods::removeFromService2);
+    }
+    if (getResetMethodNode() != null) {
+      setResetHandler(methods == null ? null : methods::reset);
+    }
+    if (getReset2MethodNode() != null) {
+      setReset2Handler(methods == null ? null : methods::reset2);
+    }
+    if (getSilenceMethodNode() != null) {
+      setSilenceHandler(methods == null ? null : methods::silence);
+    }
+    if (getSuppressMethodNode() != null) {
+      setSuppressHandler(methods == null ? null : methods::suppress);
+    }
+    if (getSuppress2MethodNode() != null) {
+      setSuppress2Handler(methods == null ? null : methods::suppress2);
+    }
+    if (getUnsuppressMethodNode() != null) {
+      setUnsuppressHandler(methods == null ? null : methods::unsuppress);
+    }
+    if (getUnsuppress2MethodNode() != null) {
+      setUnsuppress2Handler(methods == null ? null : methods::unsuppress2);
+    }
   }
 }

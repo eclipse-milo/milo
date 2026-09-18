@@ -1,19 +1,9 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -23,19 +13,51 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.ChassisIdSubtype;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.LldpSystemCapabilitiesMap;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link LldpLocalSystemType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.5.4">Model
+ *     documentation</a>
+ */
 public class LldpLocalSystemTypeNode extends BaseObjectTypeNode implements LldpLocalSystemType {
   public LldpLocalSystemTypeNode(
       UaNodeContext context,
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions);
+  }
+
+  public LldpLocalSystemTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         context,
@@ -51,125 +73,171 @@ public class LldpLocalSystemTypeNode extends BaseObjectTypeNode implements LldpL
         eventNotifier);
   }
 
-  public LldpLocalSystemTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions);
+  @Override
+  public PropertyTypeNode getChassisIdNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "ChassisId",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable String getChassisId() {
+    return ServerNodeSupport.read(this, getChassisIdNode(), String.class, null);
+  }
+
+  @Override
+  public void setChassisId(@Nullable String value) {
+    ServerNodeSupport.write(this, getChassisIdNode(), value, false, false, false);
   }
 
   @Override
   public PropertyTypeNode getChassisIdSubtypeNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(LldpLocalSystemType.CHASSIS_ID_SUBTYPE);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "ChassisIdSubtype",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 18947L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public ChassisIdSubtype getChassisIdSubtype() {
-    return getProperty(LldpLocalSystemType.CHASSIS_ID_SUBTYPE).orElse(null);
+  public @Nullable ChassisIdSubtype getChassisIdSubtype() {
+    return ServerNodeSupport.read(
+        this, getChassisIdSubtypeNode(), ChassisIdSubtype.class, ChassisIdSubtype::from);
   }
 
   @Override
-  public void setChassisIdSubtype(ChassisIdSubtype value) {
-    setProperty(LldpLocalSystemType.CHASSIS_ID_SUBTYPE, value);
+  public void setChassisIdSubtype(@Nullable ChassisIdSubtype value) {
+    ServerNodeSupport.write(this, getChassisIdSubtypeNode(), value, false, true, false);
   }
 
   @Override
-  public PropertyTypeNode getChassisIdNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(LldpLocalSystemType.CHASSIS_ID);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable PropertyTypeNode getSystemCapabilitiesEnabledNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "SystemCapabilitiesEnabled",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 18956L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public String getChassisId() {
-    return getProperty(LldpLocalSystemType.CHASSIS_ID).orElse(null);
+  public @Nullable LldpSystemCapabilitiesMap getSystemCapabilitiesEnabled() {
+    return ServerNodeSupport.read(
+        this, getSystemCapabilitiesEnabledNode(), LldpSystemCapabilitiesMap.class, null);
   }
 
   @Override
-  public void setChassisId(String value) {
-    setProperty(LldpLocalSystemType.CHASSIS_ID, value);
+  public void setSystemCapabilitiesEnabled(@Nullable LldpSystemCapabilitiesMap value) {
+    ServerNodeSupport.write(
+        this,
+        getSystemCapabilitiesEnabledNode(),
+        Namespaces.OPC_UA,
+        "SystemCapabilitiesEnabled",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
-  public PropertyTypeNode getSystemNameNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(LldpLocalSystemType.SYSTEM_NAME);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable PropertyTypeNode getSystemCapabilitiesSupportedNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "SystemCapabilitiesSupported",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 18956L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public String getSystemName() {
-    return getProperty(LldpLocalSystemType.SYSTEM_NAME).orElse(null);
+  public @Nullable LldpSystemCapabilitiesMap getSystemCapabilitiesSupported() {
+    return ServerNodeSupport.read(
+        this, getSystemCapabilitiesSupportedNode(), LldpSystemCapabilitiesMap.class, null);
   }
 
   @Override
-  public void setSystemName(String value) {
-    setProperty(LldpLocalSystemType.SYSTEM_NAME, value);
+  public void setSystemCapabilitiesSupported(@Nullable LldpSystemCapabilitiesMap value) {
+    ServerNodeSupport.write(
+        this,
+        getSystemCapabilitiesSupportedNode(),
+        Namespaces.OPC_UA,
+        "SystemCapabilitiesSupported",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
   public PropertyTypeNode getSystemDescriptionNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(LldpLocalSystemType.SYSTEM_DESCRIPTION);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "SystemDescription",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public String getSystemDescription() {
-    return getProperty(LldpLocalSystemType.SYSTEM_DESCRIPTION).orElse(null);
+  public @Nullable String getSystemDescription() {
+    return ServerNodeSupport.read(this, getSystemDescriptionNode(), String.class, null);
   }
 
   @Override
-  public void setSystemDescription(String value) {
-    setProperty(LldpLocalSystemType.SYSTEM_DESCRIPTION, value);
+  public void setSystemDescription(@Nullable String value) {
+    ServerNodeSupport.write(this, getSystemDescriptionNode(), value, false, false, false);
   }
 
   @Override
-  public PropertyTypeNode getSystemCapabilitiesSupportedNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(LldpLocalSystemType.SYSTEM_CAPABILITIES_SUPPORTED);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public PropertyTypeNode getSystemNameNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "SystemName",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public LldpSystemCapabilitiesMap getSystemCapabilitiesSupported() {
-    return getProperty(LldpLocalSystemType.SYSTEM_CAPABILITIES_SUPPORTED).orElse(null);
+  public @Nullable String getSystemName() {
+    return ServerNodeSupport.read(this, getSystemNameNode(), String.class, null);
   }
 
   @Override
-  public void setSystemCapabilitiesSupported(LldpSystemCapabilitiesMap value) {
-    setProperty(LldpLocalSystemType.SYSTEM_CAPABILITIES_SUPPORTED, value);
+  public void setSystemName(@Nullable String value) {
+    ServerNodeSupport.write(this, getSystemNameNode(), value, false, false, false);
   }
 
   @Override
-  public PropertyTypeNode getSystemCapabilitiesEnabledNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(LldpLocalSystemType.SYSTEM_CAPABILITIES_ENABLED);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public LldpSystemCapabilitiesMap getSystemCapabilitiesEnabled() {
-    return getProperty(LldpLocalSystemType.SYSTEM_CAPABILITIES_ENABLED).orElse(null);
-  }
-
-  @Override
-  public void setSystemCapabilitiesEnabled(LldpSystemCapabilitiesMap value) {
-    setProperty(LldpLocalSystemType.SYSTEM_CAPABILITIES_ENABLED, value);
+  public void validateChildren() {
+    super.validateChildren();
+    getChassisIdNode();
+    getChassisIdSubtypeNode();
+    getSystemCapabilitiesEnabledNode();
+    getSystemCapabilitiesSupportedNode();
+    getSystemDescriptionNode();
+    getSystemNameNode();
   }
 }

@@ -1,39 +1,91 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.server.model.variables.BaseDataVariableType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.BaseDataVariableTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.6">https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.6</a>
+ * Server API for the ISrClassType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.6">Model
+ *     documentation</a>
  */
 public interface ISrClassType extends BaseInterfaceType {
-  BaseDataVariableType getIdNode();
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 24169L);
 
-  UByte getId();
+  /**
+   * Returns the mandatory Id child, a BaseDataVariableType with DataType Byte.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  BaseDataVariableTypeNode getIdNode();
 
-  void setId(UByte value);
+  /**
+   * Returns the Value of the Id child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UByte getId();
 
-  BaseDataVariableType getPriorityNode();
+  /**
+   * Sets the Value of the Id child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setId(@Nullable UByte value);
 
-  UByte getPriority();
+  /**
+   * Returns the mandatory Priority child, a BaseDataVariableType with DataType Byte.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  BaseDataVariableTypeNode getPriorityNode();
 
-  void setPriority(UByte value);
+  /**
+   * Returns the Value of the Priority child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UByte getPriority();
 
-  BaseDataVariableType getVidNode();
+  /**
+   * Sets the Value of the Priority child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setPriority(@Nullable UByte value);
 
-  UShort getVid();
+  /**
+   * Returns the mandatory Vid child, a BaseDataVariableType with DataType UInt16.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  BaseDataVariableTypeNode getVidNode();
 
-  void setVid(UShort value);
+  /**
+   * Returns the Value of the Vid child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UShort getVid();
+
+  /**
+   * Sets the Value of the Vid child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setVid(@Nullable UShort value);
 }

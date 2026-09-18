@@ -1,106 +1,157 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.BrokerTransportQualityOfService;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.3.2/#9.3.2.3">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.3.2/#9.3.2.3</a>
+ * Server API for the BrokerDataSetWriterTransportType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.3.2/#9.3.2.3">Model
+ *     documentation</a>
  */
 public interface BrokerDataSetWriterTransportType extends DataSetWriterTransportType {
-  QualifiedProperty<String> QUEUE_NAME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "QueueName",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 21138L);
 
-  QualifiedProperty<String> META_DATA_QUEUE_NAME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MetaDataQueueName",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  /**
+   * Returns the mandatory AuthenticationProfileUri child, a PropertyType with DataType String.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getAuthenticationProfileUriNode();
 
-  QualifiedProperty<String> RESOURCE_URI =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ResourceUri",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  /**
+   * Returns the Value of the AuthenticationProfileUri child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getAuthenticationProfileUri();
 
-  QualifiedProperty<String> AUTHENTICATION_PROFILE_URI =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "AuthenticationProfileUri",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  /**
+   * Sets the Value of the AuthenticationProfileUri child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setAuthenticationProfileUri(@Nullable String value);
 
-  QualifiedProperty<BrokerTransportQualityOfService> REQUESTED_DELIVERY_GUARANTEE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "RequestedDeliveryGuarantee",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15008"),
-          -1,
-          BrokerTransportQualityOfService.class);
+  /**
+   * Returns the mandatory MetaDataQueueName child, a PropertyType with DataType String.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getMetaDataQueueNameNode();
 
-  QualifiedProperty<Double> META_DATA_UPDATE_TIME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MetaDataUpdateTime",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
-          -1,
-          Double.class);
+  /**
+   * Returns the Value of the MetaDataQueueName child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getMetaDataQueueName();
 
-  String getQueueName();
+  /**
+   * Sets the Value of the MetaDataQueueName child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMetaDataQueueName(@Nullable String value);
 
-  void setQueueName(String value);
+  /**
+   * Returns the mandatory MetaDataUpdateTime child, a PropertyType with DataType Duration.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getMetaDataUpdateTimeNode();
 
-  PropertyType getQueueNameNode();
+  /**
+   * Returns the Value of the MetaDataUpdateTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Double getMetaDataUpdateTime();
 
-  String getMetaDataQueueName();
+  /**
+   * Sets the Value of the MetaDataUpdateTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMetaDataUpdateTime(@Nullable Double value);
 
-  void setMetaDataQueueName(String value);
+  /**
+   * Returns the mandatory QueueName child, a PropertyType with DataType String.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getQueueNameNode();
 
-  PropertyType getMetaDataQueueNameNode();
+  /**
+   * Returns the Value of the QueueName child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getQueueName();
 
-  String getResourceUri();
+  /**
+   * Sets the Value of the QueueName child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setQueueName(@Nullable String value);
 
-  void setResourceUri(String value);
+  /**
+   * Returns the mandatory RequestedDeliveryGuarantee child, a PropertyType with DataType
+   * BrokerTransportQualityOfService.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getRequestedDeliveryGuaranteeNode();
 
-  PropertyType getResourceUriNode();
+  /**
+   * Returns the Value of the RequestedDeliveryGuarantee child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable BrokerTransportQualityOfService getRequestedDeliveryGuarantee();
 
-  String getAuthenticationProfileUri();
+  /**
+   * Sets the Value of the RequestedDeliveryGuarantee child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setRequestedDeliveryGuarantee(@Nullable BrokerTransportQualityOfService value);
 
-  void setAuthenticationProfileUri(String value);
+  /**
+   * Returns the mandatory ResourceUri child, a PropertyType with DataType String.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getResourceUriNode();
 
-  PropertyType getAuthenticationProfileUriNode();
+  /**
+   * Returns the Value of the ResourceUri child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getResourceUri();
 
-  BrokerTransportQualityOfService getRequestedDeliveryGuarantee();
-
-  void setRequestedDeliveryGuarantee(BrokerTransportQualityOfService value);
-
-  PropertyType getRequestedDeliveryGuaranteeNode();
-
-  Double getMetaDataUpdateTime();
-
-  void setMetaDataUpdateTime(Double value);
-
-  PropertyType getMetaDataUpdateTimeNode();
+  /**
+   * Sets the Value of the ResourceUri child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setResourceUri(@Nullable String value);
 }

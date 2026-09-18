@@ -1,20 +1,10 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.variables;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -23,7 +13,10 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelExType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/** Node implementation of {@link DataTypeDescriptionType}. */
 public class DataTypeDescriptionTypeNode extends BaseDataVariableTypeNode
     implements DataTypeDescriptionType {
   public DataTypeDescriptionTypeNode(
@@ -31,16 +24,48 @@ public class DataTypeDescriptionTypeNode extends BaseDataVariableTypeNode
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       DataValue value,
       NodeId dataType,
       Integer valueRank,
-      UInteger[] arrayDimensions,
+      UInteger @Nullable [] arrayDimensions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions,
+        value,
+        dataType,
+        valueRank,
+        arrayDimensions);
+  }
+
+  public DataTypeDescriptionTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
+      DataValue value,
+      NodeId dataType,
+      Integer valueRank,
+      UInteger @Nullable [] arrayDimensions,
       UByte accessLevel,
       UByte userAccessLevel,
       Double minimumSamplingInterval,
@@ -68,69 +93,82 @@ public class DataTypeDescriptionTypeNode extends BaseDataVariableTypeNode
         accessLevelEx);
   }
 
-  public DataTypeDescriptionTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
-      DataValue value,
-      NodeId dataType,
-      Integer valueRank,
-      UInteger[] arrayDimensions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions,
+  @Override
+  public @Nullable PropertyTypeNode getDataTypeVersion_Node() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "DataTypeVersion",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable String getDataTypeVersion_() {
+    return ServerNodeSupport.read(this, getDataTypeVersion_Node(), String.class, null);
+  }
+
+  @Override
+  public void setDataTypeVersion_(@Nullable String value) {
+    ServerNodeSupport.write(
+        this,
+        getDataTypeVersion_Node(),
+        Namespaces.OPC_UA,
+        "DataTypeVersion",
         value,
-        dataType,
-        valueRank,
-        arrayDimensions);
+        false,
+        false,
+        false);
   }
 
   @Override
-  public PropertyTypeNode getDataTypeVersionNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(DataTypeDescriptionType.DATA_TYPE_VERSION);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable PropertyTypeNode getDictionaryFragment_Node() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "DictionaryFragment",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 15L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public String getDataTypeVersion() {
-    return getProperty(DataTypeDescriptionType.DATA_TYPE_VERSION).orElse(null);
+  public @Nullable ByteString getDictionaryFragment_() {
+    return ServerNodeSupport.read(this, getDictionaryFragment_Node(), ByteString.class, null);
   }
 
   @Override
-  public void setDataTypeVersion(String value) {
-    setProperty(DataTypeDescriptionType.DATA_TYPE_VERSION, value);
+  public void setDictionaryFragment_(@Nullable ByteString value) {
+    ServerNodeSupport.write(
+        this,
+        getDictionaryFragment_Node(),
+        Namespaces.OPC_UA,
+        "DictionaryFragment",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
-  public PropertyTypeNode getDictionaryFragmentNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(DataTypeDescriptionType.DICTIONARY_FRAGMENT);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public void validateChildren() {
+    super.validateChildren();
+    getDataTypeVersion_Node();
+    getDictionaryFragment_Node();
   }
 
   @Override
-  public ByteString getDictionaryFragment() {
-    return getProperty(DataTypeDescriptionType.DICTIONARY_FRAGMENT).orElse(null);
+  public @Nullable String getTypedValue() {
+    return ServerNodeSupport.read(this, this, String.class, null);
   }
 
   @Override
-  public void setDictionaryFragment(ByteString value) {
-    setProperty(DataTypeDescriptionType.DICTIONARY_FRAGMENT, value);
+  public void setTypedValue(@Nullable String value) {
+    ServerNodeSupport.write(this, this, value, false, false, false);
   }
 }

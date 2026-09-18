@@ -1,104 +1,329 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.variables;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
+import org.eclipse.milo.opcua.stack.core.types.structured.ProgramDiagnostic2DataType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part10/5.2.9">https://reference.opcfoundation.org/v105/Core/docs/Part10/5.2.9</a>
+ * Server API for the ProgramDiagnostic2Type VariableType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part10/5.2.9">Model
+ *     documentation</a>
  */
 public interface ProgramDiagnostic2Type extends BaseDataVariableType {
-  QualifiedProperty<DateTime> LAST_TRANSITION_TIME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "LastTransitionTime",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
-          -1,
-          DateTime.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 15383L);
 
-  DateTime getLastTransitionTime();
+  /**
+   * Returns the mandatory CreateClientName child, a BaseDataVariableType with DataType String.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  BaseDataVariableTypeNode getCreateClientNameNode();
 
-  void setLastTransitionTime(DateTime value);
+  /**
+   * Returns the Value of the CreateClientName child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getCreateClientName();
 
-  PropertyType getLastTransitionTimeNode();
+  /**
+   * Sets the Value of the CreateClientName child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setCreateClientName(@Nullable String value);
 
-  BaseDataVariableType getCreateSessionIdNode();
+  /**
+   * Returns the mandatory CreateSessionId child, a BaseDataVariableType with DataType NodeId.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  BaseDataVariableTypeNode getCreateSessionIdNode();
 
-  NodeId getCreateSessionId();
+  /**
+   * Returns the Value of the CreateSessionId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable NodeId getCreateSessionId();
 
-  void setCreateSessionId(NodeId value);
+  /**
+   * Sets the Value of the CreateSessionId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setCreateSessionId(@Nullable NodeId value);
 
-  BaseDataVariableType getCreateClientNameNode();
+  /**
+   * Returns the mandatory InvocationCreationTime child, a BaseDataVariableType with DataType
+   * UtcTime.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  BaseDataVariableTypeNode getInvocationCreationTimeNode();
 
-  String getCreateClientName();
+  /**
+   * Returns the Value of the InvocationCreationTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable DateTime getInvocationCreationTime();
 
-  void setCreateClientName(String value);
+  /**
+   * Sets the Value of the InvocationCreationTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setInvocationCreationTime(@Nullable DateTime value);
 
-  BaseDataVariableType getInvocationCreationTimeNode();
+  /**
+   * Returns the mandatory LastMethodCall child, a BaseDataVariableType with DataType String.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  BaseDataVariableTypeNode getLastMethodCallNode();
 
-  DateTime getInvocationCreationTime();
+  /**
+   * Returns the Value of the LastMethodCall child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getLastMethodCall();
 
-  void setInvocationCreationTime(DateTime value);
+  /**
+   * Sets the Value of the LastMethodCall child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setLastMethodCall(@Nullable String value);
 
-  BaseDataVariableType getLastMethodCallNode();
+  /**
+   * Returns the mandatory LastMethodCallTime child, a BaseDataVariableType with DataType UtcTime.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  BaseDataVariableTypeNode getLastMethodCallTimeNode();
 
-  String getLastMethodCall();
+  /**
+   * Returns the Value of the LastMethodCallTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable DateTime getLastMethodCallTime();
 
-  void setLastMethodCall(String value);
+  /**
+   * Sets the Value of the LastMethodCallTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setLastMethodCallTime(@Nullable DateTime value);
 
-  BaseDataVariableType getLastMethodSessionIdNode();
+  /**
+   * Returns the mandatory LastMethodInputArguments child, a BaseDataVariableType with DataType
+   * Argument.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  BaseDataVariableTypeNode getLastMethodInputArgumentsNode();
 
-  NodeId getLastMethodSessionId();
+  /**
+   * Returns the Value of the LastMethodInputArguments child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Argument @Nullable [] getLastMethodInputArguments();
 
-  void setLastMethodSessionId(NodeId value);
+  /**
+   * Sets the Value of the LastMethodInputArguments child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setLastMethodInputArguments(@Nullable Argument @Nullable [] value);
 
-  BaseDataVariableType getLastMethodInputArgumentsNode();
+  /**
+   * Returns the mandatory LastMethodInputValues child, a BaseDataVariableType with DataType
+   * BaseDataType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  BaseDataVariableTypeNode getLastMethodInputValuesNode();
 
-  Argument[] getLastMethodInputArguments();
+  /**
+   * Returns the Value of the LastMethodInputValues child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Variant @Nullable [] getLastMethodInputValues();
 
-  void setLastMethodInputArguments(Argument[] value);
+  /**
+   * Sets the Value of the LastMethodInputValues child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setLastMethodInputValues(@Nullable Variant @Nullable [] value);
 
-  BaseDataVariableType getLastMethodOutputArgumentsNode();
+  /**
+   * Returns the mandatory LastMethodOutputArguments child, a BaseDataVariableType with DataType
+   * Argument.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  BaseDataVariableTypeNode getLastMethodOutputArgumentsNode();
 
-  Argument[] getLastMethodOutputArguments();
+  /**
+   * Returns the Value of the LastMethodOutputArguments child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Argument @Nullable [] getLastMethodOutputArguments();
 
-  void setLastMethodOutputArguments(Argument[] value);
+  /**
+   * Sets the Value of the LastMethodOutputArguments child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setLastMethodOutputArguments(@Nullable Argument @Nullable [] value);
 
-  BaseDataVariableType getLastMethodInputValuesNode();
+  /**
+   * Returns the mandatory LastMethodOutputValues child, a BaseDataVariableType with DataType
+   * BaseDataType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  BaseDataVariableTypeNode getLastMethodOutputValuesNode();
 
-  Object[] getLastMethodInputValues();
+  /**
+   * Returns the Value of the LastMethodOutputValues child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Variant @Nullable [] getLastMethodOutputValues();
 
-  void setLastMethodInputValues(Object[] value);
+  /**
+   * Sets the Value of the LastMethodOutputValues child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setLastMethodOutputValues(@Nullable Variant @Nullable [] value);
 
-  BaseDataVariableType getLastMethodOutputValuesNode();
+  /**
+   * Returns the mandatory LastMethodReturnStatus child, a BaseDataVariableType with DataType
+   * StatusCode.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  BaseDataVariableTypeNode getLastMethodReturnStatusNode();
 
-  Object[] getLastMethodOutputValues();
+  /**
+   * Returns the Value of the LastMethodReturnStatus child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable StatusCode getLastMethodReturnStatus();
 
-  void setLastMethodOutputValues(Object[] value);
+  /**
+   * Sets the Value of the LastMethodReturnStatus child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setLastMethodReturnStatus(@Nullable StatusCode value);
 
-  BaseDataVariableType getLastMethodCallTimeNode();
+  /**
+   * Returns the mandatory LastMethodSessionId child, a BaseDataVariableType with DataType NodeId.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  BaseDataVariableTypeNode getLastMethodSessionIdNode();
 
-  DateTime getLastMethodCallTime();
+  /**
+   * Returns the Value of the LastMethodSessionId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable NodeId getLastMethodSessionId();
 
-  void setLastMethodCallTime(DateTime value);
+  /**
+   * Sets the Value of the LastMethodSessionId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setLastMethodSessionId(@Nullable NodeId value);
 
-  BaseDataVariableType getLastMethodReturnStatusNode();
+  /**
+   * Returns the mandatory LastTransitionTime child, a PropertyType with DataType UtcTime.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getLastTransitionTimeNode();
 
-  StatusCode getLastMethodReturnStatus();
+  /**
+   * Returns the Value of the LastTransitionTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable DateTime getLastTransitionTime();
 
-  void setLastMethodReturnStatus(StatusCode value);
+  /**
+   * Sets the Value of the LastTransitionTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setLastTransitionTime(@Nullable DateTime value);
+
+  /**
+   * Returns this node's Value.
+   *
+   * @throws UaRuntimeException if the Value does not convert.
+   */
+  @Nullable ProgramDiagnostic2DataType getTypedValue();
+
+  /**
+   * Sets this node's Value.
+   *
+   * @throws UaRuntimeException if the value does not convert.
+   */
+  void setTypedValue(@Nullable ProgramDiagnostic2DataType value);
 }

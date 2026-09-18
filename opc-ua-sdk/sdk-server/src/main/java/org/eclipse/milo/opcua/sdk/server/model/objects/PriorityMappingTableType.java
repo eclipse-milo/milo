@@ -1,183 +1,163 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.core.nodes.MethodNode;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
-import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.types.structured.PriorityMappingEntryType;
-import org.eclipse.milo.opcua.stack.core.util.Lazy;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.5.2/#5.5.2.2">https://reference.opcfoundation.org/v105/Core/docs/Part22/5.5.2/#5.5.2.2</a>
+ * Server API for the PriorityMappingTableType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.5.2/#5.5.2.2">Model
+ *     documentation</a>
  */
 public interface PriorityMappingTableType extends BaseObjectType {
-  QualifiedProperty<PriorityMappingEntryType[]> PRIORITY_MAPPPING_ENTRIES =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "PriorityMapppingEntries",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=25220"),
-          1,
-          PriorityMappingEntryType[].class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 25227L);
 
-  PriorityMappingEntryType[] getPriorityMapppingEntries();
+  /**
+   * Returns the mandatory PriorityMapppingEntries child, a PropertyType with DataType
+   * PriorityMappingEntryType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getPriorityMapppingEntriesNode();
 
-  void setPriorityMapppingEntries(PriorityMappingEntryType[] value);
+  /**
+   * Returns the Value of the PriorityMapppingEntries child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable PriorityMappingEntryType @Nullable [] getPriorityMapppingEntries();
 
-  PropertyType getPriorityMapppingEntriesNode();
+  /**
+   * Sets the Value of the PriorityMapppingEntries child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setPriorityMapppingEntries(@Nullable PriorityMappingEntryType @Nullable [] value);
 
-  MethodNode getAddPriorityMappingEntryMethodNode();
+  /**
+   * Returns the optional AddPriorityMappingEntry Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.5.2/#5.5.2.3">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getAddPriorityMappingEntryMethodNode();
 
-  MethodNode getDeletePriorityMappingEntryMethodNode();
+  /**
+   * Sets this instance's AddPriorityMappingEntry handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setAddPriorityMappingEntryHandler(@Nullable AddPriorityMappingEntryHandler handler);
 
-  abstract class AddPriorityMappingEntryMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+  /**
+   * Returns the optional DeletePriorityMappingEntry Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.5.2/#5.5.2.4">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getDeletePriorityMappingEntryMethodNode();
 
-    public AddPriorityMappingEntryMethod(UaMethodNode node) {
-      super(node);
-    }
+  /**
+   * Sets this instance's DeletePriorityMappingEntry handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setDeletePriorityMappingEntryHandler(@Nullable DeletePriorityMappingEntryHandler handler);
 
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+  /**
+   * Sets this instance's Method handlers, including inherited handlers, from one implementation;
+   * null clears them and restores Method-node fallback. Absent optional Methods are skipped.
+   * Changes are applied in order; a failure does not roll back earlier changes.
+   *
+   * @throws UaRuntimeException if a mandatory Method is absent, or a Method is ambiguous or
+   *     incompatible.
+   */
+  void setMethods(@Nullable Methods methods);
 
-            return new Argument[] {
-              new Argument(
-                  "MappingUri",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "PriorityLabel",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "PriorityValue_PCP",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=3")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "PriorityValue_DSCP",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      String mappingUri = (String) inputValues[0].getValue();
-      String priorityLabel = (String) inputValues[1].getValue();
-      UByte priorityValuePcp = (UByte) inputValues[2].getValue();
-      UInteger priorityValueDscp = (UInteger) inputValues[3].getValue();
-      invoke(context, mappingUri, priorityLabel, priorityValuePcp, priorityValueDscp);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(
+  /**
+   * Handles calls to the AddPriorityMappingEntry Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.5.2/#5.5.2.3">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface AddPriorityMappingEntryHandler {
+    /**
+     * Handles a call to the AddPriorityMappingEntry Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void addPriorityMappingEntry(
         AbstractMethodInvocationHandler.InvocationContext context,
-        String mappingUri,
-        String priorityLabel,
-        UByte priorityValuePcp,
-        UInteger priorityValueDscp)
+        @Nullable String mappingUri,
+        @Nullable String priorityLabel,
+        @Nullable UByte priorityValue_PCP,
+        @Nullable UInteger priorityValue_DSCP)
         throws UaException;
   }
 
-  abstract class DeletePriorityMappingEntryMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    public DeletePriorityMappingEntryMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "MappingUri",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "PriorityLabel",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      String mappingUri = (String) inputValues[0].getValue();
-      String priorityLabel = (String) inputValues[1].getValue();
-      invoke(context, mappingUri, priorityLabel);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(
+  /**
+   * Handles calls to the DeletePriorityMappingEntry Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.5.2/#5.5.2.4">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface DeletePriorityMappingEntryHandler {
+    /**
+     * Handles a call to the DeletePriorityMappingEntry Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void deletePriorityMappingEntry(
         AbstractMethodInvocationHandler.InvocationContext context,
-        String mappingUri,
-        String priorityLabel)
+        @Nullable String mappingUri,
+        @Nullable String priorityLabel)
         throws UaException;
+  }
+
+  /** Implements this type's Methods. Unimplemented Methods report Bad_NotImplemented. */
+  interface Methods {
+    /**
+     * Handles a call to the AddPriorityMappingEntry Method; see {@link
+     * AddPriorityMappingEntryHandler#addPriorityMappingEntry}.
+     */
+    default void addPriorityMappingEntry(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable String mappingUri,
+        @Nullable String priorityLabel,
+        @Nullable UByte priorityValue_PCP,
+        @Nullable UInteger priorityValue_DSCP)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /**
+     * Handles a call to the DeletePriorityMappingEntry Method; see {@link
+     * DeletePriorityMappingEntryHandler#deletePriorityMappingEntry}.
+     */
+    default void deletePriorityMappingEntry(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable String mappingUri,
+        @Nullable String priorityLabel)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
   }
 }

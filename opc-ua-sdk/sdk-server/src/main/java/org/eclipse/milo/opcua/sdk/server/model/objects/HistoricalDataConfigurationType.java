@@ -1,182 +1,314 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ExceptionDeviationFormat;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.2.2">https://reference.opcfoundation.org/v105/Core/docs/Part11/5.2.2</a>
+ * Server API for the HistoricalDataConfigurationType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.2.2">Model
+ *     documentation</a>
  */
 public interface HistoricalDataConfigurationType extends BaseObjectType {
-  QualifiedProperty<Boolean> STEPPED =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Stepped",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2318L);
 
-  QualifiedProperty<String> DEFINITION =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Definition",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  /**
+   * Returns the mandatory AggregateConfiguration child, a AggregateConfigurationType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part13/4.2.1/#4.2.1.2">AggregateConfigurationType
+   *     documentation</a>
+   */
+  AggregateConfigurationTypeNode getAggregateConfigurationNode();
 
-  QualifiedProperty<Double> MAX_TIME_INTERVAL =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxTimeInterval",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
-          -1,
-          Double.class);
+  /**
+   * Returns the optional AggregateFunctions child, a FolderType.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.6">FolderType
+   *     documentation</a>
+   */
+  @Nullable FolderTypeNode getAggregateFunctionsNode();
 
-  QualifiedProperty<Double> MIN_TIME_INTERVAL =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MinTimeInterval",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
-          -1,
-          Double.class);
+  /**
+   * Returns the optional Definition child, a PropertyType with DataType String.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getDefinitionNode();
 
-  QualifiedProperty<Double> EXCEPTION_DEVIATION =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ExceptionDeviation",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
-          -1,
-          Double.class);
+  /**
+   * Returns the Value of the Definition child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getDefinition();
 
-  QualifiedProperty<ExceptionDeviationFormat> EXCEPTION_DEVIATION_FORMAT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ExceptionDeviationFormat",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=890"),
-          -1,
-          ExceptionDeviationFormat.class);
+  /**
+   * Sets the Value of the Definition child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setDefinition(@Nullable String value);
 
-  QualifiedProperty<DateTime> START_OF_ARCHIVE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "StartOfArchive",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
-          -1,
-          DateTime.class);
+  /**
+   * Returns the optional ExceptionDeviation child, a PropertyType with DataType Double.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getExceptionDeviationNode();
 
-  QualifiedProperty<DateTime> START_OF_ONLINE_ARCHIVE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "StartOfOnlineArchive",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
-          -1,
-          DateTime.class);
+  /**
+   * Returns the Value of the ExceptionDeviation child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Double getExceptionDeviation();
 
-  QualifiedProperty<Boolean> SERVER_TIMESTAMP_SUPPORTED =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ServerTimestampSupported",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
+  /**
+   * Sets the Value of the ExceptionDeviation child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setExceptionDeviation(@Nullable Double value);
 
-  QualifiedProperty<Double> MAX_TIME_STORED_VALUES =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxTimeStoredValues",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
-          -1,
-          Double.class);
+  /**
+   * Returns the optional ExceptionDeviationFormat child, a PropertyType with DataType
+   * ExceptionDeviationFormat.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getExceptionDeviationFormatNode();
 
-  QualifiedProperty<UInteger> MAX_COUNT_STORED_VALUES =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxCountStoredValues",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  /**
+   * Returns the Value of the ExceptionDeviationFormat child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable ExceptionDeviationFormat getExceptionDeviationFormat();
 
-  Boolean getStepped();
+  /**
+   * Sets the Value of the ExceptionDeviationFormat child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setExceptionDeviationFormat(@Nullable ExceptionDeviationFormat value);
 
-  void setStepped(Boolean value);
+  /**
+   * Returns the optional MaxCountStoredValues child, a PropertyType with DataType UInt32.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getMaxCountStoredValuesNode();
 
-  PropertyType getSteppedNode();
+  /**
+   * Returns the Value of the MaxCountStoredValues child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getMaxCountStoredValues();
 
-  String getDefinition();
+  /**
+   * Sets the Value of the MaxCountStoredValues child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMaxCountStoredValues(@Nullable UInteger value);
 
-  void setDefinition(String value);
+  /**
+   * Returns the optional MaxTimeInterval child, a PropertyType with DataType Duration.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getMaxTimeIntervalNode();
 
-  PropertyType getDefinitionNode();
+  /**
+   * Returns the Value of the MaxTimeInterval child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Double getMaxTimeInterval();
 
-  Double getMaxTimeInterval();
+  /**
+   * Sets the Value of the MaxTimeInterval child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMaxTimeInterval(@Nullable Double value);
 
-  void setMaxTimeInterval(Double value);
+  /**
+   * Returns the optional MaxTimeStoredValues child, a PropertyType with DataType Duration.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getMaxTimeStoredValuesNode();
 
-  PropertyType getMaxTimeIntervalNode();
+  /**
+   * Returns the Value of the MaxTimeStoredValues child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Double getMaxTimeStoredValues();
 
-  Double getMinTimeInterval();
+  /**
+   * Sets the Value of the MaxTimeStoredValues child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMaxTimeStoredValues(@Nullable Double value);
 
-  void setMinTimeInterval(Double value);
+  /**
+   * Returns the optional MinTimeInterval child, a PropertyType with DataType Duration.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getMinTimeIntervalNode();
 
-  PropertyType getMinTimeIntervalNode();
+  /**
+   * Returns the Value of the MinTimeInterval child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Double getMinTimeInterval();
 
-  Double getExceptionDeviation();
+  /**
+   * Sets the Value of the MinTimeInterval child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMinTimeInterval(@Nullable Double value);
 
-  void setExceptionDeviation(Double value);
+  /**
+   * Returns the optional ServerTimestampSupported child, a PropertyType with DataType Boolean.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getServerTimestampSupportedNode();
 
-  PropertyType getExceptionDeviationNode();
+  /**
+   * Returns the Value of the ServerTimestampSupported child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Boolean getServerTimestampSupported();
 
-  ExceptionDeviationFormat getExceptionDeviationFormat();
+  /**
+   * Sets the Value of the ServerTimestampSupported child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setServerTimestampSupported(@Nullable Boolean value);
 
-  void setExceptionDeviationFormat(ExceptionDeviationFormat value);
+  /**
+   * Returns the optional StartOfArchive child, a PropertyType with DataType UtcTime.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getStartOfArchiveNode();
 
-  PropertyType getExceptionDeviationFormatNode();
+  /**
+   * Returns the Value of the StartOfArchive child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable DateTime getStartOfArchive();
 
-  DateTime getStartOfArchive();
+  /**
+   * Sets the Value of the StartOfArchive child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setStartOfArchive(@Nullable DateTime value);
 
-  void setStartOfArchive(DateTime value);
+  /**
+   * Returns the optional StartOfOnlineArchive child, a PropertyType with DataType UtcTime.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getStartOfOnlineArchiveNode();
 
-  PropertyType getStartOfArchiveNode();
+  /**
+   * Returns the Value of the StartOfOnlineArchive child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable DateTime getStartOfOnlineArchive();
 
-  DateTime getStartOfOnlineArchive();
+  /**
+   * Sets the Value of the StartOfOnlineArchive child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setStartOfOnlineArchive(@Nullable DateTime value);
 
-  void setStartOfOnlineArchive(DateTime value);
+  /**
+   * Returns the mandatory Stepped child, a PropertyType with DataType Boolean.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getSteppedNode();
 
-  PropertyType getStartOfOnlineArchiveNode();
+  /**
+   * Returns the Value of the Stepped child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Boolean getStepped();
 
-  Boolean getServerTimestampSupported();
-
-  void setServerTimestampSupported(Boolean value);
-
-  PropertyType getServerTimestampSupportedNode();
-
-  Double getMaxTimeStoredValues();
-
-  void setMaxTimeStoredValues(Double value);
-
-  PropertyType getMaxTimeStoredValuesNode();
-
-  UInteger getMaxCountStoredValues();
-
-  void setMaxCountStoredValues(UInteger value);
-
-  PropertyType getMaxCountStoredValuesNode();
-
-  AggregateConfigurationType getAggregateConfigurationNode();
-
-  FolderType getAggregateFunctionsNode();
+  /**
+   * Sets the Value of the Stepped child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setStepped(@Nullable Boolean value);
 }

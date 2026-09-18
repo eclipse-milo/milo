@@ -1,17 +1,7 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
@@ -19,191 +9,324 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.structured.TimeZoneDataType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.2">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.2</a>
+ * Server API for the BaseEventType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.2">Model
+ *     documentation</a>
  */
 public interface BaseEventType extends BaseObjectType {
-  QualifiedProperty<ByteString> EVENT_ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "EventId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15"),
-          -1,
-          ByteString.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2041L);
 
-  QualifiedProperty<NodeId> EVENT_TYPE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "EventType",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-          -1,
-          NodeId.class);
+  /**
+   * Returns the optional ConditionClassId child, a PropertyType with DataType NodeId.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getConditionClassIdNode();
 
-  QualifiedProperty<NodeId> SOURCE_NODE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "SourceNode",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-          -1,
-          NodeId.class);
+  /**
+   * Returns the Value of the ConditionClassId child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable NodeId getConditionClassId();
 
-  QualifiedProperty<String> SOURCE_NAME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "SourceName",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  /**
+   * Sets the Value of the ConditionClassId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setConditionClassId(@Nullable NodeId value);
 
-  QualifiedProperty<DateTime> TIME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Time",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
-          -1,
-          DateTime.class);
+  /**
+   * Returns the optional ConditionClassName child, a PropertyType with DataType LocalizedText.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getConditionClassNameNode();
 
-  QualifiedProperty<DateTime> RECEIVE_TIME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ReceiveTime",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
-          -1,
-          DateTime.class);
+  /**
+   * Returns the Value of the ConditionClassName child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable LocalizedText getConditionClassName();
 
-  QualifiedProperty<TimeZoneDataType> LOCAL_TIME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "LocalTime",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=8912"),
-          -1,
-          TimeZoneDataType.class);
+  /**
+   * Sets the Value of the ConditionClassName child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setConditionClassName(@Nullable LocalizedText value);
 
-  QualifiedProperty<LocalizedText> MESSAGE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Message",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
-          -1,
-          LocalizedText.class);
+  /**
+   * Returns the optional ConditionSubClassId child, a PropertyType with DataType NodeId.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getConditionSubClassIdNode();
 
-  QualifiedProperty<UShort> SEVERITY =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Severity",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-          -1,
-          UShort.class);
+  /**
+   * Returns the Value of the ConditionSubClassId child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  NodeId @Nullable [] getConditionSubClassId();
 
-  QualifiedProperty<NodeId> CONDITION_CLASS_ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ConditionClassId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-          -1,
-          NodeId.class);
+  /**
+   * Sets the Value of the ConditionSubClassId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setConditionSubClassId(NodeId @Nullable [] value);
 
-  QualifiedProperty<LocalizedText> CONDITION_CLASS_NAME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ConditionClassName",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
-          -1,
-          LocalizedText.class);
+  /**
+   * Returns the optional ConditionSubClassName child, a PropertyType with DataType LocalizedText.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getConditionSubClassNameNode();
 
-  QualifiedProperty<NodeId[]> CONDITION_SUB_CLASS_ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ConditionSubClassId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-          1,
-          NodeId[].class);
+  /**
+   * Returns the Value of the ConditionSubClassName child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  LocalizedText @Nullable [] getConditionSubClassName();
 
-  QualifiedProperty<LocalizedText[]> CONDITION_SUB_CLASS_NAME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ConditionSubClassName",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
-          1,
-          LocalizedText[].class);
+  /**
+   * Sets the Value of the ConditionSubClassName child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setConditionSubClassName(LocalizedText @Nullable [] value);
 
-  ByteString getEventId();
+  /**
+   * Returns the mandatory EventId child, a PropertyType with DataType ByteString.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getEventIdNode();
 
-  void setEventId(ByteString value);
+  /**
+   * Returns the Value of the EventId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable ByteString getEventId();
 
-  PropertyType getEventIdNode();
+  /**
+   * Sets the Value of the EventId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setEventId(@Nullable ByteString value);
 
-  NodeId getEventType();
+  /**
+   * Returns the mandatory EventType child, a PropertyType with DataType NodeId.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getEventTypeNode();
 
-  void setEventType(NodeId value);
+  /**
+   * Returns the Value of the EventType child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable NodeId getEventType();
 
-  PropertyType getEventTypeNode();
+  /**
+   * Sets the Value of the EventType child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setEventType(@Nullable NodeId value);
 
-  NodeId getSourceNode();
+  /**
+   * Returns the optional LocalTime child, a PropertyType with DataType TimeZoneDataType.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getLocalTimeNode();
 
-  void setSourceNode(NodeId value);
+  /**
+   * Returns the Value of the LocalTime child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable TimeZoneDataType getLocalTime();
 
-  PropertyType getSourceNodeNode();
+  /**
+   * Sets the Value of the LocalTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setLocalTime(@Nullable TimeZoneDataType value);
 
-  String getSourceName();
+  /**
+   * Returns the mandatory Message child, a PropertyType with DataType LocalizedText.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getMessageNode();
 
-  void setSourceName(String value);
+  /**
+   * Returns the Value of the Message child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable LocalizedText getMessage();
 
-  PropertyType getSourceNameNode();
+  /**
+   * Sets the Value of the Message child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMessage(@Nullable LocalizedText value);
 
-  DateTime getTime();
+  /**
+   * Returns the mandatory ReceiveTime child, a PropertyType with DataType UtcTime.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getReceiveTimeNode();
 
-  void setTime(DateTime value);
+  /**
+   * Returns the Value of the ReceiveTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable DateTime getReceiveTime();
 
-  PropertyType getTimeNode();
+  /**
+   * Sets the Value of the ReceiveTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setReceiveTime(@Nullable DateTime value);
 
-  DateTime getReceiveTime();
+  /**
+   * Returns the mandatory Severity child, a PropertyType with DataType UInt16.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getSeverityNode();
 
-  void setReceiveTime(DateTime value);
+  /**
+   * Returns the Value of the Severity child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UShort getSeverity();
 
-  PropertyType getReceiveTimeNode();
+  /**
+   * Sets the Value of the Severity child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setSeverity(@Nullable UShort value);
 
-  TimeZoneDataType getLocalTime();
+  /**
+   * Returns the mandatory SourceName child, a PropertyType with DataType String.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getSourceNameNode();
 
-  void setLocalTime(TimeZoneDataType value);
+  /**
+   * Returns the Value of the SourceName child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getSourceName();
 
-  PropertyType getLocalTimeNode();
+  /**
+   * Sets the Value of the SourceName child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setSourceName(@Nullable String value);
 
-  LocalizedText getMessage();
+  /**
+   * Returns the mandatory SourceNode child, a PropertyType with DataType NodeId.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getSourceNodeNode();
 
-  void setMessage(LocalizedText value);
+  /**
+   * Returns the Value of the SourceNode child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable NodeId getSourceNode();
 
-  PropertyType getMessageNode();
+  /**
+   * Sets the Value of the SourceNode child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setSourceNode(@Nullable NodeId value);
 
-  UShort getSeverity();
+  /**
+   * Returns the mandatory Time child, a PropertyType with DataType UtcTime.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getTimeNode();
 
-  void setSeverity(UShort value);
+  /**
+   * Returns the Value of the Time child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable DateTime getTime();
 
-  PropertyType getSeverityNode();
-
-  NodeId getConditionClassId();
-
-  void setConditionClassId(NodeId value);
-
-  PropertyType getConditionClassIdNode();
-
-  LocalizedText getConditionClassName();
-
-  void setConditionClassName(LocalizedText value);
-
-  PropertyType getConditionClassNameNode();
-
-  NodeId[] getConditionSubClassId();
-
-  void setConditionSubClassId(NodeId[] value);
-
-  PropertyType getConditionSubClassIdNode();
-
-  LocalizedText[] getConditionSubClassName();
-
-  void setConditionSubClassName(LocalizedText[] value);
-
-  PropertyType getConditionSubClassNameNode();
+  /**
+   * Sets the Value of the Time child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setTime(@Nullable DateTime value);
 }

@@ -1,92 +1,141 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.variables;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.2">https://reference.opcfoundation.org/v105/Core/docs/Part9/5.2</a>
+ * Server API for the TwoStateVariableType VariableType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.2">Model
+ *     documentation</a>
  */
 public interface TwoStateVariableType extends StateVariableType {
-  QualifiedProperty<Boolean> ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Id",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 8995L);
 
-  QualifiedProperty<DateTime> TRANSITION_TIME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "TransitionTime",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
-          -1,
-          DateTime.class);
+  /**
+   * Returns the optional EffectiveTransitionTime child, a PropertyType with DataType UtcTime.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getEffectiveTransitionTimeNode();
 
-  QualifiedProperty<DateTime> EFFECTIVE_TRANSITION_TIME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "EffectiveTransitionTime",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
-          -1,
-          DateTime.class);
+  /**
+   * Returns the Value of the EffectiveTransitionTime child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable DateTime getEffectiveTransitionTime();
 
-  QualifiedProperty<LocalizedText> TRUE_STATE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "TrueState",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
-          -1,
-          LocalizedText.class);
+  /**
+   * Sets the Value of the EffectiveTransitionTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setEffectiveTransitionTime(@Nullable DateTime value);
 
-  QualifiedProperty<LocalizedText> FALSE_STATE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "FalseState",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
-          -1,
-          LocalizedText.class);
+  /**
+   * Returns the optional FalseState child, a PropertyType with DataType LocalizedText.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getFalseStateNode();
 
-  Boolean getId();
+  /**
+   * Returns the Value of the FalseState child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable LocalizedText getFalseState();
 
-  void setId(Boolean value);
+  /**
+   * Sets the Value of the FalseState child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setFalseState(@Nullable LocalizedText value);
 
-  PropertyType getIdNode();
+  /**
+   * Returns the mandatory Id child, a PropertyType with DataType Boolean.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getIdNode();
 
-  DateTime getTransitionTime();
+  /**
+   * Returns the Value of the Id child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Boolean getTwoStateVariableTypeId();
 
-  void setTransitionTime(DateTime value);
+  /**
+   * Sets the Value of the Id child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setTwoStateVariableTypeId(@Nullable Boolean value);
 
-  PropertyType getTransitionTimeNode();
+  /**
+   * Returns the optional TransitionTime child, a PropertyType with DataType UtcTime.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getTransitionTimeNode();
 
-  DateTime getEffectiveTransitionTime();
+  /**
+   * Returns the Value of the TransitionTime child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable DateTime getTransitionTime();
 
-  void setEffectiveTransitionTime(DateTime value);
+  /**
+   * Sets the Value of the TransitionTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setTransitionTime(@Nullable DateTime value);
 
-  PropertyType getEffectiveTransitionTimeNode();
+  /**
+   * Returns the optional TrueState child, a PropertyType with DataType LocalizedText.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getTrueStateNode();
 
-  LocalizedText getTrueState();
+  /**
+   * Returns the Value of the TrueState child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable LocalizedText getTrueState();
 
-  void setTrueState(LocalizedText value);
-
-  PropertyType getTrueStateNode();
-
-  LocalizedText getFalseState();
-
-  void setFalseState(LocalizedText value);
-
-  PropertyType getFalseStateNode();
+  /**
+   * Sets the Value of the TrueState child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setTrueState(@Nullable LocalizedText value);
 }

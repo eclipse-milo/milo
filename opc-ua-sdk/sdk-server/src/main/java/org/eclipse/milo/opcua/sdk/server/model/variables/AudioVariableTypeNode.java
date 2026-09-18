@@ -1,19 +1,10 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.variables;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -22,23 +13,63 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelExType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link AudioVariableType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.19">Model
+ *     documentation</a>
+ */
 public class AudioVariableTypeNode extends BaseDataVariableTypeNode implements AudioVariableType {
   public AudioVariableTypeNode(
       UaNodeContext context,
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       DataValue value,
       NodeId dataType,
       Integer valueRank,
-      UInteger[] arrayDimensions,
+      UInteger @Nullable [] arrayDimensions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions,
+        value,
+        dataType,
+        valueRank,
+        arrayDimensions);
+  }
+
+  public AudioVariableTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
+      DataValue value,
+      NodeId dataType,
+      Integer valueRank,
+      UInteger @Nullable [] arrayDimensions,
       UByte accessLevel,
       UByte userAccessLevel,
       Double minimumSamplingInterval,
@@ -66,83 +97,93 @@ public class AudioVariableTypeNode extends BaseDataVariableTypeNode implements A
         accessLevelEx);
   }
 
-  public AudioVariableTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
-      DataValue value,
-      NodeId dataType,
-      Integer valueRank,
-      UInteger[] arrayDimensions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions,
-        value,
-        dataType,
-        valueRank,
-        arrayDimensions);
+  @Override
+  public @Nullable PropertyTypeNode getAgencyIdNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "AgencyId",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getListIdNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(AudioVariableType.LIST_ID);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable String getAgencyId() {
+    return ServerNodeSupport.read(this, getAgencyIdNode(), String.class, null);
   }
 
   @Override
-  public String getListId() {
-    return getProperty(AudioVariableType.LIST_ID).orElse(null);
+  public void setAgencyId(@Nullable String value) {
+    ServerNodeSupport.write(
+        this, getAgencyIdNode(), Namespaces.OPC_UA, "AgencyId", value, false, false, false);
   }
 
   @Override
-  public void setListId(String value) {
-    setProperty(AudioVariableType.LIST_ID, value);
+  public @Nullable PropertyTypeNode getListIdNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "ListId",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getAgencyIdNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(AudioVariableType.AGENCY_ID);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable String getListId() {
+    return ServerNodeSupport.read(this, getListIdNode(), String.class, null);
   }
 
   @Override
-  public String getAgencyId() {
-    return getProperty(AudioVariableType.AGENCY_ID).orElse(null);
+  public void setListId(@Nullable String value) {
+    ServerNodeSupport.write(
+        this, getListIdNode(), Namespaces.OPC_UA, "ListId", value, false, false, false);
   }
 
   @Override
-  public void setAgencyId(String value) {
-    setProperty(AudioVariableType.AGENCY_ID, value);
+  public @Nullable PropertyTypeNode getVersionIdNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "VersionId",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getVersionIdNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(AudioVariableType.VERSION_ID);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable String getVersionId() {
+    return ServerNodeSupport.read(this, getVersionIdNode(), String.class, null);
   }
 
   @Override
-  public String getVersionId() {
-    return getProperty(AudioVariableType.VERSION_ID).orElse(null);
+  public void setVersionId(@Nullable String value) {
+    ServerNodeSupport.write(
+        this, getVersionIdNode(), Namespaces.OPC_UA, "VersionId", value, false, false, false);
   }
 
   @Override
-  public void setVersionId(String value) {
-    setProperty(AudioVariableType.VERSION_ID, value);
+  public void validateChildren() {
+    super.validateChildren();
+    getAgencyIdNode();
+    getListIdNode();
+    getVersionIdNode();
+  }
+
+  @Override
+  public @Nullable ByteString getTypedValue() {
+    return ServerNodeSupport.read(this, this, ByteString.class, null);
+  }
+
+  @Override
+  public void setTypedValue(@Nullable ByteString value) {
+    ServerNodeSupport.write(this, this, value, false, false, false);
   }
 }

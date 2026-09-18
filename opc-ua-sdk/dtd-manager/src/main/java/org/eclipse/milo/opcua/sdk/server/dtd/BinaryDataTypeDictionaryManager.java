@@ -33,6 +33,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import javax.xml.namespace.QName;
+import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
 import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.core.Reference.Direction;
 import org.eclipse.milo.opcua.sdk.core.ValueRanks;
@@ -44,7 +45,6 @@ import org.eclipse.milo.opcua.sdk.server.Lifecycle;
 import org.eclipse.milo.opcua.sdk.server.UaNodeManager;
 import org.eclipse.milo.opcua.sdk.server.model.objects.DataTypeEncodingTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.DataTypeDescriptionTypeNode;
-import org.eclipse.milo.opcua.sdk.server.model.variables.DataTypeDictionaryType;
 import org.eclipse.milo.opcua.sdk.server.model.variables.DataTypeDictionaryTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
@@ -144,7 +144,15 @@ public class BinaryDataTypeDictionaryManager implements Lifecycle {
             ValueRanks.Scalar,
             null);
 
-    dictionaryNode.setNamespaceUri(namespaceUri);
+    // Create the optional Property here; generated setters require an existing child.
+    dictionaryNode.setProperty(
+        new QualifiedProperty<>(
+            Namespaces.OPC_UA,
+            "NamespaceUri",
+            NodeIds.String.expanded(),
+            ValueRanks.Scalar,
+            String.class),
+        namespaceUri);
 
     dictionaryNode
         .getFilterChain()
@@ -601,7 +609,10 @@ public class BinaryDataTypeDictionaryManager implements Lifecycle {
     checkNotNull(dictionaryNode, "dictionaryNode for dataTypeId=" + dataTypeId);
 
     String dictionaryNamespaceUri =
-        dictionaryNode.getProperty(DataTypeDictionaryType.NAMESPACE_URI).orElse(null);
+        dictionaryNode
+            .getProperty(new QualifiedName(0, "NamespaceUri"))
+            .map(String.class::cast)
+            .orElse(null);
 
     checkNotNull(dictionaryNamespaceUri, "dictionaryNamespaceUri for dataTypeId=" + dataTypeId);
 

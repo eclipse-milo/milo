@@ -1,398 +1,452 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.core.nodes.MethodNode;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
-import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointType;
 import org.eclipse.milo.opcua.stack.core.types.structured.IdentityMappingRuleType;
-import org.eclipse.milo.opcua.stack.core.util.Lazy;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part18/4.4.1">https://reference.opcfoundation.org/v105/Core/docs/Part18/4.4.1</a>
+ * Server API for the RoleType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part18/4.4.1">Model
+ *     documentation</a>
  */
 public interface RoleType extends BaseObjectType {
-  QualifiedProperty<IdentityMappingRuleType[]> IDENTITIES =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Identities",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15634"),
-          1,
-          IdentityMappingRuleType[].class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 15620L);
 
-  QualifiedProperty<Boolean> APPLICATIONS_EXCLUDE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ApplicationsExclude",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
+  /**
+   * Returns the optional Applications child, a PropertyType with DataType String.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getApplicationsNode();
 
-  QualifiedProperty<String[]> APPLICATIONS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Applications",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          1,
-          String[].class);
+  /**
+   * Returns the Value of the Applications child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String @Nullable [] getApplications();
 
-  QualifiedProperty<Boolean> ENDPOINTS_EXCLUDE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "EndpointsExclude",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
+  /**
+   * Sets the Value of the Applications child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setApplications(@Nullable String @Nullable [] value);
 
-  QualifiedProperty<EndpointType[]> ENDPOINTS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Endpoints",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15528"),
-          1,
-          EndpointType[].class);
+  /**
+   * Returns the optional ApplicationsExclude child, a PropertyType with DataType Boolean.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getApplicationsExcludeNode();
 
-  QualifiedProperty<Boolean> CUSTOM_CONFIGURATION =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "CustomConfiguration",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
+  /**
+   * Returns the Value of the ApplicationsExclude child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Boolean getApplicationsExclude();
 
-  IdentityMappingRuleType[] getIdentities();
+  /**
+   * Sets the Value of the ApplicationsExclude child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setApplicationsExclude(@Nullable Boolean value);
 
-  void setIdentities(IdentityMappingRuleType[] value);
+  /**
+   * Returns the optional CustomConfiguration child, a PropertyType with DataType Boolean.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getCustomConfigurationNode();
 
-  PropertyType getIdentitiesNode();
+  /**
+   * Returns the Value of the CustomConfiguration child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Boolean getCustomConfiguration();
 
-  Boolean getApplicationsExclude();
+  /**
+   * Sets the Value of the CustomConfiguration child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setCustomConfiguration(@Nullable Boolean value);
 
-  void setApplicationsExclude(Boolean value);
+  /**
+   * Returns the optional Endpoints child, a PropertyType with DataType EndpointType.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getEndpointsNode();
 
-  PropertyType getApplicationsExcludeNode();
+  /**
+   * Returns the Value of the Endpoints child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable EndpointType @Nullable [] getEndpoints();
 
-  String[] getApplications();
+  /**
+   * Sets the Value of the Endpoints child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setEndpoints(@Nullable EndpointType @Nullable [] value);
 
-  void setApplications(String[] value);
+  /**
+   * Returns the optional EndpointsExclude child, a PropertyType with DataType Boolean.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getEndpointsExcludeNode();
 
-  PropertyType getApplicationsNode();
+  /**
+   * Returns the Value of the EndpointsExclude child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Boolean getEndpointsExclude();
 
-  Boolean getEndpointsExclude();
+  /**
+   * Sets the Value of the EndpointsExclude child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setEndpointsExclude(@Nullable Boolean value);
 
-  void setEndpointsExclude(Boolean value);
+  /**
+   * Returns the mandatory Identities child, a PropertyType with DataType IdentityMappingRuleType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getIdentitiesNode();
 
-  PropertyType getEndpointsExcludeNode();
+  /**
+   * Returns the Value of the Identities child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable IdentityMappingRuleType @Nullable [] getIdentities();
 
-  EndpointType[] getEndpoints();
+  /**
+   * Sets the Value of the Identities child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setIdentities(@Nullable IdentityMappingRuleType @Nullable [] value);
 
-  void setEndpoints(EndpointType[] value);
+  /**
+   * Returns the optional AddApplication Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part18/4.4.7">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getAddApplicationMethodNode();
 
-  PropertyType getEndpointsNode();
+  /**
+   * Sets this instance's AddApplication handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setAddApplicationHandler(@Nullable AddApplicationHandler handler);
 
-  Boolean getCustomConfiguration();
+  /**
+   * Returns the optional AddEndpoint Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part18/4.4.9">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getAddEndpointMethodNode();
 
-  void setCustomConfiguration(Boolean value);
+  /**
+   * Sets this instance's AddEndpoint handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setAddEndpointHandler(@Nullable AddEndpointHandler handler);
 
-  PropertyType getCustomConfigurationNode();
+  /**
+   * Returns the optional AddIdentity Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part18/4.4.5">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getAddIdentityMethodNode();
 
-  MethodNode getAddIdentityMethodNode();
+  /**
+   * Sets this instance's AddIdentity handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setAddIdentityHandler(@Nullable AddIdentityHandler handler);
 
-  MethodNode getRemoveIdentityMethodNode();
+  /**
+   * Returns the optional RemoveApplication Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part18/4.4.8">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getRemoveApplicationMethodNode();
 
-  MethodNode getAddApplicationMethodNode();
+  /**
+   * Sets this instance's RemoveApplication handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setRemoveApplicationHandler(@Nullable RemoveApplicationHandler handler);
 
-  MethodNode getRemoveApplicationMethodNode();
+  /**
+   * Returns the optional RemoveEndpoint Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part18/4.4.10">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getRemoveEndpointMethodNode();
 
-  MethodNode getAddEndpointMethodNode();
+  /**
+   * Sets this instance's RemoveEndpoint handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setRemoveEndpointHandler(@Nullable RemoveEndpointHandler handler);
 
-  MethodNode getRemoveEndpointMethodNode();
+  /**
+   * Returns the optional RemoveIdentity Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part18/4.4.6">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getRemoveIdentityMethodNode();
 
-  abstract class AddIdentityMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+  /**
+   * Sets this instance's RemoveIdentity handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setRemoveIdentityHandler(@Nullable RemoveIdentityHandler handler);
 
-    public AddIdentityMethod(UaMethodNode node) {
-      super(node);
-    }
+  /**
+   * Sets this instance's Method handlers, including inherited handlers, from one implementation;
+   * null clears them and restores Method-node fallback. Absent optional Methods are skipped.
+   * Changes are applied in order; a failure does not roll back earlier changes.
+   *
+   * @throws UaRuntimeException if a mandatory Method is absent, or a Method is ambiguous or
+   *     incompatible.
+   */
+  void setMethods(@Nullable Methods methods);
 
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "Rule",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15634")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      IdentityMappingRuleType rule = (IdentityMappingRuleType) inputValues[0].getValue();
-      invoke(context, rule);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, IdentityMappingRuleType rule)
+  /**
+   * Handles calls to the AddApplication Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part18/4.4.7">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface AddApplicationHandler {
+    /**
+     * Handles a call to the AddApplication Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void addApplication(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable String applicationUri)
         throws UaException;
   }
 
-  abstract class RemoveIdentityMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    public RemoveIdentityMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "Rule",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15634")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      IdentityMappingRuleType rule = (IdentityMappingRuleType) inputValues[0].getValue();
-      invoke(context, rule);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, IdentityMappingRuleType rule)
+  /**
+   * Handles calls to the AddEndpoint Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part18/4.4.9">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface AddEndpointHandler {
+    /**
+     * Handles a call to the AddEndpoint Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void addEndpoint(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable EndpointType endpoint)
         throws UaException;
   }
 
-  abstract class AddApplicationMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    public AddApplicationMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "ApplicationUri",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      String applicationUri = (String) inputValues[0].getValue();
-      invoke(context, applicationUri);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, String applicationUri)
+  /**
+   * Handles calls to the AddIdentity Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part18/4.4.5">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface AddIdentityHandler {
+    /**
+     * Handles a call to the AddIdentity Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void addIdentity(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable IdentityMappingRuleType rule)
         throws UaException;
   }
 
-  abstract class RemoveApplicationMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    public RemoveApplicationMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "ApplicationUri",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      String applicationUri = (String) inputValues[0].getValue();
-      invoke(context, applicationUri);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, String applicationUri)
+  /**
+   * Handles calls to the RemoveApplication Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part18/4.4.8">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface RemoveApplicationHandler {
+    /**
+     * Handles a call to the RemoveApplication Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void removeApplication(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable String applicationUri)
         throws UaException;
   }
 
-  abstract class AddEndpointMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    public AddEndpointMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "Endpoint",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15528")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      EndpointType endpoint = (EndpointType) inputValues[0].getValue();
-      invoke(context, endpoint);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, EndpointType endpoint)
+  /**
+   * Handles calls to the RemoveEndpoint Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part18/4.4.10">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface RemoveEndpointHandler {
+    /**
+     * Handles a call to the RemoveEndpoint Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void removeEndpoint(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable EndpointType endpoint)
         throws UaException;
   }
 
-  abstract class RemoveEndpointMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    public RemoveEndpointMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "Endpoint",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15528")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      EndpointType endpoint = (EndpointType) inputValues[0].getValue();
-      invoke(context, endpoint);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, EndpointType endpoint)
+  /**
+   * Handles calls to the RemoveIdentity Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part18/4.4.6">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface RemoveIdentityHandler {
+    /**
+     * Handles a call to the RemoveIdentity Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void removeIdentity(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable IdentityMappingRuleType rule)
         throws UaException;
+  }
+
+  /** Implements this type's Methods. Unimplemented Methods report Bad_NotImplemented. */
+  interface Methods {
+    /**
+     * Handles a call to the AddApplication Method; see {@link
+     * AddApplicationHandler#addApplication}.
+     */
+    default void addApplication(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable String applicationUri)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /** Handles a call to the AddEndpoint Method; see {@link AddEndpointHandler#addEndpoint}. */
+    default void addEndpoint(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable EndpointType endpoint)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /** Handles a call to the AddIdentity Method; see {@link AddIdentityHandler#addIdentity}. */
+    default void addIdentity(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable IdentityMappingRuleType rule)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /**
+     * Handles a call to the RemoveApplication Method; see {@link
+     * RemoveApplicationHandler#removeApplication}.
+     */
+    default void removeApplication(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable String applicationUri)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /**
+     * Handles a call to the RemoveEndpoint Method; see {@link
+     * RemoveEndpointHandler#removeEndpoint}.
+     */
+    default void removeEndpoint(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable EndpointType endpoint)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /**
+     * Handles a call to the RemoveIdentity Method; see {@link
+     * RemoveIdentityHandler#removeIdentity}.
+     */
+    default void removeIdentity(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable IdentityMappingRuleType rule)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
   }
 }

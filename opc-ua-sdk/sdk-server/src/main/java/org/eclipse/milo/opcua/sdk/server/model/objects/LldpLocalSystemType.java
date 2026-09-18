@@ -1,107 +1,163 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ChassisIdSubtype;
 import org.eclipse.milo.opcua.stack.core.types.structured.LldpSystemCapabilitiesMap;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.5.4">https://reference.opcfoundation.org/v105/Core/docs/Part22/5.5.4</a>
+ * Server API for the LldpLocalSystemType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.5.4">Model
+ *     documentation</a>
  */
 public interface LldpLocalSystemType extends BaseObjectType {
-  QualifiedProperty<ChassisIdSubtype> CHASSIS_ID_SUBTYPE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ChassisIdSubtype",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=18947"),
-          -1,
-          ChassisIdSubtype.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 19002L);
 
-  QualifiedProperty<String> CHASSIS_ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ChassisId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  /**
+   * Returns the mandatory ChassisId child, a PropertyType with DataType String.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getChassisIdNode();
 
-  QualifiedProperty<String> SYSTEM_NAME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "SystemName",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  /**
+   * Returns the Value of the ChassisId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getChassisId();
 
-  QualifiedProperty<String> SYSTEM_DESCRIPTION =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "SystemDescription",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  /**
+   * Sets the Value of the ChassisId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setChassisId(@Nullable String value);
 
-  QualifiedProperty<LldpSystemCapabilitiesMap> SYSTEM_CAPABILITIES_SUPPORTED =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "SystemCapabilitiesSupported",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=18956"),
-          -1,
-          LldpSystemCapabilitiesMap.class);
+  /**
+   * Returns the mandatory ChassisIdSubtype child, a PropertyType with DataType ChassisIdSubtype.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getChassisIdSubtypeNode();
 
-  QualifiedProperty<LldpSystemCapabilitiesMap> SYSTEM_CAPABILITIES_ENABLED =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "SystemCapabilitiesEnabled",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=18956"),
-          -1,
-          LldpSystemCapabilitiesMap.class);
+  /**
+   * Returns the Value of the ChassisIdSubtype child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable ChassisIdSubtype getChassisIdSubtype();
 
-  ChassisIdSubtype getChassisIdSubtype();
+  /**
+   * Sets the Value of the ChassisIdSubtype child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setChassisIdSubtype(@Nullable ChassisIdSubtype value);
 
-  void setChassisIdSubtype(ChassisIdSubtype value);
+  /**
+   * Returns the optional SystemCapabilitiesEnabled child, a PropertyType with DataType
+   * LldpSystemCapabilitiesMap.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getSystemCapabilitiesEnabledNode();
 
-  PropertyType getChassisIdSubtypeNode();
+  /**
+   * Returns the Value of the SystemCapabilitiesEnabled child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable LldpSystemCapabilitiesMap getSystemCapabilitiesEnabled();
 
-  String getChassisId();
+  /**
+   * Sets the Value of the SystemCapabilitiesEnabled child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setSystemCapabilitiesEnabled(@Nullable LldpSystemCapabilitiesMap value);
 
-  void setChassisId(String value);
+  /**
+   * Returns the optional SystemCapabilitiesSupported child, a PropertyType with DataType
+   * LldpSystemCapabilitiesMap.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getSystemCapabilitiesSupportedNode();
 
-  PropertyType getChassisIdNode();
+  /**
+   * Returns the Value of the SystemCapabilitiesSupported child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable LldpSystemCapabilitiesMap getSystemCapabilitiesSupported();
 
-  String getSystemName();
+  /**
+   * Sets the Value of the SystemCapabilitiesSupported child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setSystemCapabilitiesSupported(@Nullable LldpSystemCapabilitiesMap value);
 
-  void setSystemName(String value);
+  /**
+   * Returns the mandatory SystemDescription child, a PropertyType with DataType String.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getSystemDescriptionNode();
 
-  PropertyType getSystemNameNode();
+  /**
+   * Returns the Value of the SystemDescription child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getSystemDescription();
 
-  String getSystemDescription();
+  /**
+   * Sets the Value of the SystemDescription child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setSystemDescription(@Nullable String value);
 
-  void setSystemDescription(String value);
+  /**
+   * Returns the mandatory SystemName child, a PropertyType with DataType String.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getSystemNameNode();
 
-  PropertyType getSystemDescriptionNode();
+  /**
+   * Returns the Value of the SystemName child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getSystemName();
 
-  LldpSystemCapabilitiesMap getSystemCapabilitiesSupported();
-
-  void setSystemCapabilitiesSupported(LldpSystemCapabilitiesMap value);
-
-  PropertyType getSystemCapabilitiesSupportedNode();
-
-  LldpSystemCapabilitiesMap getSystemCapabilitiesEnabled();
-
-  void setSystemCapabilitiesEnabled(LldpSystemCapabilitiesMap value);
-
-  PropertyType getSystemCapabilitiesEnabledNode();
+  /**
+   * Sets the Value of the SystemName child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setSystemName(@Nullable String value);
 }

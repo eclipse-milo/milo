@@ -1,95 +1,113 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.structured.TraceContextDataType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part26/6.3">https://reference.opcfoundation.org/v105/Core/docs/Part26/6.3</a>
+ * Server API for the BaseLogEventType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part26/6.3">Model
+ *     documentation</a>
  */
 public interface BaseLogEventType extends BaseEventType {
-  QualifiedProperty<NodeId> CONDITION_CLASS_ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ConditionClassId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-          -1,
-          NodeId.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 19362L);
 
-  QualifiedProperty<LocalizedText> CONDITION_CLASS_NAME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ConditionClassName",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
-          -1,
-          LocalizedText.class);
+  /**
+   * Returns the mandatory ConditionClassId child, a PropertyType with DataType NodeId.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getConditionClassIdNode();
 
-  QualifiedProperty<StatusCode> ERROR_CODE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ErrorCode",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=19"),
-          -1,
-          StatusCode.class);
+  /**
+   * Returns the mandatory ConditionClassName child, a PropertyType with DataType LocalizedText.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getConditionClassNameNode();
 
-  QualifiedProperty<NodeId> ERROR_CODE_NODE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ErrorCodeNode",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-          -1,
-          NodeId.class);
+  /**
+   * Returns the optional ErrorCode child, a PropertyType with DataType StatusCode.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getErrorCodeNode();
 
-  QualifiedProperty<TraceContextDataType> TRACE_CONTEXT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "TraceContext",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=19747"),
-          -1,
-          TraceContextDataType.class);
+  /**
+   * Returns the Value of the ErrorCode child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable StatusCode getErrorCode();
 
-  NodeId getConditionClassId();
+  /**
+   * Sets the Value of the ErrorCode child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setErrorCode(@Nullable StatusCode value);
 
-  void setConditionClassId(NodeId value);
+  /**
+   * Returns the optional ErrorCodeNode child, a PropertyType with DataType NodeId.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getErrorCodeNode_Node();
 
-  PropertyType getConditionClassIdNode();
+  /**
+   * Returns the Value of the ErrorCodeNode child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable NodeId getErrorCodeNode_();
 
-  LocalizedText getConditionClassName();
+  /**
+   * Sets the Value of the ErrorCodeNode child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setErrorCodeNode_(@Nullable NodeId value);
 
-  void setConditionClassName(LocalizedText value);
+  /**
+   * Returns the optional TraceContext child, a PropertyType with DataType TraceContextDataType.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getTraceContextNode();
 
-  PropertyType getConditionClassNameNode();
+  /**
+   * Returns the Value of the TraceContext child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable TraceContextDataType getTraceContext();
 
-  StatusCode getErrorCode();
-
-  void setErrorCode(StatusCode value);
-
-  PropertyType getErrorCodePropertyNode();
-
-  NodeId getErrorCodeNode();
-
-  void setErrorCodeNode(NodeId value);
-
-  PropertyType getErrorCodeNodeNode();
-
-  TraceContextDataType getTraceContext();
-
-  void setTraceContext(TraceContextDataType value);
-
-  PropertyType getTraceContextNode();
+  /**
+   * Sets the Value of the TraceContext child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setTraceContext(@Nullable TraceContextDataType value);
 }

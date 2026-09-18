@@ -1,78 +1,111 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.25">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.25</a>
+ * Server API for the AuditWriteUpdateEventType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.25">Model
+ *     documentation</a>
  */
 public interface AuditWriteUpdateEventType extends AuditUpdateEventType {
-  QualifiedProperty<UInteger> ATTRIBUTE_ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "AttributeId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2100L);
 
-  QualifiedProperty<String> INDEX_RANGE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "IndexRange",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=291"),
-          -1,
-          String.class);
+  /**
+   * Returns the mandatory AttributeId child, a PropertyType with DataType UInt32.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getAttributeIdNode();
 
-  QualifiedProperty<Object> OLD_VALUE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "OldValue",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24"),
-          -1,
-          Object.class);
+  /**
+   * Returns the Value of the AttributeId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getAttributeId();
 
-  QualifiedProperty<Object> NEW_VALUE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "NewValue",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24"),
-          -1,
-          Object.class);
+  /**
+   * Sets the Value of the AttributeId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setAttributeId(@Nullable UInteger value);
 
-  UInteger getAttributeId();
+  /**
+   * Returns the mandatory IndexRange child, a PropertyType with DataType NumericRange.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getIndexRangeNode();
 
-  void setAttributeId(UInteger value);
+  /**
+   * Returns the Value of the IndexRange child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getIndexRange();
 
-  PropertyType getAttributeIdNode();
+  /**
+   * Sets the Value of the IndexRange child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setIndexRange(@Nullable String value);
 
-  String getIndexRange();
+  /**
+   * Returns the mandatory NewValue child, a PropertyType with DataType BaseDataType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getNewValueNode();
 
-  void setIndexRange(String value);
+  /**
+   * Returns the Value of the NewValue child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Variant getNewValue();
 
-  PropertyType getIndexRangeNode();
+  /**
+   * Sets the Value of the NewValue child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setNewValue(@Nullable Variant value);
 
-  Object getOldValue();
+  /**
+   * Returns the mandatory OldValue child, a PropertyType with DataType BaseDataType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getOldValueNode();
 
-  void setOldValue(Object value);
+  /**
+   * Returns the Value of the OldValue child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Variant getOldValue();
 
-  PropertyType getOldValueNode();
-
-  Object getNewValue();
-
-  void setNewValue(Object value);
-
-  PropertyType getNewValueNode();
+  /**
+   * Sets the Value of the OldValue child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setOldValue(@Nullable Variant value);
 }

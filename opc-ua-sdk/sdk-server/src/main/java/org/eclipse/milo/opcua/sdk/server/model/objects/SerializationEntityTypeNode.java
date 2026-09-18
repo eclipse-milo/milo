@@ -1,24 +1,18 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.Reference;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.core.model.methods.SerializationEntityTypeConfigureSerialization;
+import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
+import org.eclipse.milo.opcua.sdk.server.methods.InvalidArgumentException;
+import org.eclipse.milo.opcua.sdk.server.methods.MethodArgumentValidator;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.model.variables.BaseDataVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaArgumentConversionException;
+import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -27,10 +21,19 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
+import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.types.structured.KeyValuePair;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.Structure;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link SerializationEntityType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part25/6.3.1">Model
+ *     documentation</a>
+ */
 public class SerializationEntityTypeNode extends BaseObjectTypeNode
     implements SerializationEntityType {
   public SerializationEntityTypeNode(
@@ -38,12 +41,36 @@ public class SerializationEntityTypeNode extends BaseObjectTypeNode
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions);
+  }
+
+  public SerializationEntityTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         context,
@@ -59,211 +86,415 @@ public class SerializationEntityTypeNode extends BaseObjectTypeNode
         eventNotifier);
   }
 
-  public SerializationEntityTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions);
+  @Override
+  public @Nullable PropertyTypeNode getConsiderSubElementSerializationPropertiesNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "ConsiderSubElementSerializationProperties",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getIncludeReferenceTypesNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(SerializationEntityType.INCLUDE_REFERENCE_TYPES);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable Boolean getConsiderSubElementSerializationProperties() {
+    return ServerNodeSupport.read(
+        this, getConsiderSubElementSerializationPropertiesNode(), Boolean.class, null);
   }
 
   @Override
-  public NodeId[] getIncludeReferenceTypes() {
-    return getProperty(SerializationEntityType.INCLUDE_REFERENCE_TYPES).orElse(null);
+  public void setConsiderSubElementSerializationProperties(@Nullable Boolean value) {
+    ServerNodeSupport.write(
+        this,
+        getConsiderSubElementSerializationPropertiesNode(),
+        Namespaces.OPC_UA,
+        "ConsiderSubElementSerializationProperties",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
-  public void setIncludeReferenceTypes(NodeId[] value) {
-    setProperty(SerializationEntityType.INCLUDE_REFERENCE_TYPES, value);
+  public @Nullable PropertyTypeNode getCustomMetaDataPropertiesNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "CustomMetaDataProperties",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 14533L),
+        1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getExcludeReferenceTypesNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(SerializationEntityType.EXCLUDE_REFERENCE_TYPES);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable KeyValuePair @Nullable [] getCustomMetaDataProperties() {
+    return ServerNodeSupport.readArray(
+        this, getCustomMetaDataPropertiesNode(), KeyValuePair.class, null);
   }
 
   @Override
-  public NodeId[] getExcludeReferenceTypes() {
-    return getProperty(SerializationEntityType.EXCLUDE_REFERENCE_TYPES).orElse(null);
+  public void setCustomMetaDataProperties(@Nullable KeyValuePair @Nullable [] value) {
+    ServerNodeSupport.write(
+        this,
+        getCustomMetaDataPropertiesNode(),
+        Namespaces.OPC_UA,
+        "CustomMetaDataProperties",
+        value,
+        true,
+        false,
+        true);
   }
 
   @Override
-  public void setExcludeReferenceTypes(NodeId[] value) {
-    setProperty(SerializationEntityType.EXCLUDE_REFERENCE_TYPES, value);
+  public @Nullable PropertyTypeNode getCustomMetaDataRefNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "CustomMetaDataRef",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 17L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getSerializationDepthNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(SerializationEntityType.SERIALIZATION_DEPTH);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable NodeId getCustomMetaDataRef() {
+    return ServerNodeSupport.read(this, getCustomMetaDataRefNode(), NodeId.class, null);
   }
 
   @Override
-  public UShort getSerializationDepth() {
-    return getProperty(SerializationEntityType.SERIALIZATION_DEPTH).orElse(null);
+  public void setCustomMetaDataRef(@Nullable NodeId value) {
+    ServerNodeSupport.write(
+        this,
+        getCustomMetaDataRefNode(),
+        Namespaces.OPC_UA,
+        "CustomMetaDataRef",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
-  public void setSerializationDepth(UShort value) {
-    setProperty(SerializationEntityType.SERIALIZATION_DEPTH, value);
+  public @Nullable PropertyTypeNode getExcludeReferenceTypesNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "ExcludeReferenceTypes",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 17L),
+        1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getConsiderSubElementSerializationPropertiesNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(SerializationEntityType.CONSIDER_SUB_ELEMENT_SERIALIZATION_PROPERTIES);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public NodeId @Nullable [] getExcludeReferenceTypes() {
+    return ServerNodeSupport.readArray(this, getExcludeReferenceTypesNode(), NodeId.class, null);
   }
 
   @Override
-  public Boolean getConsiderSubElementSerializationProperties() {
-    return getProperty(SerializationEntityType.CONSIDER_SUB_ELEMENT_SERIALIZATION_PROPERTIES)
-        .orElse(null);
+  public void setExcludeReferenceTypes(NodeId @Nullable [] value) {
+    ServerNodeSupport.write(
+        this,
+        getExcludeReferenceTypesNode(),
+        Namespaces.OPC_UA,
+        "ExcludeReferenceTypes",
+        value,
+        true,
+        false,
+        false);
   }
 
   @Override
-  public void setConsiderSubElementSerializationProperties(Boolean value) {
-    setProperty(SerializationEntityType.CONSIDER_SUB_ELEMENT_SERIALIZATION_PROPERTIES, value);
+  public @Nullable PropertyTypeNode getIncludeDictionaryReferenceNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "IncludeDictionaryReference",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getCustomMetaDataPropertiesNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(SerializationEntityType.CUSTOM_META_DATA_PROPERTIES);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable Boolean getIncludeDictionaryReference() {
+    return ServerNodeSupport.read(this, getIncludeDictionaryReferenceNode(), Boolean.class, null);
   }
 
   @Override
-  public KeyValuePair[] getCustomMetaDataProperties() {
-    return getProperty(SerializationEntityType.CUSTOM_META_DATA_PROPERTIES).orElse(null);
+  public void setIncludeDictionaryReference(@Nullable Boolean value) {
+    ServerNodeSupport.write(
+        this,
+        getIncludeDictionaryReferenceNode(),
+        Namespaces.OPC_UA,
+        "IncludeDictionaryReference",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
-  public void setCustomMetaDataProperties(KeyValuePair[] value) {
-    setProperty(SerializationEntityType.CUSTOM_META_DATA_PROPERTIES, value);
+  public @Nullable PropertyTypeNode getIncludeReferenceTypesNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "IncludeReferenceTypes",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 17L),
+        1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getCustomMetaDataRefNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(SerializationEntityType.CUSTOM_META_DATA_REF);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public NodeId @Nullable [] getIncludeReferenceTypes() {
+    return ServerNodeSupport.readArray(this, getIncludeReferenceTypesNode(), NodeId.class, null);
   }
 
   @Override
-  public NodeId getCustomMetaDataRef() {
-    return getProperty(SerializationEntityType.CUSTOM_META_DATA_REF).orElse(null);
+  public void setIncludeReferenceTypes(NodeId @Nullable [] value) {
+    ServerNodeSupport.write(
+        this,
+        getIncludeReferenceTypesNode(),
+        Namespaces.OPC_UA,
+        "IncludeReferenceTypes",
+        value,
+        true,
+        false,
+        false);
   }
 
   @Override
-  public void setCustomMetaDataRef(NodeId value) {
-    setProperty(SerializationEntityType.CUSTOM_META_DATA_REF, value);
+  public @Nullable PropertyTypeNode getIncludeSourceTimestampNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "IncludeSourceTimestamp",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getIncludeStatusNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(SerializationEntityType.INCLUDE_STATUS);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable Boolean getIncludeSourceTimestamp() {
+    return ServerNodeSupport.read(this, getIncludeSourceTimestampNode(), Boolean.class, null);
   }
 
   @Override
-  public Boolean getIncludeStatus() {
-    return getProperty(SerializationEntityType.INCLUDE_STATUS).orElse(null);
+  public void setIncludeSourceTimestamp(@Nullable Boolean value) {
+    ServerNodeSupport.write(
+        this,
+        getIncludeSourceTimestampNode(),
+        Namespaces.OPC_UA,
+        "IncludeSourceTimestamp",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
-  public void setIncludeStatus(Boolean value) {
-    setProperty(SerializationEntityType.INCLUDE_STATUS, value);
+  public @Nullable PropertyTypeNode getIncludeStatusNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "IncludeStatus",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getIncludeSourceTimestampNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(SerializationEntityType.INCLUDE_SOURCE_TIMESTAMP);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable Boolean getIncludeStatus() {
+    return ServerNodeSupport.read(this, getIncludeStatusNode(), Boolean.class, null);
   }
 
   @Override
-  public Boolean getIncludeSourceTimestamp() {
-    return getProperty(SerializationEntityType.INCLUDE_SOURCE_TIMESTAMP).orElse(null);
+  public void setIncludeStatus(@Nullable Boolean value) {
+    ServerNodeSupport.write(
+        this,
+        getIncludeStatusNode(),
+        Namespaces.OPC_UA,
+        "IncludeStatus",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
-  public void setIncludeSourceTimestamp(Boolean value) {
-    setProperty(SerializationEntityType.INCLUDE_SOURCE_TIMESTAMP, value);
+  public @Nullable PropertyTypeNode getSerializationDepthNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "SerializationDepth",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 5L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getIncludeDictionaryReferenceNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(SerializationEntityType.INCLUDE_DICTIONARY_REFERENCE);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable UShort getSerializationDepth() {
+    return ServerNodeSupport.read(this, getSerializationDepthNode(), UShort.class, null);
   }
 
   @Override
-  public Boolean getIncludeDictionaryReference() {
-    return getProperty(SerializationEntityType.INCLUDE_DICTIONARY_REFERENCE).orElse(null);
-  }
-
-  @Override
-  public void setIncludeDictionaryReference(Boolean value) {
-    setProperty(SerializationEntityType.INCLUDE_DICTIONARY_REFERENCE, value);
+  public void setSerializationDepth(@Nullable UShort value) {
+    ServerNodeSupport.write(
+        this,
+        getSerializationDepthNode(),
+        Namespaces.OPC_UA,
+        "SerializationDepth",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
   public BaseDataVariableTypeNode getSerializedDataNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "SerializedData");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "SerializedData",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 22L),
+        -1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public Structure getSerializedData() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "SerializedData");
-    return component.map(node -> (Structure) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable Structure getSerializedData() {
+    return ServerNodeSupport.read(this, getSerializedDataNode(), Structure.class, null);
   }
 
   @Override
-  public void setSerializedData(Structure value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "SerializedData")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setSerializedData(@Nullable Structure value) {
+    ServerNodeSupport.write(this, getSerializedDataNode(), value, false, false, false);
   }
 
   @Override
-  public UaMethodNode getConfigureSerializationMethodNode() {
-    Optional<UaNode> methodNode =
-        findNode(
+  public void validateChildren() {
+    super.validateChildren();
+    getConsiderSubElementSerializationPropertiesNode();
+    getCustomMetaDataPropertiesNode();
+    getCustomMetaDataRefNode();
+    getExcludeReferenceTypesNode();
+    getIncludeDictionaryReferenceNode();
+    getIncludeReferenceTypesNode();
+    getIncludeSourceTimestampNode();
+    getIncludeStatusNode();
+    getSerializationDepthNode();
+    getSerializedDataNode();
+  }
+
+  @Override
+  public @Nullable UaMethodNode getConfigureSerializationMethodNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        "http://opcfoundation.org/UA/",
+        "ConfigureSerialization",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.NULL_VALUE,
+        null,
+        -1,
+        UaMethodNode.class);
+  }
+
+  @Override
+  public void setConfigureSerializationHandler(
+      SerializationEntityType.@Nullable ConfigureSerializationHandler handler) {
+    UaMethodNode method =
+        ServerNodeSupport.present(
+            this,
+            getConfigureSerializationMethodNode(),
             "http://opcfoundation.org/UA/",
-            "ConfigureSerialization",
-            node -> node instanceof UaMethodNode,
-            Reference.HAS_COMPONENT_PREDICATE);
-    return (UaMethodNode) methodNode.orElse(null);
+            "ConfigureSerialization");
+    setMethodHandler(
+        method.getNodeId(),
+        handler == null
+            ? null
+            : new AbstractMethodInvocationHandler(method) {
+              private final MethodArgumentValidator outputValidator =
+                  new MethodArgumentValidator(getNodeContext().getServer());
+
+              @Override
+              public Argument[] getInputArguments() {
+                Argument[] declared = method.getInputArguments();
+                return declared != null
+                    ? declared
+                    : SerializationEntityTypeConfigureSerialization.inputArguments(
+                        getNodeContext().getServer().getNamespaceTable());
+              }
+
+              @Override
+              public Argument[] getOutputArguments() {
+                Argument[] declared = method.getOutputArguments();
+                return declared != null
+                    ? declared
+                    : SerializationEntityTypeConfigureSerialization.outputArguments(
+                        getNodeContext().getServer().getNamespaceTable());
+              }
+
+              @Override
+              protected int getRequiredInputArgumentCount(Argument[] arguments) {
+                return 1;
+              }
+
+              @Override
+              protected Variant[] invoke(
+                  AbstractMethodInvocationHandler.InvocationContext context, Variant[] values)
+                  throws UaException {
+                SerializationEntityTypeConfigureSerialization.Inputs input;
+                try {
+                  input =
+                      SerializationEntityTypeConfigureSerialization.Inputs.fromVariants(
+                          getNodeContext().getServer().getStaticEncodingContext(), values);
+                } catch (UaArgumentConversionException failure) {
+                  throw InvalidArgumentException.builder()
+                      .argument(
+                          failure.getArgumentIndex(),
+                          StatusCodes.Bad_TypeMismatch,
+                          failure.getMessage())
+                      .build();
+                }
+                SerializationEntityTypeConfigureSerialization.Outputs output =
+                    new SerializationEntityTypeConfigureSerialization.Outputs(
+                        handler.configureSerialization(
+                            context, input.serializationFilterProperties()));
+                Variant[] encoded =
+                    output.toVariants(getNodeContext().getServer().getStaticEncodingContext());
+                try {
+                  outputValidator.validate(getOutputArguments(), encoded);
+                } catch (UaException failure) {
+                  throw new UaException(StatusCodes.Bad_TypeMismatch, failure);
+                }
+                return encoded;
+              }
+            });
+  }
+
+  @Override
+  public void setMethods(SerializationEntityType.@Nullable Methods methods) {
+    if (getConfigureSerializationMethodNode() != null) {
+      setConfigureSerializationHandler(methods == null ? null : methods::configureSerialization);
+    }
   }
 }

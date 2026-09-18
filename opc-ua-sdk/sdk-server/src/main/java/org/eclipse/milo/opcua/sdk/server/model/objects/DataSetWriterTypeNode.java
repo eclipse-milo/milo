@@ -1,20 +1,9 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.nodes.ObjectNode;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -25,19 +14,51 @@ import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetFieldContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.KeyValuePair;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link DataSetWriterType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.7/#9.1.7.2">Model
+ *     documentation</a>
+ */
 public class DataSetWriterTypeNode extends BaseObjectTypeNode implements DataSetWriterType {
   public DataSetWriterTypeNode(
       UaNodeContext context,
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions);
+  }
+
+  public DataSetWriterTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         context,
@@ -53,120 +74,170 @@ public class DataSetWriterTypeNode extends BaseObjectTypeNode implements DataSet
         eventNotifier);
   }
 
-  public DataSetWriterTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions);
+  @Override
+  public PropertyTypeNode getDataSetFieldContentMaskNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "DataSetFieldContentMask",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 15583L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable DataSetFieldContentMask getDataSetFieldContentMask() {
+    return ServerNodeSupport.read(
+        this, getDataSetFieldContentMaskNode(), DataSetFieldContentMask.class, null);
+  }
+
+  @Override
+  public void setDataSetFieldContentMask(@Nullable DataSetFieldContentMask value) {
+    ServerNodeSupport.write(this, getDataSetFieldContentMaskNode(), value, false, false, false);
   }
 
   @Override
   public PropertyTypeNode getDataSetWriterIdNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(DataSetWriterType.DATA_SET_WRITER_ID);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "DataSetWriterId",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 5L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public UShort getDataSetWriterId() {
-    return getProperty(DataSetWriterType.DATA_SET_WRITER_ID).orElse(null);
+  public @Nullable UShort getDataSetWriterId() {
+    return ServerNodeSupport.read(this, getDataSetWriterIdNode(), UShort.class, null);
   }
 
   @Override
-  public void setDataSetWriterId(UShort value) {
-    setProperty(DataSetWriterType.DATA_SET_WRITER_ID, value);
-  }
-
-  @Override
-  public PropertyTypeNode getDataSetFieldContentMaskNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(DataSetWriterType.DATA_SET_FIELD_CONTENT_MASK);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public DataSetFieldContentMask getDataSetFieldContentMask() {
-    return getProperty(DataSetWriterType.DATA_SET_FIELD_CONTENT_MASK).orElse(null);
-  }
-
-  @Override
-  public void setDataSetFieldContentMask(DataSetFieldContentMask value) {
-    setProperty(DataSetWriterType.DATA_SET_FIELD_CONTENT_MASK, value);
-  }
-
-  @Override
-  public PropertyTypeNode getKeyFrameCountNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(DataSetWriterType.KEY_FRAME_COUNT);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public UInteger getKeyFrameCount() {
-    return getProperty(DataSetWriterType.KEY_FRAME_COUNT).orElse(null);
-  }
-
-  @Override
-  public void setKeyFrameCount(UInteger value) {
-    setProperty(DataSetWriterType.KEY_FRAME_COUNT, value);
+  public void setDataSetWriterId(@Nullable UShort value) {
+    ServerNodeSupport.write(this, getDataSetWriterIdNode(), value, false, false, false);
   }
 
   @Override
   public PropertyTypeNode getDataSetWriterPropertiesNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(DataSetWriterType.DATA_SET_WRITER_PROPERTIES);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "DataSetWriterProperties",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 14533L),
+        1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public KeyValuePair[] getDataSetWriterProperties() {
-    return getProperty(DataSetWriterType.DATA_SET_WRITER_PROPERTIES).orElse(null);
+  public @Nullable KeyValuePair @Nullable [] getDataSetWriterProperties() {
+    return ServerNodeSupport.readArray(
+        this, getDataSetWriterPropertiesNode(), KeyValuePair.class, null);
   }
 
   @Override
-  public void setDataSetWriterProperties(KeyValuePair[] value) {
-    setProperty(DataSetWriterType.DATA_SET_WRITER_PROPERTIES, value);
+  public void setDataSetWriterProperties(@Nullable KeyValuePair @Nullable [] value) {
+    ServerNodeSupport.write(this, getDataSetWriterPropertiesNode(), value, true, false, true);
   }
 
   @Override
-  public DataSetWriterTransportTypeNode getTransportSettingsNode() {
-    Optional<ObjectNode> component =
-        getObjectComponent("http://opcfoundation.org/UA/", "TransportSettings");
-    return (DataSetWriterTransportTypeNode) component.orElse(null);
+  public @Nullable PubSubDiagnosticsDataSetWriterTypeNode getDiagnosticsNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "Diagnostics",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 19968L),
+        null,
+        -1,
+        PubSubDiagnosticsDataSetWriterTypeNode.class);
   }
 
   @Override
-  public DataSetWriterMessageTypeNode getMessageSettingsNode() {
-    Optional<ObjectNode> component =
-        getObjectComponent("http://opcfoundation.org/UA/", "MessageSettings");
-    return (DataSetWriterMessageTypeNode) component.orElse(null);
+  public @Nullable PropertyTypeNode getKeyFrameCountNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "KeyFrameCount",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable UInteger getKeyFrameCount() {
+    return ServerNodeSupport.read(this, getKeyFrameCountNode(), UInteger.class, null);
+  }
+
+  @Override
+  public void setKeyFrameCount(@Nullable UInteger value) {
+    ServerNodeSupport.write(
+        this,
+        getKeyFrameCountNode(),
+        Namespaces.OPC_UA,
+        "KeyFrameCount",
+        value,
+        false,
+        false,
+        false);
+  }
+
+  @Override
+  public @Nullable DataSetWriterMessageTypeNode getMessageSettingsNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "MessageSettings",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 21096L),
+        null,
+        -1,
+        DataSetWriterMessageTypeNode.class);
   }
 
   @Override
   public PubSubStatusTypeNode getStatusNode() {
-    Optional<ObjectNode> component = getObjectComponent("http://opcfoundation.org/UA/", "Status");
-    return (PubSubStatusTypeNode) component.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "Status",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 14643L),
+        null,
+        -1,
+        PubSubStatusTypeNode.class);
   }
 
   @Override
-  public PubSubDiagnosticsDataSetWriterTypeNode getDiagnosticsNode() {
-    Optional<ObjectNode> component =
-        getObjectComponent("http://opcfoundation.org/UA/", "Diagnostics");
-    return (PubSubDiagnosticsDataSetWriterTypeNode) component.orElse(null);
+  public @Nullable DataSetWriterTransportTypeNode getTransportSettingsNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "TransportSettings",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 15305L),
+        null,
+        -1,
+        DataSetWriterTransportTypeNode.class);
+  }
+
+  @Override
+  public void validateChildren() {
+    super.validateChildren();
+    getDataSetFieldContentMaskNode();
+    getDataSetWriterIdNode();
+    getDataSetWriterPropertiesNode();
+    getDiagnosticsNode();
+    getKeyFrameCountNode();
+    getMessageSettingsNode();
+    getStatusNode();
+    getTransportSettingsNode();
   }
 }

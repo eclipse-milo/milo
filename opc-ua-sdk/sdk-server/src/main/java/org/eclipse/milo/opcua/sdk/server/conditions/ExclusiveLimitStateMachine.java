@@ -41,7 +41,8 @@ final class ExclusiveLimitStateMachine {
     currentState = node != null ? node.getCurrentStateNode() : null;
     lastTransition = node != null ? node.getLastTransitionNode() : null;
 
-    NodeId currentStateId = currentState != null ? currentState.getId() : null;
+    NodeId currentStateId =
+        currentState != null ? Condition.storedValue(currentState.getIdNode(), NodeId.class) : null;
     for (ExclusiveLimitState limitState : ExclusiveLimitState.values()) {
       if (limitState.stateId().equals(currentStateId)) {
         state = limitState;
@@ -52,7 +53,7 @@ final class ExclusiveLimitStateMachine {
     if (state == null) {
       setCurrentStateUnavailable();
     }
-    if (lastTransition != null && lastTransition.getTransitionTime() == null) {
+    if (lastTransition != null && !Condition.hasValue(lastTransition.getTransitionTimeNode())) {
       setLastTransition(null, null, null, DateTime.NULL_VALUE);
     }
   }
@@ -78,7 +79,7 @@ final class ExclusiveLimitStateMachine {
       setCurrentStateUnavailable();
     } else if (currentState != null) {
       currentState.setValue(new DataValue(new Variant(LocalizedText.english(target.stateName()))));
-      currentState.setId(target.stateId());
+      currentState.setFiniteStateVariableTypeId(target.stateId());
     }
 
     setLastTransition(from, target, transitionId(from, target), time);
@@ -90,7 +91,7 @@ final class ExclusiveLimitStateMachine {
     }
 
     currentState.setValue(new DataValue(new Variant(LocalizedText.NULL_VALUE)));
-    currentState.setId(NodeId.NULL_VALUE);
+    currentState.setFiniteStateVariableTypeId(NodeId.NULL_VALUE);
   }
 
   private void setLastTransition(
@@ -109,8 +110,11 @@ final class ExclusiveLimitStateMachine {
             : LocalizedText.NULL_VALUE;
 
     lastTransition.setValue(new DataValue(new Variant(transitionName)));
-    lastTransition.setId(transitionId != null ? transitionId : NodeId.NULL_VALUE);
-    lastTransition.setTransitionTime(time);
+    lastTransition.setFiniteTransitionVariableTypeId(
+        transitionId != null ? transitionId : NodeId.NULL_VALUE);
+    if (lastTransition.getTransitionTimeNode() != null) {
+      lastTransition.setTransitionTime(time);
+    }
   }
 
   private static @Nullable NodeId transitionId(

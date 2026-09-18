@@ -1,29 +1,32 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.Reference;
-import org.eclipse.milo.opcua.sdk.core.nodes.ObjectNode;
+import org.eclipse.milo.opcua.sdk.core.model.methods.FileTransferStateMachineTypeReset;
+import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
+import org.eclipse.milo.opcua.sdk.server.methods.MethodArgumentValidator;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
+import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link FileTransferStateMachineType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.4.6">Model
+ *     documentation</a>
+ */
 public class FileTransferStateMachineTypeNode extends FiniteStateMachineTypeNode
     implements FileTransferStateMachineType {
   public FileTransferStateMachineTypeNode(
@@ -31,12 +34,36 @@ public class FileTransferStateMachineTypeNode extends FiniteStateMachineTypeNode
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions);
+  }
+
+  public FileTransferStateMachineTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         context,
@@ -52,134 +79,71 @@ public class FileTransferStateMachineTypeNode extends FiniteStateMachineTypeNode
         eventNotifier);
   }
 
-  public FileTransferStateMachineTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions);
-  }
-
-  @Override
-  public InitialStateTypeNode getIdleNode() {
-    Optional<ObjectNode> component = getObjectComponent("http://opcfoundation.org/UA/", "Idle");
-    return (InitialStateTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public StateTypeNode getReadPrepareNode() {
-    Optional<ObjectNode> component =
-        getObjectComponent("http://opcfoundation.org/UA/", "ReadPrepare");
-    return (StateTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public StateTypeNode getReadTransferNode() {
-    Optional<ObjectNode> component =
-        getObjectComponent("http://opcfoundation.org/UA/", "ReadTransfer");
-    return (StateTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public StateTypeNode getApplyWriteNode() {
-    Optional<ObjectNode> component =
-        getObjectComponent("http://opcfoundation.org/UA/", "ApplyWrite");
-    return (StateTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public StateTypeNode getErrorNode() {
-    Optional<ObjectNode> component = getObjectComponent("http://opcfoundation.org/UA/", "Error");
-    return (StateTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public TransitionTypeNode getIdleToReadPrepareNode() {
-    Optional<ObjectNode> component =
-        getObjectComponent("http://opcfoundation.org/UA/", "IdleToReadPrepare");
-    return (TransitionTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public TransitionTypeNode getReadPrepareToReadTransferNode() {
-    Optional<ObjectNode> component =
-        getObjectComponent("http://opcfoundation.org/UA/", "ReadPrepareToReadTransfer");
-    return (TransitionTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public TransitionTypeNode getReadTransferToIdleNode() {
-    Optional<ObjectNode> component =
-        getObjectComponent("http://opcfoundation.org/UA/", "ReadTransferToIdle");
-    return (TransitionTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public TransitionTypeNode getIdleToApplyWriteNode() {
-    Optional<ObjectNode> component =
-        getObjectComponent("http://opcfoundation.org/UA/", "IdleToApplyWrite");
-    return (TransitionTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public TransitionTypeNode getApplyWriteToIdleNode() {
-    Optional<ObjectNode> component =
-        getObjectComponent("http://opcfoundation.org/UA/", "ApplyWriteToIdle");
-    return (TransitionTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public TransitionTypeNode getReadPrepareToErrorNode() {
-    Optional<ObjectNode> component =
-        getObjectComponent("http://opcfoundation.org/UA/", "ReadPrepareToError");
-    return (TransitionTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public TransitionTypeNode getReadTransferToErrorNode() {
-    Optional<ObjectNode> component =
-        getObjectComponent("http://opcfoundation.org/UA/", "ReadTransferToError");
-    return (TransitionTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public TransitionTypeNode getApplyWriteToErrorNode() {
-    Optional<ObjectNode> component =
-        getObjectComponent("http://opcfoundation.org/UA/", "ApplyWriteToError");
-    return (TransitionTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public TransitionTypeNode getErrorToIdleNode() {
-    Optional<ObjectNode> component =
-        getObjectComponent("http://opcfoundation.org/UA/", "ErrorToIdle");
-    return (TransitionTypeNode) component.orElse(null);
-  }
-
   @Override
   public UaMethodNode getResetMethodNode() {
-    Optional<UaNode> methodNode =
-        findNode(
-            "http://opcfoundation.org/UA/",
-            "Reset",
-            node -> node instanceof UaMethodNode,
-            Reference.HAS_COMPONENT_PREDICATE);
-    return (UaMethodNode) methodNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        "http://opcfoundation.org/UA/",
+        "Reset",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.NULL_VALUE,
+        null,
+        -1,
+        UaMethodNode.class);
+  }
+
+  @Override
+  public void setResetHandler(FileTransferStateMachineType.@Nullable ResetHandler handler) {
+    UaMethodNode method = getResetMethodNode();
+    setMethodHandler(
+        method.getNodeId(),
+        handler == null
+            ? null
+            : new AbstractMethodInvocationHandler(method) {
+              private final MethodArgumentValidator outputValidator =
+                  new MethodArgumentValidator(getNodeContext().getServer());
+
+              @Override
+              public Argument[] getInputArguments() {
+                Argument[] declared = method.getInputArguments();
+                return declared != null
+                    ? declared
+                    : FileTransferStateMachineTypeReset.inputArguments(
+                        getNodeContext().getServer().getNamespaceTable());
+              }
+
+              @Override
+              public Argument[] getOutputArguments() {
+                Argument[] declared = method.getOutputArguments();
+                return declared != null
+                    ? declared
+                    : FileTransferStateMachineTypeReset.outputArguments(
+                        getNodeContext().getServer().getNamespaceTable());
+              }
+
+              @Override
+              protected int getRequiredInputArgumentCount(Argument[] arguments) {
+                return 0;
+              }
+
+              @Override
+              protected Variant[] invoke(
+                  AbstractMethodInvocationHandler.InvocationContext context, Variant[] values)
+                  throws UaException {
+                handler.reset(context);
+                Variant[] encoded = new Variant[0];
+                try {
+                  outputValidator.validate(getOutputArguments(), encoded);
+                } catch (UaException failure) {
+                  throw new UaException(StatusCodes.Bad_TypeMismatch, failure);
+                }
+                return encoded;
+              }
+            });
+  }
+
+  @Override
+  public void setMethods(FileTransferStateMachineType.@Nullable Methods methods) {
+    setResetHandler(methods == null ? null : methods::reset);
   }
 }

@@ -1,20 +1,9 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.nodes.ObjectNode;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -22,7 +11,15 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link HistoryServerCapabilitiesType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.7.2">Model
+ *     documentation</a>
+ */
 public class HistoryServerCapabilitiesTypeNode extends BaseObjectTypeNode
     implements HistoryServerCapabilitiesType {
   public HistoryServerCapabilitiesTypeNode(
@@ -30,12 +27,36 @@ public class HistoryServerCapabilitiesTypeNode extends BaseObjectTypeNode
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions);
+  }
+
+  public HistoryServerCapabilitiesTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         context,
@@ -51,289 +72,392 @@ public class HistoryServerCapabilitiesTypeNode extends BaseObjectTypeNode
         eventNotifier);
   }
 
-  public HistoryServerCapabilitiesTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions);
-  }
-
   @Override
   public PropertyTypeNode getAccessHistoryDataCapabilityNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(HistoryServerCapabilitiesType.ACCESS_HISTORY_DATA_CAPABILITY);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "AccessHistoryDataCapability",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public Boolean getAccessHistoryDataCapability() {
-    return getProperty(HistoryServerCapabilitiesType.ACCESS_HISTORY_DATA_CAPABILITY).orElse(null);
+  public @Nullable Boolean getAccessHistoryDataCapability() {
+    return ServerNodeSupport.read(this, getAccessHistoryDataCapabilityNode(), Boolean.class, null);
   }
 
   @Override
-  public void setAccessHistoryDataCapability(Boolean value) {
-    setProperty(HistoryServerCapabilitiesType.ACCESS_HISTORY_DATA_CAPABILITY, value);
+  public void setAccessHistoryDataCapability(@Nullable Boolean value) {
+    ServerNodeSupport.write(this, getAccessHistoryDataCapabilityNode(), value, false, false, false);
   }
 
   @Override
   public PropertyTypeNode getAccessHistoryEventsCapabilityNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(HistoryServerCapabilitiesType.ACCESS_HISTORY_EVENTS_CAPABILITY);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "AccessHistoryEventsCapability",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public Boolean getAccessHistoryEventsCapability() {
-    return getProperty(HistoryServerCapabilitiesType.ACCESS_HISTORY_EVENTS_CAPABILITY).orElse(null);
+  public @Nullable Boolean getAccessHistoryEventsCapability() {
+    return ServerNodeSupport.read(
+        this, getAccessHistoryEventsCapabilityNode(), Boolean.class, null);
   }
 
   @Override
-  public void setAccessHistoryEventsCapability(Boolean value) {
-    setProperty(HistoryServerCapabilitiesType.ACCESS_HISTORY_EVENTS_CAPABILITY, value);
-  }
-
-  @Override
-  public PropertyTypeNode getMaxReturnDataValuesNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(HistoryServerCapabilitiesType.MAX_RETURN_DATA_VALUES);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public UInteger getMaxReturnDataValues() {
-    return getProperty(HistoryServerCapabilitiesType.MAX_RETURN_DATA_VALUES).orElse(null);
-  }
-
-  @Override
-  public void setMaxReturnDataValues(UInteger value) {
-    setProperty(HistoryServerCapabilitiesType.MAX_RETURN_DATA_VALUES, value);
-  }
-
-  @Override
-  public PropertyTypeNode getMaxReturnEventValuesNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(HistoryServerCapabilitiesType.MAX_RETURN_EVENT_VALUES);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public UInteger getMaxReturnEventValues() {
-    return getProperty(HistoryServerCapabilitiesType.MAX_RETURN_EVENT_VALUES).orElse(null);
-  }
-
-  @Override
-  public void setMaxReturnEventValues(UInteger value) {
-    setProperty(HistoryServerCapabilitiesType.MAX_RETURN_EVENT_VALUES, value);
-  }
-
-  @Override
-  public PropertyTypeNode getInsertDataCapabilityNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(HistoryServerCapabilitiesType.INSERT_DATA_CAPABILITY);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public Boolean getInsertDataCapability() {
-    return getProperty(HistoryServerCapabilitiesType.INSERT_DATA_CAPABILITY).orElse(null);
-  }
-
-  @Override
-  public void setInsertDataCapability(Boolean value) {
-    setProperty(HistoryServerCapabilitiesType.INSERT_DATA_CAPABILITY, value);
-  }
-
-  @Override
-  public PropertyTypeNode getReplaceDataCapabilityNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(HistoryServerCapabilitiesType.REPLACE_DATA_CAPABILITY);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public Boolean getReplaceDataCapability() {
-    return getProperty(HistoryServerCapabilitiesType.REPLACE_DATA_CAPABILITY).orElse(null);
-  }
-
-  @Override
-  public void setReplaceDataCapability(Boolean value) {
-    setProperty(HistoryServerCapabilitiesType.REPLACE_DATA_CAPABILITY, value);
-  }
-
-  @Override
-  public PropertyTypeNode getUpdateDataCapabilityNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(HistoryServerCapabilitiesType.UPDATE_DATA_CAPABILITY);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public Boolean getUpdateDataCapability() {
-    return getProperty(HistoryServerCapabilitiesType.UPDATE_DATA_CAPABILITY).orElse(null);
-  }
-
-  @Override
-  public void setUpdateDataCapability(Boolean value) {
-    setProperty(HistoryServerCapabilitiesType.UPDATE_DATA_CAPABILITY, value);
-  }
-
-  @Override
-  public PropertyTypeNode getDeleteRawCapabilityNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(HistoryServerCapabilitiesType.DELETE_RAW_CAPABILITY);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public Boolean getDeleteRawCapability() {
-    return getProperty(HistoryServerCapabilitiesType.DELETE_RAW_CAPABILITY).orElse(null);
-  }
-
-  @Override
-  public void setDeleteRawCapability(Boolean value) {
-    setProperty(HistoryServerCapabilitiesType.DELETE_RAW_CAPABILITY, value);
-  }
-
-  @Override
-  public PropertyTypeNode getDeleteAtTimeCapabilityNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(HistoryServerCapabilitiesType.DELETE_AT_TIME_CAPABILITY);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public Boolean getDeleteAtTimeCapability() {
-    return getProperty(HistoryServerCapabilitiesType.DELETE_AT_TIME_CAPABILITY).orElse(null);
-  }
-
-  @Override
-  public void setDeleteAtTimeCapability(Boolean value) {
-    setProperty(HistoryServerCapabilitiesType.DELETE_AT_TIME_CAPABILITY, value);
-  }
-
-  @Override
-  public PropertyTypeNode getInsertEventCapabilityNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(HistoryServerCapabilitiesType.INSERT_EVENT_CAPABILITY);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public Boolean getInsertEventCapability() {
-    return getProperty(HistoryServerCapabilitiesType.INSERT_EVENT_CAPABILITY).orElse(null);
-  }
-
-  @Override
-  public void setInsertEventCapability(Boolean value) {
-    setProperty(HistoryServerCapabilitiesType.INSERT_EVENT_CAPABILITY, value);
-  }
-
-  @Override
-  public PropertyTypeNode getReplaceEventCapabilityNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(HistoryServerCapabilitiesType.REPLACE_EVENT_CAPABILITY);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public Boolean getReplaceEventCapability() {
-    return getProperty(HistoryServerCapabilitiesType.REPLACE_EVENT_CAPABILITY).orElse(null);
-  }
-
-  @Override
-  public void setReplaceEventCapability(Boolean value) {
-    setProperty(HistoryServerCapabilitiesType.REPLACE_EVENT_CAPABILITY, value);
-  }
-
-  @Override
-  public PropertyTypeNode getUpdateEventCapabilityNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(HistoryServerCapabilitiesType.UPDATE_EVENT_CAPABILITY);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public Boolean getUpdateEventCapability() {
-    return getProperty(HistoryServerCapabilitiesType.UPDATE_EVENT_CAPABILITY).orElse(null);
-  }
-
-  @Override
-  public void setUpdateEventCapability(Boolean value) {
-    setProperty(HistoryServerCapabilitiesType.UPDATE_EVENT_CAPABILITY, value);
-  }
-
-  @Override
-  public PropertyTypeNode getDeleteEventCapabilityNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(HistoryServerCapabilitiesType.DELETE_EVENT_CAPABILITY);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public Boolean getDeleteEventCapability() {
-    return getProperty(HistoryServerCapabilitiesType.DELETE_EVENT_CAPABILITY).orElse(null);
-  }
-
-  @Override
-  public void setDeleteEventCapability(Boolean value) {
-    setProperty(HistoryServerCapabilitiesType.DELETE_EVENT_CAPABILITY, value);
-  }
-
-  @Override
-  public PropertyTypeNode getInsertAnnotationCapabilityNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(HistoryServerCapabilitiesType.INSERT_ANNOTATION_CAPABILITY);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public Boolean getInsertAnnotationCapability() {
-    return getProperty(HistoryServerCapabilitiesType.INSERT_ANNOTATION_CAPABILITY).orElse(null);
-  }
-
-  @Override
-  public void setInsertAnnotationCapability(Boolean value) {
-    setProperty(HistoryServerCapabilitiesType.INSERT_ANNOTATION_CAPABILITY, value);
-  }
-
-  @Override
-  public PropertyTypeNode getServerTimestampSupportedNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(HistoryServerCapabilitiesType.SERVER_TIMESTAMP_SUPPORTED);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public Boolean getServerTimestampSupported() {
-    return getProperty(HistoryServerCapabilitiesType.SERVER_TIMESTAMP_SUPPORTED).orElse(null);
-  }
-
-  @Override
-  public void setServerTimestampSupported(Boolean value) {
-    setProperty(HistoryServerCapabilitiesType.SERVER_TIMESTAMP_SUPPORTED, value);
+  public void setAccessHistoryEventsCapability(@Nullable Boolean value) {
+    ServerNodeSupport.write(
+        this, getAccessHistoryEventsCapabilityNode(), value, false, false, false);
   }
 
   @Override
   public FolderTypeNode getAggregateFunctionsNode() {
-    Optional<ObjectNode> component =
-        getObjectComponent("http://opcfoundation.org/UA/", "AggregateFunctions");
-    return (FolderTypeNode) component.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "AggregateFunctions",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 61L),
+        null,
+        -1,
+        FolderTypeNode.class);
+  }
+
+  @Override
+  public PropertyTypeNode getDeleteAtTimeCapabilityNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "DeleteAtTimeCapability",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable Boolean getDeleteAtTimeCapability() {
+    return ServerNodeSupport.read(this, getDeleteAtTimeCapabilityNode(), Boolean.class, null);
+  }
+
+  @Override
+  public void setDeleteAtTimeCapability(@Nullable Boolean value) {
+    ServerNodeSupport.write(this, getDeleteAtTimeCapabilityNode(), value, false, false, false);
+  }
+
+  @Override
+  public PropertyTypeNode getDeleteEventCapabilityNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "DeleteEventCapability",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable Boolean getDeleteEventCapability() {
+    return ServerNodeSupport.read(this, getDeleteEventCapabilityNode(), Boolean.class, null);
+  }
+
+  @Override
+  public void setDeleteEventCapability(@Nullable Boolean value) {
+    ServerNodeSupport.write(this, getDeleteEventCapabilityNode(), value, false, false, false);
+  }
+
+  @Override
+  public PropertyTypeNode getDeleteRawCapabilityNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "DeleteRawCapability",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable Boolean getDeleteRawCapability() {
+    return ServerNodeSupport.read(this, getDeleteRawCapabilityNode(), Boolean.class, null);
+  }
+
+  @Override
+  public void setDeleteRawCapability(@Nullable Boolean value) {
+    ServerNodeSupport.write(this, getDeleteRawCapabilityNode(), value, false, false, false);
+  }
+
+  @Override
+  public PropertyTypeNode getInsertAnnotationCapabilityNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "InsertAnnotationCapability",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable Boolean getInsertAnnotationCapability() {
+    return ServerNodeSupport.read(this, getInsertAnnotationCapabilityNode(), Boolean.class, null);
+  }
+
+  @Override
+  public void setInsertAnnotationCapability(@Nullable Boolean value) {
+    ServerNodeSupport.write(this, getInsertAnnotationCapabilityNode(), value, false, false, false);
+  }
+
+  @Override
+  public PropertyTypeNode getInsertDataCapabilityNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "InsertDataCapability",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable Boolean getInsertDataCapability() {
+    return ServerNodeSupport.read(this, getInsertDataCapabilityNode(), Boolean.class, null);
+  }
+
+  @Override
+  public void setInsertDataCapability(@Nullable Boolean value) {
+    ServerNodeSupport.write(this, getInsertDataCapabilityNode(), value, false, false, false);
+  }
+
+  @Override
+  public PropertyTypeNode getInsertEventCapabilityNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "InsertEventCapability",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable Boolean getInsertEventCapability() {
+    return ServerNodeSupport.read(this, getInsertEventCapabilityNode(), Boolean.class, null);
+  }
+
+  @Override
+  public void setInsertEventCapability(@Nullable Boolean value) {
+    ServerNodeSupport.write(this, getInsertEventCapabilityNode(), value, false, false, false);
+  }
+
+  @Override
+  public PropertyTypeNode getMaxReturnDataValuesNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "MaxReturnDataValues",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable UInteger getMaxReturnDataValues() {
+    return ServerNodeSupport.read(this, getMaxReturnDataValuesNode(), UInteger.class, null);
+  }
+
+  @Override
+  public void setMaxReturnDataValues(@Nullable UInteger value) {
+    ServerNodeSupport.write(this, getMaxReturnDataValuesNode(), value, false, false, false);
+  }
+
+  @Override
+  public PropertyTypeNode getMaxReturnEventValuesNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "MaxReturnEventValues",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable UInteger getMaxReturnEventValues() {
+    return ServerNodeSupport.read(this, getMaxReturnEventValuesNode(), UInteger.class, null);
+  }
+
+  @Override
+  public void setMaxReturnEventValues(@Nullable UInteger value) {
+    ServerNodeSupport.write(this, getMaxReturnEventValuesNode(), value, false, false, false);
+  }
+
+  @Override
+  public PropertyTypeNode getReplaceDataCapabilityNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "ReplaceDataCapability",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable Boolean getReplaceDataCapability() {
+    return ServerNodeSupport.read(this, getReplaceDataCapabilityNode(), Boolean.class, null);
+  }
+
+  @Override
+  public void setReplaceDataCapability(@Nullable Boolean value) {
+    ServerNodeSupport.write(this, getReplaceDataCapabilityNode(), value, false, false, false);
+  }
+
+  @Override
+  public PropertyTypeNode getReplaceEventCapabilityNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "ReplaceEventCapability",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable Boolean getReplaceEventCapability() {
+    return ServerNodeSupport.read(this, getReplaceEventCapabilityNode(), Boolean.class, null);
+  }
+
+  @Override
+  public void setReplaceEventCapability(@Nullable Boolean value) {
+    ServerNodeSupport.write(this, getReplaceEventCapabilityNode(), value, false, false, false);
+  }
+
+  @Override
+  public @Nullable PropertyTypeNode getServerTimestampSupportedNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "ServerTimestampSupported",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable Boolean getServerTimestampSupported() {
+    return ServerNodeSupport.read(this, getServerTimestampSupportedNode(), Boolean.class, null);
+  }
+
+  @Override
+  public void setServerTimestampSupported(@Nullable Boolean value) {
+    ServerNodeSupport.write(
+        this,
+        getServerTimestampSupportedNode(),
+        Namespaces.OPC_UA,
+        "ServerTimestampSupported",
+        value,
+        false,
+        false,
+        false);
+  }
+
+  @Override
+  public PropertyTypeNode getUpdateDataCapabilityNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "UpdateDataCapability",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable Boolean getUpdateDataCapability() {
+    return ServerNodeSupport.read(this, getUpdateDataCapabilityNode(), Boolean.class, null);
+  }
+
+  @Override
+  public void setUpdateDataCapability(@Nullable Boolean value) {
+    ServerNodeSupport.write(this, getUpdateDataCapabilityNode(), value, false, false, false);
+  }
+
+  @Override
+  public PropertyTypeNode getUpdateEventCapabilityNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "UpdateEventCapability",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable Boolean getUpdateEventCapability() {
+    return ServerNodeSupport.read(this, getUpdateEventCapabilityNode(), Boolean.class, null);
+  }
+
+  @Override
+  public void setUpdateEventCapability(@Nullable Boolean value) {
+    ServerNodeSupport.write(this, getUpdateEventCapabilityNode(), value, false, false, false);
+  }
+
+  @Override
+  public void validateChildren() {
+    super.validateChildren();
+    getAccessHistoryDataCapabilityNode();
+    getAccessHistoryEventsCapabilityNode();
+    getAggregateFunctionsNode();
+    getDeleteAtTimeCapabilityNode();
+    getDeleteEventCapabilityNode();
+    getDeleteRawCapabilityNode();
+    getInsertAnnotationCapabilityNode();
+    getInsertDataCapabilityNode();
+    getInsertEventCapabilityNode();
+    getMaxReturnDataValuesNode();
+    getMaxReturnEventValuesNode();
+    getReplaceDataCapabilityNode();
+    getReplaceEventCapabilityNode();
+    getServerTimestampSupportedNode();
+    getUpdateDataCapabilityNode();
+    getUpdateEventCapabilityNode();
   }
 }

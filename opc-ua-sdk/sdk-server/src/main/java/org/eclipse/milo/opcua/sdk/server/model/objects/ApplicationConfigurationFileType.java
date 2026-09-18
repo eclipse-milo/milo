@@ -1,136 +1,219 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.20">https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.20</a>
+ * Server API for the ApplicationConfigurationFileType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.20">Model
+ *     documentation</a>
  */
 public interface ApplicationConfigurationFileType extends ConfigurationFileType {
-  QualifiedProperty<String[]> AVAILABLE_NETWORKS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "AvailableNetworks",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          1,
-          String[].class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 15550L);
 
-  QualifiedProperty<String> AVAILABLE_PORTS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "AvailablePorts",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=291"),
-          -1,
-          String.class);
+  /**
+   * Returns the mandatory AvailableNetworks child, a PropertyType with DataType String.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getAvailableNetworksNode();
 
-  QualifiedProperty<UShort> MAX_ENDPOINTS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxEndpoints",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-          -1,
-          UShort.class);
+  /**
+   * Returns the Value of the AvailableNetworks child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String @Nullable [] getAvailableNetworks();
 
-  QualifiedProperty<UShort> MAX_CERTIFICATE_GROUPS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxCertificateGroups",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-          -1,
-          UShort.class);
+  /**
+   * Sets the Value of the AvailableNetworks child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setAvailableNetworks(@Nullable String @Nullable [] value);
 
-  QualifiedProperty<String[]> SECURITY_POLICY_URIS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "SecurityPolicyUris",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=23751"),
-          1,
-          String[].class);
+  /**
+   * Returns the mandatory AvailablePorts child, a PropertyType with DataType NumericRange.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getAvailablePortsNode();
 
-  QualifiedProperty<UserTokenPolicy[]> USER_TOKEN_TYPES =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "UserTokenTypes",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=304"),
-          1,
-          UserTokenPolicy[].class);
+  /**
+   * Returns the Value of the AvailablePorts child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getAvailablePorts();
 
-  QualifiedProperty<NodeId[]> CERTIFICATE_TYPES =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "CertificateTypes",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-          1,
-          NodeId[].class);
+  /**
+   * Sets the Value of the AvailablePorts child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setAvailablePorts(@Nullable String value);
 
-  QualifiedProperty<NodeId[]> CERTIFICATE_GROUP_PURPOSES =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "CertificateGroupPurposes",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-          1,
-          NodeId[].class);
+  /**
+   * Returns the mandatory CertificateGroupPurposes child, a PropertyType with DataType NodeId.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.6">Model
+   *     documentation</a>
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getCertificateGroupPurposesNode();
 
-  String[] getAvailableNetworks();
+  /**
+   * Returns the Value of the CertificateGroupPurposes child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  NodeId @Nullable [] getCertificateGroupPurposes();
 
-  void setAvailableNetworks(String[] value);
+  /**
+   * Sets the Value of the CertificateGroupPurposes child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setCertificateGroupPurposes(NodeId @Nullable [] value);
 
-  PropertyType getAvailableNetworksNode();
+  /**
+   * Returns the mandatory CertificateTypes child, a PropertyType with DataType NodeId.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getCertificateTypesNode();
 
-  String getAvailablePorts();
+  /**
+   * Returns the Value of the CertificateTypes child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  NodeId @Nullable [] getCertificateTypes();
 
-  void setAvailablePorts(String value);
+  /**
+   * Sets the Value of the CertificateTypes child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setCertificateTypes(NodeId @Nullable [] value);
 
-  PropertyType getAvailablePortsNode();
+  /**
+   * Returns the mandatory MaxCertificateGroups child, a PropertyType with DataType UInt16.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getMaxCertificateGroupsNode();
 
-  UShort getMaxEndpoints();
+  /**
+   * Returns the Value of the MaxCertificateGroups child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UShort getMaxCertificateGroups();
 
-  void setMaxEndpoints(UShort value);
+  /**
+   * Sets the Value of the MaxCertificateGroups child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMaxCertificateGroups(@Nullable UShort value);
 
-  PropertyType getMaxEndpointsNode();
+  /**
+   * Returns the mandatory MaxEndpoints child, a PropertyType with DataType UInt16.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getMaxEndpointsNode();
 
-  UShort getMaxCertificateGroups();
+  /**
+   * Returns the Value of the MaxEndpoints child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UShort getMaxEndpoints();
 
-  void setMaxCertificateGroups(UShort value);
+  /**
+   * Sets the Value of the MaxEndpoints child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMaxEndpoints(@Nullable UShort value);
 
-  PropertyType getMaxCertificateGroupsNode();
+  /**
+   * Returns the mandatory SecurityPolicyUris child, a PropertyType with DataType UriString.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getSecurityPolicyUrisNode();
 
-  String[] getSecurityPolicyUris();
+  /**
+   * Returns the Value of the SecurityPolicyUris child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String @Nullable [] getSecurityPolicyUris();
 
-  void setSecurityPolicyUris(String[] value);
+  /**
+   * Sets the Value of the SecurityPolicyUris child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setSecurityPolicyUris(@Nullable String @Nullable [] value);
 
-  PropertyType getSecurityPolicyUrisNode();
+  /**
+   * Returns the mandatory UserTokenTypes child, a PropertyType with DataType UserTokenPolicy.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getUserTokenTypesNode();
 
-  UserTokenPolicy[] getUserTokenTypes();
+  /**
+   * Returns the Value of the UserTokenTypes child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UserTokenPolicy @Nullable [] getUserTokenTypes();
 
-  void setUserTokenTypes(UserTokenPolicy[] value);
+  /**
+   * Sets the Value of the UserTokenTypes child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setUserTokenTypes(@Nullable UserTokenPolicy @Nullable [] value);
 
-  PropertyType getUserTokenTypesNode();
+  /**
+   * Sets this instance's Method handlers, including inherited handlers, from one implementation;
+   * null clears them and restores Method-node fallback. Absent optional Methods are skipped.
+   * Changes are applied in order; a failure does not roll back earlier changes.
+   *
+   * @throws UaRuntimeException if a mandatory Method is absent, or a Method is ambiguous or
+   *     incompatible.
+   */
+  void setMethods(@Nullable Methods methods);
 
-  NodeId[] getCertificateTypes();
-
-  void setCertificateTypes(NodeId[] value);
-
-  PropertyType getCertificateTypesNode();
-
-  NodeId[] getCertificateGroupPurposes();
-
-  void setCertificateGroupPurposes(NodeId[] value);
-
-  PropertyType getCertificateGroupPurposesNode();
+  /** Implements this type's Methods. Unimplemented Methods report Bad_NotImplemented. */
+  interface Methods extends ConfigurationFileType.Methods {}
 }

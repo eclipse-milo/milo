@@ -1,65 +1,89 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.PerformUpdateType;
 import org.eclipse.milo.opcua.stack.core.types.structured.Annotation;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.8.4">https://reference.opcfoundation.org/v105/Core/docs/Part11/5.8.4</a>
+ * Server API for the AuditHistoryAnnotationUpdateEventType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.8.4">Model
+ *     documentation</a>
  */
 public interface AuditHistoryAnnotationUpdateEventType extends AuditHistoryUpdateEventType {
-  QualifiedProperty<PerformUpdateType> PERFORM_INSERT_REPLACE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "PerformInsertReplace",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11293"),
-          -1,
-          PerformUpdateType.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 19095L);
 
-  QualifiedProperty<Annotation[]> NEW_VALUES =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "NewValues",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=891"),
-          1,
-          Annotation[].class);
+  /**
+   * Returns the mandatory NewValues child, a PropertyType with DataType Annotation.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getNewValuesNode();
 
-  QualifiedProperty<Annotation[]> OLD_VALUES =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "OldValues",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=891"),
-          1,
-          Annotation[].class);
+  /**
+   * Returns the Value of the NewValues child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Annotation @Nullable [] getNewValues();
 
-  PerformUpdateType getPerformInsertReplace();
+  /**
+   * Sets the Value of the NewValues child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setNewValues(@Nullable Annotation @Nullable [] value);
 
-  void setPerformInsertReplace(PerformUpdateType value);
+  /**
+   * Returns the mandatory OldValues child, a PropertyType with DataType Annotation.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getOldValuesNode();
 
-  PropertyType getPerformInsertReplaceNode();
+  /**
+   * Returns the Value of the OldValues child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Annotation @Nullable [] getOldValues();
 
-  Annotation[] getNewValues();
+  /**
+   * Sets the Value of the OldValues child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setOldValues(@Nullable Annotation @Nullable [] value);
 
-  void setNewValues(Annotation[] value);
+  /**
+   * Returns the mandatory PerformInsertReplace child, a PropertyType with DataType
+   * PerformUpdateType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getPerformInsertReplaceNode();
 
-  PropertyType getNewValuesNode();
+  /**
+   * Returns the Value of the PerformInsertReplace child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable PerformUpdateType getPerformInsertReplace();
 
-  Annotation[] getOldValues();
-
-  void setOldValues(Annotation[] value);
-
-  PropertyType getOldValuesNode();
+  /**
+   * Sets the Value of the PerformInsertReplace child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setPerformInsertReplace(@Nullable PerformUpdateType value);
 }

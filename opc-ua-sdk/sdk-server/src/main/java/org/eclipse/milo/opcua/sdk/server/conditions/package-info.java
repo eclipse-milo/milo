@@ -49,6 +49,12 @@
  * Condition through the ConditionManager, leaving the shared node and any application-installed
  * handler unchanged.
  *
+ * <p>Method-node adapters use the shared generated argument descriptors. ConditionManager retains
+ * lifecycle ownership of these handlers, including dispatch for unexposed Conditions.
+ * Initialization and snapshot capture read stored values directly when an unset value is
+ * meaningful; ordinary generated accessors enforce value quality. Optional transition properties
+ * are updated only when present, preserving the shape of attached instances.
+ *
  * <p>The default manager resolves shared shelving Methods through either the ConditionId or the
  * nested ShelvingState ObjectId. Unregistering retires handlers installed on copied Methods only
  * while they still belong to that behavior, preserving later application or replacement handlers.

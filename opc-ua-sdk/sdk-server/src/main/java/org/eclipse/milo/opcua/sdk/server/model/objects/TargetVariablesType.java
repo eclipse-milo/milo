@@ -1,204 +1,159 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.core.nodes.MethodNode;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
-import org.eclipse.milo.opcua.sdk.server.methods.Out;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
-import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.types.structured.ConfigurationVersionDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.FieldTargetDataType;
-import org.eclipse.milo.opcua.stack.core.util.Lazy;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.9/#9.1.9.2.1">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.9/#9.1.9.2.1</a>
+ * Server API for the TargetVariablesType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.9/#9.1.9.2.1">Model
+ *     documentation</a>
  */
 public interface TargetVariablesType extends SubscribedDataSetType {
-  QualifiedProperty<FieldTargetDataType[]> TARGET_VARIABLES =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "TargetVariables",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14744"),
-          1,
-          FieldTargetDataType[].class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 15111L);
 
-  FieldTargetDataType[] getTargetVariables();
+  /**
+   * Returns the mandatory TargetVariables child, a PropertyType with DataType FieldTargetDataType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getTargetVariablesNode();
 
-  void setTargetVariables(FieldTargetDataType[] value);
+  /**
+   * Returns the Value of the TargetVariables child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable FieldTargetDataType @Nullable [] getTargetVariables();
 
-  PropertyType getTargetVariablesNode();
+  /**
+   * Sets the Value of the TargetVariables child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setTargetVariables(@Nullable FieldTargetDataType @Nullable [] value);
 
-  MethodNode getAddTargetVariablesMethodNode();
+  /**
+   * Returns the optional AddTargetVariables Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.9/#9.1.9.2.2">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getAddTargetVariablesMethodNode();
 
-  MethodNode getRemoveTargetVariablesMethodNode();
+  /**
+   * Sets this instance's AddTargetVariables handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setAddTargetVariablesHandler(@Nullable AddTargetVariablesHandler handler);
 
-  abstract class AddTargetVariablesMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+  /**
+   * Returns the optional RemoveTargetVariables Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.9/#9.1.9.2.3">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getRemoveTargetVariablesMethodNode();
 
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
+  /**
+   * Sets this instance's RemoveTargetVariables handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setRemoveTargetVariablesHandler(@Nullable RemoveTargetVariablesHandler handler);
 
-    public AddTargetVariablesMethod(UaMethodNode node) {
-      super(node);
-    }
+  /**
+   * Sets this instance's Method handlers, including inherited handlers, from one implementation;
+   * null clears them and restores Method-node fallback. Absent optional Methods are skipped.
+   * Changes are applied in order; a failure does not roll back earlier changes.
+   *
+   * @throws UaRuntimeException if a mandatory Method is absent, or a Method is ambiguous or
+   *     incompatible.
+   */
+  void setMethods(@Nullable Methods methods);
 
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "ConfigurationVersion",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14593")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "TargetVariablesToAdd",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14744")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "AddResults",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=19")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      ConfigurationVersionDataType configurationVersion =
-          (ConfigurationVersionDataType) inputValues[0].getValue();
-      FieldTargetDataType[] targetVariablesToAdd =
-          (FieldTargetDataType[]) inputValues[1].getValue();
-      Out<StatusCode[]> addResults = new Out<>();
-      invoke(context, configurationVersion, targetVariablesToAdd, addResults);
-      return new Variant[] {new Variant(addResults.get())};
-    }
-
-    protected abstract void invoke(
+  /**
+   * Handles calls to the AddTargetVariables Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.9/#9.1.9.2.2">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface AddTargetVariablesHandler {
+    /**
+     * Handles a call to the AddTargetVariables Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    StatusCode @Nullable [] addTargetVariables(
         AbstractMethodInvocationHandler.InvocationContext context,
-        ConfigurationVersionDataType configurationVersion,
-        FieldTargetDataType[] targetVariablesToAdd,
-        Out<StatusCode[]> addResults)
+        @Nullable ConfigurationVersionDataType configurationVersion,
+        @Nullable FieldTargetDataType @Nullable [] targetVariablesToAdd)
         throws UaException;
   }
 
-  abstract class RemoveTargetVariablesMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-    public RemoveTargetVariablesMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "ConfigurationVersion",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14593")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "TargetsToRemove",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "RemoveResults",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=19")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      ConfigurationVersionDataType configurationVersion =
-          (ConfigurationVersionDataType) inputValues[0].getValue();
-      UInteger[] targetsToRemove = (UInteger[]) inputValues[1].getValue();
-      Out<StatusCode[]> removeResults = new Out<>();
-      invoke(context, configurationVersion, targetsToRemove, removeResults);
-      return new Variant[] {new Variant(removeResults.get())};
-    }
-
-    protected abstract void invoke(
+  /**
+   * Handles calls to the RemoveTargetVariables Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.9/#9.1.9.2.3">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface RemoveTargetVariablesHandler {
+    /**
+     * Handles a call to the RemoveTargetVariables Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    StatusCode @Nullable [] removeTargetVariables(
         AbstractMethodInvocationHandler.InvocationContext context,
-        ConfigurationVersionDataType configurationVersion,
-        UInteger[] targetsToRemove,
-        Out<StatusCode[]> removeResults)
+        @Nullable ConfigurationVersionDataType configurationVersion,
+        UInteger @Nullable [] targetsToRemove)
         throws UaException;
+  }
+
+  /** Implements this type's Methods. Unimplemented Methods report Bad_NotImplemented. */
+  interface Methods {
+    /**
+     * Handles a call to the AddTargetVariables Method; see {@link
+     * AddTargetVariablesHandler#addTargetVariables}.
+     */
+    default StatusCode @Nullable [] addTargetVariables(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable ConfigurationVersionDataType configurationVersion,
+        @Nullable FieldTargetDataType @Nullable [] targetVariablesToAdd)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /**
+     * Handles a call to the RemoveTargetVariables Method; see {@link
+     * RemoveTargetVariablesHandler#removeTargetVariables}.
+     */
+    default StatusCode @Nullable [] removeTargetVariables(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable ConfigurationVersionDataType configurationVersion,
+        UInteger @Nullable [] targetsToRemove)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
   }
 }

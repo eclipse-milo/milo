@@ -1,20 +1,10 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -24,7 +14,15 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.TransactionErrorType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link TransactionDiagnosticsType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.17">Model
+ *     documentation</a>
+ */
 public class TransactionDiagnosticsTypeNode extends BaseObjectTypeNode
     implements TransactionDiagnosticsType {
   public TransactionDiagnosticsTypeNode(
@@ -32,12 +30,36 @@ public class TransactionDiagnosticsTypeNode extends BaseObjectTypeNode
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions);
+  }
+
+  public TransactionDiagnosticsTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         context,
@@ -53,125 +75,153 @@ public class TransactionDiagnosticsTypeNode extends BaseObjectTypeNode
         eventNotifier);
   }
 
-  public TransactionDiagnosticsTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions);
+  @Override
+  public PropertyTypeNode getAffectedCertificateGroupsNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "AffectedCertificateGroups",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 17L),
+        1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getStartTimeNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(TransactionDiagnosticsType.START_TIME);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public NodeId @Nullable [] getAffectedCertificateGroups() {
+    return ServerNodeSupport.readArray(
+        this, getAffectedCertificateGroupsNode(), NodeId.class, null);
   }
 
   @Override
-  public DateTime getStartTime() {
-    return getProperty(TransactionDiagnosticsType.START_TIME).orElse(null);
-  }
-
-  @Override
-  public void setStartTime(DateTime value) {
-    setProperty(TransactionDiagnosticsType.START_TIME, value);
-  }
-
-  @Override
-  public PropertyTypeNode getEndTimeNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(TransactionDiagnosticsType.END_TIME);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public DateTime getEndTime() {
-    return getProperty(TransactionDiagnosticsType.END_TIME).orElse(null);
-  }
-
-  @Override
-  public void setEndTime(DateTime value) {
-    setProperty(TransactionDiagnosticsType.END_TIME, value);
-  }
-
-  @Override
-  public PropertyTypeNode getResultNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(TransactionDiagnosticsType.RESULT);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public StatusCode getResult() {
-    return getProperty(TransactionDiagnosticsType.RESULT).orElse(null);
-  }
-
-  @Override
-  public void setResult(StatusCode value) {
-    setProperty(TransactionDiagnosticsType.RESULT, value);
+  public void setAffectedCertificateGroups(NodeId @Nullable [] value) {
+    ServerNodeSupport.write(this, getAffectedCertificateGroupsNode(), value, true, false, false);
   }
 
   @Override
   public PropertyTypeNode getAffectedTrustListsNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(TransactionDiagnosticsType.AFFECTED_TRUST_LISTS);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "AffectedTrustLists",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 17L),
+        1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public NodeId[] getAffectedTrustLists() {
-    return getProperty(TransactionDiagnosticsType.AFFECTED_TRUST_LISTS).orElse(null);
+  public NodeId @Nullable [] getAffectedTrustLists() {
+    return ServerNodeSupport.readArray(this, getAffectedTrustListsNode(), NodeId.class, null);
   }
 
   @Override
-  public void setAffectedTrustLists(NodeId[] value) {
-    setProperty(TransactionDiagnosticsType.AFFECTED_TRUST_LISTS, value);
+  public void setAffectedTrustLists(NodeId @Nullable [] value) {
+    ServerNodeSupport.write(this, getAffectedTrustListsNode(), value, true, false, false);
   }
 
   @Override
-  public PropertyTypeNode getAffectedCertificateGroupsNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(TransactionDiagnosticsType.AFFECTED_CERTIFICATE_GROUPS);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public PropertyTypeNode getEndTimeNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "EndTime",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 294L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public NodeId[] getAffectedCertificateGroups() {
-    return getProperty(TransactionDiagnosticsType.AFFECTED_CERTIFICATE_GROUPS).orElse(null);
+  public @Nullable DateTime getEndTime() {
+    return ServerNodeSupport.read(this, getEndTimeNode(), DateTime.class, null);
   }
 
   @Override
-  public void setAffectedCertificateGroups(NodeId[] value) {
-    setProperty(TransactionDiagnosticsType.AFFECTED_CERTIFICATE_GROUPS, value);
+  public void setEndTime(@Nullable DateTime value) {
+    ServerNodeSupport.write(this, getEndTimeNode(), value, false, false, false);
   }
 
   @Override
   public PropertyTypeNode getErrorsNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(TransactionDiagnosticsType.ERRORS);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "Errors",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 32285L),
+        1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public TransactionErrorType[] getErrors() {
-    return getProperty(TransactionDiagnosticsType.ERRORS).orElse(null);
+  public @Nullable TransactionErrorType @Nullable [] getErrors() {
+    return ServerNodeSupport.readArray(this, getErrorsNode(), TransactionErrorType.class, null);
   }
 
   @Override
-  public void setErrors(TransactionErrorType[] value) {
-    setProperty(TransactionDiagnosticsType.ERRORS, value);
+  public void setErrors(@Nullable TransactionErrorType @Nullable [] value) {
+    ServerNodeSupport.write(this, getErrorsNode(), value, true, false, true);
+  }
+
+  @Override
+  public PropertyTypeNode getResultNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "Result",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 19L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable StatusCode getResult() {
+    return ServerNodeSupport.read(this, getResultNode(), StatusCode.class, null);
+  }
+
+  @Override
+  public void setResult(@Nullable StatusCode value) {
+    ServerNodeSupport.write(this, getResultNode(), value, false, false, false);
+  }
+
+  @Override
+  public PropertyTypeNode getStartTimeNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "StartTime",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 294L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable DateTime getStartTime() {
+    return ServerNodeSupport.read(this, getStartTimeNode(), DateTime.class, null);
+  }
+
+  @Override
+  public void setStartTime(@Nullable DateTime value) {
+    ServerNodeSupport.write(this, getStartTimeNode(), value, false, false, false);
+  }
+
+  @Override
+  public void validateChildren() {
+    super.validateChildren();
+    getAffectedCertificateGroupsNode();
+    getAffectedTrustListsNode();
+    getEndTimeNode();
+    getErrorsNode();
+    getResultNode();
+    getStartTimeNode();
   }
 }

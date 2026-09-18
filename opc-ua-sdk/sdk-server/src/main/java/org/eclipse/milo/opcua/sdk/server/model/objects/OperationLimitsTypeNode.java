@@ -1,19 +1,9 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -21,19 +11,51 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link OperationLimitsType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.11">Model
+ *     documentation</a>
+ */
 public class OperationLimitsTypeNode extends FolderTypeNode implements OperationLimitsType {
   public OperationLimitsTypeNode(
       UaNodeContext context,
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions);
+  }
+
+  public OperationLimitsTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         context,
@@ -49,229 +71,396 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
         eventNotifier);
   }
 
-  public OperationLimitsTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions);
+  @Override
+  public @Nullable PropertyTypeNode getMaxMonitoredItemsPerCallNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "MaxMonitoredItemsPerCall",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getMaxNodesPerReadNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(OperationLimitsType.MAX_NODES_PER_READ);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable UInteger getMaxMonitoredItemsPerCall() {
+    return ServerNodeSupport.read(this, getMaxMonitoredItemsPerCallNode(), UInteger.class, null);
   }
 
   @Override
-  public UInteger getMaxNodesPerRead() {
-    return getProperty(OperationLimitsType.MAX_NODES_PER_READ).orElse(null);
+  public void setMaxMonitoredItemsPerCall(@Nullable UInteger value) {
+    ServerNodeSupport.write(
+        this,
+        getMaxMonitoredItemsPerCallNode(),
+        Namespaces.OPC_UA,
+        "MaxMonitoredItemsPerCall",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
-  public void setMaxNodesPerRead(UInteger value) {
-    setProperty(OperationLimitsType.MAX_NODES_PER_READ, value);
+  public @Nullable PropertyTypeNode getMaxNodesPerBrowseNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "MaxNodesPerBrowse",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getMaxNodesPerHistoryReadDataNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(OperationLimitsType.MAX_NODES_PER_HISTORY_READ_DATA);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable UInteger getMaxNodesPerBrowse() {
+    return ServerNodeSupport.read(this, getMaxNodesPerBrowseNode(), UInteger.class, null);
   }
 
   @Override
-  public UInteger getMaxNodesPerHistoryReadData() {
-    return getProperty(OperationLimitsType.MAX_NODES_PER_HISTORY_READ_DATA).orElse(null);
+  public void setMaxNodesPerBrowse(@Nullable UInteger value) {
+    ServerNodeSupport.write(
+        this,
+        getMaxNodesPerBrowseNode(),
+        Namespaces.OPC_UA,
+        "MaxNodesPerBrowse",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
-  public void setMaxNodesPerHistoryReadData(UInteger value) {
-    setProperty(OperationLimitsType.MAX_NODES_PER_HISTORY_READ_DATA, value);
+  public @Nullable PropertyTypeNode getMaxNodesPerHistoryReadDataNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "MaxNodesPerHistoryReadData",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getMaxNodesPerHistoryReadEventsNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(OperationLimitsType.MAX_NODES_PER_HISTORY_READ_EVENTS);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable UInteger getMaxNodesPerHistoryReadData() {
+    return ServerNodeSupport.read(this, getMaxNodesPerHistoryReadDataNode(), UInteger.class, null);
   }
 
   @Override
-  public UInteger getMaxNodesPerHistoryReadEvents() {
-    return getProperty(OperationLimitsType.MAX_NODES_PER_HISTORY_READ_EVENTS).orElse(null);
+  public void setMaxNodesPerHistoryReadData(@Nullable UInteger value) {
+    ServerNodeSupport.write(
+        this,
+        getMaxNodesPerHistoryReadDataNode(),
+        Namespaces.OPC_UA,
+        "MaxNodesPerHistoryReadData",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
-  public void setMaxNodesPerHistoryReadEvents(UInteger value) {
-    setProperty(OperationLimitsType.MAX_NODES_PER_HISTORY_READ_EVENTS, value);
+  public @Nullable PropertyTypeNode getMaxNodesPerHistoryReadEventsNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "MaxNodesPerHistoryReadEvents",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getMaxNodesPerWriteNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(OperationLimitsType.MAX_NODES_PER_WRITE);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable UInteger getMaxNodesPerHistoryReadEvents() {
+    return ServerNodeSupport.read(
+        this, getMaxNodesPerHistoryReadEventsNode(), UInteger.class, null);
   }
 
   @Override
-  public UInteger getMaxNodesPerWrite() {
-    return getProperty(OperationLimitsType.MAX_NODES_PER_WRITE).orElse(null);
+  public void setMaxNodesPerHistoryReadEvents(@Nullable UInteger value) {
+    ServerNodeSupport.write(
+        this,
+        getMaxNodesPerHistoryReadEventsNode(),
+        Namespaces.OPC_UA,
+        "MaxNodesPerHistoryReadEvents",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
-  public void setMaxNodesPerWrite(UInteger value) {
-    setProperty(OperationLimitsType.MAX_NODES_PER_WRITE, value);
+  public @Nullable PropertyTypeNode getMaxNodesPerHistoryUpdateDataNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "MaxNodesPerHistoryUpdateData",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getMaxNodesPerHistoryUpdateDataNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(OperationLimitsType.MAX_NODES_PER_HISTORY_UPDATE_DATA);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable UInteger getMaxNodesPerHistoryUpdateData() {
+    return ServerNodeSupport.read(
+        this, getMaxNodesPerHistoryUpdateDataNode(), UInteger.class, null);
   }
 
   @Override
-  public UInteger getMaxNodesPerHistoryUpdateData() {
-    return getProperty(OperationLimitsType.MAX_NODES_PER_HISTORY_UPDATE_DATA).orElse(null);
+  public void setMaxNodesPerHistoryUpdateData(@Nullable UInteger value) {
+    ServerNodeSupport.write(
+        this,
+        getMaxNodesPerHistoryUpdateDataNode(),
+        Namespaces.OPC_UA,
+        "MaxNodesPerHistoryUpdateData",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
-  public void setMaxNodesPerHistoryUpdateData(UInteger value) {
-    setProperty(OperationLimitsType.MAX_NODES_PER_HISTORY_UPDATE_DATA, value);
+  public @Nullable PropertyTypeNode getMaxNodesPerHistoryUpdateEventsNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "MaxNodesPerHistoryUpdateEvents",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getMaxNodesPerHistoryUpdateEventsNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(OperationLimitsType.MAX_NODES_PER_HISTORY_UPDATE_EVENTS);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable UInteger getMaxNodesPerHistoryUpdateEvents() {
+    return ServerNodeSupport.read(
+        this, getMaxNodesPerHistoryUpdateEventsNode(), UInteger.class, null);
   }
 
   @Override
-  public UInteger getMaxNodesPerHistoryUpdateEvents() {
-    return getProperty(OperationLimitsType.MAX_NODES_PER_HISTORY_UPDATE_EVENTS).orElse(null);
+  public void setMaxNodesPerHistoryUpdateEvents(@Nullable UInteger value) {
+    ServerNodeSupport.write(
+        this,
+        getMaxNodesPerHistoryUpdateEventsNode(),
+        Namespaces.OPC_UA,
+        "MaxNodesPerHistoryUpdateEvents",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
-  public void setMaxNodesPerHistoryUpdateEvents(UInteger value) {
-    setProperty(OperationLimitsType.MAX_NODES_PER_HISTORY_UPDATE_EVENTS, value);
+  public @Nullable PropertyTypeNode getMaxNodesPerMethodCallNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "MaxNodesPerMethodCall",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getMaxNodesPerMethodCallNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(OperationLimitsType.MAX_NODES_PER_METHOD_CALL);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable UInteger getMaxNodesPerMethodCall() {
+    return ServerNodeSupport.read(this, getMaxNodesPerMethodCallNode(), UInteger.class, null);
   }
 
   @Override
-  public UInteger getMaxNodesPerMethodCall() {
-    return getProperty(OperationLimitsType.MAX_NODES_PER_METHOD_CALL).orElse(null);
+  public void setMaxNodesPerMethodCall(@Nullable UInteger value) {
+    ServerNodeSupport.write(
+        this,
+        getMaxNodesPerMethodCallNode(),
+        Namespaces.OPC_UA,
+        "MaxNodesPerMethodCall",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
-  public void setMaxNodesPerMethodCall(UInteger value) {
-    setProperty(OperationLimitsType.MAX_NODES_PER_METHOD_CALL, value);
+  public @Nullable PropertyTypeNode getMaxNodesPerNodeManagementNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "MaxNodesPerNodeManagement",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getMaxNodesPerBrowseNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(OperationLimitsType.MAX_NODES_PER_BROWSE);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable UInteger getMaxNodesPerNodeManagement() {
+    return ServerNodeSupport.read(this, getMaxNodesPerNodeManagementNode(), UInteger.class, null);
   }
 
   @Override
-  public UInteger getMaxNodesPerBrowse() {
-    return getProperty(OperationLimitsType.MAX_NODES_PER_BROWSE).orElse(null);
+  public void setMaxNodesPerNodeManagement(@Nullable UInteger value) {
+    ServerNodeSupport.write(
+        this,
+        getMaxNodesPerNodeManagementNode(),
+        Namespaces.OPC_UA,
+        "MaxNodesPerNodeManagement",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
-  public void setMaxNodesPerBrowse(UInteger value) {
-    setProperty(OperationLimitsType.MAX_NODES_PER_BROWSE, value);
+  public @Nullable PropertyTypeNode getMaxNodesPerReadNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "MaxNodesPerRead",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getMaxNodesPerRegisterNodesNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(OperationLimitsType.MAX_NODES_PER_REGISTER_NODES);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable UInteger getMaxNodesPerRead() {
+    return ServerNodeSupport.read(this, getMaxNodesPerReadNode(), UInteger.class, null);
   }
 
   @Override
-  public UInteger getMaxNodesPerRegisterNodes() {
-    return getProperty(OperationLimitsType.MAX_NODES_PER_REGISTER_NODES).orElse(null);
+  public void setMaxNodesPerRead(@Nullable UInteger value) {
+    ServerNodeSupport.write(
+        this,
+        getMaxNodesPerReadNode(),
+        Namespaces.OPC_UA,
+        "MaxNodesPerRead",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
-  public void setMaxNodesPerRegisterNodes(UInteger value) {
-    setProperty(OperationLimitsType.MAX_NODES_PER_REGISTER_NODES, value);
+  public @Nullable PropertyTypeNode getMaxNodesPerRegisterNodesNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "MaxNodesPerRegisterNodes",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getMaxNodesPerTranslateBrowsePathsToNodeIdsNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(OperationLimitsType.MAX_NODES_PER_TRANSLATE_BROWSE_PATHS_TO_NODE_IDS);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable UInteger getMaxNodesPerRegisterNodes() {
+    return ServerNodeSupport.read(this, getMaxNodesPerRegisterNodesNode(), UInteger.class, null);
   }
 
   @Override
-  public UInteger getMaxNodesPerTranslateBrowsePathsToNodeIds() {
-    return getProperty(OperationLimitsType.MAX_NODES_PER_TRANSLATE_BROWSE_PATHS_TO_NODE_IDS)
-        .orElse(null);
+  public void setMaxNodesPerRegisterNodes(@Nullable UInteger value) {
+    ServerNodeSupport.write(
+        this,
+        getMaxNodesPerRegisterNodesNode(),
+        Namespaces.OPC_UA,
+        "MaxNodesPerRegisterNodes",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
-  public void setMaxNodesPerTranslateBrowsePathsToNodeIds(UInteger value) {
-    setProperty(OperationLimitsType.MAX_NODES_PER_TRANSLATE_BROWSE_PATHS_TO_NODE_IDS, value);
+  public @Nullable PropertyTypeNode getMaxNodesPerTranslateBrowsePathsToNodeIdsNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "MaxNodesPerTranslateBrowsePathsToNodeIds",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getMaxNodesPerNodeManagementNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(OperationLimitsType.MAX_NODES_PER_NODE_MANAGEMENT);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable UInteger getMaxNodesPerTranslateBrowsePathsToNodeIds() {
+    return ServerNodeSupport.read(
+        this, getMaxNodesPerTranslateBrowsePathsToNodeIdsNode(), UInteger.class, null);
   }
 
   @Override
-  public UInteger getMaxNodesPerNodeManagement() {
-    return getProperty(OperationLimitsType.MAX_NODES_PER_NODE_MANAGEMENT).orElse(null);
+  public void setMaxNodesPerTranslateBrowsePathsToNodeIds(@Nullable UInteger value) {
+    ServerNodeSupport.write(
+        this,
+        getMaxNodesPerTranslateBrowsePathsToNodeIdsNode(),
+        Namespaces.OPC_UA,
+        "MaxNodesPerTranslateBrowsePathsToNodeIds",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
-  public void setMaxNodesPerNodeManagement(UInteger value) {
-    setProperty(OperationLimitsType.MAX_NODES_PER_NODE_MANAGEMENT, value);
+  public @Nullable PropertyTypeNode getMaxNodesPerWriteNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "MaxNodesPerWrite",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getMaxMonitoredItemsPerCallNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(OperationLimitsType.MAX_MONITORED_ITEMS_PER_CALL);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable UInteger getMaxNodesPerWrite() {
+    return ServerNodeSupport.read(this, getMaxNodesPerWriteNode(), UInteger.class, null);
   }
 
   @Override
-  public UInteger getMaxMonitoredItemsPerCall() {
-    return getProperty(OperationLimitsType.MAX_MONITORED_ITEMS_PER_CALL).orElse(null);
+  public void setMaxNodesPerWrite(@Nullable UInteger value) {
+    ServerNodeSupport.write(
+        this,
+        getMaxNodesPerWriteNode(),
+        Namespaces.OPC_UA,
+        "MaxNodesPerWrite",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
-  public void setMaxMonitoredItemsPerCall(UInteger value) {
-    setProperty(OperationLimitsType.MAX_MONITORED_ITEMS_PER_CALL, value);
+  public void validateChildren() {
+    super.validateChildren();
+    getMaxMonitoredItemsPerCallNode();
+    getMaxNodesPerBrowseNode();
+    getMaxNodesPerHistoryReadDataNode();
+    getMaxNodesPerHistoryReadEventsNode();
+    getMaxNodesPerHistoryUpdateDataNode();
+    getMaxNodesPerHistoryUpdateEventsNode();
+    getMaxNodesPerMethodCallNode();
+    getMaxNodesPerNodeManagementNode();
+    getMaxNodesPerReadNode();
+    getMaxNodesPerRegisterNodesNode();
+    getMaxNodesPerTranslateBrowsePathsToNodeIdsNode();
+    getMaxNodesPerWriteNode();
   }
 }

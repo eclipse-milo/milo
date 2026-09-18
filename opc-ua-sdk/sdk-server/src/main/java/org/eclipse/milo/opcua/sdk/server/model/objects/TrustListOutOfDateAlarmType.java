@@ -1,65 +1,101 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.2/#7.8.2.11">https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.2/#7.8.2.11</a>
+ * Server API for the TrustListOutOfDateAlarmType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.2/#7.8.2.11">Model
+ *     documentation</a>
  */
 public interface TrustListOutOfDateAlarmType extends SystemOffNormalAlarmType {
-  QualifiedProperty<NodeId> TRUST_LIST_ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "TrustListId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-          -1,
-          NodeId.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 19297L);
 
-  QualifiedProperty<DateTime> LAST_UPDATE_TIME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "LastUpdateTime",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
-          -1,
-          DateTime.class);
+  /**
+   * Returns the mandatory LastUpdateTime child, a PropertyType with DataType UtcTime.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getLastUpdateTimeNode();
 
-  QualifiedProperty<Double> UPDATE_FREQUENCY =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "UpdateFrequency",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
-          -1,
-          Double.class);
+  /**
+   * Returns the Value of the LastUpdateTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable DateTime getLastUpdateTime();
 
-  NodeId getTrustListId();
+  /**
+   * Sets the Value of the LastUpdateTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setLastUpdateTime(@Nullable DateTime value);
 
-  void setTrustListId(NodeId value);
+  /**
+   * Returns the mandatory TrustListId child, a PropertyType with DataType NodeId.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getTrustListIdNode();
 
-  PropertyType getTrustListIdNode();
+  /**
+   * Returns the Value of the TrustListId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable NodeId getTrustListId();
 
-  DateTime getLastUpdateTime();
+  /**
+   * Sets the Value of the TrustListId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setTrustListId(@Nullable NodeId value);
 
-  void setLastUpdateTime(DateTime value);
+  /**
+   * Returns the mandatory UpdateFrequency child, a PropertyType with DataType Duration.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getUpdateFrequencyNode();
 
-  PropertyType getLastUpdateTimeNode();
+  /**
+   * Returns the Value of the UpdateFrequency child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Double getUpdateFrequency();
 
-  Double getUpdateFrequency();
+  /**
+   * Sets the Value of the UpdateFrequency child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setUpdateFrequency(@Nullable Double value);
 
-  void setUpdateFrequency(Double value);
+  /**
+   * Sets this instance's Method handlers, including inherited handlers, from one implementation;
+   * null clears them and restores Method-node fallback. Absent optional Methods are skipped.
+   * Changes are applied in order; a failure does not roll back earlier changes.
+   *
+   * @throws UaRuntimeException if a mandatory Method is absent, or a Method is ambiguous or
+   *     incompatible.
+   */
+  void setMethods(@Nullable Methods methods);
 
-  PropertyType getUpdateFrequencyNode();
+  /** Implements this type's Methods. Unimplemented Methods report Bad_NotImplemented. */
+  interface Methods extends SystemOffNormalAlarmType.Methods {}
 }

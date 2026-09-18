@@ -1,30 +1,25 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.variables;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelExType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SessionSecurityDiagnosticsDataType;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link SessionSecurityDiagnosticsArrayType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.15">Model
+ *     documentation</a>
+ */
 public class SessionSecurityDiagnosticsArrayTypeNode extends BaseDataVariableTypeNode
     implements SessionSecurityDiagnosticsArrayType {
   public SessionSecurityDiagnosticsArrayTypeNode(
@@ -32,16 +27,48 @@ public class SessionSecurityDiagnosticsArrayTypeNode extends BaseDataVariableTyp
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       DataValue value,
       NodeId dataType,
       Integer valueRank,
-      UInteger[] arrayDimensions,
+      UInteger @Nullable [] arrayDimensions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions,
+        value,
+        dataType,
+        valueRank,
+        arrayDimensions);
+  }
+
+  public SessionSecurityDiagnosticsArrayTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
+      DataValue value,
+      NodeId dataType,
+      Integer valueRank,
+      UInteger @Nullable [] arrayDimensions,
       UByte accessLevel,
       UByte userAccessLevel,
       Double minimumSamplingInterval,
@@ -69,57 +96,13 @@ public class SessionSecurityDiagnosticsArrayTypeNode extends BaseDataVariableTyp
         accessLevelEx);
   }
 
-  public SessionSecurityDiagnosticsArrayTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
-      DataValue value,
-      NodeId dataType,
-      Integer valueRank,
-      UInteger[] arrayDimensions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions,
-        value,
-        dataType,
-        valueRank,
-        arrayDimensions);
+  @Override
+  public @Nullable SessionSecurityDiagnosticsDataType @Nullable [] getTypedValue() {
+    return ServerNodeSupport.readArray(this, this, SessionSecurityDiagnosticsDataType.class, null);
   }
 
   @Override
-  public SessionSecurityDiagnosticsTypeNode getSessionSecurityDiagnosticsNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "SessionSecurityDiagnostics");
-    return (SessionSecurityDiagnosticsTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public SessionSecurityDiagnosticsDataType getSessionSecurityDiagnostics() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "SessionSecurityDiagnostics");
-    return component
-        .map(node -> (SessionSecurityDiagnosticsDataType) node.getValue().getValue().getValue())
-        .orElse(null);
-  }
-
-  @Override
-  public void setSessionSecurityDiagnostics(SessionSecurityDiagnosticsDataType value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "SessionSecurityDiagnostics")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setTypedValue(@Nullable SessionSecurityDiagnosticsDataType @Nullable [] value) {
+    ServerNodeSupport.write(this, this, value, true, false, true);
   }
 }

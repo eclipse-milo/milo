@@ -1,142 +1,147 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.core.nodes.MethodNode;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
-import org.eclipse.milo.opcua.sdk.server.methods.Out;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
-import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription;
-import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
-import org.eclipse.milo.opcua.stack.core.util.Lazy;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part21/9.3.3">https://reference.opcfoundation.org/v105/Core/docs/Part21/9.3.3</a>
+ * Server API for the ProvisionableDeviceType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part21/9.3.3">Model
+ *     documentation</a>
  */
 public interface ProvisionableDeviceType extends BaseObjectType {
-  QualifiedProperty<Boolean> IS_SINGLETON =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "IsSingleton",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 26871L);
 
-  Boolean getIsSingleton();
+  /**
+   * Returns the mandatory IsSingleton child, a PropertyType with DataType Boolean.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getIsSingletonNode();
 
-  void setIsSingleton(Boolean value);
+  /**
+   * Returns the Value of the IsSingleton child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Boolean getIsSingleton();
 
-  PropertyType getIsSingletonNode();
+  /**
+   * Sets the Value of the IsSingleton child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setIsSingleton(@Nullable Boolean value);
 
-  MethodNode getRequestTicketsMethodNode();
+  /**
+   * Returns the mandatory RequestTickets Method node.
+   *
+   * @throws UaRuntimeException if the Method is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part21/9.3.4">Model
+   *     documentation</a>
+   */
+  UaMethodNode getRequestTicketsMethodNode();
 
-  MethodNode getSetRegistrarEndpointsMethodNode();
+  /**
+   * Sets this instance's RequestTickets handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setRequestTicketsHandler(@Nullable RequestTicketsHandler handler);
 
-  abstract class RequestTicketsMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
+  /**
+   * Returns the optional SetRegistrarEndpoints Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part21/9.3.5">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getSetRegistrarEndpointsMethodNode();
 
-    public RequestTicketsMethod(UaMethodNode node) {
-      super(node);
-    }
+  /**
+   * Sets this instance's SetRegistrarEndpoints handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setSetRegistrarEndpointsHandler(@Nullable SetRegistrarEndpointsHandler handler);
 
-    @Override
-    public Argument[] getInputArguments() {
-      return new Argument[] {};
-    }
+  /**
+   * Sets this instance's Method handlers, including inherited handlers, from one implementation;
+   * null clears them and restores Method-node fallback. Absent optional Methods are skipped.
+   * Changes are applied in order; a failure does not roll back earlier changes.
+   *
+   * @throws UaRuntimeException if a mandatory Method is absent, or a Method is ambiguous or
+   *     incompatible.
+   */
+  void setMethods(@Nullable Methods methods);
 
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+  /**
+   * Handles calls to the RequestTickets Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part21/9.3.4">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface RequestTicketsHandler {
+    /**
+     * Handles a call to the RequestTickets Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    @Nullable String @Nullable [] requestTickets(
+        AbstractMethodInvocationHandler.InvocationContext context) throws UaException;
+  }
 
-            return new Argument[] {
-              new Argument(
-                  "Tickets",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=25726")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      Out<String[]> tickets = new Out<>();
-      invoke(context, tickets);
-      return new Variant[] {new Variant(tickets.get())};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Out<String[]> tickets)
+  /**
+   * Handles calls to the SetRegistrarEndpoints Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part21/9.3.5">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface SetRegistrarEndpointsHandler {
+    /**
+     * Handles a call to the SetRegistrarEndpoints Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void setRegistrarEndpoints(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable ApplicationDescription @Nullable [] registrars)
         throws UaException;
   }
 
-  abstract class SetRegistrarEndpointsMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    public SetRegistrarEndpointsMethod(UaMethodNode node) {
-      super(node);
+  /** Implements this type's Methods. Unimplemented Methods report Bad_NotImplemented. */
+  interface Methods {
+    /**
+     * Handles a call to the RequestTickets Method; see {@link
+     * RequestTicketsHandler#requestTickets}.
+     */
+    default @Nullable String @Nullable [] requestTickets(
+        AbstractMethodInvocationHandler.InvocationContext context) throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
     }
 
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "Registrars",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=308")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      ApplicationDescription[] registrars = (ApplicationDescription[]) inputValues[0].getValue();
-      invoke(context, registrars);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(
+    /**
+     * Handles a call to the SetRegistrarEndpoints Method; see {@link
+     * SetRegistrarEndpointsHandler#setRegistrarEndpoints}.
+     */
+    default void setRegistrarEndpoints(
         AbstractMethodInvocationHandler.InvocationContext context,
-        ApplicationDescription[] registrars)
-        throws UaException;
+        @Nullable ApplicationDescription @Nullable [] registrars)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
   }
 }

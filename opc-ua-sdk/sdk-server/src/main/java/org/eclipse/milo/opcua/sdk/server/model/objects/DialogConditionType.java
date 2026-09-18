@@ -1,232 +1,287 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.core.nodes.MethodNode;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
-import org.eclipse.milo.opcua.sdk.server.model.variables.TwoStateVariableType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.variables.TwoStateVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
-import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
-import org.eclipse.milo.opcua.stack.core.util.Lazy;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.6.2">https://reference.opcfoundation.org/v105/Core/docs/Part9/5.6.2</a>
+ * Server API for the DialogConditionType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.6.2">Model
+ *     documentation</a>
  */
 public interface DialogConditionType extends ConditionType {
-  QualifiedProperty<LocalizedText> PROMPT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Prompt",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
-          -1,
-          LocalizedText.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2830L);
 
-  QualifiedProperty<LocalizedText[]> RESPONSE_OPTION_SET =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ResponseOptionSet",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
-          1,
-          LocalizedText[].class);
+  /**
+   * Returns the mandatory CancelResponse child, a PropertyType with DataType Int32.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getCancelResponseNode();
 
-  QualifiedProperty<Integer> DEFAULT_RESPONSE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "DefaultResponse",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=6"),
-          -1,
-          Integer.class);
+  /**
+   * Returns the Value of the CancelResponse child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Integer getCancelResponse();
 
-  QualifiedProperty<Integer> OK_RESPONSE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "OkResponse",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=6"),
-          -1,
-          Integer.class);
+  /**
+   * Sets the Value of the CancelResponse child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setCancelResponse(@Nullable Integer value);
 
-  QualifiedProperty<Integer> CANCEL_RESPONSE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "CancelResponse",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=6"),
-          -1,
-          Integer.class);
+  /**
+   * Returns the mandatory DefaultResponse child, a PropertyType with DataType Int32.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getDefaultResponseNode();
 
-  QualifiedProperty<Integer> LAST_RESPONSE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "LastResponse",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=6"),
-          -1,
-          Integer.class);
+  /**
+   * Returns the Value of the DefaultResponse child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Integer getDefaultResponse();
 
-  LocalizedText getPrompt();
+  /**
+   * Sets the Value of the DefaultResponse child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setDefaultResponse(@Nullable Integer value);
 
-  void setPrompt(LocalizedText value);
+  /**
+   * Returns the mandatory DialogState child, a TwoStateVariableType with DataType LocalizedText.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.2">TwoStateVariableType
+   *     documentation</a>
+   */
+  TwoStateVariableTypeNode getDialogStateNode();
 
-  PropertyType getPromptNode();
+  /**
+   * Returns the Value of the DialogState child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable LocalizedText getDialogState();
 
-  LocalizedText[] getResponseOptionSet();
+  /**
+   * Sets the Value of the DialogState child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setDialogState(@Nullable LocalizedText value);
 
-  void setResponseOptionSet(LocalizedText[] value);
+  /**
+   * Returns the mandatory LastResponse child, a PropertyType with DataType Int32.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getLastResponseNode();
 
-  PropertyType getResponseOptionSetNode();
+  /**
+   * Returns the Value of the LastResponse child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Integer getLastResponse();
 
-  Integer getDefaultResponse();
+  /**
+   * Sets the Value of the LastResponse child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setLastResponse(@Nullable Integer value);
 
-  void setDefaultResponse(Integer value);
+  /**
+   * Returns the mandatory OkResponse child, a PropertyType with DataType Int32.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getOkResponseNode();
 
-  PropertyType getDefaultResponseNode();
+  /**
+   * Returns the Value of the OkResponse child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Integer getOkResponse();
 
-  Integer getOkResponse();
+  /**
+   * Sets the Value of the OkResponse child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setOkResponse(@Nullable Integer value);
 
-  void setOkResponse(Integer value);
+  /**
+   * Returns the mandatory Prompt child, a PropertyType with DataType LocalizedText.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getPromptNode();
 
-  PropertyType getOkResponseNode();
+  /**
+   * Returns the Value of the Prompt child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable LocalizedText getPrompt();
 
-  Integer getCancelResponse();
+  /**
+   * Sets the Value of the Prompt child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setPrompt(@Nullable LocalizedText value);
 
-  void setCancelResponse(Integer value);
+  /**
+   * Returns the mandatory ResponseOptionSet child, a PropertyType with DataType LocalizedText.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getResponseOptionSetNode();
 
-  PropertyType getCancelResponseNode();
+  /**
+   * Returns the Value of the ResponseOptionSet child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  LocalizedText @Nullable [] getResponseOptionSet();
 
-  Integer getLastResponse();
+  /**
+   * Sets the Value of the ResponseOptionSet child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setResponseOptionSet(LocalizedText @Nullable [] value);
 
-  void setLastResponse(Integer value);
+  /**
+   * Returns the mandatory Respond Method node.
+   *
+   * @throws UaRuntimeException if the Method is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.6.3">Model
+   *     documentation</a>
+   */
+  UaMethodNode getRespondMethodNode();
 
-  PropertyType getLastResponseNode();
+  /**
+   * Sets this instance's Respond handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setRespondHandler(@Nullable RespondHandler handler);
 
-  TwoStateVariableType getEnabledStateNode();
+  /**
+   * Returns the optional Respond2 Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.6.4">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getRespond2MethodNode();
 
-  LocalizedText getEnabledState();
+  /**
+   * Sets this instance's Respond2 handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setRespond2Handler(@Nullable Respond2Handler handler);
 
-  void setEnabledState(LocalizedText value);
+  /**
+   * Sets this instance's Method handlers, including inherited handlers, from one implementation;
+   * null clears them and restores Method-node fallback. Absent optional Methods are skipped.
+   * Changes are applied in order; a failure does not roll back earlier changes.
+   *
+   * @throws UaRuntimeException if a mandatory Method is absent, or a Method is ambiguous or
+   *     incompatible.
+   */
+  void setMethods(@Nullable Methods methods);
 
-  TwoStateVariableType getDialogStateNode();
-
-  LocalizedText getDialogState();
-
-  void setDialogState(LocalizedText value);
-
-  MethodNode getRespondMethodNode();
-
-  MethodNode getRespond2MethodNode();
-
-  abstract class RespondMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    public RespondMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "SelectedResponse",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=6")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      Integer selectedResponse = (Integer) inputValues[0].getValue();
-      invoke(context, selectedResponse);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Integer selectedResponse)
+  /**
+   * Handles calls to the Respond Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.6.3">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface RespondHandler {
+    /**
+     * Handles a call to the Respond Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void respond(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable Integer selectedResponse)
         throws UaException;
   }
 
-  abstract class Respond2Method extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    public Respond2Method(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "SelectedResponse",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=6")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "Comment",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      Integer selectedResponse = (Integer) inputValues[0].getValue();
-      LocalizedText comment = (LocalizedText) inputValues[1].getValue();
-      invoke(context, selectedResponse, comment);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(
+  /**
+   * Handles calls to the Respond2 Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.6.4">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface Respond2Handler {
+    /**
+     * Handles a call to the Respond2 Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void respond2(
         AbstractMethodInvocationHandler.InvocationContext context,
-        Integer selectedResponse,
-        LocalizedText comment)
+        @Nullable Integer selectedResponse,
+        @Nullable LocalizedText comment)
         throws UaException;
+  }
+
+  /** Implements this type's Methods. Unimplemented Methods report Bad_NotImplemented. */
+  interface Methods extends ConditionType.Methods {
+    /** Handles a call to the Respond Method; see {@link RespondHandler#respond}. */
+    default void respond(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable Integer selectedResponse)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /** Handles a call to the Respond2 Method; see {@link Respond2Handler#respond2}. */
+    default void respond2(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable Integer selectedResponse,
+        @Nullable LocalizedText comment)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
   }
 }

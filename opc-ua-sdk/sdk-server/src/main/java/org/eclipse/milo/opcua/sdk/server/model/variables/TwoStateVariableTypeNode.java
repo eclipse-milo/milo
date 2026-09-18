@@ -1,20 +1,10 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.variables;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -23,7 +13,15 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelExType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link TwoStateVariableType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.2">Model
+ *     documentation</a>
+ */
 public class TwoStateVariableTypeNode extends StateVariableTypeNode
     implements TwoStateVariableType {
   public TwoStateVariableTypeNode(
@@ -31,16 +29,48 @@ public class TwoStateVariableTypeNode extends StateVariableTypeNode
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       DataValue value,
       NodeId dataType,
       Integer valueRank,
-      UInteger[] arrayDimensions,
+      UInteger @Nullable [] arrayDimensions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions,
+        value,
+        dataType,
+        valueRank,
+        arrayDimensions);
+  }
+
+  public TwoStateVariableTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
+      DataValue value,
+      NodeId dataType,
+      Integer valueRank,
+      UInteger @Nullable [] arrayDimensions,
       UByte accessLevel,
       UByte userAccessLevel,
       Double minimumSamplingInterval,
@@ -68,116 +98,145 @@ public class TwoStateVariableTypeNode extends StateVariableTypeNode
         accessLevelEx);
   }
 
-  public TwoStateVariableTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
-      DataValue value,
-      NodeId dataType,
-      Integer valueRank,
-      UInteger[] arrayDimensions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions,
+  @Override
+  public @Nullable PropertyTypeNode getEffectiveTransitionTimeNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "EffectiveTransitionTime",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 294L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable DateTime getEffectiveTransitionTime() {
+    return ServerNodeSupport.read(this, getEffectiveTransitionTimeNode(), DateTime.class, null);
+  }
+
+  @Override
+  public void setEffectiveTransitionTime(@Nullable DateTime value) {
+    ServerNodeSupport.write(
+        this,
+        getEffectiveTransitionTimeNode(),
+        Namespaces.OPC_UA,
+        "EffectiveTransitionTime",
         value,
-        dataType,
-        valueRank,
-        arrayDimensions);
+        false,
+        false,
+        false);
+  }
+
+  @Override
+  public @Nullable PropertyTypeNode getFalseStateNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "FalseState",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 21L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable LocalizedText getFalseState() {
+    return ServerNodeSupport.read(this, getFalseStateNode(), LocalizedText.class, null);
+  }
+
+  @Override
+  public void setFalseState(@Nullable LocalizedText value) {
+    ServerNodeSupport.write(
+        this, getFalseStateNode(), Namespaces.OPC_UA, "FalseState", value, false, false, false);
   }
 
   @Override
   public PropertyTypeNode getIdNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(TwoStateVariableType.ID);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "Id",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public Boolean getId() {
-    return getProperty(TwoStateVariableType.ID).orElse(null);
+  public @Nullable Boolean getTwoStateVariableTypeId() {
+    return ServerNodeSupport.read(this, getIdNode(), Boolean.class, null);
   }
 
   @Override
-  public void setId(Boolean value) {
-    setProperty(TwoStateVariableType.ID, value);
+  public void setTwoStateVariableTypeId(@Nullable Boolean value) {
+    ServerNodeSupport.write(this, getIdNode(), value, false, false, false);
   }
 
   @Override
-  public PropertyTypeNode getTransitionTimeNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(TwoStateVariableType.TRANSITION_TIME);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable PropertyTypeNode getTransitionTimeNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "TransitionTime",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 294L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public DateTime getTransitionTime() {
-    return getProperty(TwoStateVariableType.TRANSITION_TIME).orElse(null);
+  public @Nullable DateTime getTransitionTime() {
+    return ServerNodeSupport.read(this, getTransitionTimeNode(), DateTime.class, null);
   }
 
   @Override
-  public void setTransitionTime(DateTime value) {
-    setProperty(TwoStateVariableType.TRANSITION_TIME, value);
+  public void setTransitionTime(@Nullable DateTime value) {
+    ServerNodeSupport.write(
+        this,
+        getTransitionTimeNode(),
+        Namespaces.OPC_UA,
+        "TransitionTime",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
-  public PropertyTypeNode getEffectiveTransitionTimeNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(TwoStateVariableType.EFFECTIVE_TRANSITION_TIME);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable PropertyTypeNode getTrueStateNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "TrueState",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 21L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public DateTime getEffectiveTransitionTime() {
-    return getProperty(TwoStateVariableType.EFFECTIVE_TRANSITION_TIME).orElse(null);
+  public @Nullable LocalizedText getTrueState() {
+    return ServerNodeSupport.read(this, getTrueStateNode(), LocalizedText.class, null);
   }
 
   @Override
-  public void setEffectiveTransitionTime(DateTime value) {
-    setProperty(TwoStateVariableType.EFFECTIVE_TRANSITION_TIME, value);
+  public void setTrueState(@Nullable LocalizedText value) {
+    ServerNodeSupport.write(
+        this, getTrueStateNode(), Namespaces.OPC_UA, "TrueState", value, false, false, false);
   }
 
   @Override
-  public PropertyTypeNode getTrueStateNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(TwoStateVariableType.TRUE_STATE);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public LocalizedText getTrueState() {
-    return getProperty(TwoStateVariableType.TRUE_STATE).orElse(null);
-  }
-
-  @Override
-  public void setTrueState(LocalizedText value) {
-    setProperty(TwoStateVariableType.TRUE_STATE, value);
-  }
-
-  @Override
-  public PropertyTypeNode getFalseStateNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(TwoStateVariableType.FALSE_STATE);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public LocalizedText getFalseState() {
-    return getProperty(TwoStateVariableType.FALSE_STATE).orElse(null);
-  }
-
-  @Override
-  public void setFalseState(LocalizedText value) {
-    setProperty(TwoStateVariableType.FALSE_STATE, value);
+  public void validateChildren() {
+    super.validateChildren();
+    getEffectiveTransitionTimeNode();
+    getFalseStateNode();
+    getTransitionTimeNode();
+    getTrueStateNode();
   }
 }

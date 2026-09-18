@@ -1,374 +1,260 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.core.nodes.MethodNode;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
-import org.eclipse.milo.opcua.sdk.server.methods.Out;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.AliasNameDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AliasNameVerboseDataType;
-import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
-import org.eclipse.milo.opcua.stack.core.util.Lazy;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part17/6.3.1">https://reference.opcfoundation.org/v105/Core/docs/Part17/6.3.1</a>
+ * Server API for the AliasNameCategoryType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part17/6.3.1">Model
+ *     documentation</a>
  */
 public interface AliasNameCategoryType extends FolderType {
-  QualifiedProperty<UInteger> LAST_CHANGE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "LastChange",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=20998"),
-          -1,
-          UInteger.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 23456L);
 
-  UInteger getLastChange();
+  /**
+   * Returns the optional LastChange child, a PropertyType with DataType VersionTime.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getLastChangeNode();
 
-  void setLastChange(UInteger value);
+  /**
+   * Returns the Value of the LastChange child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getLastChange();
 
-  PropertyType getLastChangeNode();
+  /**
+   * Sets the Value of the LastChange child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setLastChange(@Nullable UInteger value);
 
-  MethodNode getFindAliasMethodNode();
+  /**
+   * Returns the optional AddAliasesToCategory Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part17/6.3.4">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getAddAliasesToCategoryMethodNode();
 
-  MethodNode getFindAliasVerboseMethodNode();
+  /**
+   * Sets this instance's AddAliasesToCategory handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setAddAliasesToCategoryHandler(@Nullable AddAliasesToCategoryHandler handler);
 
-  MethodNode getAddAliasesToCategoryMethodNode();
+  /**
+   * Returns the optional DeleteAliasesFromCategory Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part17/6.3.5">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getDeleteAliasesFromCategoryMethodNode();
 
-  MethodNode getDeleteAliasesFromCategoryMethodNode();
+  /**
+   * Sets this instance's DeleteAliasesFromCategory handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setDeleteAliasesFromCategoryHandler(@Nullable DeleteAliasesFromCategoryHandler handler);
 
-  abstract class FindAliasMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+  /**
+   * Returns the mandatory FindAlias Method node.
+   *
+   * @throws UaRuntimeException if the Method is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part17/6.3.2">Model
+   *     documentation</a>
+   */
+  UaMethodNode getFindAliasMethodNode();
 
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
+  /**
+   * Sets this instance's FindAlias handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setFindAliasHandler(@Nullable FindAliasHandler handler);
 
-    public FindAliasMethod(UaMethodNode node) {
-      super(node);
-    }
+  /**
+   * Returns the optional FindAliasVerbose Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part17/6.3.3">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getFindAliasVerboseMethodNode();
 
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+  /**
+   * Sets this instance's FindAliasVerbose handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setFindAliasVerboseHandler(@Nullable FindAliasVerboseHandler handler);
 
-            return new Argument[] {
-              new Argument(
-                  "AliasNameSearchPattern",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "ReferenceTypeFilter",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
+  /**
+   * Sets this instance's Method handlers, including inherited handlers, from one implementation;
+   * null clears them and restores Method-node fallback. Absent optional Methods are skipped.
+   * Changes are applied in order; a failure does not roll back earlier changes.
+   *
+   * @throws UaRuntimeException if a mandatory Method is absent, or a Method is ambiguous or
+   *     incompatible.
+   */
+  void setMethods(@Nullable Methods methods);
 
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "AliasNodeList",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=23468")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      String aliasNameSearchPattern = (String) inputValues[0].getValue();
-      NodeId referenceTypeFilter = (NodeId) inputValues[1].getValue();
-      Out<AliasNameDataType[]> aliasNodeList = new Out<>();
-      invoke(context, aliasNameSearchPattern, referenceTypeFilter, aliasNodeList);
-      return new Variant[] {new Variant(aliasNodeList.get())};
-    }
-
-    protected abstract void invoke(
+  /**
+   * Handles calls to the AddAliasesToCategory Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part17/6.3.4">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface AddAliasesToCategoryHandler {
+    /**
+     * Handles a call to the AddAliasesToCategory Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    StatusCode @Nullable [] addAliasesToCategory(
         AbstractMethodInvocationHandler.InvocationContext context,
-        String aliasNameSearchPattern,
-        NodeId referenceTypeFilter,
-        Out<AliasNameDataType[]> aliasNodeList)
+        @Nullable String @Nullable [] aliasNames,
+        ExpandedNodeId @Nullable [] targetNodes,
+        @Nullable String @Nullable [] targetServers,
+        @Nullable NodeId targetReferenceType)
         throws UaException;
   }
 
-  abstract class FindAliasVerboseMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-    public FindAliasVerboseMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "AliasNameSearchPattern",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "ReferenceTypeFilter",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "AliasNodeList",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24051")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      String aliasNameSearchPattern = (String) inputValues[0].getValue();
-      NodeId referenceTypeFilter = (NodeId) inputValues[1].getValue();
-      Out<AliasNameVerboseDataType[]> aliasNodeList = new Out<>();
-      invoke(context, aliasNameSearchPattern, referenceTypeFilter, aliasNodeList);
-      return new Variant[] {new Variant(aliasNodeList.get())};
-    }
-
-    protected abstract void invoke(
+  /**
+   * Handles calls to the DeleteAliasesFromCategory Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part17/6.3.5">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface DeleteAliasesFromCategoryHandler {
+    /**
+     * Handles a call to the DeleteAliasesFromCategory Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    StatusCode @Nullable [] deleteAliasesFromCategory(
         AbstractMethodInvocationHandler.InvocationContext context,
-        String aliasNameSearchPattern,
-        NodeId referenceTypeFilter,
-        Out<AliasNameVerboseDataType[]> aliasNodeList)
+        @Nullable String @Nullable [] aliasNames,
+        ExpandedNodeId @Nullable [] targetNodes)
         throws UaException;
   }
 
-  abstract class AddAliasesToCategoryMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-    public AddAliasesToCategoryMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "AliasNames",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", "")),
-              new Argument(
-                  "TargetNodes",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=18")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", "")),
-              new Argument(
-                  "TargetServers",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", "")),
-              new Argument(
-                  "TargetReferenceType",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "ErrorCodes",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=19")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      String[] aliasNames = (String[]) inputValues[0].getValue();
-      ExpandedNodeId[] targetNodes = (ExpandedNodeId[]) inputValues[1].getValue();
-      String[] targetServers = (String[]) inputValues[2].getValue();
-      NodeId targetReferenceType = (NodeId) inputValues[3].getValue();
-      Out<StatusCode[]> errorCodes = new Out<>();
-      invoke(context, aliasNames, targetNodes, targetServers, targetReferenceType, errorCodes);
-      return new Variant[] {new Variant(errorCodes.get())};
-    }
-
-    protected abstract void invoke(
+  /**
+   * Handles calls to the FindAlias Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part17/6.3.2">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface FindAliasHandler {
+    /**
+     * Handles a call to the FindAlias Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    @Nullable AliasNameDataType @Nullable [] findAlias(
         AbstractMethodInvocationHandler.InvocationContext context,
-        String[] aliasNames,
-        ExpandedNodeId[] targetNodes,
-        String[] targetServers,
-        NodeId targetReferenceType,
-        Out<StatusCode[]> errorCodes)
+        @Nullable String aliasNameSearchPattern,
+        @Nullable NodeId referenceTypeFilter)
         throws UaException;
   }
 
-  abstract class DeleteAliasesFromCategoryMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-    public DeleteAliasesFromCategoryMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "AliasNames",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", "")),
-              new Argument(
-                  "TargetNodes",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=18")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "ErrorCodes",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=19")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      String[] aliasNames = (String[]) inputValues[0].getValue();
-      ExpandedNodeId[] targetNodes = (ExpandedNodeId[]) inputValues[1].getValue();
-      Out<StatusCode[]> errorCodes = new Out<>();
-      invoke(context, aliasNames, targetNodes, errorCodes);
-      return new Variant[] {new Variant(errorCodes.get())};
-    }
-
-    protected abstract void invoke(
+  /**
+   * Handles calls to the FindAliasVerbose Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part17/6.3.3">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface FindAliasVerboseHandler {
+    /**
+     * Handles a call to the FindAliasVerbose Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    @Nullable AliasNameVerboseDataType @Nullable [] findAliasVerbose(
         AbstractMethodInvocationHandler.InvocationContext context,
-        String[] aliasNames,
-        ExpandedNodeId[] targetNodes,
-        Out<StatusCode[]> errorCodes)
+        @Nullable String aliasNameSearchPattern,
+        @Nullable NodeId referenceTypeFilter)
         throws UaException;
+  }
+
+  /** Implements this type's Methods. Unimplemented Methods report Bad_NotImplemented. */
+  interface Methods {
+    /**
+     * Handles a call to the AddAliasesToCategory Method; see {@link
+     * AddAliasesToCategoryHandler#addAliasesToCategory}.
+     */
+    default StatusCode @Nullable [] addAliasesToCategory(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable String @Nullable [] aliasNames,
+        ExpandedNodeId @Nullable [] targetNodes,
+        @Nullable String @Nullable [] targetServers,
+        @Nullable NodeId targetReferenceType)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /**
+     * Handles a call to the DeleteAliasesFromCategory Method; see {@link
+     * DeleteAliasesFromCategoryHandler#deleteAliasesFromCategory}.
+     */
+    default StatusCode @Nullable [] deleteAliasesFromCategory(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable String @Nullable [] aliasNames,
+        ExpandedNodeId @Nullable [] targetNodes)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /** Handles a call to the FindAlias Method; see {@link FindAliasHandler#findAlias}. */
+    default @Nullable AliasNameDataType @Nullable [] findAlias(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable String aliasNameSearchPattern,
+        @Nullable NodeId referenceTypeFilter)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /**
+     * Handles a call to the FindAliasVerbose Method; see {@link
+     * FindAliasVerboseHandler#findAliasVerbose}.
+     */
+    default @Nullable AliasNameVerboseDataType @Nullable [] findAliasVerbose(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable String aliasNameSearchPattern,
+        @Nullable NodeId referenceTypeFilter)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
   }
 }

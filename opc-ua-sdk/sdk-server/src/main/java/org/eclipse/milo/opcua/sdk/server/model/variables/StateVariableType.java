@@ -1,79 +1,132 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.variables;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part16/4.4.3">https://reference.opcfoundation.org/v105/Core/docs/Part16/4.4.3</a>
+ * Server API for the StateVariableType VariableType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part16/4.4.3">Model
+ *     documentation</a>
  */
 public interface StateVariableType extends BaseDataVariableType {
-  QualifiedProperty<Object> ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Id",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24"),
-          -1,
-          Object.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2755L);
 
-  QualifiedProperty<QualifiedName> NAME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Name",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=20"),
-          -1,
-          QualifiedName.class);
+  /**
+   * Returns the optional EffectiveDisplayName child, a PropertyType with DataType LocalizedText.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getEffectiveDisplayNameNode();
 
-  QualifiedProperty<UInteger> NUMBER =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Number",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  /**
+   * Returns the Value of the EffectiveDisplayName child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable LocalizedText getEffectiveDisplayName();
 
-  QualifiedProperty<LocalizedText> EFFECTIVE_DISPLAY_NAME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "EffectiveDisplayName",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
-          -1,
-          LocalizedText.class);
+  /**
+   * Sets the Value of the EffectiveDisplayName child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setEffectiveDisplayName(@Nullable LocalizedText value);
 
-  Object getId();
+  /**
+   * Returns the mandatory Id child, a PropertyType with DataType BaseDataType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getIdNode();
 
-  void setId(Object value);
+  /**
+   * Returns the Value of the Id child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Variant getId();
 
-  PropertyType getIdNode();
+  /**
+   * Sets the Value of the Id child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setId(@Nullable Variant value);
 
-  QualifiedName getName();
+  /**
+   * Returns the optional Name child, a PropertyType with DataType QualifiedName.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getNameNode();
 
-  void setName(QualifiedName value);
+  /**
+   * Returns the Value of the Name child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable QualifiedName getName();
 
-  PropertyType getNameNode();
+  /**
+   * Sets the Value of the Name child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setName(@Nullable QualifiedName value);
 
-  UInteger getNumber();
+  /**
+   * Returns the optional Number child, a PropertyType with DataType UInt32.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getNumberNode();
 
-  void setNumber(UInteger value);
+  /**
+   * Returns the Value of the Number child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getNumber();
 
-  PropertyType getNumberNode();
+  /**
+   * Sets the Value of the Number child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setNumber(@Nullable UInteger value);
 
-  LocalizedText getEffectiveDisplayName();
+  /**
+   * Returns this node's Value.
+   *
+   * @throws UaRuntimeException if the Value does not convert.
+   */
+  @Nullable LocalizedText getTypedValue();
 
-  void setEffectiveDisplayName(LocalizedText value);
-
-  PropertyType getEffectiveDisplayNameNode();
+  /**
+   * Sets this node's Value.
+   *
+   * @throws UaRuntimeException if the value does not convert.
+   */
+  void setTypedValue(@Nullable LocalizedText value);
 }

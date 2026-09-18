@@ -1,256 +1,162 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.core.nodes.MethodNode;
+import org.eclipse.milo.opcua.sdk.core.model.methods.PublishedDataItemsTypeAddVariables;
+import org.eclipse.milo.opcua.sdk.core.model.methods.PublishedDataItemsTypeRemoveVariables;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
-import org.eclipse.milo.opcua.sdk.server.methods.Out;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
-import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
-import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.types.structured.ConfigurationVersionDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedVariableDataType;
-import org.eclipse.milo.opcua.stack.core.util.Lazy;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.3.1">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.3.1</a>
+ * Server API for the PublishedDataItemsType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.3.1">Model
+ *     documentation</a>
  */
 public interface PublishedDataItemsType extends PublishedDataSetType {
-  QualifiedProperty<PublishedVariableDataType[]> PUBLISHED_DATA =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "PublishedData",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14273"),
-          1,
-          PublishedVariableDataType[].class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 14534L);
 
-  PublishedVariableDataType[] getPublishedData();
+  /**
+   * Returns the mandatory PublishedData child, a PropertyType with DataType
+   * PublishedVariableDataType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getPublishedDataNode();
 
-  void setPublishedData(PublishedVariableDataType[] value);
+  /**
+   * Returns the Value of the PublishedData child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable PublishedVariableDataType @Nullable [] getPublishedData();
 
-  PropertyType getPublishedDataNode();
+  /**
+   * Sets the Value of the PublishedData child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setPublishedData(@Nullable PublishedVariableDataType @Nullable [] value);
 
-  MethodNode getAddVariablesMethodNode();
+  /**
+   * Returns the optional AddVariables Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.3.2">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getAddVariablesMethodNode();
 
-  MethodNode getRemoveVariablesMethodNode();
+  /**
+   * Sets this instance's AddVariables handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setAddVariablesHandler(@Nullable AddVariablesHandler handler);
 
-  abstract class AddVariablesMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+  /**
+   * Returns the optional RemoveVariables Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.3.3">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getRemoveVariablesMethodNode();
 
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
+  /**
+   * Sets this instance's RemoveVariables handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setRemoveVariablesHandler(@Nullable RemoveVariablesHandler handler);
 
-    public AddVariablesMethod(UaMethodNode node) {
-      super(node);
-    }
+  /**
+   * Sets this instance's Method handlers, including inherited handlers, from one implementation;
+   * null clears them and restores Method-node fallback. Absent optional Methods are skipped.
+   * Changes are applied in order; a failure does not roll back earlier changes.
+   *
+   * @throws UaRuntimeException if a mandatory Method is absent, or a Method is ambiguous or
+   *     incompatible.
+   */
+  void setMethods(@Nullable Methods methods);
 
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "ConfigurationVersion",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14593")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "FieldNameAliases",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", "")),
-              new Argument(
-                  "PromotedFields",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", "")),
-              new Argument(
-                  "VariablesToAdd",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14273")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "NewConfigurationVersion",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14593")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "AddResults",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=19")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      ConfigurationVersionDataType configurationVersion =
-          (ConfigurationVersionDataType) inputValues[0].getValue();
-      String[] fieldNameAliases = (String[]) inputValues[1].getValue();
-      Boolean[] promotedFields = (Boolean[]) inputValues[2].getValue();
-      PublishedVariableDataType[] variablesToAdd =
-          (PublishedVariableDataType[]) inputValues[3].getValue();
-      Out<ConfigurationVersionDataType> newConfigurationVersion = new Out<>();
-      Out<StatusCode[]> addResults = new Out<>();
-      invoke(
-          context,
-          configurationVersion,
-          fieldNameAliases,
-          promotedFields,
-          variablesToAdd,
-          newConfigurationVersion,
-          addResults);
-      return new Variant[] {
-        new Variant(newConfigurationVersion.get()), new Variant(addResults.get())
-      };
-    }
-
-    protected abstract void invoke(
+  /**
+   * Handles calls to the AddVariables Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.3.2">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface AddVariablesHandler {
+    /**
+     * Handles a call to the AddVariables Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    PublishedDataItemsTypeAddVariables.Outputs addVariables(
         AbstractMethodInvocationHandler.InvocationContext context,
-        ConfigurationVersionDataType configurationVersion,
-        String[] fieldNameAliases,
-        Boolean[] promotedFields,
-        PublishedVariableDataType[] variablesToAdd,
-        Out<ConfigurationVersionDataType> newConfigurationVersion,
-        Out<StatusCode[]> addResults)
+        @Nullable ConfigurationVersionDataType configurationVersion,
+        @Nullable String @Nullable [] fieldNameAliases,
+        Boolean @Nullable [] promotedFields,
+        @Nullable PublishedVariableDataType @Nullable [] variablesToAdd)
         throws UaException;
   }
 
-  abstract class RemoveVariablesMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-    public RemoveVariablesMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "ConfigurationVersion",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14593")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "VariablesToRemove",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "NewConfigurationVersion",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14593")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "RemoveResults",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=19")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      ConfigurationVersionDataType configurationVersion =
-          (ConfigurationVersionDataType) inputValues[0].getValue();
-      UInteger[] variablesToRemove = (UInteger[]) inputValues[1].getValue();
-      Out<ConfigurationVersionDataType> newConfigurationVersion = new Out<>();
-      Out<StatusCode[]> removeResults = new Out<>();
-      invoke(
-          context, configurationVersion, variablesToRemove, newConfigurationVersion, removeResults);
-      return new Variant[] {
-        new Variant(newConfigurationVersion.get()), new Variant(removeResults.get())
-      };
-    }
-
-    protected abstract void invoke(
+  /**
+   * Handles calls to the RemoveVariables Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.3.3">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface RemoveVariablesHandler {
+    /**
+     * Handles a call to the RemoveVariables Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    PublishedDataItemsTypeRemoveVariables.Outputs removeVariables(
         AbstractMethodInvocationHandler.InvocationContext context,
-        ConfigurationVersionDataType configurationVersion,
-        UInteger[] variablesToRemove,
-        Out<ConfigurationVersionDataType> newConfigurationVersion,
-        Out<StatusCode[]> removeResults)
+        @Nullable ConfigurationVersionDataType configurationVersion,
+        UInteger @Nullable [] variablesToRemove)
         throws UaException;
+  }
+
+  /** Implements this type's Methods. Unimplemented Methods report Bad_NotImplemented. */
+  interface Methods {
+    /** Handles a call to the AddVariables Method; see {@link AddVariablesHandler#addVariables}. */
+    default PublishedDataItemsTypeAddVariables.Outputs addVariables(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable ConfigurationVersionDataType configurationVersion,
+        @Nullable String @Nullable [] fieldNameAliases,
+        Boolean @Nullable [] promotedFields,
+        @Nullable PublishedVariableDataType @Nullable [] variablesToAdd)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /**
+     * Handles a call to the RemoveVariables Method; see {@link
+     * RemoveVariablesHandler#removeVariables}.
+     */
+    default PublishedDataItemsTypeRemoveVariables.Outputs removeVariables(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable ConfigurationVersionDataType configurationVersion,
+        UInteger @Nullable [] variablesToRemove)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
   }
 }

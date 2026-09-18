@@ -1,41 +1,93 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.server.model.variables.AnalogUnitType;
-import org.eclipse.milo.opcua.sdk.server.model.variables.BaseDataVariableType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.AnalogUnitTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.variables.BaseDataVariableTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.Duplex;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.2">https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.2</a>
+ * Server API for the IIeeeBaseEthernetPortType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.2">Model
+ *     documentation</a>
  */
 public interface IIeeeBaseEthernetPortType extends BaseInterfaceType {
-  AnalogUnitType getSpeedNode();
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 24158L);
 
-  ULong getSpeed();
+  /**
+   * Returns the mandatory Duplex child, a BaseDataVariableType with DataType Duplex.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  BaseDataVariableTypeNode getDuplexNode();
 
-  void setSpeed(ULong value);
+  /**
+   * Returns the Value of the Duplex child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Duplex getDuplex();
 
-  BaseDataVariableType getDuplexNode();
+  /**
+   * Sets the Value of the Duplex child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setDuplex(@Nullable Duplex value);
 
-  Duplex getDuplex();
+  /**
+   * Returns the mandatory MaxFrameLength child, a BaseDataVariableType with DataType UInt16.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  BaseDataVariableTypeNode getMaxFrameLengthNode();
 
-  void setDuplex(Duplex value);
+  /**
+   * Returns the Value of the MaxFrameLength child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UShort getMaxFrameLength();
 
-  BaseDataVariableType getMaxFrameLengthNode();
+  /**
+   * Sets the Value of the MaxFrameLength child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMaxFrameLength(@Nullable UShort value);
 
-  UShort getMaxFrameLength();
+  /**
+   * Returns the mandatory Speed child, a AnalogUnitType with DataType UInt64.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.2/#5.3.2.4">AnalogUnitType
+   *     documentation</a>
+   */
+  AnalogUnitTypeNode getSpeedNode();
 
-  void setMaxFrameLength(UShort value);
+  /**
+   * Returns the Value of the Speed child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable ULong getSpeed();
+
+  /**
+   * Sets the Value of the Speed child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setSpeed(@Nullable ULong value);
 }

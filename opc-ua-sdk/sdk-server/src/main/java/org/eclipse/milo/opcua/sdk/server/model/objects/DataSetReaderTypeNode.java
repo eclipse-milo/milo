@@ -1,49 +1,78 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.Reference;
-import org.eclipse.milo.opcua.sdk.core.nodes.ObjectNode;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.core.model.methods.DataSetReaderTypeCreateDataSetMirror;
+import org.eclipse.milo.opcua.sdk.core.model.methods.DataSetReaderTypeCreateTargetVariables;
+import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
+import org.eclipse.milo.opcua.sdk.server.methods.InvalidArgumentException;
+import org.eclipse.milo.opcua.sdk.server.methods.MethodArgumentValidator;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaArgumentConversionException;
+import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
+import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetFieldContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetMetaDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.KeyValuePair;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link DataSetReaderType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.8/#9.1.8.2">Model
+ *     documentation</a>
+ */
 public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSetReaderType {
   public DataSetReaderTypeNode(
       UaNodeContext context,
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions);
+  }
+
+  public DataSetReaderTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         context,
@@ -59,278 +88,569 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
         eventNotifier);
   }
 
-  public DataSetReaderTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions);
+  @Override
+  public PropertyTypeNode getDataSetFieldContentMaskNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "DataSetFieldContentMask",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 15583L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getPublisherIdNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(DataSetReaderType.PUBLISHER_ID);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable DataSetFieldContentMask getDataSetFieldContentMask() {
+    return ServerNodeSupport.read(
+        this, getDataSetFieldContentMaskNode(), DataSetFieldContentMask.class, null);
   }
 
   @Override
-  public Object getPublisherId() {
-    return getProperty(DataSetReaderType.PUBLISHER_ID).orElse(null);
-  }
-
-  @Override
-  public void setPublisherId(Object value) {
-    setProperty(DataSetReaderType.PUBLISHER_ID, value);
-  }
-
-  @Override
-  public PropertyTypeNode getWriterGroupIdNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(DataSetReaderType.WRITER_GROUP_ID);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public UShort getWriterGroupId() {
-    return getProperty(DataSetReaderType.WRITER_GROUP_ID).orElse(null);
-  }
-
-  @Override
-  public void setWriterGroupId(UShort value) {
-    setProperty(DataSetReaderType.WRITER_GROUP_ID, value);
-  }
-
-  @Override
-  public PropertyTypeNode getDataSetWriterIdNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(DataSetReaderType.DATA_SET_WRITER_ID);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public UShort getDataSetWriterId() {
-    return getProperty(DataSetReaderType.DATA_SET_WRITER_ID).orElse(null);
-  }
-
-  @Override
-  public void setDataSetWriterId(UShort value) {
-    setProperty(DataSetReaderType.DATA_SET_WRITER_ID, value);
+  public void setDataSetFieldContentMask(@Nullable DataSetFieldContentMask value) {
+    ServerNodeSupport.write(this, getDataSetFieldContentMaskNode(), value, false, false, false);
   }
 
   @Override
   public PropertyTypeNode getDataSetMetaDataNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(DataSetReaderType.DATA_SET_META_DATA);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "DataSetMetaData",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 14523L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public DataSetMetaDataType getDataSetMetaData() {
-    return getProperty(DataSetReaderType.DATA_SET_META_DATA).orElse(null);
+  public @Nullable DataSetMetaDataType getDataSetMetaData() {
+    return ServerNodeSupport.read(this, getDataSetMetaDataNode(), DataSetMetaDataType.class, null);
   }
 
   @Override
-  public void setDataSetMetaData(DataSetMetaDataType value) {
-    setProperty(DataSetReaderType.DATA_SET_META_DATA, value);
-  }
-
-  @Override
-  public PropertyTypeNode getDataSetFieldContentMaskNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(DataSetReaderType.DATA_SET_FIELD_CONTENT_MASK);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public DataSetFieldContentMask getDataSetFieldContentMask() {
-    return getProperty(DataSetReaderType.DATA_SET_FIELD_CONTENT_MASK).orElse(null);
-  }
-
-  @Override
-  public void setDataSetFieldContentMask(DataSetFieldContentMask value) {
-    setProperty(DataSetReaderType.DATA_SET_FIELD_CONTENT_MASK, value);
-  }
-
-  @Override
-  public PropertyTypeNode getMessageReceiveTimeoutNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(DataSetReaderType.MESSAGE_RECEIVE_TIMEOUT);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public Double getMessageReceiveTimeout() {
-    return getProperty(DataSetReaderType.MESSAGE_RECEIVE_TIMEOUT).orElse(null);
-  }
-
-  @Override
-  public void setMessageReceiveTimeout(Double value) {
-    setProperty(DataSetReaderType.MESSAGE_RECEIVE_TIMEOUT, value);
-  }
-
-  @Override
-  public PropertyTypeNode getKeyFrameCountNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(DataSetReaderType.KEY_FRAME_COUNT);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public UInteger getKeyFrameCount() {
-    return getProperty(DataSetReaderType.KEY_FRAME_COUNT).orElse(null);
-  }
-
-  @Override
-  public void setKeyFrameCount(UInteger value) {
-    setProperty(DataSetReaderType.KEY_FRAME_COUNT, value);
-  }
-
-  @Override
-  public PropertyTypeNode getHeaderLayoutUriNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(DataSetReaderType.HEADER_LAYOUT_URI);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public String getHeaderLayoutUri() {
-    return getProperty(DataSetReaderType.HEADER_LAYOUT_URI).orElse(null);
-  }
-
-  @Override
-  public void setHeaderLayoutUri(String value) {
-    setProperty(DataSetReaderType.HEADER_LAYOUT_URI, value);
-  }
-
-  @Override
-  public PropertyTypeNode getSecurityModeNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(DataSetReaderType.SECURITY_MODE);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public MessageSecurityMode getSecurityMode() {
-    return getProperty(DataSetReaderType.SECURITY_MODE).orElse(null);
-  }
-
-  @Override
-  public void setSecurityMode(MessageSecurityMode value) {
-    setProperty(DataSetReaderType.SECURITY_MODE, value);
-  }
-
-  @Override
-  public PropertyTypeNode getSecurityGroupIdNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(DataSetReaderType.SECURITY_GROUP_ID);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public String getSecurityGroupId() {
-    return getProperty(DataSetReaderType.SECURITY_GROUP_ID).orElse(null);
-  }
-
-  @Override
-  public void setSecurityGroupId(String value) {
-    setProperty(DataSetReaderType.SECURITY_GROUP_ID, value);
-  }
-
-  @Override
-  public PropertyTypeNode getSecurityKeyServicesNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(DataSetReaderType.SECURITY_KEY_SERVICES);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public EndpointDescription[] getSecurityKeyServices() {
-    return getProperty(DataSetReaderType.SECURITY_KEY_SERVICES).orElse(null);
-  }
-
-  @Override
-  public void setSecurityKeyServices(EndpointDescription[] value) {
-    setProperty(DataSetReaderType.SECURITY_KEY_SERVICES, value);
+  public void setDataSetMetaData(@Nullable DataSetMetaDataType value) {
+    ServerNodeSupport.write(this, getDataSetMetaDataNode(), value, false, false, true);
   }
 
   @Override
   public PropertyTypeNode getDataSetReaderPropertiesNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(DataSetReaderType.DATA_SET_READER_PROPERTIES);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "DataSetReaderProperties",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 14533L),
+        1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public KeyValuePair[] getDataSetReaderProperties() {
-    return getProperty(DataSetReaderType.DATA_SET_READER_PROPERTIES).orElse(null);
+  public @Nullable KeyValuePair @Nullable [] getDataSetReaderProperties() {
+    return ServerNodeSupport.readArray(
+        this, getDataSetReaderPropertiesNode(), KeyValuePair.class, null);
   }
 
   @Override
-  public void setDataSetReaderProperties(KeyValuePair[] value) {
-    setProperty(DataSetReaderType.DATA_SET_READER_PROPERTIES, value);
+  public void setDataSetReaderProperties(@Nullable KeyValuePair @Nullable [] value) {
+    ServerNodeSupport.write(this, getDataSetReaderPropertiesNode(), value, true, false, true);
   }
 
   @Override
-  public DataSetReaderTransportTypeNode getTransportSettingsNode() {
-    Optional<ObjectNode> component =
-        getObjectComponent("http://opcfoundation.org/UA/", "TransportSettings");
-    return (DataSetReaderTransportTypeNode) component.orElse(null);
+  public PropertyTypeNode getDataSetWriterIdNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "DataSetWriterId",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 5L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public DataSetReaderMessageTypeNode getMessageSettingsNode() {
-    Optional<ObjectNode> component =
-        getObjectComponent("http://opcfoundation.org/UA/", "MessageSettings");
-    return (DataSetReaderMessageTypeNode) component.orElse(null);
+  public @Nullable UShort getDataSetWriterId() {
+    return ServerNodeSupport.read(this, getDataSetWriterIdNode(), UShort.class, null);
+  }
+
+  @Override
+  public void setDataSetWriterId(@Nullable UShort value) {
+    ServerNodeSupport.write(this, getDataSetWriterIdNode(), value, false, false, false);
+  }
+
+  @Override
+  public @Nullable PubSubDiagnosticsDataSetReaderTypeNode getDiagnosticsNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "Diagnostics",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 20027L),
+        null,
+        -1,
+        PubSubDiagnosticsDataSetReaderTypeNode.class);
+  }
+
+  @Override
+  public PropertyTypeNode getHeaderLayoutUriNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "HeaderLayoutUri",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable String getHeaderLayoutUri() {
+    return ServerNodeSupport.read(this, getHeaderLayoutUriNode(), String.class, null);
+  }
+
+  @Override
+  public void setHeaderLayoutUri(@Nullable String value) {
+    ServerNodeSupport.write(this, getHeaderLayoutUriNode(), value, false, false, false);
+  }
+
+  @Override
+  public PropertyTypeNode getKeyFrameCountNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "KeyFrameCount",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable UInteger getKeyFrameCount() {
+    return ServerNodeSupport.read(this, getKeyFrameCountNode(), UInteger.class, null);
+  }
+
+  @Override
+  public void setKeyFrameCount(@Nullable UInteger value) {
+    ServerNodeSupport.write(this, getKeyFrameCountNode(), value, false, false, false);
+  }
+
+  @Override
+  public PropertyTypeNode getMessageReceiveTimeoutNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "MessageReceiveTimeout",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 290L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable Double getMessageReceiveTimeout() {
+    return ServerNodeSupport.read(this, getMessageReceiveTimeoutNode(), Double.class, null);
+  }
+
+  @Override
+  public void setMessageReceiveTimeout(@Nullable Double value) {
+    ServerNodeSupport.write(this, getMessageReceiveTimeoutNode(), value, false, false, false);
+  }
+
+  @Override
+  public @Nullable DataSetReaderMessageTypeNode getMessageSettingsNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "MessageSettings",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 21104L),
+        null,
+        -1,
+        DataSetReaderMessageTypeNode.class);
+  }
+
+  @Override
+  public PropertyTypeNode getPublisherIdNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "PublisherId",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 24L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable Variant getPublisherId() {
+    return ServerNodeSupport.read(this, getPublisherIdNode(), Variant.class, null);
+  }
+
+  @Override
+  public void setPublisherId(@Nullable Variant value) {
+    ServerNodeSupport.write(this, getPublisherIdNode(), value, false, false, false);
+  }
+
+  @Override
+  public @Nullable PropertyTypeNode getSecurityGroupIdNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "SecurityGroupId",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable String getSecurityGroupId() {
+    return ServerNodeSupport.read(this, getSecurityGroupIdNode(), String.class, null);
+  }
+
+  @Override
+  public void setSecurityGroupId(@Nullable String value) {
+    ServerNodeSupport.write(
+        this,
+        getSecurityGroupIdNode(),
+        Namespaces.OPC_UA,
+        "SecurityGroupId",
+        value,
+        false,
+        false,
+        false);
+  }
+
+  @Override
+  public @Nullable PropertyTypeNode getSecurityKeyServicesNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "SecurityKeyServices",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 312L),
+        1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable EndpointDescription @Nullable [] getSecurityKeyServices() {
+    return ServerNodeSupport.readArray(
+        this, getSecurityKeyServicesNode(), EndpointDescription.class, null);
+  }
+
+  @Override
+  public void setSecurityKeyServices(@Nullable EndpointDescription @Nullable [] value) {
+    ServerNodeSupport.write(
+        this,
+        getSecurityKeyServicesNode(),
+        Namespaces.OPC_UA,
+        "SecurityKeyServices",
+        value,
+        true,
+        false,
+        true);
+  }
+
+  @Override
+  public @Nullable PropertyTypeNode getSecurityModeNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "SecurityMode",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 302L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable MessageSecurityMode getSecurityMode() {
+    return ServerNodeSupport.read(
+        this, getSecurityModeNode(), MessageSecurityMode.class, MessageSecurityMode::from);
+  }
+
+  @Override
+  public void setSecurityMode(@Nullable MessageSecurityMode value) {
+    ServerNodeSupport.write(
+        this, getSecurityModeNode(), Namespaces.OPC_UA, "SecurityMode", value, false, true, false);
   }
 
   @Override
   public PubSubStatusTypeNode getStatusNode() {
-    Optional<ObjectNode> component = getObjectComponent("http://opcfoundation.org/UA/", "Status");
-    return (PubSubStatusTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public PubSubDiagnosticsDataSetReaderTypeNode getDiagnosticsNode() {
-    Optional<ObjectNode> component =
-        getObjectComponent("http://opcfoundation.org/UA/", "Diagnostics");
-    return (PubSubDiagnosticsDataSetReaderTypeNode) component.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "Status",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 14643L),
+        null,
+        -1,
+        PubSubStatusTypeNode.class);
   }
 
   @Override
   public SubscribedDataSetTypeNode getSubscribedDataSetNode() {
-    Optional<ObjectNode> component =
-        getObjectComponent("http://opcfoundation.org/UA/", "SubscribedDataSet");
-    return (SubscribedDataSetTypeNode) component.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "SubscribedDataSet",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 15108L),
+        null,
+        -1,
+        SubscribedDataSetTypeNode.class);
   }
 
   @Override
-  public UaMethodNode getCreateTargetVariablesMethodNode() {
-    Optional<UaNode> methodNode =
-        findNode(
-            "http://opcfoundation.org/UA/",
-            "CreateTargetVariables",
-            node -> node instanceof UaMethodNode,
-            Reference.HAS_COMPONENT_PREDICATE);
-    return (UaMethodNode) methodNode.orElse(null);
+  public @Nullable DataSetReaderTransportTypeNode getTransportSettingsNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "TransportSettings",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 15319L),
+        null,
+        -1,
+        DataSetReaderTransportTypeNode.class);
   }
 
   @Override
-  public UaMethodNode getCreateDataSetMirrorMethodNode() {
-    Optional<UaNode> methodNode =
-        findNode(
+  public PropertyTypeNode getWriterGroupIdNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "WriterGroupId",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 5L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable UShort getWriterGroupId() {
+    return ServerNodeSupport.read(this, getWriterGroupIdNode(), UShort.class, null);
+  }
+
+  @Override
+  public void setWriterGroupId(@Nullable UShort value) {
+    ServerNodeSupport.write(this, getWriterGroupIdNode(), value, false, false, false);
+  }
+
+  @Override
+  public void validateChildren() {
+    super.validateChildren();
+    getDataSetFieldContentMaskNode();
+    getDataSetMetaDataNode();
+    getDataSetReaderPropertiesNode();
+    getDataSetWriterIdNode();
+    getDiagnosticsNode();
+    getHeaderLayoutUriNode();
+    getKeyFrameCountNode();
+    getMessageReceiveTimeoutNode();
+    getMessageSettingsNode();
+    getPublisherIdNode();
+    getSecurityGroupIdNode();
+    getSecurityKeyServicesNode();
+    getSecurityModeNode();
+    getStatusNode();
+    getSubscribedDataSetNode();
+    getTransportSettingsNode();
+    getWriterGroupIdNode();
+  }
+
+  @Override
+  public @Nullable UaMethodNode getCreateDataSetMirrorMethodNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        "http://opcfoundation.org/UA/",
+        "CreateDataSetMirror",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.NULL_VALUE,
+        null,
+        -1,
+        UaMethodNode.class);
+  }
+
+  @Override
+  public void setCreateDataSetMirrorHandler(
+      DataSetReaderType.@Nullable CreateDataSetMirrorHandler handler) {
+    UaMethodNode method =
+        ServerNodeSupport.present(
+            this,
+            getCreateDataSetMirrorMethodNode(),
             "http://opcfoundation.org/UA/",
-            "CreateDataSetMirror",
-            node -> node instanceof UaMethodNode,
-            Reference.HAS_COMPONENT_PREDICATE);
-    return (UaMethodNode) methodNode.orElse(null);
+            "CreateDataSetMirror");
+    setMethodHandler(
+        method.getNodeId(),
+        handler == null
+            ? null
+            : new AbstractMethodInvocationHandler(method) {
+              private final MethodArgumentValidator outputValidator =
+                  new MethodArgumentValidator(getNodeContext().getServer());
+
+              @Override
+              public Argument[] getInputArguments() {
+                Argument[] declared = method.getInputArguments();
+                return declared != null
+                    ? declared
+                    : DataSetReaderTypeCreateDataSetMirror.inputArguments(
+                        getNodeContext().getServer().getNamespaceTable());
+              }
+
+              @Override
+              public Argument[] getOutputArguments() {
+                Argument[] declared = method.getOutputArguments();
+                return declared != null
+                    ? declared
+                    : DataSetReaderTypeCreateDataSetMirror.outputArguments(
+                        getNodeContext().getServer().getNamespaceTable());
+              }
+
+              @Override
+              protected int getRequiredInputArgumentCount(Argument[] arguments) {
+                return 2;
+              }
+
+              @Override
+              protected Variant[] invoke(
+                  AbstractMethodInvocationHandler.InvocationContext context, Variant[] values)
+                  throws UaException {
+                DataSetReaderTypeCreateDataSetMirror.Inputs input;
+                try {
+                  input =
+                      DataSetReaderTypeCreateDataSetMirror.Inputs.fromVariants(
+                          getNodeContext().getServer().getStaticEncodingContext(), values);
+                } catch (UaArgumentConversionException failure) {
+                  throw InvalidArgumentException.builder()
+                      .argument(
+                          failure.getArgumentIndex(),
+                          StatusCodes.Bad_TypeMismatch,
+                          failure.getMessage())
+                      .build();
+                }
+                DataSetReaderTypeCreateDataSetMirror.Outputs output =
+                    new DataSetReaderTypeCreateDataSetMirror.Outputs(
+                        handler.createDataSetMirror(
+                            context, input.parentNodeName(), input.rolePermissions()));
+                Variant[] encoded =
+                    output.toVariants(getNodeContext().getServer().getStaticEncodingContext());
+                try {
+                  outputValidator.validate(getOutputArguments(), encoded);
+                } catch (UaException failure) {
+                  throw new UaException(StatusCodes.Bad_TypeMismatch, failure);
+                }
+                return encoded;
+              }
+            });
+  }
+
+  @Override
+  public @Nullable UaMethodNode getCreateTargetVariablesMethodNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        "http://opcfoundation.org/UA/",
+        "CreateTargetVariables",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.NULL_VALUE,
+        null,
+        -1,
+        UaMethodNode.class);
+  }
+
+  @Override
+  public void setCreateTargetVariablesHandler(
+      DataSetReaderType.@Nullable CreateTargetVariablesHandler handler) {
+    UaMethodNode method =
+        ServerNodeSupport.present(
+            this,
+            getCreateTargetVariablesMethodNode(),
+            "http://opcfoundation.org/UA/",
+            "CreateTargetVariables");
+    setMethodHandler(
+        method.getNodeId(),
+        handler == null
+            ? null
+            : new AbstractMethodInvocationHandler(method) {
+              private final MethodArgumentValidator outputValidator =
+                  new MethodArgumentValidator(getNodeContext().getServer());
+
+              @Override
+              public Argument[] getInputArguments() {
+                Argument[] declared = method.getInputArguments();
+                return declared != null
+                    ? declared
+                    : DataSetReaderTypeCreateTargetVariables.inputArguments(
+                        getNodeContext().getServer().getNamespaceTable());
+              }
+
+              @Override
+              public Argument[] getOutputArguments() {
+                Argument[] declared = method.getOutputArguments();
+                return declared != null
+                    ? declared
+                    : DataSetReaderTypeCreateTargetVariables.outputArguments(
+                        getNodeContext().getServer().getNamespaceTable());
+              }
+
+              @Override
+              protected int getRequiredInputArgumentCount(Argument[] arguments) {
+                return 2;
+              }
+
+              @Override
+              protected Variant[] invoke(
+                  AbstractMethodInvocationHandler.InvocationContext context, Variant[] values)
+                  throws UaException {
+                DataSetReaderTypeCreateTargetVariables.Inputs input;
+                try {
+                  input =
+                      DataSetReaderTypeCreateTargetVariables.Inputs.fromVariants(
+                          getNodeContext().getServer().getStaticEncodingContext(), values);
+                } catch (UaArgumentConversionException failure) {
+                  throw InvalidArgumentException.builder()
+                      .argument(
+                          failure.getArgumentIndex(),
+                          StatusCodes.Bad_TypeMismatch,
+                          failure.getMessage())
+                      .build();
+                }
+                DataSetReaderTypeCreateTargetVariables.Outputs output =
+                    new DataSetReaderTypeCreateTargetVariables.Outputs(
+                        handler.createTargetVariables(
+                            context, input.configurationVersion(), input.targetVariablesToAdd()));
+                Variant[] encoded =
+                    output.toVariants(getNodeContext().getServer().getStaticEncodingContext());
+                try {
+                  outputValidator.validate(getOutputArguments(), encoded);
+                } catch (UaException failure) {
+                  throw new UaException(StatusCodes.Bad_TypeMismatch, failure);
+                }
+                return encoded;
+              }
+            });
+  }
+
+  @Override
+  public void setMethods(DataSetReaderType.@Nullable Methods methods) {
+    if (getCreateDataSetMirrorMethodNode() != null) {
+      setCreateDataSetMirrorHandler(methods == null ? null : methods::createDataSetMirror);
+    }
+    if (getCreateTargetVariablesMethodNode() != null) {
+      setCreateTargetVariablesHandler(methods == null ? null : methods::createTargetVariables);
+    }
   }
 }

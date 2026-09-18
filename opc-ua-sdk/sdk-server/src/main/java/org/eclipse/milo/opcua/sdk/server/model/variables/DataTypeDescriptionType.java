@@ -1,45 +1,76 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.variables;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/** Server API for the DataTypeDescriptionType VariableType. */
 public interface DataTypeDescriptionType extends BaseDataVariableType {
-  QualifiedProperty<String> DATA_TYPE_VERSION =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "DataTypeVersion",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 69L);
 
-  QualifiedProperty<ByteString> DICTIONARY_FRAGMENT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "DictionaryFragment",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15"),
-          -1,
-          ByteString.class);
+  /**
+   * Returns the optional DataTypeVersion child, a PropertyType with DataType String.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getDataTypeVersion_Node();
 
-  String getDataTypeVersion();
+  /**
+   * Returns the Value of the DataTypeVersion child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getDataTypeVersion_();
 
-  void setDataTypeVersion(String value);
+  /**
+   * Sets the Value of the DataTypeVersion child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setDataTypeVersion_(@Nullable String value);
 
-  PropertyType getDataTypeVersionNode();
+  /**
+   * Returns the optional DictionaryFragment child, a PropertyType with DataType ByteString.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getDictionaryFragment_Node();
 
-  ByteString getDictionaryFragment();
+  /**
+   * Returns the Value of the DictionaryFragment child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable ByteString getDictionaryFragment_();
 
-  void setDictionaryFragment(ByteString value);
+  /**
+   * Sets the Value of the DictionaryFragment child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setDictionaryFragment_(@Nullable ByteString value);
 
-  PropertyType getDictionaryFragmentNode();
+  /**
+   * Returns this node's Value.
+   *
+   * @throws UaRuntimeException if the Value does not convert.
+   */
+  @Nullable String getTypedValue();
+
+  /**
+   * Sets this node's Value.
+   *
+   * @throws UaRuntimeException if the value does not convert.
+   */
+  void setTypedValue(@Nullable String value);
 }

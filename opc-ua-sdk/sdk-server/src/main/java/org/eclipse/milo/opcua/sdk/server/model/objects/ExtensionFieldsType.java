@@ -1,154 +1,128 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.nodes.MethodNode;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
-import org.eclipse.milo.opcua.sdk.server.methods.Out;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
-import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
-import org.eclipse.milo.opcua.stack.core.util.Lazy;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.2.2">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.2.2</a>
+ * Server API for the ExtensionFieldsType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.2.2">Model
+ *     documentation</a>
  */
 public interface ExtensionFieldsType extends BaseObjectType {
-  MethodNode getAddExtensionFieldMethodNode();
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 15489L);
 
-  MethodNode getRemoveExtensionFieldMethodNode();
+  /**
+   * Returns the mandatory AddExtensionField Method node.
+   *
+   * @throws UaRuntimeException if the Method is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.2.3">Model
+   *     documentation</a>
+   */
+  UaMethodNode getAddExtensionFieldMethodNode();
 
-  abstract class AddExtensionFieldMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+  /**
+   * Sets this instance's AddExtensionField handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setAddExtensionFieldHandler(@Nullable AddExtensionFieldHandler handler);
 
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
+  /**
+   * Returns the mandatory RemoveExtensionField Method node.
+   *
+   * @throws UaRuntimeException if the Method is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.2.4">Model
+   *     documentation</a>
+   */
+  UaMethodNode getRemoveExtensionFieldMethodNode();
 
-    public AddExtensionFieldMethod(UaMethodNode node) {
-      super(node);
-    }
+  /**
+   * Sets this instance's RemoveExtensionField handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setRemoveExtensionFieldHandler(@Nullable RemoveExtensionFieldHandler handler);
 
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+  /**
+   * Sets this instance's Method handlers, including inherited handlers, from one implementation;
+   * null clears them and restores Method-node fallback. Absent optional Methods are skipped.
+   * Changes are applied in order; a failure does not roll back earlier changes.
+   *
+   * @throws UaRuntimeException if a mandatory Method is absent, or a Method is ambiguous or
+   *     incompatible.
+   */
+  void setMethods(@Nullable Methods methods);
 
-            return new Argument[] {
-              new Argument(
-                  "FieldName",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=20")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "FieldValue",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "FieldId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      QualifiedName fieldName = (QualifiedName) inputValues[0].getValue();
-      Object fieldValue = (Object) inputValues[1].getValue();
-      Out<NodeId> fieldId = new Out<>();
-      invoke(context, fieldName, fieldValue, fieldId);
-      return new Variant[] {new Variant(fieldId.get())};
-    }
-
-    protected abstract void invoke(
+  /**
+   * Handles calls to the AddExtensionField Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.2.3">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface AddExtensionFieldHandler {
+    /**
+     * Handles a call to the AddExtensionField Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    @Nullable NodeId addExtensionField(
         AbstractMethodInvocationHandler.InvocationContext context,
-        QualifiedName fieldName,
-        Object fieldValue,
-        Out<NodeId> fieldId)
+        @Nullable QualifiedName fieldName,
+        @Nullable Variant fieldValue)
         throws UaException;
   }
 
-  abstract class RemoveExtensionFieldMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    public RemoveExtensionFieldMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "FieldId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      NodeId fieldId = (NodeId) inputValues[0].getValue();
-      invoke(context, fieldId);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, NodeId fieldId)
+  /**
+   * Handles calls to the RemoveExtensionField Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.2.4">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface RemoveExtensionFieldHandler {
+    /**
+     * Handles a call to the RemoveExtensionField Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void removeExtensionField(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable NodeId fieldId)
         throws UaException;
+  }
+
+  /** Implements this type's Methods. Unimplemented Methods report Bad_NotImplemented. */
+  interface Methods {
+    /**
+     * Handles a call to the AddExtensionField Method; see {@link
+     * AddExtensionFieldHandler#addExtensionField}.
+     */
+    default @Nullable NodeId addExtensionField(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable QualifiedName fieldName,
+        @Nullable Variant fieldValue)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /**
+     * Handles a call to the RemoveExtensionField Method; see {@link
+     * RemoveExtensionFieldHandler#removeExtensionField}.
+     */
+    default void removeExtensionField(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable NodeId fieldId)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
   }
 }

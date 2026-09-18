@@ -1,159 +1,262 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.variables;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.structured.ProgramDiagnosticDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.StatusResult;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/** Server API for the ProgramDiagnosticType VariableType. */
 public interface ProgramDiagnosticType extends BaseDataVariableType {
-  QualifiedProperty<NodeId> CREATE_SESSION_ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "CreateSessionId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-          -1,
-          NodeId.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2380L);
 
-  QualifiedProperty<String> CREATE_CLIENT_NAME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "CreateClientName",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  /**
+   * Returns the mandatory CreateClientName child, a PropertyType with DataType String.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getCreateClientNameNode();
 
-  QualifiedProperty<DateTime> INVOCATION_CREATION_TIME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "InvocationCreationTime",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
-          -1,
-          DateTime.class);
+  /**
+   * Returns the Value of the CreateClientName child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getCreateClientName();
 
-  QualifiedProperty<DateTime> LAST_TRANSITION_TIME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "LastTransitionTime",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
-          -1,
-          DateTime.class);
+  /**
+   * Sets the Value of the CreateClientName child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setCreateClientName(@Nullable String value);
 
-  QualifiedProperty<String> LAST_METHOD_CALL =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "LastMethodCall",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  /**
+   * Returns the mandatory CreateSessionId child, a PropertyType with DataType NodeId.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getCreateSessionIdNode();
 
-  QualifiedProperty<NodeId> LAST_METHOD_SESSION_ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "LastMethodSessionId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-          -1,
-          NodeId.class);
+  /**
+   * Returns the Value of the CreateSessionId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable NodeId getCreateSessionId();
 
-  QualifiedProperty<Object[]> LAST_METHOD_INPUT_ARGUMENTS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "LastMethodInputArguments",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24"),
-          1,
-          Object[].class);
+  /**
+   * Sets the Value of the CreateSessionId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setCreateSessionId(@Nullable NodeId value);
 
-  QualifiedProperty<Object[]> LAST_METHOD_OUTPUT_ARGUMENTS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "LastMethodOutputArguments",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24"),
-          1,
-          Object[].class);
+  /**
+   * Returns the mandatory InvocationCreationTime child, a PropertyType with DataType UtcTime.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getInvocationCreationTimeNode();
 
-  QualifiedProperty<DateTime> LAST_METHOD_CALL_TIME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "LastMethodCallTime",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
-          -1,
-          DateTime.class);
+  /**
+   * Returns the Value of the InvocationCreationTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable DateTime getInvocationCreationTime();
 
-  QualifiedProperty<StatusResult> LAST_METHOD_RETURN_STATUS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "LastMethodReturnStatus",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=299"),
-          -1,
-          StatusResult.class);
+  /**
+   * Sets the Value of the InvocationCreationTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setInvocationCreationTime(@Nullable DateTime value);
 
-  NodeId getCreateSessionId();
+  /**
+   * Returns the mandatory LastMethodCall child, a PropertyType with DataType String.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getLastMethodCallNode();
 
-  void setCreateSessionId(NodeId value);
+  /**
+   * Returns the Value of the LastMethodCall child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getLastMethodCall();
 
-  PropertyType getCreateSessionIdNode();
+  /**
+   * Sets the Value of the LastMethodCall child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setLastMethodCall(@Nullable String value);
 
-  String getCreateClientName();
+  /**
+   * Returns the mandatory LastMethodCallTime child, a PropertyType with DataType UtcTime.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getLastMethodCallTimeNode();
 
-  void setCreateClientName(String value);
+  /**
+   * Returns the Value of the LastMethodCallTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable DateTime getLastMethodCallTime();
 
-  PropertyType getCreateClientNameNode();
+  /**
+   * Sets the Value of the LastMethodCallTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setLastMethodCallTime(@Nullable DateTime value);
 
-  DateTime getInvocationCreationTime();
+  /**
+   * Returns the mandatory LastMethodInputArguments child, a PropertyType with DataType
+   * BaseDataType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getLastMethodInputArgumentsNode();
 
-  void setInvocationCreationTime(DateTime value);
+  /**
+   * Returns the Value of the LastMethodInputArguments child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Variant @Nullable [] getLastMethodInputArguments();
 
-  PropertyType getInvocationCreationTimeNode();
+  /**
+   * Sets the Value of the LastMethodInputArguments child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setLastMethodInputArguments(@Nullable Variant @Nullable [] value);
 
-  DateTime getLastTransitionTime();
+  /**
+   * Returns the mandatory LastMethodOutputArguments child, a PropertyType with DataType
+   * BaseDataType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getLastMethodOutputArgumentsNode();
 
-  void setLastTransitionTime(DateTime value);
+  /**
+   * Returns the Value of the LastMethodOutputArguments child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Variant @Nullable [] getLastMethodOutputArguments();
 
-  PropertyType getLastTransitionTimeNode();
+  /**
+   * Sets the Value of the LastMethodOutputArguments child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setLastMethodOutputArguments(@Nullable Variant @Nullable [] value);
 
-  String getLastMethodCall();
+  /**
+   * Returns the mandatory LastMethodReturnStatus child, a PropertyType with DataType StatusResult.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getLastMethodReturnStatusNode();
 
-  void setLastMethodCall(String value);
+  /**
+   * Returns the Value of the LastMethodReturnStatus child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable StatusResult getLastMethodReturnStatus();
 
-  PropertyType getLastMethodCallNode();
+  /**
+   * Sets the Value of the LastMethodReturnStatus child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setLastMethodReturnStatus(@Nullable StatusResult value);
 
-  NodeId getLastMethodSessionId();
+  /**
+   * Returns the mandatory LastMethodSessionId child, a PropertyType with DataType NodeId.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getLastMethodSessionIdNode();
 
-  void setLastMethodSessionId(NodeId value);
+  /**
+   * Returns the Value of the LastMethodSessionId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable NodeId getLastMethodSessionId();
 
-  PropertyType getLastMethodSessionIdNode();
+  /**
+   * Sets the Value of the LastMethodSessionId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setLastMethodSessionId(@Nullable NodeId value);
 
-  Object[] getLastMethodInputArguments();
+  /**
+   * Returns the mandatory LastTransitionTime child, a PropertyType with DataType UtcTime.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getLastTransitionTimeNode();
 
-  void setLastMethodInputArguments(Object[] value);
+  /**
+   * Returns the Value of the LastTransitionTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable DateTime getLastTransitionTime();
 
-  PropertyType getLastMethodInputArgumentsNode();
+  /**
+   * Sets the Value of the LastTransitionTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setLastTransitionTime(@Nullable DateTime value);
 
-  Object[] getLastMethodOutputArguments();
+  /**
+   * Returns this node's Value.
+   *
+   * @throws UaRuntimeException if the Value does not convert.
+   */
+  @Nullable ProgramDiagnosticDataType getTypedValue();
 
-  void setLastMethodOutputArguments(Object[] value);
-
-  PropertyType getLastMethodOutputArgumentsNode();
-
-  DateTime getLastMethodCallTime();
-
-  void setLastMethodCallTime(DateTime value);
-
-  PropertyType getLastMethodCallTimeNode();
-
-  StatusResult getLastMethodReturnStatus();
-
-  void setLastMethodReturnStatus(StatusResult value);
-
-  PropertyType getLastMethodReturnStatusNode();
+  /**
+   * Sets this node's Value.
+   *
+   * @throws UaRuntimeException if the value does not convert.
+   */
+  void setTypedValue(@Nullable ProgramDiagnosticDataType value);
 }

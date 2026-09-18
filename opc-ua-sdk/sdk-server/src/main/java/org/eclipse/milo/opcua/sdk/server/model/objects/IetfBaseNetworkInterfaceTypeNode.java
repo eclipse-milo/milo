@@ -1,25 +1,13 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.model.variables.AnalogUnitTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.BaseDataVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
@@ -27,7 +15,15 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.InterfaceAdminStatus;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.InterfaceOperStatus;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link IetfBaseNetworkInterfaceType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.5.1/#5.5.1.2">Model
+ *     documentation</a>
+ */
 public class IetfBaseNetworkInterfaceTypeNode extends BaseObjectTypeNode
     implements IetfBaseNetworkInterfaceType {
   public IetfBaseNetworkInterfaceTypeNode(
@@ -35,12 +31,36 @@ public class IetfBaseNetworkInterfaceTypeNode extends BaseObjectTypeNode
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions);
+  }
+
+  public IetfBaseNetworkInterfaceTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         context,
@@ -56,111 +76,107 @@ public class IetfBaseNetworkInterfaceTypeNode extends BaseObjectTypeNode
         eventNotifier);
   }
 
-  public IetfBaseNetworkInterfaceTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions);
-  }
-
   @Override
   public BaseDataVariableTypeNode getAdminStatusNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "AdminStatus");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "AdminStatus",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 24212L),
+        -1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public InterfaceAdminStatus getAdminStatus() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "AdminStatus");
-    return component
-        .map(node -> (InterfaceAdminStatus) node.getValue().getValue().getValue())
-        .orElse(null);
+  public @Nullable InterfaceAdminStatus getAdminStatus() {
+    return ServerNodeSupport.read(
+        this, getAdminStatusNode(), InterfaceAdminStatus.class, InterfaceAdminStatus::from);
   }
 
   @Override
-  public void setAdminStatus(InterfaceAdminStatus value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "AdminStatus")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setAdminStatus(@Nullable InterfaceAdminStatus value) {
+    ServerNodeSupport.write(this, getAdminStatusNode(), value, false, true, false);
   }
 
   @Override
   public BaseDataVariableTypeNode getOperStatusNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "OperStatus");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "OperStatus",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 24214L),
+        -1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public InterfaceOperStatus getOperStatus() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "OperStatus");
-    return component
-        .map(node -> (InterfaceOperStatus) node.getValue().getValue().getValue())
-        .orElse(null);
+  public @Nullable InterfaceOperStatus getOperStatus() {
+    return ServerNodeSupport.read(
+        this, getOperStatusNode(), InterfaceOperStatus.class, InterfaceOperStatus::from);
   }
 
   @Override
-  public void setOperStatus(InterfaceOperStatus value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "OperStatus")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setOperStatus(@Nullable InterfaceOperStatus value) {
+    ServerNodeSupport.write(this, getOperStatusNode(), value, false, true, false);
   }
 
   @Override
-  public BaseDataVariableTypeNode getPhysAddressNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "PhysAddress");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+  public @Nullable BaseDataVariableTypeNode getPhysAddressNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "PhysAddress",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public String getPhysAddress() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "PhysAddress");
-    return component.map(node -> (String) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable String getPhysAddress() {
+    return ServerNodeSupport.read(this, getPhysAddressNode(), String.class, null);
   }
 
   @Override
-  public void setPhysAddress(String value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "PhysAddress")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setPhysAddress(@Nullable String value) {
+    ServerNodeSupport.write(
+        this, getPhysAddressNode(), Namespaces.OPC_UA, "PhysAddress", value, false, false, false);
   }
 
   @Override
   public AnalogUnitTypeNode getSpeedNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "Speed");
-    return (AnalogUnitTypeNode) component.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "Speed",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 17497L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 9L),
+        -1,
+        AnalogUnitTypeNode.class);
   }
 
   @Override
-  public ULong getSpeed() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "Speed");
-    return component.map(node -> (ULong) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable ULong getSpeed() {
+    return ServerNodeSupport.read(this, getSpeedNode(), ULong.class, null);
   }
 
   @Override
-  public void setSpeed(ULong value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "Speed")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setSpeed(@Nullable ULong value) {
+    ServerNodeSupport.write(this, getSpeedNode(), value, false, false, false);
+  }
+
+  @Override
+  public void validateChildren() {
+    super.validateChildren();
+    getAdminStatusNode();
+    getOperStatusNode();
+    getPhysAddressNode();
+    getSpeedNode();
   }
 }

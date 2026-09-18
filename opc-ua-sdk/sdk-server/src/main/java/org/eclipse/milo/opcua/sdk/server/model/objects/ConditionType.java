@@ -1,408 +1,390 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.core.nodes.MethodNode;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
-import org.eclipse.milo.opcua.sdk.server.model.variables.ConditionVariableType;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
-import org.eclipse.milo.opcua.sdk.server.model.variables.TwoStateVariableType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.ConditionVariableTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.variables.TwoStateVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
-import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
-import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
-import org.eclipse.milo.opcua.stack.core.util.Lazy;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.5.2">https://reference.opcfoundation.org/v105/Core/docs/Part9/5.5.2</a>
+ * Server API for the ConditionType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.5.2">Model
+ *     documentation</a>
  */
 public interface ConditionType extends BaseEventType {
-  QualifiedProperty<NodeId> CONDITION_CLASS_ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ConditionClassId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-          -1,
-          NodeId.class);
-
-  QualifiedProperty<LocalizedText> CONDITION_CLASS_NAME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ConditionClassName",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
-          -1,
-          LocalizedText.class);
-
-  QualifiedProperty<NodeId[]> CONDITION_SUB_CLASS_ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ConditionSubClassId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-          1,
-          NodeId[].class);
-
-  QualifiedProperty<LocalizedText[]> CONDITION_SUB_CLASS_NAME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ConditionSubClassName",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
-          1,
-          LocalizedText[].class);
-
-  QualifiedProperty<String> CONDITION_NAME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ConditionName",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
-
-  QualifiedProperty<NodeId> BRANCH_ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "BranchId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-          -1,
-          NodeId.class);
-
-  QualifiedProperty<Boolean> RETAIN =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Retain",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
-
-  QualifiedProperty<Boolean> SUPPORTS_FILTERED_RETAIN =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "SupportsFilteredRetain",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
-
-  QualifiedProperty<String> CLIENT_USER_ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ClientUserId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
-
-  NodeId getConditionClassId();
-
-  void setConditionClassId(NodeId value);
-
-  PropertyType getConditionClassIdNode();
-
-  LocalizedText getConditionClassName();
-
-  void setConditionClassName(LocalizedText value);
-
-  PropertyType getConditionClassNameNode();
-
-  NodeId[] getConditionSubClassId();
-
-  void setConditionSubClassId(NodeId[] value);
-
-  PropertyType getConditionSubClassIdNode();
-
-  LocalizedText[] getConditionSubClassName();
-
-  void setConditionSubClassName(LocalizedText[] value);
-
-  PropertyType getConditionSubClassNameNode();
-
-  String getConditionName();
-
-  void setConditionName(String value);
-
-  PropertyType getConditionNameNode();
-
-  NodeId getBranchId();
-
-  void setBranchId(NodeId value);
-
-  PropertyType getBranchIdNode();
-
-  Boolean getRetain();
-
-  void setRetain(Boolean value);
-
-  PropertyType getRetainNode();
-
-  Boolean getSupportsFilteredRetain();
-
-  void setSupportsFilteredRetain(Boolean value);
-
-  PropertyType getSupportsFilteredRetainNode();
-
-  String getClientUserId();
-
-  void setClientUserId(String value);
-
-  PropertyType getClientUserIdNode();
-
-  TwoStateVariableType getEnabledStateNode();
-
-  LocalizedText getEnabledState();
-
-  void setEnabledState(LocalizedText value);
-
-  ConditionVariableType getQualityNode();
-
-  StatusCode getQuality();
-
-  void setQuality(StatusCode value);
-
-  ConditionVariableType getLastSeverityNode();
-
-  UShort getLastSeverity();
-
-  void setLastSeverity(UShort value);
-
-  ConditionVariableType getCommentNode();
-
-  LocalizedText getComment();
-
-  void setComment(LocalizedText value);
-
-  MethodNode getDisableMethodNode();
-
-  MethodNode getEnableMethodNode();
-
-  MethodNode getAddCommentMethodNode();
-
-  MethodNode getConditionRefreshMethodNode();
-
-  MethodNode getConditionRefresh2MethodNode();
-
-  abstract class DisableMethod extends AbstractMethodInvocationHandler {
-    public DisableMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      invoke(context);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context)
-        throws UaException;
-  }
-
-  abstract class EnableMethod extends AbstractMethodInvocationHandler {
-    public EnableMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      invoke(context);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context)
-        throws UaException;
-  }
-
-  abstract class AddCommentMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    public AddCommentMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "EventId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "The identifier for the event to comment.")),
-              new Argument(
-                  "Comment",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "The comment to add to the condition."))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      ByteString eventId = (ByteString) inputValues[0].getValue();
-      LocalizedText comment = (LocalizedText) inputValues[1].getValue();
-      invoke(context, eventId, comment);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2782L);
+
+  /**
+   * Returns the mandatory BranchId child, a PropertyType with DataType NodeId.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getBranchIdNode();
+
+  /**
+   * Returns the Value of the BranchId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable NodeId getBranchId();
+
+  /**
+   * Sets the Value of the BranchId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setBranchId(@Nullable NodeId value);
+
+  /**
+   * Returns the mandatory ClientUserId child, a PropertyType with DataType String.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getClientUserIdNode();
+
+  /**
+   * Returns the Value of the ClientUserId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getClientUserId();
+
+  /**
+   * Sets the Value of the ClientUserId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setClientUserId(@Nullable String value);
+
+  /**
+   * Returns the mandatory Comment child, a ConditionVariableType with DataType LocalizedText.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.3">ConditionVariableType
+   *     documentation</a>
+   */
+  ConditionVariableTypeNode getCommentNode();
+
+  /**
+   * Returns the Value of the Comment child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable LocalizedText getComment();
+
+  /**
+   * Sets the Value of the Comment child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setComment(@Nullable LocalizedText value);
+
+  /**
+   * Returns the mandatory ConditionClassId child, a PropertyType with DataType NodeId.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getConditionClassIdNode();
+
+  /**
+   * Returns the mandatory ConditionClassName child, a PropertyType with DataType LocalizedText.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getConditionClassNameNode();
+
+  /**
+   * Returns the mandatory ConditionName child, a PropertyType with DataType String.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getConditionNameNode();
+
+  /**
+   * Returns the Value of the ConditionName child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getConditionName();
+
+  /**
+   * Sets the Value of the ConditionName child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setConditionName(@Nullable String value);
+
+  /**
+   * Returns the mandatory EnabledState child, a TwoStateVariableType with DataType LocalizedText.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.2">TwoStateVariableType
+   *     documentation</a>
+   */
+  TwoStateVariableTypeNode getEnabledStateNode();
+
+  /**
+   * Returns the Value of the EnabledState child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable LocalizedText getEnabledState();
+
+  /**
+   * Sets the Value of the EnabledState child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setEnabledState(@Nullable LocalizedText value);
+
+  /**
+   * Returns the mandatory LastSeverity child, a ConditionVariableType with DataType UInt16.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.3">ConditionVariableType
+   *     documentation</a>
+   */
+  ConditionVariableTypeNode getLastSeverityNode();
+
+  /**
+   * Returns the Value of the LastSeverity child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UShort getLastSeverity();
+
+  /**
+   * Sets the Value of the LastSeverity child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setLastSeverity(@Nullable UShort value);
+
+  /**
+   * Returns the mandatory Quality child, a ConditionVariableType with DataType StatusCode.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.3">ConditionVariableType
+   *     documentation</a>
+   */
+  ConditionVariableTypeNode getQualityNode();
+
+  /**
+   * Returns the Value of the Quality child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable StatusCode getQuality();
+
+  /**
+   * Sets the Value of the Quality child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setQuality(@Nullable StatusCode value);
+
+  /**
+   * Returns the mandatory Retain child, a PropertyType with DataType Boolean.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getRetainNode();
+
+  /**
+   * Returns the Value of the Retain child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Boolean getRetain();
+
+  /**
+   * Sets the Value of the Retain child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setRetain(@Nullable Boolean value);
+
+  /**
+   * Returns the mandatory AddComment Method node.
+   *
+   * @throws UaRuntimeException if the Method is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.5.6">Model
+   *     documentation</a>
+   */
+  UaMethodNode getAddCommentMethodNode();
+
+  /**
+   * Sets this instance's AddComment handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setAddCommentHandler(@Nullable AddCommentHandler handler);
+
+  /**
+   * Returns the optional ConditionRefresh Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.5.7">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getConditionRefreshMethodNode();
+
+  /**
+   * Returns the optional ConditionRefresh2 Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.5.8">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getConditionRefresh2MethodNode();
+
+  /**
+   * Returns the mandatory Disable Method node.
+   *
+   * @throws UaRuntimeException if the Method is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.5.4">Model
+   *     documentation</a>
+   */
+  UaMethodNode getDisableMethodNode();
+
+  /**
+   * Sets this instance's Disable handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setDisableHandler(@Nullable DisableHandler handler);
+
+  /**
+   * Returns the mandatory Enable Method node.
+   *
+   * @throws UaRuntimeException if the Method is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.5.5">Model
+   *     documentation</a>
+   */
+  UaMethodNode getEnableMethodNode();
+
+  /**
+   * Sets this instance's Enable handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setEnableHandler(@Nullable EnableHandler handler);
+
+  /**
+   * Sets this instance's Method handlers, including inherited handlers, from one implementation;
+   * null clears them and restores Method-node fallback. Absent optional Methods are skipped.
+   * Changes are applied in order; a failure does not roll back earlier changes.
+   *
+   * @throws UaRuntimeException if a mandatory Method is absent, or a Method is ambiguous or
+   *     incompatible.
+   */
+  void setMethods(@Nullable Methods methods);
+
+  /**
+   * Handles calls to the AddComment Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.5.6">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface AddCommentHandler {
+    /**
+     * Handles a call to the AddComment Method.
+     *
+     * @param eventId the identifier for the event to comment.
+     * @param comment the comment to add to the condition.
+     * @throws UaException if the call fails.
+     */
+    void addComment(
         AbstractMethodInvocationHandler.InvocationContext context,
-        ByteString eventId,
-        LocalizedText comment)
+        @Nullable ByteString eventId,
+        @Nullable LocalizedText comment)
         throws UaException;
   }
 
-  abstract class ConditionRefreshMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    public ConditionRefreshMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "SubscriptionId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=288")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "The identifier for the subscription to refresh."))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      UInteger subscriptionId = (UInteger) inputValues[0].getValue();
-      invoke(context, subscriptionId);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, UInteger subscriptionId)
-        throws UaException;
+  /**
+   * Handles calls to the Disable Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.5.4">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface DisableHandler {
+    /**
+     * Handles a call to the Disable Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void disable(AbstractMethodInvocationHandler.InvocationContext context) throws UaException;
   }
 
-  abstract class ConditionRefresh2Method extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+  /**
+   * Handles calls to the Enable Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.5.5">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface EnableHandler {
+    /**
+     * Handles a call to the Enable Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void enable(AbstractMethodInvocationHandler.InvocationContext context) throws UaException;
+  }
 
-    public ConditionRefresh2Method(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "SubscriptionId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=288")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "The identifier for the subscription to refresh.")),
-              new Argument(
-                  "MonitoredItemId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=288")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "The identifier for the monitored item to refresh."))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      UInteger subscriptionId = (UInteger) inputValues[0].getValue();
-      UInteger monitoredItemId = (UInteger) inputValues[1].getValue();
-      invoke(context, subscriptionId, monitoredItemId);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(
+  /** Implements this type's Methods. Unimplemented Methods report Bad_NotImplemented. */
+  interface Methods {
+    /** Handles a call to the AddComment Method; see {@link AddCommentHandler#addComment}. */
+    default void addComment(
         AbstractMethodInvocationHandler.InvocationContext context,
-        UInteger subscriptionId,
-        UInteger monitoredItemId)
-        throws UaException;
+        @Nullable ByteString eventId,
+        @Nullable LocalizedText comment)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /** Handles a call to the Disable Method; see {@link DisableHandler#disable}. */
+    default void disable(AbstractMethodInvocationHandler.InvocationContext context)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /** Handles a call to the Enable Method; see {@link EnableHandler#enable}. */
+    default void enable(AbstractMethodInvocationHandler.InvocationContext context)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
   }
 }

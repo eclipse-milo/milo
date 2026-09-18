@@ -1,20 +1,9 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.model.variables.BaseDataVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -26,7 +15,15 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.TsnListenerStatus;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TsnTalkerStatus;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link IIeeeBaseTsnStatusStreamType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.9">Model
+ *     documentation</a>
+ */
 public class IIeeeBaseTsnStatusStreamTypeNode extends BaseInterfaceTypeNode
     implements IIeeeBaseTsnStatusStreamType {
   public IIeeeBaseTsnStatusStreamTypeNode(
@@ -34,12 +31,36 @@ public class IIeeeBaseTsnStatusStreamTypeNode extends BaseInterfaceTypeNode
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions);
+  }
+
+  public IIeeeBaseTsnStatusStreamTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         context,
@@ -55,113 +76,125 @@ public class IIeeeBaseTsnStatusStreamTypeNode extends BaseInterfaceTypeNode
         eventNotifier);
   }
 
-  public IIeeeBaseTsnStatusStreamTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions);
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getTalkerStatusNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "TalkerStatus");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public TsnTalkerStatus getTalkerStatus() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "TalkerStatus");
-    return component
-        .map(node -> (TsnTalkerStatus) node.getValue().getValue().getValue())
-        .orElse(null);
-  }
-
-  @Override
-  public void setTalkerStatus(TsnTalkerStatus value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "TalkerStatus")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getListenerStatusNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "ListenerStatus");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public TsnListenerStatus getListenerStatus() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "ListenerStatus");
-    return component
-        .map(node -> (TsnListenerStatus) node.getValue().getValue().getValue())
-        .orElse(null);
-  }
-
-  @Override
-  public void setListenerStatus(TsnListenerStatus value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "ListenerStatus")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
   @Override
   public BaseDataVariableTypeNode getFailureCodeNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "FailureCode");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "FailureCode",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 24218L),
+        -1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public TsnFailureCode getFailureCode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "FailureCode");
-    return component
-        .map(node -> (TsnFailureCode) node.getValue().getValue().getValue())
-        .orElse(null);
+  public @Nullable TsnFailureCode getFailureCode() {
+    return ServerNodeSupport.read(
+        this, getFailureCodeNode(), TsnFailureCode.class, TsnFailureCode::from);
   }
 
   @Override
-  public void setFailureCode(TsnFailureCode value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "FailureCode")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setFailureCode(@Nullable TsnFailureCode value) {
+    ServerNodeSupport.write(this, getFailureCodeNode(), value, false, true, false);
   }
 
   @Override
   public BaseDataVariableTypeNode getFailureSystemIdentifierNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "FailureSystemIdentifier");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "FailureSystemIdentifier",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 3L),
+        2,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public Object getFailureSystemIdentifier() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "FailureSystemIdentifier");
-    return component.map(node -> (Object) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable Variant getFailureSystemIdentifier() {
+    return ServerNodeSupport.readVariant(
+        this, getFailureSystemIdentifierNode(), 2, UByte.class, null);
   }
 
   @Override
-  public void setFailureSystemIdentifier(Object value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "FailureSystemIdentifier")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setFailureSystemIdentifier(@Nullable Variant value) {
+    ServerNodeSupport.writeVariant(
+        this,
+        getFailureSystemIdentifierNode(),
+        null,
+        "FailureSystemIdentifier",
+        value,
+        2,
+        UByte.class,
+        null);
+  }
+
+  @Override
+  public @Nullable BaseDataVariableTypeNode getListenerStatusNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "ListenerStatus",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 24224L),
+        -1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable TsnListenerStatus getListenerStatus() {
+    return ServerNodeSupport.read(
+        this, getListenerStatusNode(), TsnListenerStatus.class, TsnListenerStatus::from);
+  }
+
+  @Override
+  public void setListenerStatus(@Nullable TsnListenerStatus value) {
+    ServerNodeSupport.write(
+        this,
+        getListenerStatusNode(),
+        Namespaces.OPC_UA,
+        "ListenerStatus",
+        value,
+        false,
+        true,
+        false);
+  }
+
+  @Override
+  public @Nullable BaseDataVariableTypeNode getTalkerStatusNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "TalkerStatus",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 24222L),
+        -1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable TsnTalkerStatus getTalkerStatus() {
+    return ServerNodeSupport.read(
+        this, getTalkerStatusNode(), TsnTalkerStatus.class, TsnTalkerStatus::from);
+  }
+
+  @Override
+  public void setTalkerStatus(@Nullable TsnTalkerStatus value) {
+    ServerNodeSupport.write(
+        this, getTalkerStatusNode(), Namespaces.OPC_UA, "TalkerStatus", value, false, true, false);
+  }
+
+  @Override
+  public void validateChildren() {
+    super.validateChildren();
+    getFailureCodeNode();
+    getFailureSystemIdentifierNode();
+    getListenerStatusNode();
+    getTalkerStatusNode();
   }
 }

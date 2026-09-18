@@ -1,339 +1,320 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.core.nodes.MethodNode;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
-import org.eclipse.milo.opcua.sdk.server.methods.Out;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
-import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.types.structured.TrustListValidationOptions;
-import org.eclipse.milo.opcua.stack.core.util.Lazy;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.2/#7.8.2.1">https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.2/#7.8.2.1</a>
+ * Server API for the TrustListType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.2/#7.8.2.1">Model
+ *     documentation</a>
  */
 public interface TrustListType extends FileType {
-  QualifiedProperty<DateTime> LAST_UPDATE_TIME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "LastUpdateTime",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
-          -1,
-          DateTime.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 12522L);
 
-  QualifiedProperty<Double> UPDATE_FREQUENCY =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "UpdateFrequency",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
-          -1,
-          Double.class);
+  /**
+   * Returns the optional ActivityTimeout child, a PropertyType with DataType Duration.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getActivityTimeoutNode();
 
-  QualifiedProperty<Double> ACTIVITY_TIMEOUT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ActivityTimeout",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
-          -1,
-          Double.class);
+  /**
+   * Returns the Value of the ActivityTimeout child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Double getActivityTimeout();
 
-  QualifiedProperty<TrustListValidationOptions> DEFAULT_VALIDATION_OPTIONS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "DefaultValidationOptions",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=23564"),
-          -1,
-          TrustListValidationOptions.class);
+  /**
+   * Sets the Value of the ActivityTimeout child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setActivityTimeout(@Nullable Double value);
 
-  DateTime getLastUpdateTime();
+  /**
+   * Returns the optional DefaultValidationOptions child, a PropertyType with DataType
+   * TrustListValidationOptions.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getDefaultValidationOptionsNode();
 
-  void setLastUpdateTime(DateTime value);
+  /**
+   * Returns the Value of the DefaultValidationOptions child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable TrustListValidationOptions getDefaultValidationOptions();
 
-  PropertyType getLastUpdateTimeNode();
+  /**
+   * Sets the Value of the DefaultValidationOptions child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setDefaultValidationOptions(@Nullable TrustListValidationOptions value);
 
-  Double getUpdateFrequency();
+  /**
+   * Returns the mandatory LastUpdateTime child, a PropertyType with DataType UtcTime.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getLastUpdateTimeNode();
 
-  void setUpdateFrequency(Double value);
+  /**
+   * Returns the Value of the LastUpdateTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable DateTime getLastUpdateTime();
 
-  PropertyType getUpdateFrequencyNode();
+  /**
+   * Sets the Value of the LastUpdateTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setLastUpdateTime(@Nullable DateTime value);
 
-  Double getActivityTimeout();
+  /**
+   * Returns the optional UpdateFrequency child, a PropertyType with DataType Duration.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getUpdateFrequencyNode();
 
-  void setActivityTimeout(Double value);
+  /**
+   * Returns the Value of the UpdateFrequency child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Double getUpdateFrequency();
 
-  PropertyType getActivityTimeoutNode();
+  /**
+   * Sets the Value of the UpdateFrequency child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setUpdateFrequency(@Nullable Double value);
 
-  TrustListValidationOptions getDefaultValidationOptions();
+  /**
+   * Returns the mandatory AddCertificate Method node.
+   *
+   * @throws UaRuntimeException if the Method is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.2/#7.8.2.6">Model
+   *     documentation</a>
+   */
+  UaMethodNode getAddCertificateMethodNode();
 
-  void setDefaultValidationOptions(TrustListValidationOptions value);
+  /**
+   * Sets this instance's AddCertificate handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setAddCertificateHandler(@Nullable AddCertificateHandler handler);
 
-  PropertyType getDefaultValidationOptionsNode();
+  /**
+   * Returns the mandatory CloseAndUpdate Method node.
+   *
+   * @throws UaRuntimeException if the Method is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.2/#7.8.2.5">Model
+   *     documentation</a>
+   */
+  UaMethodNode getCloseAndUpdateMethodNode();
 
-  MethodNode getOpenWithMasksMethodNode();
+  /**
+   * Sets this instance's CloseAndUpdate handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setCloseAndUpdateHandler(@Nullable CloseAndUpdateHandler handler);
 
-  MethodNode getCloseAndUpdateMethodNode();
+  /**
+   * Returns the mandatory OpenWithMasks Method node.
+   *
+   * @throws UaRuntimeException if the Method is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.2/#7.8.2.3">Model
+   *     documentation</a>
+   */
+  UaMethodNode getOpenWithMasksMethodNode();
 
-  MethodNode getAddCertificateMethodNode();
+  /**
+   * Sets this instance's OpenWithMasks handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setOpenWithMasksHandler(@Nullable OpenWithMasksHandler handler);
 
-  MethodNode getRemoveCertificateMethodNode();
+  /**
+   * Returns the mandatory RemoveCertificate Method node.
+   *
+   * @throws UaRuntimeException if the Method is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.2/#7.8.2.7">Model
+   *     documentation</a>
+   */
+  UaMethodNode getRemoveCertificateMethodNode();
 
-  abstract class OpenWithMasksMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+  /**
+   * Sets this instance's RemoveCertificate handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setRemoveCertificateHandler(@Nullable RemoveCertificateHandler handler);
 
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
+  /**
+   * Sets this instance's Method handlers, including inherited handlers, from one implementation;
+   * null clears them and restores Method-node fallback. Absent optional Methods are skipped.
+   * Changes are applied in order; a failure does not roll back earlier changes.
+   *
+   * @throws UaRuntimeException if a mandatory Method is absent, or a Method is ambiguous or
+   *     incompatible.
+   */
+  void setMethods(@Nullable Methods methods);
 
-    public OpenWithMasksMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "Masks",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "FileHandle",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      UInteger masks = (UInteger) inputValues[0].getValue();
-      Out<UInteger> fileHandle = new Out<>();
-      invoke(context, masks, fileHandle);
-      return new Variant[] {new Variant(fileHandle.get())};
-    }
-
-    protected abstract void invoke(
+  /**
+   * Handles calls to the AddCertificate Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.2/#7.8.2.6">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface AddCertificateHandler {
+    /**
+     * Handles a call to the AddCertificate Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void addCertificate(
         AbstractMethodInvocationHandler.InvocationContext context,
-        UInteger masks,
-        Out<UInteger> fileHandle)
+        @Nullable ByteString certificate,
+        @Nullable Boolean isTrustedCertificate)
         throws UaException;
   }
 
-  abstract class CloseAndUpdateMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-    public CloseAndUpdateMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "FileHandle",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "ApplyChangesRequired",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      UInteger fileHandle = (UInteger) inputValues[0].getValue();
-      Out<Boolean> applyChangesRequired = new Out<>();
-      invoke(context, fileHandle, applyChangesRequired);
-      return new Variant[] {new Variant(applyChangesRequired.get())};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context,
-        UInteger fileHandle,
-        Out<Boolean> applyChangesRequired)
+  /**
+   * Handles calls to the CloseAndUpdate Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.2/#7.8.2.5">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface CloseAndUpdateHandler {
+    /**
+     * Handles a call to the CloseAndUpdate Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    @Nullable Boolean closeAndUpdate(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable UInteger fileHandle)
         throws UaException;
   }
 
-  abstract class AddCertificateMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    public AddCertificateMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "Certificate",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "IsTrustedCertificate",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      ByteString certificate = (ByteString) inputValues[0].getValue();
-      Boolean isTrustedCertificate = (Boolean) inputValues[1].getValue();
-      invoke(context, certificate, isTrustedCertificate);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context,
-        ByteString certificate,
-        Boolean isTrustedCertificate)
+  /**
+   * Handles calls to the OpenWithMasks Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.2/#7.8.2.3">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface OpenWithMasksHandler {
+    /**
+     * Handles a call to the OpenWithMasks Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    @Nullable UInteger openWithMasks(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable UInteger masks)
         throws UaException;
   }
 
-  abstract class RemoveCertificateMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    public RemoveCertificateMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "Thumbprint",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "IsTrustedCertificate",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      String thumbprint = (String) inputValues[0].getValue();
-      Boolean isTrustedCertificate = (Boolean) inputValues[1].getValue();
-      invoke(context, thumbprint, isTrustedCertificate);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(
+  /**
+   * Handles calls to the RemoveCertificate Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.2/#7.8.2.7">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface RemoveCertificateHandler {
+    /**
+     * Handles a call to the RemoveCertificate Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void removeCertificate(
         AbstractMethodInvocationHandler.InvocationContext context,
-        String thumbprint,
-        Boolean isTrustedCertificate)
+        @Nullable String thumbprint,
+        @Nullable Boolean isTrustedCertificate)
         throws UaException;
+  }
+
+  /** Implements this type's Methods. Unimplemented Methods report Bad_NotImplemented. */
+  interface Methods extends FileType.Methods {
+    /**
+     * Handles a call to the AddCertificate Method; see {@link
+     * AddCertificateHandler#addCertificate}.
+     */
+    default void addCertificate(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable ByteString certificate,
+        @Nullable Boolean isTrustedCertificate)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /**
+     * Handles a call to the CloseAndUpdate Method; see {@link
+     * CloseAndUpdateHandler#closeAndUpdate}.
+     */
+    default @Nullable Boolean closeAndUpdate(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable UInteger fileHandle)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /**
+     * Handles a call to the OpenWithMasks Method; see {@link OpenWithMasksHandler#openWithMasks}.
+     */
+    default @Nullable UInteger openWithMasks(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable UInteger masks)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /**
+     * Handles a call to the RemoveCertificate Method; see {@link
+     * RemoveCertificateHandler#removeCertificate}.
+     */
+    default void removeCertificate(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable String thumbprint,
+        @Nullable Boolean isTrustedCertificate)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
   }
 }

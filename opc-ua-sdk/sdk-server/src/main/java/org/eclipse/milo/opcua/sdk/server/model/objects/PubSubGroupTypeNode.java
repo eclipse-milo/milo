@@ -1,20 +1,9 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.nodes.ObjectNode;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -25,19 +14,51 @@ import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.KeyValuePair;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link PubSubGroupType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.6/#9.1.6.2">Model
+ *     documentation</a>
+ */
 public class PubSubGroupTypeNode extends BaseObjectTypeNode implements PubSubGroupType {
   public PubSubGroupTypeNode(
       UaNodeContext context,
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions);
+  }
+
+  public PubSubGroupTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         context,
@@ -53,113 +74,160 @@ public class PubSubGroupTypeNode extends BaseObjectTypeNode implements PubSubGro
         eventNotifier);
   }
 
-  public PubSubGroupTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions);
+  @Override
+  public PropertyTypeNode getGroupPropertiesNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "GroupProperties",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 14533L),
+        1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getSecurityModeNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(PubSubGroupType.SECURITY_MODE);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable KeyValuePair @Nullable [] getGroupProperties() {
+    return ServerNodeSupport.readArray(this, getGroupPropertiesNode(), KeyValuePair.class, null);
   }
 
   @Override
-  public MessageSecurityMode getSecurityMode() {
-    return getProperty(PubSubGroupType.SECURITY_MODE).orElse(null);
-  }
-
-  @Override
-  public void setSecurityMode(MessageSecurityMode value) {
-    setProperty(PubSubGroupType.SECURITY_MODE, value);
-  }
-
-  @Override
-  public PropertyTypeNode getSecurityGroupIdNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(PubSubGroupType.SECURITY_GROUP_ID);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public String getSecurityGroupId() {
-    return getProperty(PubSubGroupType.SECURITY_GROUP_ID).orElse(null);
-  }
-
-  @Override
-  public void setSecurityGroupId(String value) {
-    setProperty(PubSubGroupType.SECURITY_GROUP_ID, value);
-  }
-
-  @Override
-  public PropertyTypeNode getSecurityKeyServicesNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(PubSubGroupType.SECURITY_KEY_SERVICES);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public EndpointDescription[] getSecurityKeyServices() {
-    return getProperty(PubSubGroupType.SECURITY_KEY_SERVICES).orElse(null);
-  }
-
-  @Override
-  public void setSecurityKeyServices(EndpointDescription[] value) {
-    setProperty(PubSubGroupType.SECURITY_KEY_SERVICES, value);
+  public void setGroupProperties(@Nullable KeyValuePair @Nullable [] value) {
+    ServerNodeSupport.write(this, getGroupPropertiesNode(), value, true, false, true);
   }
 
   @Override
   public PropertyTypeNode getMaxNetworkMessageSizeNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(PubSubGroupType.MAX_NETWORK_MESSAGE_SIZE);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "MaxNetworkMessageSize",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public UInteger getMaxNetworkMessageSize() {
-    return getProperty(PubSubGroupType.MAX_NETWORK_MESSAGE_SIZE).orElse(null);
+  public @Nullable UInteger getMaxNetworkMessageSize() {
+    return ServerNodeSupport.read(this, getMaxNetworkMessageSizeNode(), UInteger.class, null);
   }
 
   @Override
-  public void setMaxNetworkMessageSize(UInteger value) {
-    setProperty(PubSubGroupType.MAX_NETWORK_MESSAGE_SIZE, value);
+  public void setMaxNetworkMessageSize(@Nullable UInteger value) {
+    ServerNodeSupport.write(this, getMaxNetworkMessageSizeNode(), value, false, false, false);
   }
 
   @Override
-  public PropertyTypeNode getGroupPropertiesNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(PubSubGroupType.GROUP_PROPERTIES);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable PropertyTypeNode getSecurityGroupIdNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "SecurityGroupId",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public KeyValuePair[] getGroupProperties() {
-    return getProperty(PubSubGroupType.GROUP_PROPERTIES).orElse(null);
+  public @Nullable String getSecurityGroupId() {
+    return ServerNodeSupport.read(this, getSecurityGroupIdNode(), String.class, null);
   }
 
   @Override
-  public void setGroupProperties(KeyValuePair[] value) {
-    setProperty(PubSubGroupType.GROUP_PROPERTIES, value);
+  public void setSecurityGroupId(@Nullable String value) {
+    ServerNodeSupport.write(
+        this,
+        getSecurityGroupIdNode(),
+        Namespaces.OPC_UA,
+        "SecurityGroupId",
+        value,
+        false,
+        false,
+        false);
+  }
+
+  @Override
+  public @Nullable PropertyTypeNode getSecurityKeyServicesNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "SecurityKeyServices",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 312L),
+        1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable EndpointDescription @Nullable [] getSecurityKeyServices() {
+    return ServerNodeSupport.readArray(
+        this, getSecurityKeyServicesNode(), EndpointDescription.class, null);
+  }
+
+  @Override
+  public void setSecurityKeyServices(@Nullable EndpointDescription @Nullable [] value) {
+    ServerNodeSupport.write(
+        this,
+        getSecurityKeyServicesNode(),
+        Namespaces.OPC_UA,
+        "SecurityKeyServices",
+        value,
+        true,
+        false,
+        true);
+  }
+
+  @Override
+  public PropertyTypeNode getSecurityModeNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "SecurityMode",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 302L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable MessageSecurityMode getSecurityMode() {
+    return ServerNodeSupport.read(
+        this, getSecurityModeNode(), MessageSecurityMode.class, MessageSecurityMode::from);
+  }
+
+  @Override
+  public void setSecurityMode(@Nullable MessageSecurityMode value) {
+    ServerNodeSupport.write(this, getSecurityModeNode(), value, false, true, false);
   }
 
   @Override
   public PubSubStatusTypeNode getStatusNode() {
-    Optional<ObjectNode> component = getObjectComponent("http://opcfoundation.org/UA/", "Status");
-    return (PubSubStatusTypeNode) component.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "Status",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 14643L),
+        null,
+        -1,
+        PubSubStatusTypeNode.class);
+  }
+
+  @Override
+  public void validateChildren() {
+    super.validateChildren();
+    getGroupPropertiesNode();
+    getMaxNetworkMessageSizeNode();
+    getSecurityGroupIdNode();
+    getSecurityKeyServicesNode();
+    getSecurityModeNode();
+    getStatusNode();
   }
 }

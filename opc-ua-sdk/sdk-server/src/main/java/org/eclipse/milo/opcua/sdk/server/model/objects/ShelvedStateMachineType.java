@@ -1,319 +1,311 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.core.nodes.MethodNode;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
-import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
-import org.eclipse.milo.opcua.stack.core.util.Lazy;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.17/#5.8.17.1">https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.17/#5.8.17.1</a>
+ * Server API for the ShelvedStateMachineType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.17/#5.8.17.1">Model
+ *     documentation</a>
  */
 public interface ShelvedStateMachineType extends FiniteStateMachineType {
-  QualifiedProperty<Double> UNSHELVE_TIME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "UnshelveTime",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
-          -1,
-          Double.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2929L);
 
-  Double getUnshelveTime();
+  /**
+   * Returns the mandatory UnshelveTime child, a PropertyType with DataType Duration.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getUnshelveTimeNode();
 
-  void setUnshelveTime(Double value);
+  /**
+   * Returns the Value of the UnshelveTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Double getUnshelveTime();
 
-  PropertyType getUnshelveTimeNode();
+  /**
+   * Sets the Value of the UnshelveTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setUnshelveTime(@Nullable Double value);
 
-  StateType getUnshelvedNode();
+  /**
+   * Returns the mandatory OneShotShelve Method node.
+   *
+   * @throws UaRuntimeException if the Method is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.17/#5.8.17.6">Model
+   *     documentation</a>
+   */
+  UaMethodNode getOneShotShelveMethodNode();
 
-  StateType getTimedShelvedNode();
+  /**
+   * Sets this instance's OneShotShelve handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setOneShotShelveHandler(@Nullable OneShotShelveHandler handler);
 
-  StateType getOneShotShelvedNode();
+  /**
+   * Returns the optional OneShotShelve2 Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.17/#5.8.17.7">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getOneShotShelve2MethodNode();
 
-  TransitionType getUnshelvedToTimedShelvedNode();
+  /**
+   * Sets this instance's OneShotShelve2 handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setOneShotShelve2Handler(@Nullable OneShotShelve2Handler handler);
 
-  TransitionType getUnshelvedToOneShotShelvedNode();
+  /**
+   * Returns the mandatory TimedShelve Method node.
+   *
+   * @throws UaRuntimeException if the Method is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.17/#5.8.17.4">Model
+   *     documentation</a>
+   */
+  UaMethodNode getTimedShelveMethodNode();
 
-  TransitionType getTimedShelvedToUnshelvedNode();
+  /**
+   * Sets this instance's TimedShelve handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setTimedShelveHandler(@Nullable TimedShelveHandler handler);
 
-  TransitionType getTimedShelvedToOneShotShelvedNode();
+  /**
+   * Returns the optional TimedShelve2 Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.17/#5.8.17.5">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getTimedShelve2MethodNode();
 
-  TransitionType getOneShotShelvedToUnshelvedNode();
+  /**
+   * Sets this instance's TimedShelve2 handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setTimedShelve2Handler(@Nullable TimedShelve2Handler handler);
 
-  TransitionType getOneShotShelvedToTimedShelvedNode();
+  /**
+   * Returns the mandatory Unshelve Method node.
+   *
+   * @throws UaRuntimeException if the Method is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.17/#5.8.17.2">Model
+   *     documentation</a>
+   */
+  UaMethodNode getUnshelveMethodNode();
 
-  MethodNode getTimedShelveMethodNode();
+  /**
+   * Sets this instance's Unshelve handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setUnshelveHandler(@Nullable UnshelveHandler handler);
 
-  MethodNode getTimedShelve2MethodNode();
+  /**
+   * Returns the optional Unshelve2 Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.17/#5.8.17.3">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getUnshelve2MethodNode();
 
-  MethodNode getUnshelveMethodNode();
+  /**
+   * Sets this instance's Unshelve2 handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setUnshelve2Handler(@Nullable Unshelve2Handler handler);
 
-  MethodNode getUnshelve2MethodNode();
+  /**
+   * Sets this instance's Method handlers, including inherited handlers, from one implementation;
+   * null clears them and restores Method-node fallback. Absent optional Methods are skipped.
+   * Changes are applied in order; a failure does not roll back earlier changes.
+   *
+   * @throws UaRuntimeException if a mandatory Method is absent, or a Method is ambiguous or
+   *     incompatible.
+   */
+  void setMethods(@Nullable Methods methods);
 
-  MethodNode getOneShotShelveMethodNode();
-
-  MethodNode getOneShotShelve2MethodNode();
-
-  abstract class TimedShelveMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    public TimedShelveMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "ShelvingTime",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      Double shelvingTime = (Double) inputValues[0].getValue();
-      invoke(context, shelvingTime);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Double shelvingTime)
+  /**
+   * Handles calls to the OneShotShelve Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.17/#5.8.17.6">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface OneShotShelveHandler {
+    /**
+     * Handles a call to the OneShotShelve Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void oneShotShelve(AbstractMethodInvocationHandler.InvocationContext context)
         throws UaException;
   }
 
-  abstract class TimedShelve2Method extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+  /**
+   * Handles calls to the OneShotShelve2 Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.17/#5.8.17.7">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface OneShotShelve2Handler {
+    /**
+     * Handles a call to the OneShotShelve2 Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void oneShotShelve2(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable LocalizedText comment)
+        throws UaException;
+  }
 
-    public TimedShelve2Method(UaMethodNode node) {
-      super(node);
-    }
+  /**
+   * Handles calls to the TimedShelve Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.17/#5.8.17.4">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface TimedShelveHandler {
+    /**
+     * Handles a call to the TimedShelve Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void timedShelve(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable Double shelvingTime)
+        throws UaException;
+  }
 
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "ShelvingTime",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "Comment",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      Double shelvingTime = (Double) inputValues[0].getValue();
-      LocalizedText comment = (LocalizedText) inputValues[1].getValue();
-      invoke(context, shelvingTime, comment);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(
+  /**
+   * Handles calls to the TimedShelve2 Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.17/#5.8.17.5">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface TimedShelve2Handler {
+    /**
+     * Handles a call to the TimedShelve2 Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void timedShelve2(
         AbstractMethodInvocationHandler.InvocationContext context,
-        Double shelvingTime,
-        LocalizedText comment)
+        @Nullable Double shelvingTime,
+        @Nullable LocalizedText comment)
         throws UaException;
   }
 
-  abstract class UnshelveMethod extends AbstractMethodInvocationHandler {
-    public UnshelveMethod(UaMethodNode node) {
-      super(node);
-    }
+  /**
+   * Handles calls to the Unshelve Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.17/#5.8.17.2">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface UnshelveHandler {
+    /**
+     * Handles a call to the Unshelve Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void unshelve(AbstractMethodInvocationHandler.InvocationContext context) throws UaException;
+  }
 
-    @Override
-    public Argument[] getInputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      invoke(context);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context)
+  /**
+   * Handles calls to the Unshelve2 Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.17/#5.8.17.3">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface Unshelve2Handler {
+    /**
+     * Handles a call to the Unshelve2 Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void unshelve2(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable LocalizedText comment)
         throws UaException;
   }
 
-  abstract class Unshelve2Method extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    public Unshelve2Method(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "Comment",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+  /** Implements this type's Methods. Unimplemented Methods report Bad_NotImplemented. */
+  interface Methods {
+    /**
+     * Handles a call to the OneShotShelve Method; see {@link OneShotShelveHandler#oneShotShelve}.
+     */
+    default void oneShotShelve(AbstractMethodInvocationHandler.InvocationContext context)
         throws UaException {
-      LocalizedText comment = (LocalizedText) inputValues[0].getValue();
-      invoke(context, comment);
-      return new Variant[] {};
+      throw new UaException(StatusCodes.Bad_NotImplemented);
     }
 
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, LocalizedText comment)
-        throws UaException;
-  }
-
-  abstract class OneShotShelveMethod extends AbstractMethodInvocationHandler {
-    public OneShotShelveMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+    /**
+     * Handles a call to the OneShotShelve2 Method; see {@link
+     * OneShotShelve2Handler#oneShotShelve2}.
+     */
+    default void oneShotShelve2(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable LocalizedText comment)
         throws UaException {
-      invoke(context);
-      return new Variant[] {};
+      throw new UaException(StatusCodes.Bad_NotImplemented);
     }
 
-    protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context)
-        throws UaException;
-  }
-
-  abstract class OneShotShelve2Method extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    public OneShotShelve2Method(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "Comment",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+    /** Handles a call to the TimedShelve Method; see {@link TimedShelveHandler#timedShelve}. */
+    default void timedShelve(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable Double shelvingTime)
         throws UaException {
-      LocalizedText comment = (LocalizedText) inputValues[0].getValue();
-      invoke(context, comment);
-      return new Variant[] {};
+      throw new UaException(StatusCodes.Bad_NotImplemented);
     }
 
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, LocalizedText comment)
-        throws UaException;
+    /** Handles a call to the TimedShelve2 Method; see {@link TimedShelve2Handler#timedShelve2}. */
+    default void timedShelve2(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable Double shelvingTime,
+        @Nullable LocalizedText comment)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /** Handles a call to the Unshelve Method; see {@link UnshelveHandler#unshelve}. */
+    default void unshelve(AbstractMethodInvocationHandler.InvocationContext context)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /** Handles a call to the Unshelve2 Method; see {@link Unshelve2Handler#unshelve2}. */
+    default void unshelve2(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable LocalizedText comment)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
   }
 }

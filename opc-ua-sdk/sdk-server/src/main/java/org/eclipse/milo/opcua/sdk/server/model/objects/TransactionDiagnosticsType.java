@@ -1,109 +1,159 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.structured.TransactionErrorType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.17">https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.17</a>
+ * Server API for the TransactionDiagnosticsType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.17">Model
+ *     documentation</a>
  */
 public interface TransactionDiagnosticsType extends BaseObjectType {
-  QualifiedProperty<DateTime> START_TIME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "StartTime",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
-          -1,
-          DateTime.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 32286L);
 
-  QualifiedProperty<DateTime> END_TIME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "EndTime",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
-          -1,
-          DateTime.class);
+  /**
+   * Returns the mandatory AffectedCertificateGroups child, a PropertyType with DataType NodeId.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getAffectedCertificateGroupsNode();
 
-  QualifiedProperty<StatusCode> RESULT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Result",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=19"),
-          -1,
-          StatusCode.class);
+  /**
+   * Returns the Value of the AffectedCertificateGroups child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  NodeId @Nullable [] getAffectedCertificateGroups();
 
-  QualifiedProperty<NodeId[]> AFFECTED_TRUST_LISTS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "AffectedTrustLists",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-          1,
-          NodeId[].class);
+  /**
+   * Sets the Value of the AffectedCertificateGroups child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setAffectedCertificateGroups(NodeId @Nullable [] value);
 
-  QualifiedProperty<NodeId[]> AFFECTED_CERTIFICATE_GROUPS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "AffectedCertificateGroups",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-          1,
-          NodeId[].class);
+  /**
+   * Returns the mandatory AffectedTrustLists child, a PropertyType with DataType NodeId.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getAffectedTrustListsNode();
 
-  QualifiedProperty<TransactionErrorType[]> ERRORS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Errors",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=32285"),
-          1,
-          TransactionErrorType[].class);
+  /**
+   * Returns the Value of the AffectedTrustLists child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  NodeId @Nullable [] getAffectedTrustLists();
 
-  DateTime getStartTime();
+  /**
+   * Sets the Value of the AffectedTrustLists child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setAffectedTrustLists(NodeId @Nullable [] value);
 
-  void setStartTime(DateTime value);
+  /**
+   * Returns the mandatory EndTime child, a PropertyType with DataType UtcTime.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getEndTimeNode();
 
-  PropertyType getStartTimeNode();
+  /**
+   * Returns the Value of the EndTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable DateTime getEndTime();
 
-  DateTime getEndTime();
+  /**
+   * Sets the Value of the EndTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setEndTime(@Nullable DateTime value);
 
-  void setEndTime(DateTime value);
+  /**
+   * Returns the mandatory Errors child, a PropertyType with DataType TransactionErrorType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getErrorsNode();
 
-  PropertyType getEndTimeNode();
+  /**
+   * Returns the Value of the Errors child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable TransactionErrorType @Nullable [] getErrors();
 
-  StatusCode getResult();
+  /**
+   * Sets the Value of the Errors child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setErrors(@Nullable TransactionErrorType @Nullable [] value);
 
-  void setResult(StatusCode value);
+  /**
+   * Returns the mandatory Result child, a PropertyType with DataType StatusCode.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getResultNode();
 
-  PropertyType getResultNode();
+  /**
+   * Returns the Value of the Result child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable StatusCode getResult();
 
-  NodeId[] getAffectedTrustLists();
+  /**
+   * Sets the Value of the Result child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setResult(@Nullable StatusCode value);
 
-  void setAffectedTrustLists(NodeId[] value);
+  /**
+   * Returns the mandatory StartTime child, a PropertyType with DataType UtcTime.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getStartTimeNode();
 
-  PropertyType getAffectedTrustListsNode();
+  /**
+   * Returns the Value of the StartTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable DateTime getStartTime();
 
-  NodeId[] getAffectedCertificateGroups();
-
-  void setAffectedCertificateGroups(NodeId[] value);
-
-  PropertyType getAffectedCertificateGroupsNode();
-
-  TransactionErrorType[] getErrors();
-
-  void setErrors(TransactionErrorType[] value);
-
-  PropertyType getErrorsNode();
+  /**
+   * Sets the Value of the StartTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setStartTime(@Nullable DateTime value);
 }

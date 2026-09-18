@@ -1,20 +1,10 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -22,7 +12,15 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link TrustListOutOfDateAlarmType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.2/#7.8.2.11">Model
+ *     documentation</a>
+ */
 public class TrustListOutOfDateAlarmTypeNode extends SystemOffNormalAlarmTypeNode
     implements TrustListOutOfDateAlarmType {
   public TrustListOutOfDateAlarmTypeNode(
@@ -30,12 +28,36 @@ public class TrustListOutOfDateAlarmTypeNode extends SystemOffNormalAlarmTypeNod
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions);
+  }
+
+  public TrustListOutOfDateAlarmTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         context,
@@ -51,78 +73,127 @@ public class TrustListOutOfDateAlarmTypeNode extends SystemOffNormalAlarmTypeNod
         eventNotifier);
   }
 
-  public TrustListOutOfDateAlarmTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions);
+  @Override
+  public PropertyTypeNode getLastUpdateTimeNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "LastUpdateTime",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 294L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable DateTime getLastUpdateTime() {
+    return ServerNodeSupport.read(this, getLastUpdateTimeNode(), DateTime.class, null);
+  }
+
+  @Override
+  public void setLastUpdateTime(@Nullable DateTime value) {
+    ServerNodeSupport.write(this, getLastUpdateTimeNode(), value, false, false, false);
   }
 
   @Override
   public PropertyTypeNode getTrustListIdNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(TrustListOutOfDateAlarmType.TRUST_LIST_ID);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "TrustListId",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 17L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public NodeId getTrustListId() {
-    return getProperty(TrustListOutOfDateAlarmType.TRUST_LIST_ID).orElse(null);
+  public @Nullable NodeId getTrustListId() {
+    return ServerNodeSupport.read(this, getTrustListIdNode(), NodeId.class, null);
   }
 
   @Override
-  public void setTrustListId(NodeId value) {
-    setProperty(TrustListOutOfDateAlarmType.TRUST_LIST_ID, value);
-  }
-
-  @Override
-  public PropertyTypeNode getLastUpdateTimeNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(TrustListOutOfDateAlarmType.LAST_UPDATE_TIME);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public DateTime getLastUpdateTime() {
-    return getProperty(TrustListOutOfDateAlarmType.LAST_UPDATE_TIME).orElse(null);
-  }
-
-  @Override
-  public void setLastUpdateTime(DateTime value) {
-    setProperty(TrustListOutOfDateAlarmType.LAST_UPDATE_TIME, value);
+  public void setTrustListId(@Nullable NodeId value) {
+    ServerNodeSupport.write(this, getTrustListIdNode(), value, false, false, false);
   }
 
   @Override
   public PropertyTypeNode getUpdateFrequencyNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(TrustListOutOfDateAlarmType.UPDATE_FREQUENCY);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "UpdateFrequency",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 290L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public Double getUpdateFrequency() {
-    return getProperty(TrustListOutOfDateAlarmType.UPDATE_FREQUENCY).orElse(null);
+  public @Nullable Double getUpdateFrequency() {
+    return ServerNodeSupport.read(this, getUpdateFrequencyNode(), Double.class, null);
   }
 
   @Override
-  public void setUpdateFrequency(Double value) {
-    setProperty(TrustListOutOfDateAlarmType.UPDATE_FREQUENCY, value);
+  public void setUpdateFrequency(@Nullable Double value) {
+    ServerNodeSupport.write(this, getUpdateFrequencyNode(), value, false, false, false);
+  }
+
+  @Override
+  public void validateChildren() {
+    super.validateChildren();
+    getLastUpdateTimeNode();
+    getTrustListIdNode();
+    getUpdateFrequencyNode();
+  }
+
+  @Override
+  public void setMethods(TrustListOutOfDateAlarmType.@Nullable Methods methods) {
+    setAcknowledgeHandler(methods == null ? null : methods::acknowledge);
+    setAddCommentHandler(methods == null ? null : methods::addComment);
+    if (getConfirmMethodNode() != null) {
+      setConfirmHandler(methods == null ? null : methods::confirm);
+    }
+    setDisableHandler(methods == null ? null : methods::disable);
+    setEnableHandler(methods == null ? null : methods::enable);
+    if (getGetGroupMembershipsMethodNode() != null) {
+      setGetGroupMembershipsHandler(methods == null ? null : methods::getGroupMemberships);
+    }
+    if (getPlaceInServiceMethodNode() != null) {
+      setPlaceInServiceHandler(methods == null ? null : methods::placeInService);
+    }
+    if (getPlaceInService2MethodNode() != null) {
+      setPlaceInService2Handler(methods == null ? null : methods::placeInService2);
+    }
+    if (getRemoveFromServiceMethodNode() != null) {
+      setRemoveFromServiceHandler(methods == null ? null : methods::removeFromService);
+    }
+    if (getRemoveFromService2MethodNode() != null) {
+      setRemoveFromService2Handler(methods == null ? null : methods::removeFromService2);
+    }
+    if (getResetMethodNode() != null) {
+      setResetHandler(methods == null ? null : methods::reset);
+    }
+    if (getReset2MethodNode() != null) {
+      setReset2Handler(methods == null ? null : methods::reset2);
+    }
+    if (getSilenceMethodNode() != null) {
+      setSilenceHandler(methods == null ? null : methods::silence);
+    }
+    if (getSuppressMethodNode() != null) {
+      setSuppressHandler(methods == null ? null : methods::suppress);
+    }
+    if (getSuppress2MethodNode() != null) {
+      setSuppress2Handler(methods == null ? null : methods::suppress2);
+    }
+    if (getUnsuppressMethodNode() != null) {
+      setUnsuppressHandler(methods == null ? null : methods::unsuppress);
+    }
+    if (getUnsuppress2MethodNode() != null) {
+      setUnsuppress2Handler(methods == null ? null : methods::unsuppress2);
+    }
   }
 }

@@ -1,63 +1,101 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.variables;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.structured.AxisInformation;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.4/#5.3.4.5">https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.4/#5.3.4.5</a>
+ * Server API for the CubeItemType VariableType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.4/#5.3.4.5">Model
+ *     documentation</a>
  */
 public interface CubeItemType extends ArrayItemType {
-  QualifiedProperty<AxisInformation> X_AXIS_DEFINITION =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "XAxisDefinition",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12079"),
-          -1,
-          AxisInformation.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 12057L);
 
-  QualifiedProperty<AxisInformation> Y_AXIS_DEFINITION =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "YAxisDefinition",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12079"),
-          -1,
-          AxisInformation.class);
+  /**
+   * Returns the mandatory XAxisDefinition child, a PropertyType with DataType AxisInformation.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getXAxisDefinitionNode();
 
-  QualifiedProperty<AxisInformation> Z_AXIS_DEFINITION =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ZAxisDefinition",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12079"),
-          -1,
-          AxisInformation.class);
+  /**
+   * Returns the Value of the XAxisDefinition child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable AxisInformation getXAxisDefinition();
 
-  AxisInformation getXAxisDefinition();
+  /**
+   * Sets the Value of the XAxisDefinition child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setXAxisDefinition(@Nullable AxisInformation value);
 
-  void setXAxisDefinition(AxisInformation value);
+  /**
+   * Returns the mandatory YAxisDefinition child, a PropertyType with DataType AxisInformation.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getYAxisDefinitionNode();
 
-  PropertyType getXAxisDefinitionNode();
+  /**
+   * Returns the Value of the YAxisDefinition child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable AxisInformation getYAxisDefinition();
 
-  AxisInformation getYAxisDefinition();
+  /**
+   * Sets the Value of the YAxisDefinition child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setYAxisDefinition(@Nullable AxisInformation value);
 
-  void setYAxisDefinition(AxisInformation value);
+  /**
+   * Returns the mandatory ZAxisDefinition child, a PropertyType with DataType AxisInformation.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getZAxisDefinitionNode();
 
-  PropertyType getYAxisDefinitionNode();
+  /**
+   * Returns the Value of the ZAxisDefinition child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable AxisInformation getZAxisDefinition();
 
-  AxisInformation getZAxisDefinition();
+  /**
+   * Sets the Value of the ZAxisDefinition child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setZAxisDefinition(@Nullable AxisInformation value);
 
-  void setZAxisDefinition(AxisInformation value);
+  /**
+   * Returns this node's Value.
+   *
+   * @throws UaRuntimeException if the Value does not convert.
+   */
+  @Nullable Variant getTypedValue();
 
-  PropertyType getZAxisDefinitionNode();
+  /**
+   * Sets this node's Value.
+   *
+   * @throws UaRuntimeException if the value does not convert.
+   */
+  void setTypedValue(@Nullable Variant value);
 }

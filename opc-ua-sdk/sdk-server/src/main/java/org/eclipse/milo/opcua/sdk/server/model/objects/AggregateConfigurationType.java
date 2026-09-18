@@ -1,78 +1,110 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part13/4.2.1/#4.2.1.2">https://reference.opcfoundation.org/v105/Core/docs/Part13/4.2.1/#4.2.1.2</a>
+ * Server API for the AggregateConfigurationType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part13/4.2.1/#4.2.1.2">Model
+ *     documentation</a>
  */
 public interface AggregateConfigurationType extends BaseObjectType {
-  QualifiedProperty<Boolean> TREAT_UNCERTAIN_AS_BAD =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "TreatUncertainAsBad",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 11187L);
 
-  QualifiedProperty<UByte> PERCENT_DATA_BAD =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "PercentDataBad",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=3"),
-          -1,
-          UByte.class);
+  /**
+   * Returns the mandatory PercentDataBad child, a PropertyType with DataType Byte.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getPercentDataBadNode();
 
-  QualifiedProperty<UByte> PERCENT_DATA_GOOD =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "PercentDataGood",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=3"),
-          -1,
-          UByte.class);
+  /**
+   * Returns the Value of the PercentDataBad child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UByte getPercentDataBad();
 
-  QualifiedProperty<Boolean> USE_SLOPED_EXTRAPOLATION =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "UseSlopedExtrapolation",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
+  /**
+   * Sets the Value of the PercentDataBad child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setPercentDataBad(@Nullable UByte value);
 
-  Boolean getTreatUncertainAsBad();
+  /**
+   * Returns the mandatory PercentDataGood child, a PropertyType with DataType Byte.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getPercentDataGoodNode();
 
-  void setTreatUncertainAsBad(Boolean value);
+  /**
+   * Returns the Value of the PercentDataGood child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UByte getPercentDataGood();
 
-  PropertyType getTreatUncertainAsBadNode();
+  /**
+   * Sets the Value of the PercentDataGood child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setPercentDataGood(@Nullable UByte value);
 
-  UByte getPercentDataBad();
+  /**
+   * Returns the mandatory TreatUncertainAsBad child, a PropertyType with DataType Boolean.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getTreatUncertainAsBadNode();
 
-  void setPercentDataBad(UByte value);
+  /**
+   * Returns the Value of the TreatUncertainAsBad child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Boolean getTreatUncertainAsBad();
 
-  PropertyType getPercentDataBadNode();
+  /**
+   * Sets the Value of the TreatUncertainAsBad child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setTreatUncertainAsBad(@Nullable Boolean value);
 
-  UByte getPercentDataGood();
+  /**
+   * Returns the mandatory UseSlopedExtrapolation child, a PropertyType with DataType Boolean.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getUseSlopedExtrapolationNode();
 
-  void setPercentDataGood(UByte value);
+  /**
+   * Returns the Value of the UseSlopedExtrapolation child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Boolean getUseSlopedExtrapolation();
 
-  PropertyType getPercentDataGoodNode();
-
-  Boolean getUseSlopedExtrapolation();
-
-  void setUseSlopedExtrapolation(Boolean value);
-
-  PropertyType getUseSlopedExtrapolationNode();
+  /**
+   * Sets the Value of the UseSlopedExtrapolation child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setUseSlopedExtrapolation(@Nullable Boolean value);
 }

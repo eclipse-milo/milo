@@ -1,20 +1,10 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import java.util.Optional;
 import java.util.UUID;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -25,7 +15,15 @@ import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.UadpDataSetMessageContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.UadpNetworkMessageContentMask;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link UadpDataSetReaderMessageType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.2.1/#9.2.1.3">Model
+ *     documentation</a>
+ */
 public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNode
     implements UadpDataSetReaderMessageType {
   public UadpDataSetReaderMessageTypeNode(
@@ -33,12 +31,36 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions);
+  }
+
+  public UadpDataSetReaderMessageTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         context,
@@ -54,180 +76,226 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
         eventNotifier);
   }
 
-  public UadpDataSetReaderMessageTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions);
-  }
-
-  @Override
-  public PropertyTypeNode getGroupVersionNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(UadpDataSetReaderMessageType.GROUP_VERSION);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public UInteger getGroupVersion() {
-    return getProperty(UadpDataSetReaderMessageType.GROUP_VERSION).orElse(null);
-  }
-
-  @Override
-  public void setGroupVersion(UInteger value) {
-    setProperty(UadpDataSetReaderMessageType.GROUP_VERSION, value);
-  }
-
-  @Override
-  public PropertyTypeNode getNetworkMessageNumberNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(UadpDataSetReaderMessageType.NETWORK_MESSAGE_NUMBER);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public UShort getNetworkMessageNumber() {
-    return getProperty(UadpDataSetReaderMessageType.NETWORK_MESSAGE_NUMBER).orElse(null);
-  }
-
-  @Override
-  public void setNetworkMessageNumber(UShort value) {
-    setProperty(UadpDataSetReaderMessageType.NETWORK_MESSAGE_NUMBER, value);
-  }
-
-  @Override
-  public PropertyTypeNode getDataSetOffsetNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(UadpDataSetReaderMessageType.DATA_SET_OFFSET);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public UShort getDataSetOffset() {
-    return getProperty(UadpDataSetReaderMessageType.DATA_SET_OFFSET).orElse(null);
-  }
-
-  @Override
-  public void setDataSetOffset(UShort value) {
-    setProperty(UadpDataSetReaderMessageType.DATA_SET_OFFSET, value);
-  }
-
   @Override
   public PropertyTypeNode getDataSetClassIdNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(UadpDataSetReaderMessageType.DATA_SET_CLASS_ID);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "DataSetClassId",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 14L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public UUID getDataSetClassId() {
-    return getProperty(UadpDataSetReaderMessageType.DATA_SET_CLASS_ID).orElse(null);
+  public @Nullable UUID getDataSetClassId() {
+    return ServerNodeSupport.read(this, getDataSetClassIdNode(), UUID.class, null);
   }
 
   @Override
-  public void setDataSetClassId(UUID value) {
-    setProperty(UadpDataSetReaderMessageType.DATA_SET_CLASS_ID, value);
-  }
-
-  @Override
-  public PropertyTypeNode getNetworkMessageContentMaskNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(UadpDataSetReaderMessageType.NETWORK_MESSAGE_CONTENT_MASK);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public UadpNetworkMessageContentMask getNetworkMessageContentMask() {
-    return getProperty(UadpDataSetReaderMessageType.NETWORK_MESSAGE_CONTENT_MASK).orElse(null);
-  }
-
-  @Override
-  public void setNetworkMessageContentMask(UadpNetworkMessageContentMask value) {
-    setProperty(UadpDataSetReaderMessageType.NETWORK_MESSAGE_CONTENT_MASK, value);
+  public void setDataSetClassId(@Nullable UUID value) {
+    ServerNodeSupport.write(this, getDataSetClassIdNode(), value, false, false, false);
   }
 
   @Override
   public PropertyTypeNode getDataSetMessageContentMaskNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(UadpDataSetReaderMessageType.DATA_SET_MESSAGE_CONTENT_MASK);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "DataSetMessageContentMask",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 15646L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public UadpDataSetMessageContentMask getDataSetMessageContentMask() {
-    return getProperty(UadpDataSetReaderMessageType.DATA_SET_MESSAGE_CONTENT_MASK).orElse(null);
+  public @Nullable UadpDataSetMessageContentMask getDataSetMessageContentMask() {
+    return ServerNodeSupport.read(
+        this, getDataSetMessageContentMaskNode(), UadpDataSetMessageContentMask.class, null);
   }
 
   @Override
-  public void setDataSetMessageContentMask(UadpDataSetMessageContentMask value) {
-    setProperty(UadpDataSetReaderMessageType.DATA_SET_MESSAGE_CONTENT_MASK, value);
+  public void setDataSetMessageContentMask(@Nullable UadpDataSetMessageContentMask value) {
+    ServerNodeSupport.write(this, getDataSetMessageContentMaskNode(), value, false, false, false);
   }
 
   @Override
-  public PropertyTypeNode getPublishingIntervalNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(UadpDataSetReaderMessageType.PUBLISHING_INTERVAL);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public PropertyTypeNode getDataSetOffsetNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "DataSetOffset",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 5L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public Double getPublishingInterval() {
-    return getProperty(UadpDataSetReaderMessageType.PUBLISHING_INTERVAL).orElse(null);
+  public @Nullable UShort getDataSetOffset() {
+    return ServerNodeSupport.read(this, getDataSetOffsetNode(), UShort.class, null);
   }
 
   @Override
-  public void setPublishingInterval(Double value) {
-    setProperty(UadpDataSetReaderMessageType.PUBLISHING_INTERVAL, value);
+  public void setDataSetOffset(@Nullable UShort value) {
+    ServerNodeSupport.write(this, getDataSetOffsetNode(), value, false, false, false);
+  }
+
+  @Override
+  public PropertyTypeNode getGroupVersionNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "GroupVersion",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 20998L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable UInteger getGroupVersion() {
+    return ServerNodeSupport.read(this, getGroupVersionNode(), UInteger.class, null);
+  }
+
+  @Override
+  public void setGroupVersion(@Nullable UInteger value) {
+    ServerNodeSupport.write(this, getGroupVersionNode(), value, false, false, false);
+  }
+
+  @Override
+  public PropertyTypeNode getNetworkMessageContentMaskNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "NetworkMessageContentMask",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 15642L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable UadpNetworkMessageContentMask getNetworkMessageContentMask() {
+    return ServerNodeSupport.read(
+        this, getNetworkMessageContentMaskNode(), UadpNetworkMessageContentMask.class, null);
+  }
+
+  @Override
+  public void setNetworkMessageContentMask(@Nullable UadpNetworkMessageContentMask value) {
+    ServerNodeSupport.write(this, getNetworkMessageContentMaskNode(), value, false, false, false);
+  }
+
+  @Override
+  public PropertyTypeNode getNetworkMessageNumberNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "NetworkMessageNumber",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 5L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable UShort getNetworkMessageNumber() {
+    return ServerNodeSupport.read(this, getNetworkMessageNumberNode(), UShort.class, null);
+  }
+
+  @Override
+  public void setNetworkMessageNumber(@Nullable UShort value) {
+    ServerNodeSupport.write(this, getNetworkMessageNumberNode(), value, false, false, false);
   }
 
   @Override
   public PropertyTypeNode getProcessingOffsetNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(UadpDataSetReaderMessageType.PROCESSING_OFFSET);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "ProcessingOffset",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 290L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public Double getProcessingOffset() {
-    return getProperty(UadpDataSetReaderMessageType.PROCESSING_OFFSET).orElse(null);
+  public @Nullable Double getProcessingOffset() {
+    return ServerNodeSupport.read(this, getProcessingOffsetNode(), Double.class, null);
   }
 
   @Override
-  public void setProcessingOffset(Double value) {
-    setProperty(UadpDataSetReaderMessageType.PROCESSING_OFFSET, value);
+  public void setProcessingOffset(@Nullable Double value) {
+    ServerNodeSupport.write(this, getProcessingOffsetNode(), value, false, false, false);
+  }
+
+  @Override
+  public PropertyTypeNode getPublishingIntervalNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "PublishingInterval",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 290L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable Double getPublishingInterval() {
+    return ServerNodeSupport.read(this, getPublishingIntervalNode(), Double.class, null);
+  }
+
+  @Override
+  public void setPublishingInterval(@Nullable Double value) {
+    ServerNodeSupport.write(this, getPublishingIntervalNode(), value, false, false, false);
   }
 
   @Override
   public PropertyTypeNode getReceiveOffsetNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(UadpDataSetReaderMessageType.RECEIVE_OFFSET);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "ReceiveOffset",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 290L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public Double getReceiveOffset() {
-    return getProperty(UadpDataSetReaderMessageType.RECEIVE_OFFSET).orElse(null);
+  public @Nullable Double getReceiveOffset() {
+    return ServerNodeSupport.read(this, getReceiveOffsetNode(), Double.class, null);
   }
 
   @Override
-  public void setReceiveOffset(Double value) {
-    setProperty(UadpDataSetReaderMessageType.RECEIVE_OFFSET, value);
+  public void setReceiveOffset(@Nullable Double value) {
+    ServerNodeSupport.write(this, getReceiveOffsetNode(), value, false, false, false);
+  }
+
+  @Override
+  public void validateChildren() {
+    super.validateChildren();
+    getDataSetClassIdNode();
+    getDataSetMessageContentMaskNode();
+    getDataSetOffsetNode();
+    getGroupVersionNode();
+    getNetworkMessageContentMaskNode();
+    getNetworkMessageNumberNode();
+    getProcessingOffsetNode();
+    getPublishingIntervalNode();
+    getReceiveOffsetNode();
   }
 }

@@ -1,25 +1,43 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.server.model.variables.BaseDataVariableType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.BaseDataVariableTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part10/5.2.5/#5.2.5.2">https://reference.opcfoundation.org/v105/Core/docs/Part10/5.2.5/#5.2.5.2</a>
+ * Server API for the ProgramTransitionEventType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part10/5.2.5/#5.2.5.2">Model
+ *     documentation</a>
  */
 public interface ProgramTransitionEventType extends TransitionEventType {
-  BaseDataVariableType getIntermediateResultNode();
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2378L);
 
-  Object getIntermediateResult();
+  /**
+   * Returns the mandatory IntermediateResult child, a BaseDataVariableType with DataType
+   * BaseDataType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  BaseDataVariableTypeNode getIntermediateResultNode();
 
-  void setIntermediateResult(Object value);
+  /**
+   * Returns the Value of the IntermediateResult child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Variant getIntermediateResult();
+
+  /**
+   * Sets the Value of the IntermediateResult child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setIntermediateResult(@Nullable Variant value);
 }

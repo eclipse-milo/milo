@@ -227,8 +227,8 @@ public class NodeInstantiatorApplyTest {
       assertTrue(result.node(BrowsePath.of(new QualifiedName(0, "EngineeringUnits"))).isPresent());
 
       // Generated typed getters resolve planned children through the committed references.
-      assertNotNull(root.getEuRangeNode());
-      assertNotNull(root.getEngineeringUnitsNode());
+      assertNotNull(root.getEURangeNode());
+      assertNotNull(root.getEngineeringUnits_Node());
 
       assertTrue(hookInvocations.get() > 0);
       assertEquals(NodeManager.StorageGuarantee.ATOMIC, result.storageGuarantee());

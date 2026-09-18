@@ -1,261 +1,215 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.core.nodes.MethodNode;
+import org.eclipse.milo.opcua.sdk.core.model.methods.LogObjectTypeGetRecords;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
-import org.eclipse.milo.opcua.sdk.server.methods.Out;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
-import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.types.structured.LogRecordMask;
-import org.eclipse.milo.opcua.stack.core.types.structured.LogRecordsDataType;
-import org.eclipse.milo.opcua.stack.core.util.Lazy;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part26/5.2">https://reference.opcfoundation.org/v105/Core/docs/Part26/5.2</a>
+ * Server API for the LogObjectType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part26/5.2">Model
+ *     documentation</a>
  */
 public interface LogObjectType extends BaseObjectType {
-  QualifiedProperty<UInteger> MAX_RECORDS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxRecords",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 19352L);
 
-  QualifiedProperty<Double> MAX_STORAGE_DURATION =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxStorageDuration",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
-          -1,
-          Double.class);
+  /**
+   * Returns the optional MaxRecords child, a PropertyType with DataType UInt32.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getMaxRecordsNode();
 
-  QualifiedProperty<UShort> MINIMUM_SEVERITY =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MinimumSeverity",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-          -1,
-          UShort.class);
+  /**
+   * Returns the Value of the MaxRecords child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getMaxRecords();
 
-  UInteger getMaxRecords();
+  /**
+   * Sets the Value of the MaxRecords child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMaxRecords(@Nullable UInteger value);
 
-  void setMaxRecords(UInteger value);
+  /**
+   * Returns the optional MaxStorageDuration child, a PropertyType with DataType Duration.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getMaxStorageDurationNode();
 
-  PropertyType getMaxRecordsNode();
+  /**
+   * Returns the Value of the MaxStorageDuration child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Double getMaxStorageDuration();
 
-  Double getMaxStorageDuration();
+  /**
+   * Sets the Value of the MaxStorageDuration child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMaxStorageDuration(@Nullable Double value);
 
-  void setMaxStorageDuration(Double value);
+  /**
+   * Returns the optional MinimumSeverity child, a PropertyType with DataType UInt16.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getMinimumSeverityNode();
 
-  PropertyType getMaxStorageDurationNode();
+  /**
+   * Returns the Value of the MinimumSeverity child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UShort getMinimumSeverity();
 
-  UShort getMinimumSeverity();
+  /**
+   * Sets the Value of the MinimumSeverity child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMinimumSeverity(@Nullable UShort value);
 
-  void setMinimumSeverity(UShort value);
+  /**
+   * Returns the mandatory GetRecords Method node.
+   *
+   * @throws UaRuntimeException if the Method is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part26/5.3">Model
+   *     documentation</a>
+   */
+  UaMethodNode getGetRecordsMethodNode();
 
-  PropertyType getMinimumSeverityNode();
+  /**
+   * Sets this instance's GetRecords handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setGetRecordsHandler(@Nullable GetRecordsHandler handler);
 
-  MethodNode getGetRecordsMethodNode();
+  /**
+   * Returns the optional ReleaseContinuationPoint Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part26/5.4">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getReleaseContinuationPointMethodNode();
 
-  MethodNode getReleaseContinuationPointMethodNode();
+  /**
+   * Sets this instance's ReleaseContinuationPoint handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setReleaseContinuationPointHandler(@Nullable ReleaseContinuationPointHandler handler);
 
-  abstract class GetRecordsMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+  /**
+   * Sets this instance's Method handlers, including inherited handlers, from one implementation;
+   * null clears them and restores Method-node fallback. Absent optional Methods are skipped.
+   * Changes are applied in order; a failure does not roll back earlier changes.
+   *
+   * @throws UaRuntimeException if a mandatory Method is absent, or a Method is ambiguous or
+   *     incompatible.
+   */
+  void setMethods(@Nullable Methods methods);
 
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-    public GetRecordsMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "StartTime",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=13")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "EndTime",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=13")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "MaxReturnRecords",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "MinimumSeverity",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "RequestMask",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=19749")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "ContinuationPointIn",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "Results",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=19745")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "ContinuationPointOut",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      DateTime startTime = (DateTime) inputValues[0].getValue();
-      DateTime endTime = (DateTime) inputValues[1].getValue();
-      UInteger maxReturnRecords = (UInteger) inputValues[2].getValue();
-      UShort minimumSeverity = (UShort) inputValues[3].getValue();
-      LogRecordMask requestMask = (LogRecordMask) inputValues[4].getValue();
-      ByteString continuationPointIn = (ByteString) inputValues[5].getValue();
-      Out<LogRecordsDataType> results = new Out<>();
-      Out<ByteString> continuationPointOut = new Out<>();
-      invoke(
-          context,
-          startTime,
-          endTime,
-          maxReturnRecords,
-          minimumSeverity,
-          requestMask,
-          continuationPointIn,
-          results,
-          continuationPointOut);
-      return new Variant[] {new Variant(results.get()), new Variant(continuationPointOut.get())};
-    }
-
-    protected abstract void invoke(
+  /**
+   * Handles calls to the GetRecords Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part26/5.3">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface GetRecordsHandler {
+    /**
+     * Handles a call to the GetRecords Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    LogObjectTypeGetRecords.Outputs getRecords(
         AbstractMethodInvocationHandler.InvocationContext context,
-        DateTime startTime,
-        DateTime endTime,
-        UInteger maxReturnRecords,
-        UShort minimumSeverity,
-        LogRecordMask requestMask,
-        ByteString continuationPointIn,
-        Out<LogRecordsDataType> results,
-        Out<ByteString> continuationPointOut)
+        @Nullable DateTime startTime,
+        @Nullable DateTime endTime,
+        @Nullable UInteger maxReturnRecords,
+        @Nullable UShort minimumSeverity,
+        @Nullable LogRecordMask requestMask,
+        @Nullable ByteString continuationPointIn)
         throws UaException;
   }
 
-  abstract class ReleaseContinuationPointMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    public ReleaseContinuationPointMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "ContinuationPointIn",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      ByteString continuationPointIn = (ByteString) inputValues[0].getValue();
-      invoke(context, continuationPointIn);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, ByteString continuationPointIn)
+  /**
+   * Handles calls to the ReleaseContinuationPoint Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part26/5.4">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface ReleaseContinuationPointHandler {
+    /**
+     * Handles a call to the ReleaseContinuationPoint Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void releaseContinuationPoint(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable ByteString continuationPointIn)
         throws UaException;
+  }
+
+  /** Implements this type's Methods. Unimplemented Methods report Bad_NotImplemented. */
+  interface Methods {
+    /** Handles a call to the GetRecords Method; see {@link GetRecordsHandler#getRecords}. */
+    default LogObjectTypeGetRecords.Outputs getRecords(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable DateTime startTime,
+        @Nullable DateTime endTime,
+        @Nullable UInteger maxReturnRecords,
+        @Nullable UShort minimumSeverity,
+        @Nullable LogRecordMask requestMask,
+        @Nullable ByteString continuationPointIn)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /**
+     * Handles a call to the ReleaseContinuationPoint Method; see {@link
+     * ReleaseContinuationPointHandler#releaseContinuationPoint}.
+     */
+    default void releaseContinuationPoint(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable ByteString continuationPointIn)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
   }
 }

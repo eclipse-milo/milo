@@ -1,31 +1,27 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.model.variables.BaseDataVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.FiniteStateVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.FiniteTransitionVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link FiniteStateMachineType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part16/4.4.5">Model
+ *     documentation</a>
+ */
 public class FiniteStateMachineTypeNode extends StateMachineTypeNode
     implements FiniteStateMachineType {
   public FiniteStateMachineTypeNode(
@@ -33,12 +29,36 @@ public class FiniteStateMachineTypeNode extends StateMachineTypeNode
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions);
+  }
+
+  public FiniteStateMachineTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         context,
@@ -54,111 +74,98 @@ public class FiniteStateMachineTypeNode extends StateMachineTypeNode
         eventNotifier);
   }
 
-  public FiniteStateMachineTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions);
+  @Override
+  public @Nullable BaseDataVariableTypeNode getAvailableStatesNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "AvailableStates",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 17L),
+        1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public NodeId @Nullable [] getAvailableStates() {
+    return ServerNodeSupport.readArray(this, getAvailableStatesNode(), NodeId.class, null);
+  }
+
+  @Override
+  public void setAvailableStates(NodeId @Nullable [] value) {
+    ServerNodeSupport.write(
+        this,
+        getAvailableStatesNode(),
+        Namespaces.OPC_UA,
+        "AvailableStates",
+        value,
+        true,
+        false,
+        false);
+  }
+
+  @Override
+  public @Nullable BaseDataVariableTypeNode getAvailableTransitionsNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "AvailableTransitions",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 17L),
+        1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public NodeId @Nullable [] getAvailableTransitions() {
+    return ServerNodeSupport.readArray(this, getAvailableTransitionsNode(), NodeId.class, null);
+  }
+
+  @Override
+  public void setAvailableTransitions(NodeId @Nullable [] value) {
+    ServerNodeSupport.write(
+        this,
+        getAvailableTransitionsNode(),
+        Namespaces.OPC_UA,
+        "AvailableTransitions",
+        value,
+        true,
+        false,
+        false);
   }
 
   @Override
   public FiniteStateVariableTypeNode getCurrentStateNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "CurrentState");
-    return (FiniteStateVariableTypeNode) component.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "CurrentState",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 2760L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 21L),
+        -1,
+        FiniteStateVariableTypeNode.class);
   }
 
   @Override
-  public LocalizedText getCurrentState() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "CurrentState");
-    return component
-        .map(node -> (LocalizedText) node.getValue().getValue().getValue())
-        .orElse(null);
+  public @Nullable FiniteTransitionVariableTypeNode getLastTransitionNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "LastTransition",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 2767L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 21L),
+        -1,
+        FiniteTransitionVariableTypeNode.class);
   }
 
   @Override
-  public void setCurrentState(LocalizedText value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "CurrentState")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public FiniteTransitionVariableTypeNode getLastTransitionNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "LastTransition");
-    return (FiniteTransitionVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public LocalizedText getLastTransition() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "LastTransition");
-    return component
-        .map(node -> (LocalizedText) node.getValue().getValue().getValue())
-        .orElse(null);
-  }
-
-  @Override
-  public void setLastTransition(LocalizedText value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "LastTransition")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getAvailableStatesNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "AvailableStates");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public NodeId[] getAvailableStates() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "AvailableStates");
-    return component.map(node -> (NodeId[]) node.getValue().getValue().getValue()).orElse(null);
-  }
-
-  @Override
-  public void setAvailableStates(NodeId[] value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "AvailableStates")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getAvailableTransitionsNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "AvailableTransitions");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public NodeId[] getAvailableTransitions() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "AvailableTransitions");
-    return component.map(node -> (NodeId[]) node.getValue().getValue().getValue()).orElse(null);
-  }
-
-  @Override
-  public void setAvailableTransitions(NodeId[] value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "AvailableTransitions")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void validateChildren() {
+    super.validateChildren();
+    getAvailableStatesNode();
+    getAvailableTransitionsNode();
   }
 }

@@ -1,506 +1,465 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.core.nodes.MethodNode;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
-import org.eclipse.milo.opcua.sdk.server.methods.Out;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
-import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
-import org.eclipse.milo.opcua.stack.core.util.Lazy;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.2.1">https://reference.opcfoundation.org/v105/Core/docs/Part20/4.2.1</a>
+ * Server API for the FileType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.2.1">Model
+ *     documentation</a>
  */
 public interface FileType extends BaseObjectType {
-  QualifiedProperty<ULong> SIZE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Size",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=9"),
-          -1,
-          ULong.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 11575L);
 
-  QualifiedProperty<Boolean> WRITABLE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Writable",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
+  /**
+   * Returns the optional LastModifiedTime child, a PropertyType with DataType DateTime.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getLastModifiedTimeNode();
 
-  QualifiedProperty<Boolean> USER_WRITABLE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "UserWritable",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
+  /**
+   * Returns the Value of the LastModifiedTime child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable DateTime getLastModifiedTime();
 
-  QualifiedProperty<UShort> OPEN_COUNT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "OpenCount",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-          -1,
-          UShort.class);
+  /**
+   * Sets the Value of the LastModifiedTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setLastModifiedTime(@Nullable DateTime value);
 
-  QualifiedProperty<String> MIME_TYPE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MimeType",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  /**
+   * Returns the optional MaxByteStringLength child, a PropertyType with DataType UInt32.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getMaxByteStringLengthNode();
 
-  QualifiedProperty<UInteger> MAX_BYTE_STRING_LENGTH =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxByteStringLength",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  /**
+   * Returns the Value of the MaxByteStringLength child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getMaxByteStringLength();
 
-  QualifiedProperty<DateTime> LAST_MODIFIED_TIME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "LastModifiedTime",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=13"),
-          -1,
-          DateTime.class);
+  /**
+   * Sets the Value of the MaxByteStringLength child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMaxByteStringLength(@Nullable UInteger value);
 
-  ULong getSize();
+  /**
+   * Returns the optional MimeType child, a PropertyType with DataType String.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getMimeTypeNode();
 
-  void setSize(ULong value);
+  /**
+   * Returns the Value of the MimeType child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getMimeType();
 
-  PropertyType getSizeNode();
+  /**
+   * Sets the Value of the MimeType child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMimeType(@Nullable String value);
 
-  Boolean getWritable();
+  /**
+   * Returns the mandatory OpenCount child, a PropertyType with DataType UInt16.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getOpenCountNode();
 
-  void setWritable(Boolean value);
+  /**
+   * Returns the Value of the OpenCount child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UShort getOpenCount();
 
-  PropertyType getWritableNode();
+  /**
+   * Sets the Value of the OpenCount child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setOpenCount(@Nullable UShort value);
 
-  Boolean getUserWritable();
+  /**
+   * Returns the mandatory Size child, a PropertyType with DataType UInt64.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getSizeNode();
 
-  void setUserWritable(Boolean value);
+  /**
+   * Returns the Value of the Size child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable ULong getSize();
 
-  PropertyType getUserWritableNode();
+  /**
+   * Sets the Value of the Size child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setSize(@Nullable ULong value);
 
-  UShort getOpenCount();
+  /**
+   * Returns the mandatory UserWritable child, a PropertyType with DataType Boolean.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getUserWritableNode();
 
-  void setOpenCount(UShort value);
+  /**
+   * Returns the Value of the UserWritable child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Boolean getUserWritable();
 
-  PropertyType getOpenCountNode();
+  /**
+   * Sets the Value of the UserWritable child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setUserWritable(@Nullable Boolean value);
 
-  String getMimeType();
+  /**
+   * Returns the mandatory Writable child, a PropertyType with DataType Boolean.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getWritableNode();
 
-  void setMimeType(String value);
+  /**
+   * Returns the Value of the Writable child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Boolean getWritable();
 
-  PropertyType getMimeTypeNode();
+  /**
+   * Sets the Value of the Writable child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setWritable(@Nullable Boolean value);
 
-  UInteger getMaxByteStringLength();
+  /**
+   * Returns the mandatory Close Method node.
+   *
+   * @throws UaRuntimeException if the Method is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.2.3">Model
+   *     documentation</a>
+   */
+  UaMethodNode getCloseMethodNode();
 
-  void setMaxByteStringLength(UInteger value);
+  /**
+   * Sets this instance's Close handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setCloseHandler(@Nullable CloseHandler handler);
 
-  PropertyType getMaxByteStringLengthNode();
+  /**
+   * Returns the mandatory GetPosition Method node.
+   *
+   * @throws UaRuntimeException if the Method is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.2.6">Model
+   *     documentation</a>
+   */
+  UaMethodNode getGetPositionMethodNode();
 
-  DateTime getLastModifiedTime();
+  /**
+   * Sets this instance's GetPosition handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setGetPositionHandler(@Nullable GetPositionHandler handler);
 
-  void setLastModifiedTime(DateTime value);
+  /**
+   * Returns the mandatory Open Method node.
+   *
+   * @throws UaRuntimeException if the Method is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.2.2">Model
+   *     documentation</a>
+   */
+  UaMethodNode getOpenMethodNode();
 
-  PropertyType getLastModifiedTimeNode();
+  /**
+   * Sets this instance's Open handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setOpenHandler(@Nullable OpenHandler handler);
 
-  MethodNode getOpenMethodNode();
+  /**
+   * Returns the mandatory Read Method node.
+   *
+   * @throws UaRuntimeException if the Method is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.2.4">Model
+   *     documentation</a>
+   */
+  UaMethodNode getReadMethodNode();
 
-  MethodNode getCloseMethodNode();
+  /**
+   * Sets this instance's Read handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setReadHandler(@Nullable ReadHandler handler);
 
-  MethodNode getReadMethodNode();
+  /**
+   * Returns the mandatory SetPosition Method node.
+   *
+   * @throws UaRuntimeException if the Method is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.2.7">Model
+   *     documentation</a>
+   */
+  UaMethodNode getSetPositionMethodNode();
 
-  MethodNode getWriteMethodNode();
+  /**
+   * Sets this instance's SetPosition handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setSetPositionHandler(@Nullable SetPositionHandler handler);
 
-  MethodNode getGetPositionMethodNode();
+  /**
+   * Returns the mandatory Write Method node.
+   *
+   * @throws UaRuntimeException if the Method is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.2.5">Model
+   *     documentation</a>
+   */
+  UaMethodNode getWriteMethodNode();
 
-  MethodNode getSetPositionMethodNode();
+  /**
+   * Sets this instance's Write handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setWriteHandler(@Nullable WriteHandler handler);
 
-  abstract class OpenMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+  /**
+   * Sets this instance's Method handlers, including inherited handlers, from one implementation;
+   * null clears them and restores Method-node fallback. Absent optional Methods are skipped.
+   * Changes are applied in order; a failure does not roll back earlier changes.
+   *
+   * @throws UaRuntimeException if a mandatory Method is absent, or a Method is ambiguous or
+   *     incompatible.
+   */
+  void setMethods(@Nullable Methods methods);
 
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-    public OpenMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "Mode",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=3")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "FileHandle",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      UByte mode = (UByte) inputValues[0].getValue();
-      Out<UInteger> fileHandle = new Out<>();
-      invoke(context, mode, fileHandle);
-      return new Variant[] {new Variant(fileHandle.get())};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context,
-        UByte mode,
-        Out<UInteger> fileHandle)
+  /**
+   * Handles calls to the Close Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.2.3">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface CloseHandler {
+    /**
+     * Handles a call to the Close Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void close(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable UInteger fileHandle)
         throws UaException;
   }
 
-  abstract class CloseMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    public CloseMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "FileHandle",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      UInteger fileHandle = (UInteger) inputValues[0].getValue();
-      invoke(context, fileHandle);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, UInteger fileHandle)
+  /**
+   * Handles calls to the GetPosition Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.2.6">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface GetPositionHandler {
+    /**
+     * Handles a call to the GetPosition Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    @Nullable ULong getPosition(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable UInteger fileHandle)
         throws UaException;
   }
 
-  abstract class ReadMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-    public ReadMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "FileHandle",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "Length",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=6")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "Data",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      UInteger fileHandle = (UInteger) inputValues[0].getValue();
-      Integer length = (Integer) inputValues[1].getValue();
-      Out<ByteString> data = new Out<>();
-      invoke(context, fileHandle, length, data);
-      return new Variant[] {new Variant(data.get())};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context,
-        UInteger fileHandle,
-        Integer length,
-        Out<ByteString> data)
+  /**
+   * Handles calls to the Open Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.2.2">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface OpenHandler {
+    /**
+     * Handles a call to the Open Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    @Nullable UInteger open(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable UByte mode)
         throws UaException;
   }
 
-  abstract class WriteMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    public WriteMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "FileHandle",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "Data",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      UInteger fileHandle = (UInteger) inputValues[0].getValue();
-      ByteString data = (ByteString) inputValues[1].getValue();
-      invoke(context, fileHandle, data);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(
+  /**
+   * Handles calls to the Read Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.2.4">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface ReadHandler {
+    /**
+     * Handles a call to the Read Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    @Nullable ByteString read(
         AbstractMethodInvocationHandler.InvocationContext context,
-        UInteger fileHandle,
-        ByteString data)
+        @Nullable UInteger fileHandle,
+        @Nullable Integer length)
         throws UaException;
   }
 
-  abstract class GetPositionMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-    public GetPositionMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "FileHandle",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "Position",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=9")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      UInteger fileHandle = (UInteger) inputValues[0].getValue();
-      Out<ULong> position = new Out<>();
-      invoke(context, fileHandle, position);
-      return new Variant[] {new Variant(position.get())};
-    }
-
-    protected abstract void invoke(
+  /**
+   * Handles calls to the SetPosition Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.2.7">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface SetPositionHandler {
+    /**
+     * Handles a call to the SetPosition Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void setPosition(
         AbstractMethodInvocationHandler.InvocationContext context,
-        UInteger fileHandle,
-        Out<ULong> position)
+        @Nullable UInteger fileHandle,
+        @Nullable ULong position)
         throws UaException;
   }
 
-  abstract class SetPositionMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    public SetPositionMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "FileHandle",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "Position",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=9")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      UInteger fileHandle = (UInteger) inputValues[0].getValue();
-      ULong position = (ULong) inputValues[1].getValue();
-      invoke(context, fileHandle, position);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(
+  /**
+   * Handles calls to the Write Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.2.5">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface WriteHandler {
+    /**
+     * Handles a call to the Write Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void write(
         AbstractMethodInvocationHandler.InvocationContext context,
-        UInteger fileHandle,
-        ULong position)
+        @Nullable UInteger fileHandle,
+        @Nullable ByteString data)
         throws UaException;
+  }
+
+  /** Implements this type's Methods. Unimplemented Methods report Bad_NotImplemented. */
+  interface Methods {
+    /** Handles a call to the Close Method; see {@link CloseHandler#close}. */
+    default void close(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable UInteger fileHandle)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /** Handles a call to the GetPosition Method; see {@link GetPositionHandler#getPosition}. */
+    default @Nullable ULong getPosition(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable UInteger fileHandle)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /** Handles a call to the Open Method; see {@link OpenHandler#open}. */
+    default @Nullable UInteger open(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable UByte mode)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /** Handles a call to the Read Method; see {@link ReadHandler#read}. */
+    default @Nullable ByteString read(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable UInteger fileHandle,
+        @Nullable Integer length)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /** Handles a call to the SetPosition Method; see {@link SetPositionHandler#setPosition}. */
+    default void setPosition(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable UInteger fileHandle,
+        @Nullable ULong position)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /** Handles a call to the Write Method; see {@link WriteHandler#write}. */
+    default void write(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable UInteger fileHandle,
+        @Nullable ByteString data)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
   }
 }

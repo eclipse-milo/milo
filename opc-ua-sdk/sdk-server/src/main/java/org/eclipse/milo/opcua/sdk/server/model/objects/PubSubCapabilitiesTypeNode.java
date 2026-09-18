@@ -1,19 +1,9 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -21,7 +11,15 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link PubSubCapabilitiesType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.12/#9.1.12.1">Model
+ *     documentation</a>
+ */
 public class PubSubCapabilitiesTypeNode extends BaseObjectTypeNode
     implements PubSubCapabilitiesType {
   public PubSubCapabilitiesTypeNode(
@@ -29,12 +27,36 @@ public class PubSubCapabilitiesTypeNode extends BaseObjectTypeNode
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions);
+  }
+
+  public PubSubCapabilitiesTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         context,
@@ -50,296 +72,474 @@ public class PubSubCapabilitiesTypeNode extends BaseObjectTypeNode
         eventNotifier);
   }
 
-  public PubSubCapabilitiesTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions);
+  @Override
+  public PropertyTypeNode getMaxDataSetReadersNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "MaxDataSetReaders",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getMaxPubSubConnectionsNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(PubSubCapabilitiesType.MAX_PUB_SUB_CONNECTIONS);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable UInteger getMaxDataSetReaders() {
+    return ServerNodeSupport.read(this, getMaxDataSetReadersNode(), UInteger.class, null);
   }
 
   @Override
-  public UInteger getMaxPubSubConnections() {
-    return getProperty(PubSubCapabilitiesType.MAX_PUB_SUB_CONNECTIONS).orElse(null);
-  }
-
-  @Override
-  public void setMaxPubSubConnections(UInteger value) {
-    setProperty(PubSubCapabilitiesType.MAX_PUB_SUB_CONNECTIONS, value);
-  }
-
-  @Override
-  public PropertyTypeNode getMaxWriterGroupsNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(PubSubCapabilitiesType.MAX_WRITER_GROUPS);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public UInteger getMaxWriterGroups() {
-    return getProperty(PubSubCapabilitiesType.MAX_WRITER_GROUPS).orElse(null);
-  }
-
-  @Override
-  public void setMaxWriterGroups(UInteger value) {
-    setProperty(PubSubCapabilitiesType.MAX_WRITER_GROUPS, value);
-  }
-
-  @Override
-  public PropertyTypeNode getMaxReaderGroupsNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(PubSubCapabilitiesType.MAX_READER_GROUPS);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public UInteger getMaxReaderGroups() {
-    return getProperty(PubSubCapabilitiesType.MAX_READER_GROUPS).orElse(null);
-  }
-
-  @Override
-  public void setMaxReaderGroups(UInteger value) {
-    setProperty(PubSubCapabilitiesType.MAX_READER_GROUPS, value);
+  public void setMaxDataSetReaders(@Nullable UInteger value) {
+    ServerNodeSupport.write(this, getMaxDataSetReadersNode(), value, false, false, false);
   }
 
   @Override
   public PropertyTypeNode getMaxDataSetWritersNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(PubSubCapabilitiesType.MAX_DATA_SET_WRITERS);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "MaxDataSetWriters",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public UInteger getMaxDataSetWriters() {
-    return getProperty(PubSubCapabilitiesType.MAX_DATA_SET_WRITERS).orElse(null);
+  public @Nullable UInteger getMaxDataSetWriters() {
+    return ServerNodeSupport.read(this, getMaxDataSetWritersNode(), UInteger.class, null);
   }
 
   @Override
-  public void setMaxDataSetWriters(UInteger value) {
-    setProperty(PubSubCapabilitiesType.MAX_DATA_SET_WRITERS, value);
+  public void setMaxDataSetWriters(@Nullable UInteger value) {
+    ServerNodeSupport.write(this, getMaxDataSetWritersNode(), value, false, false, false);
   }
 
   @Override
-  public PropertyTypeNode getMaxDataSetReadersNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(PubSubCapabilitiesType.MAX_DATA_SET_READERS);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable PropertyTypeNode getMaxDataSetWritersPerGroupNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "MaxDataSetWritersPerGroup",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public UInteger getMaxDataSetReaders() {
-    return getProperty(PubSubCapabilitiesType.MAX_DATA_SET_READERS).orElse(null);
+  public @Nullable UInteger getMaxDataSetWritersPerGroup() {
+    return ServerNodeSupport.read(this, getMaxDataSetWritersPerGroupNode(), UInteger.class, null);
   }
 
   @Override
-  public void setMaxDataSetReaders(UInteger value) {
-    setProperty(PubSubCapabilitiesType.MAX_DATA_SET_READERS, value);
+  public void setMaxDataSetWritersPerGroup(@Nullable UInteger value) {
+    ServerNodeSupport.write(
+        this,
+        getMaxDataSetWritersPerGroupNode(),
+        Namespaces.OPC_UA,
+        "MaxDataSetWritersPerGroup",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
   public PropertyTypeNode getMaxFieldsPerDataSetNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(PubSubCapabilitiesType.MAX_FIELDS_PER_DATA_SET);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "MaxFieldsPerDataSet",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public UInteger getMaxFieldsPerDataSet() {
-    return getProperty(PubSubCapabilitiesType.MAX_FIELDS_PER_DATA_SET).orElse(null);
+  public @Nullable UInteger getMaxFieldsPerDataSet() {
+    return ServerNodeSupport.read(this, getMaxFieldsPerDataSetNode(), UInteger.class, null);
   }
 
   @Override
-  public void setMaxFieldsPerDataSet(UInteger value) {
-    setProperty(PubSubCapabilitiesType.MAX_FIELDS_PER_DATA_SET, value);
+  public void setMaxFieldsPerDataSet(@Nullable UInteger value) {
+    ServerNodeSupport.write(this, getMaxFieldsPerDataSetNode(), value, false, false, false);
   }
 
   @Override
-  public PropertyTypeNode getMaxDataSetWritersPerGroupNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(PubSubCapabilitiesType.MAX_DATA_SET_WRITERS_PER_GROUP);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable PropertyTypeNode getMaxNetworkMessageSizeBrokerNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "MaxNetworkMessageSizeBroker",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public UInteger getMaxDataSetWritersPerGroup() {
-    return getProperty(PubSubCapabilitiesType.MAX_DATA_SET_WRITERS_PER_GROUP).orElse(null);
+  public @Nullable UInteger getMaxNetworkMessageSizeBroker() {
+    return ServerNodeSupport.read(this, getMaxNetworkMessageSizeBrokerNode(), UInteger.class, null);
   }
 
   @Override
-  public void setMaxDataSetWritersPerGroup(UInteger value) {
-    setProperty(PubSubCapabilitiesType.MAX_DATA_SET_WRITERS_PER_GROUP, value);
+  public void setMaxNetworkMessageSizeBroker(@Nullable UInteger value) {
+    ServerNodeSupport.write(
+        this,
+        getMaxNetworkMessageSizeBrokerNode(),
+        Namespaces.OPC_UA,
+        "MaxNetworkMessageSizeBroker",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
-  public PropertyTypeNode getMaxSecurityGroupsNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(PubSubCapabilitiesType.MAX_SECURITY_GROUPS);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable PropertyTypeNode getMaxNetworkMessageSizeDatagramNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "MaxNetworkMessageSizeDatagram",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public UInteger getMaxSecurityGroups() {
-    return getProperty(PubSubCapabilitiesType.MAX_SECURITY_GROUPS).orElse(null);
+  public @Nullable UInteger getMaxNetworkMessageSizeDatagram() {
+    return ServerNodeSupport.read(
+        this, getMaxNetworkMessageSizeDatagramNode(), UInteger.class, null);
   }
 
   @Override
-  public void setMaxSecurityGroups(UInteger value) {
-    setProperty(PubSubCapabilitiesType.MAX_SECURITY_GROUPS, value);
+  public void setMaxNetworkMessageSizeDatagram(@Nullable UInteger value) {
+    ServerNodeSupport.write(
+        this,
+        getMaxNetworkMessageSizeDatagramNode(),
+        Namespaces.OPC_UA,
+        "MaxNetworkMessageSizeDatagram",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
-  public PropertyTypeNode getMaxPushTargetsNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(PubSubCapabilitiesType.MAX_PUSH_TARGETS);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public PropertyTypeNode getMaxPubSubConnectionsNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "MaxPubSubConnections",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public UInteger getMaxPushTargets() {
-    return getProperty(PubSubCapabilitiesType.MAX_PUSH_TARGETS).orElse(null);
+  public @Nullable UInteger getMaxPubSubConnections() {
+    return ServerNodeSupport.read(this, getMaxPubSubConnectionsNode(), UInteger.class, null);
   }
 
   @Override
-  public void setMaxPushTargets(UInteger value) {
-    setProperty(PubSubCapabilitiesType.MAX_PUSH_TARGETS, value);
+  public void setMaxPubSubConnections(@Nullable UInteger value) {
+    ServerNodeSupport.write(this, getMaxPubSubConnectionsNode(), value, false, false, false);
   }
 
   @Override
-  public PropertyTypeNode getMaxPublishedDataSetsNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(PubSubCapabilitiesType.MAX_PUBLISHED_DATA_SETS);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable PropertyTypeNode getMaxPublishedDataSetsNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "MaxPublishedDataSets",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public UInteger getMaxPublishedDataSets() {
-    return getProperty(PubSubCapabilitiesType.MAX_PUBLISHED_DATA_SETS).orElse(null);
+  public @Nullable UInteger getMaxPublishedDataSets() {
+    return ServerNodeSupport.read(this, getMaxPublishedDataSetsNode(), UInteger.class, null);
   }
 
   @Override
-  public void setMaxPublishedDataSets(UInteger value) {
-    setProperty(PubSubCapabilitiesType.MAX_PUBLISHED_DATA_SETS, value);
+  public void setMaxPublishedDataSets(@Nullable UInteger value) {
+    ServerNodeSupport.write(
+        this,
+        getMaxPublishedDataSetsNode(),
+        Namespaces.OPC_UA,
+        "MaxPublishedDataSets",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
-  public PropertyTypeNode getMaxStandaloneSubscribedDataSetsNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(PubSubCapabilitiesType.MAX_STANDALONE_SUBSCRIBED_DATA_SETS);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable PropertyTypeNode getMaxPushTargetsNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "MaxPushTargets",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public UInteger getMaxStandaloneSubscribedDataSets() {
-    return getProperty(PubSubCapabilitiesType.MAX_STANDALONE_SUBSCRIBED_DATA_SETS).orElse(null);
+  public @Nullable UInteger getMaxPushTargets() {
+    return ServerNodeSupport.read(this, getMaxPushTargetsNode(), UInteger.class, null);
   }
 
   @Override
-  public void setMaxStandaloneSubscribedDataSets(UInteger value) {
-    setProperty(PubSubCapabilitiesType.MAX_STANDALONE_SUBSCRIBED_DATA_SETS, value);
+  public void setMaxPushTargets(@Nullable UInteger value) {
+    ServerNodeSupport.write(
+        this,
+        getMaxPushTargetsNode(),
+        Namespaces.OPC_UA,
+        "MaxPushTargets",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
-  public PropertyTypeNode getMaxNetworkMessageSizeDatagramNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(PubSubCapabilitiesType.MAX_NETWORK_MESSAGE_SIZE_DATAGRAM);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public PropertyTypeNode getMaxReaderGroupsNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "MaxReaderGroups",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public UInteger getMaxNetworkMessageSizeDatagram() {
-    return getProperty(PubSubCapabilitiesType.MAX_NETWORK_MESSAGE_SIZE_DATAGRAM).orElse(null);
+  public @Nullable UInteger getMaxReaderGroups() {
+    return ServerNodeSupport.read(this, getMaxReaderGroupsNode(), UInteger.class, null);
   }
 
   @Override
-  public void setMaxNetworkMessageSizeDatagram(UInteger value) {
-    setProperty(PubSubCapabilitiesType.MAX_NETWORK_MESSAGE_SIZE_DATAGRAM, value);
+  public void setMaxReaderGroups(@Nullable UInteger value) {
+    ServerNodeSupport.write(this, getMaxReaderGroupsNode(), value, false, false, false);
   }
 
   @Override
-  public PropertyTypeNode getMaxNetworkMessageSizeBrokerNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(PubSubCapabilitiesType.MAX_NETWORK_MESSAGE_SIZE_BROKER);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable PropertyTypeNode getMaxSecurityGroupsNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "MaxSecurityGroups",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public UInteger getMaxNetworkMessageSizeBroker() {
-    return getProperty(PubSubCapabilitiesType.MAX_NETWORK_MESSAGE_SIZE_BROKER).orElse(null);
+  public @Nullable UInteger getMaxSecurityGroups() {
+    return ServerNodeSupport.read(this, getMaxSecurityGroupsNode(), UInteger.class, null);
   }
 
   @Override
-  public void setMaxNetworkMessageSizeBroker(UInteger value) {
-    setProperty(PubSubCapabilitiesType.MAX_NETWORK_MESSAGE_SIZE_BROKER, value);
+  public void setMaxSecurityGroups(@Nullable UInteger value) {
+    ServerNodeSupport.write(
+        this,
+        getMaxSecurityGroupsNode(),
+        Namespaces.OPC_UA,
+        "MaxSecurityGroups",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
-  public PropertyTypeNode getSupportSecurityKeyPullNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(PubSubCapabilitiesType.SUPPORT_SECURITY_KEY_PULL);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable PropertyTypeNode getMaxStandaloneSubscribedDataSetsNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "MaxStandaloneSubscribedDataSets",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public Boolean getSupportSecurityKeyPull() {
-    return getProperty(PubSubCapabilitiesType.SUPPORT_SECURITY_KEY_PULL).orElse(null);
+  public @Nullable UInteger getMaxStandaloneSubscribedDataSets() {
+    return ServerNodeSupport.read(
+        this, getMaxStandaloneSubscribedDataSetsNode(), UInteger.class, null);
   }
 
   @Override
-  public void setSupportSecurityKeyPull(Boolean value) {
-    setProperty(PubSubCapabilitiesType.SUPPORT_SECURITY_KEY_PULL, value);
+  public void setMaxStandaloneSubscribedDataSets(@Nullable UInteger value) {
+    ServerNodeSupport.write(
+        this,
+        getMaxStandaloneSubscribedDataSetsNode(),
+        Namespaces.OPC_UA,
+        "MaxStandaloneSubscribedDataSets",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
-  public PropertyTypeNode getSupportSecurityKeyPushNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(PubSubCapabilitiesType.SUPPORT_SECURITY_KEY_PUSH);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public PropertyTypeNode getMaxWriterGroupsNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "MaxWriterGroups",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public Boolean getSupportSecurityKeyPush() {
-    return getProperty(PubSubCapabilitiesType.SUPPORT_SECURITY_KEY_PUSH).orElse(null);
+  public @Nullable UInteger getMaxWriterGroups() {
+    return ServerNodeSupport.read(this, getMaxWriterGroupsNode(), UInteger.class, null);
   }
 
   @Override
-  public void setSupportSecurityKeyPush(Boolean value) {
-    setProperty(PubSubCapabilitiesType.SUPPORT_SECURITY_KEY_PUSH, value);
+  public void setMaxWriterGroups(@Nullable UInteger value) {
+    ServerNodeSupport.write(this, getMaxWriterGroupsNode(), value, false, false, false);
   }
 
   @Override
-  public PropertyTypeNode getSupportSecurityKeyServerNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(PubSubCapabilitiesType.SUPPORT_SECURITY_KEY_SERVER);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable PropertyTypeNode getSupportSecurityKeyPullNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "SupportSecurityKeyPull",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public Boolean getSupportSecurityKeyServer() {
-    return getProperty(PubSubCapabilitiesType.SUPPORT_SECURITY_KEY_SERVER).orElse(null);
+  public @Nullable Boolean getSupportSecurityKeyPull() {
+    return ServerNodeSupport.read(this, getSupportSecurityKeyPullNode(), Boolean.class, null);
   }
 
   @Override
-  public void setSupportSecurityKeyServer(Boolean value) {
-    setProperty(PubSubCapabilitiesType.SUPPORT_SECURITY_KEY_SERVER, value);
+  public void setSupportSecurityKeyPull(@Nullable Boolean value) {
+    ServerNodeSupport.write(
+        this,
+        getSupportSecurityKeyPullNode(),
+        Namespaces.OPC_UA,
+        "SupportSecurityKeyPull",
+        value,
+        false,
+        false,
+        false);
+  }
+
+  @Override
+  public @Nullable PropertyTypeNode getSupportSecurityKeyPushNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "SupportSecurityKeyPush",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable Boolean getSupportSecurityKeyPush() {
+    return ServerNodeSupport.read(this, getSupportSecurityKeyPushNode(), Boolean.class, null);
+  }
+
+  @Override
+  public void setSupportSecurityKeyPush(@Nullable Boolean value) {
+    ServerNodeSupport.write(
+        this,
+        getSupportSecurityKeyPushNode(),
+        Namespaces.OPC_UA,
+        "SupportSecurityKeyPush",
+        value,
+        false,
+        false,
+        false);
+  }
+
+  @Override
+  public @Nullable PropertyTypeNode getSupportSecurityKeyServerNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "SupportSecurityKeyServer",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable Boolean getSupportSecurityKeyServer() {
+    return ServerNodeSupport.read(this, getSupportSecurityKeyServerNode(), Boolean.class, null);
+  }
+
+  @Override
+  public void setSupportSecurityKeyServer(@Nullable Boolean value) {
+    ServerNodeSupport.write(
+        this,
+        getSupportSecurityKeyServerNode(),
+        Namespaces.OPC_UA,
+        "SupportSecurityKeyServer",
+        value,
+        false,
+        false,
+        false);
+  }
+
+  @Override
+  public void validateChildren() {
+    super.validateChildren();
+    getMaxDataSetReadersNode();
+    getMaxDataSetWritersNode();
+    getMaxDataSetWritersPerGroupNode();
+    getMaxFieldsPerDataSetNode();
+    getMaxNetworkMessageSizeBrokerNode();
+    getMaxNetworkMessageSizeDatagramNode();
+    getMaxPubSubConnectionsNode();
+    getMaxPublishedDataSetsNode();
+    getMaxPushTargetsNode();
+    getMaxReaderGroupsNode();
+    getMaxSecurityGroupsNode();
+    getMaxStandaloneSubscribedDataSetsNode();
+    getMaxWriterGroupsNode();
+    getSupportSecurityKeyPullNode();
+    getSupportSecurityKeyPushNode();
+    getSupportSecurityKeyServerNode();
   }
 }

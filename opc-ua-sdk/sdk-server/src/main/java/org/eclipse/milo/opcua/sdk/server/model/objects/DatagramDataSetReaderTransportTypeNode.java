@@ -1,20 +1,9 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.nodes.ObjectNode;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -23,7 +12,15 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReceiveQosDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link DatagramDataSetReaderTransportType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.3.1/#9.3.1.4">Model
+ *     documentation</a>
+ */
 public class DatagramDataSetReaderTransportTypeNode extends DataSetReaderTransportTypeNode
     implements DatagramDataSetReaderTransportType {
   public DatagramDataSetReaderTransportTypeNode(
@@ -31,12 +28,36 @@ public class DatagramDataSetReaderTransportTypeNode extends DataSetReaderTranspo
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions);
+  }
+
+  public DatagramDataSetReaderTransportTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         context,
@@ -52,83 +73,97 @@ public class DatagramDataSetReaderTransportTypeNode extends DataSetReaderTranspo
         eventNotifier);
   }
 
-  public DatagramDataSetReaderTransportTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions);
+  @Override
+  public @Nullable NetworkAddressTypeNode getAddressNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "Address",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 21145L),
+        null,
+        -1,
+        NetworkAddressTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getQosCategoryNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(DatagramDataSetReaderTransportType.QOS_CATEGORY);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable PropertyTypeNode getDatagramQosNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "DatagramQos",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 23608L),
+        1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public String getQosCategory() {
-    return getProperty(DatagramDataSetReaderTransportType.QOS_CATEGORY).orElse(null);
+  public @Nullable ReceiveQosDataType @Nullable [] getDatagramQos() {
+    return ServerNodeSupport.readArray(this, getDatagramQosNode(), ReceiveQosDataType.class, null);
   }
 
   @Override
-  public void setQosCategory(String value) {
-    setProperty(DatagramDataSetReaderTransportType.QOS_CATEGORY, value);
+  public void setDatagramQos(@Nullable ReceiveQosDataType @Nullable [] value) {
+    ServerNodeSupport.write(
+        this, getDatagramQosNode(), Namespaces.OPC_UA, "DatagramQos", value, true, false, true);
   }
 
   @Override
-  public PropertyTypeNode getDatagramQosNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(DatagramDataSetReaderTransportType.DATAGRAM_QOS);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable PropertyTypeNode getQosCategoryNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "QosCategory",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public ReceiveQosDataType[] getDatagramQos() {
-    return getProperty(DatagramDataSetReaderTransportType.DATAGRAM_QOS).orElse(null);
+  public @Nullable String getQosCategory() {
+    return ServerNodeSupport.read(this, getQosCategoryNode(), String.class, null);
   }
 
   @Override
-  public void setDatagramQos(ReceiveQosDataType[] value) {
-    setProperty(DatagramDataSetReaderTransportType.DATAGRAM_QOS, value);
+  public void setQosCategory(@Nullable String value) {
+    ServerNodeSupport.write(
+        this, getQosCategoryNode(), Namespaces.OPC_UA, "QosCategory", value, false, false, false);
   }
 
   @Override
-  public PropertyTypeNode getTopicNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(DatagramDataSetReaderTransportType.TOPIC);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable PropertyTypeNode getTopicNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "Topic",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public String getTopic() {
-    return getProperty(DatagramDataSetReaderTransportType.TOPIC).orElse(null);
+  public @Nullable String getTopic() {
+    return ServerNodeSupport.read(this, getTopicNode(), String.class, null);
   }
 
   @Override
-  public void setTopic(String value) {
-    setProperty(DatagramDataSetReaderTransportType.TOPIC, value);
+  public void setTopic(@Nullable String value) {
+    ServerNodeSupport.write(
+        this, getTopicNode(), Namespaces.OPC_UA, "Topic", value, false, false, false);
   }
 
   @Override
-  public NetworkAddressTypeNode getAddressNode() {
-    Optional<ObjectNode> component = getObjectComponent("http://opcfoundation.org/UA/", "Address");
-    return (NetworkAddressTypeNode) component.orElse(null);
+  public void validateChildren() {
+    super.validateChildren();
+    getAddressNode();
+    getDatagramQosNode();
+    getQosCategoryNode();
+    getTopicNode();
   }
 }

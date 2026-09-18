@@ -11,10 +11,10 @@
 package org.eclipse.milo.opcua.sdk.server.conditions;
 
 import java.util.function.Consumer;
-import org.eclipse.milo.opcua.sdk.server.conditions.ConditionNodeTraversal.DiscoveredMethod;
+import org.eclipse.milo.opcua.sdk.core.model.methods.AcknowledgeableConditionTypeAcknowledge;
+import org.eclipse.milo.opcua.sdk.core.model.methods.AcknowledgeableConditionTypeConfirm;
 import org.eclipse.milo.opcua.sdk.server.conditions.ConditionNodeTraversal.MethodSurface;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext;
-import org.eclipse.milo.opcua.sdk.server.model.objects.AcknowledgeableConditionType;
 import org.eclipse.milo.opcua.sdk.server.model.objects.AcknowledgeableConditionTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.TwoStateVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
@@ -314,37 +314,33 @@ public class AcknowledgeableCondition extends Condition {
   void installMethodHandlers(MethodSurface methodSurface) {
     super.installMethodHandlers(methodSurface);
 
-    DiscoveredMethod acknowledge = methodSurface.get("Acknowledge");
-    if (acknowledge != null) {
-      installMethodHandler(
-          acknowledge,
-          new AcknowledgeableConditionType.AcknowledgeMethod(acknowledge.node()) {
-            @Override
-            protected void invoke(
-                InvocationContext context, ByteString eventId, LocalizedText comment)
-                throws UaException {
-              handleAcknowledge(context, eventId, comment);
-            }
-          });
-    }
+    installMethodHandler(
+        methodSurface,
+        "Acknowledge",
+        AcknowledgeableConditionTypeAcknowledge::inputArguments,
+        AcknowledgeableConditionTypeAcknowledge::outputArguments,
+        (context, values) -> {
+          AcknowledgeableConditionTypeAcknowledge.Inputs input =
+              AcknowledgeableConditionTypeAcknowledge.Inputs.fromVariants(
+                  context.getServer().getStaticEncodingContext(), values);
+          handleAcknowledge(context, input.eventId(), input.comment());
+        });
 
-    DiscoveredMethod confirm = methodSurface.get("Confirm");
-    if (confirm != null) {
-      if (hasConfirmedState()) {
-        installMethodHandler(
-            confirm,
-            new AcknowledgeableConditionType.ConfirmMethod(confirm.node()) {
-              @Override
-              protected void invoke(
-                  InvocationContext context, ByteString eventId, LocalizedText comment)
-                  throws UaException {
-                handleConfirm(context, eventId, comment);
-              }
-            });
-      } else {
-        // No backing ConfirmedState: the method is not provided by this instance.
-        deleteUnsupportedMethod(methodSurface, "Confirm");
-      }
+    if (hasConfirmedState()) {
+      installMethodHandler(
+          methodSurface,
+          "Confirm",
+          AcknowledgeableConditionTypeConfirm::inputArguments,
+          AcknowledgeableConditionTypeConfirm::outputArguments,
+          (context, values) -> {
+            AcknowledgeableConditionTypeConfirm.Inputs input =
+                AcknowledgeableConditionTypeConfirm.Inputs.fromVariants(
+                    context.getServer().getStaticEncodingContext(), values);
+            handleConfirm(context, input.eventId(), input.comment());
+          });
+    } else {
+      // No backing ConfirmedState: the method is not provided by this instance.
+      deleteUnsupportedMethod(methodSurface, "Confirm");
     }
   }
 }

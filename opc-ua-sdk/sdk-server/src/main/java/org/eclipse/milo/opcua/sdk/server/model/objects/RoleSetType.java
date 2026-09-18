@@ -1,153 +1,120 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.nodes.MethodNode;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
-import org.eclipse.milo.opcua.sdk.server.methods.Out;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
-import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
-import org.eclipse.milo.opcua.stack.core.util.Lazy;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part18/4.2.1">https://reference.opcfoundation.org/v105/Core/docs/Part18/4.2.1</a>
+ * Server API for the RoleSetType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part18/4.2.1">Model
+ *     documentation</a>
  */
 public interface RoleSetType extends BaseObjectType {
-  MethodNode getAddRoleMethodNode();
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 15607L);
 
-  MethodNode getRemoveRoleMethodNode();
+  /**
+   * Returns the mandatory AddRole Method node.
+   *
+   * @throws UaRuntimeException if the Method is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part18/4.2.2">Model
+   *     documentation</a>
+   */
+  UaMethodNode getAddRoleMethodNode();
 
-  abstract class AddRoleMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+  /**
+   * Sets this instance's AddRole handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setAddRoleHandler(@Nullable AddRoleHandler handler);
 
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
+  /**
+   * Returns the mandatory RemoveRole Method node.
+   *
+   * @throws UaRuntimeException if the Method is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part18/4.2.3">Model
+   *     documentation</a>
+   */
+  UaMethodNode getRemoveRoleMethodNode();
 
-    public AddRoleMethod(UaMethodNode node) {
-      super(node);
-    }
+  /**
+   * Sets this instance's RemoveRole handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setRemoveRoleHandler(@Nullable RemoveRoleHandler handler);
 
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+  /**
+   * Sets this instance's Method handlers, including inherited handlers, from one implementation;
+   * null clears them and restores Method-node fallback. Absent optional Methods are skipped.
+   * Changes are applied in order; a failure does not roll back earlier changes.
+   *
+   * @throws UaRuntimeException if a mandatory Method is absent, or a Method is ambiguous or
+   *     incompatible.
+   */
+  void setMethods(@Nullable Methods methods);
 
-            return new Argument[] {
-              new Argument(
-                  "RoleName",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "NamespaceUri",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "RoleNodeId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      String roleName = (String) inputValues[0].getValue();
-      String namespaceUri = (String) inputValues[1].getValue();
-      Out<NodeId> roleNodeId = new Out<>();
-      invoke(context, roleName, namespaceUri, roleNodeId);
-      return new Variant[] {new Variant(roleNodeId.get())};
-    }
-
-    protected abstract void invoke(
+  /**
+   * Handles calls to the AddRole Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part18/4.2.2">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface AddRoleHandler {
+    /**
+     * Handles a call to the AddRole Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    @Nullable NodeId addRole(
         AbstractMethodInvocationHandler.InvocationContext context,
-        String roleName,
-        String namespaceUri,
-        Out<NodeId> roleNodeId)
+        @Nullable String roleName,
+        @Nullable String namespaceUri)
         throws UaException;
   }
 
-  abstract class RemoveRoleMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    public RemoveRoleMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "RoleNodeId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      NodeId roleNodeId = (NodeId) inputValues[0].getValue();
-      invoke(context, roleNodeId);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, NodeId roleNodeId)
+  /**
+   * Handles calls to the RemoveRole Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part18/4.2.3">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface RemoveRoleHandler {
+    /**
+     * Handles a call to the RemoveRole Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void removeRole(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable NodeId roleNodeId)
         throws UaException;
+  }
+
+  /** Implements this type's Methods. Unimplemented Methods report Bad_NotImplemented. */
+  interface Methods {
+    /** Handles a call to the AddRole Method; see {@link AddRoleHandler#addRole}. */
+    default @Nullable NodeId addRole(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable String roleName,
+        @Nullable String namespaceUri)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /** Handles a call to the RemoveRole Method; see {@link RemoveRoleHandler#removeRole}. */
+    default void removeRole(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable NodeId roleNodeId)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
   }
 }

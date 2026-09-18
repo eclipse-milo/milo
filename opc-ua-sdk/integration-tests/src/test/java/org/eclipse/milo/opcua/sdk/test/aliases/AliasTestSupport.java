@@ -17,7 +17,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.List;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
-import org.eclipse.milo.opcua.sdk.server.model.objects.AliasNameCategoryType;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
@@ -71,7 +70,7 @@ final class AliasTestSupport {
     return server
         .getAddressSpaceManager()
         .getManagedNode(categoryId)
-        .flatMap(categoryNode -> categoryNode.getPropertyNode(AliasNameCategoryType.LAST_CHANGE))
+        .flatMap(categoryNode -> categoryNode.getPropertyNode(new QualifiedName(0, "LastChange")))
         .map(propertyNode -> (UInteger) propertyNode.getValue().value().value())
         .orElse(null);
   }

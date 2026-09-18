@@ -1,45 +1,75 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.variables;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelExType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.types.structured.ThreeDVector;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link ThreeDVectorType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.22">Model
+ *     documentation</a>
+ */
 public class ThreeDVectorTypeNode extends VectorTypeNode implements ThreeDVectorType {
   public ThreeDVectorTypeNode(
       UaNodeContext context,
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       DataValue value,
       NodeId dataType,
       Integer valueRank,
-      UInteger[] arrayDimensions,
+      UInteger @Nullable [] arrayDimensions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions,
+        value,
+        dataType,
+        valueRank,
+        arrayDimensions);
+  }
+
+  public ThreeDVectorTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
+      DataValue value,
+      NodeId dataType,
+      Integer valueRank,
+      UInteger @Nullable [] arrayDimensions,
       UByte accessLevel,
       UByte userAccessLevel,
       Double minimumSamplingInterval,
@@ -67,89 +97,90 @@ public class ThreeDVectorTypeNode extends VectorTypeNode implements ThreeDVector
         accessLevelEx);
   }
 
-  public ThreeDVectorTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
-      DataValue value,
-      NodeId dataType,
-      Integer valueRank,
-      UInteger[] arrayDimensions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions,
-        value,
-        dataType,
-        valueRank,
-        arrayDimensions);
-  }
-
   @Override
   public BaseDataVariableTypeNode getXNode() {
-    Optional<VariableNode> component = getVariableComponent("http://opcfoundation.org/UA/", "X");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "X",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 11L),
+        -1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public Double getX() {
-    Optional<VariableNode> component = getVariableComponent("http://opcfoundation.org/UA/", "X");
-    return component.map(node -> (Double) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable Double getX() {
+    return ServerNodeSupport.read(this, getXNode(), Double.class, null);
   }
 
   @Override
-  public void setX(Double value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "X")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setX(@Nullable Double value) {
+    ServerNodeSupport.write(this, getXNode(), value, false, false, false);
   }
 
   @Override
   public BaseDataVariableTypeNode getYNode() {
-    Optional<VariableNode> component = getVariableComponent("http://opcfoundation.org/UA/", "Y");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "Y",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 11L),
+        -1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public Double getY() {
-    Optional<VariableNode> component = getVariableComponent("http://opcfoundation.org/UA/", "Y");
-    return component.map(node -> (Double) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable Double getY() {
+    return ServerNodeSupport.read(this, getYNode(), Double.class, null);
   }
 
   @Override
-  public void setY(Double value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "Y")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setY(@Nullable Double value) {
+    ServerNodeSupport.write(this, getYNode(), value, false, false, false);
   }
 
   @Override
   public BaseDataVariableTypeNode getZNode() {
-    Optional<VariableNode> component = getVariableComponent("http://opcfoundation.org/UA/", "Z");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "Z",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 11L),
+        -1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public Double getZ() {
-    Optional<VariableNode> component = getVariableComponent("http://opcfoundation.org/UA/", "Z");
-    return component.map(node -> (Double) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable Double getZ() {
+    return ServerNodeSupport.read(this, getZNode(), Double.class, null);
   }
 
   @Override
-  public void setZ(Double value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "Z")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setZ(@Nullable Double value) {
+    ServerNodeSupport.write(this, getZNode(), value, false, false, false);
+  }
+
+  @Override
+  public void validateChildren() {
+    super.validateChildren();
+    getXNode();
+    getYNode();
+    getZNode();
+  }
+
+  @Override
+  public @Nullable ThreeDVector getThreeDVectorValue() {
+    return ServerNodeSupport.read(this, this, ThreeDVector.class, null);
+  }
+
+  @Override
+  public void setThreeDVectorValue(@Nullable ThreeDVector value) {
+    ServerNodeSupport.write(this, this, value, false, false, true);
   }
 }

@@ -1,19 +1,9 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -23,7 +13,15 @@ import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.JsonDataSetMessageContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.JsonNetworkMessageContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link JsonDataSetReaderMessageType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.2.2/#9.2.2.3">Model
+ *     documentation</a>
+ */
 public class JsonDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNode
     implements JsonDataSetReaderMessageType {
   public JsonDataSetReaderMessageTypeNode(
@@ -31,12 +29,36 @@ public class JsonDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions);
+  }
+
+  public JsonDataSetReaderMessageTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         context,
@@ -52,61 +74,58 @@ public class JsonDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
         eventNotifier);
   }
 
-  public JsonDataSetReaderMessageTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions);
+  @Override
+  public PropertyTypeNode getDataSetMessageContentMaskNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "DataSetMessageContentMask",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 15658L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable JsonDataSetMessageContentMask getDataSetMessageContentMask() {
+    return ServerNodeSupport.read(
+        this, getDataSetMessageContentMaskNode(), JsonDataSetMessageContentMask.class, null);
+  }
+
+  @Override
+  public void setDataSetMessageContentMask(@Nullable JsonDataSetMessageContentMask value) {
+    ServerNodeSupport.write(this, getDataSetMessageContentMaskNode(), value, false, false, false);
   }
 
   @Override
   public PropertyTypeNode getNetworkMessageContentMaskNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(JsonDataSetReaderMessageType.NETWORK_MESSAGE_CONTENT_MASK);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "NetworkMessageContentMask",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 15654L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public JsonNetworkMessageContentMask getNetworkMessageContentMask() {
-    return getProperty(JsonDataSetReaderMessageType.NETWORK_MESSAGE_CONTENT_MASK).orElse(null);
+  public @Nullable JsonNetworkMessageContentMask getNetworkMessageContentMask() {
+    return ServerNodeSupport.read(
+        this, getNetworkMessageContentMaskNode(), JsonNetworkMessageContentMask.class, null);
   }
 
   @Override
-  public void setNetworkMessageContentMask(JsonNetworkMessageContentMask value) {
-    setProperty(JsonDataSetReaderMessageType.NETWORK_MESSAGE_CONTENT_MASK, value);
+  public void setNetworkMessageContentMask(@Nullable JsonNetworkMessageContentMask value) {
+    ServerNodeSupport.write(this, getNetworkMessageContentMaskNode(), value, false, false, false);
   }
 
   @Override
-  public PropertyTypeNode getDataSetMessageContentMaskNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(JsonDataSetReaderMessageType.DATA_SET_MESSAGE_CONTENT_MASK);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public JsonDataSetMessageContentMask getDataSetMessageContentMask() {
-    return getProperty(JsonDataSetReaderMessageType.DATA_SET_MESSAGE_CONTENT_MASK).orElse(null);
-  }
-
-  @Override
-  public void setDataSetMessageContentMask(JsonDataSetMessageContentMask value) {
-    setProperty(JsonDataSetReaderMessageType.DATA_SET_MESSAGE_CONTENT_MASK, value);
+  public void validateChildren() {
+    super.validateChildren();
+    getDataSetMessageContentMaskNode();
+    getNetworkMessageContentMaskNode();
   }
 }

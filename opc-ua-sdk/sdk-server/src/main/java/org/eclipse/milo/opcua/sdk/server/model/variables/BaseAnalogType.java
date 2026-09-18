@@ -1,93 +1,159 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.variables;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.structured.EUInformation;
 import org.eclipse.milo.opcua.stack.core.types.structured.NumberRange;
 import org.eclipse.milo.opcua.stack.core.types.structured.Range;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.2/#5.3.2.2">https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.2/#5.3.2.2</a>
+ * Server API for the BaseAnalogType VariableType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.2/#5.3.2.2">Model
+ *     documentation</a>
  */
 public interface BaseAnalogType extends DataItemType {
-  QualifiedProperty<Range> INSTRUMENT_RANGE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "InstrumentRange",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=884"),
-          -1,
-          Range.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 15318L);
 
-  QualifiedProperty<NumberRange> INSTRUMENT_NUMBER_RANGE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "InstrumentNumberRange",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=23903"),
-          -1,
-          NumberRange.class);
+  /**
+   * Returns the optional EUNumberRange child, a PropertyType with DataType NumberRange.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getEUNumberRangeNode();
 
-  QualifiedProperty<Range> EU_RANGE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "EURange",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=884"),
-          -1,
-          Range.class);
+  /**
+   * Returns the Value of the EUNumberRange child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable NumberRange getEUNumberRange();
 
-  QualifiedProperty<NumberRange> EU_NUMBER_RANGE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "EUNumberRange",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=23903"),
-          -1,
-          NumberRange.class);
+  /**
+   * Sets the Value of the EUNumberRange child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setEUNumberRange(@Nullable NumberRange value);
 
-  QualifiedProperty<EUInformation> ENGINEERING_UNITS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "EngineeringUnits",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=887"),
-          -1,
-          EUInformation.class);
+  /**
+   * Returns the optional EURange child, a PropertyType with DataType Range.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getEURangeNode();
 
-  Range getInstrumentRange();
+  /**
+   * Returns the Value of the EURange child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Range getEURange();
 
-  void setInstrumentRange(Range value);
+  /**
+   * Sets the Value of the EURange child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setEURange(@Nullable Range value);
 
-  PropertyType getInstrumentRangeNode();
+  /**
+   * Returns the optional EngineeringUnits child, a PropertyType with DataType EUInformation.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getEngineeringUnits_Node();
 
-  NumberRange getInstrumentNumberRange();
+  /**
+   * Returns the Value of the EngineeringUnits child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable EUInformation getEngineeringUnits_();
 
-  void setInstrumentNumberRange(NumberRange value);
+  /**
+   * Sets the Value of the EngineeringUnits child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setEngineeringUnits_(@Nullable EUInformation value);
 
-  PropertyType getInstrumentNumberRangeNode();
+  /**
+   * Returns the optional InstrumentNumberRange child, a PropertyType with DataType NumberRange.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getInstrumentNumberRangeNode();
 
-  Range getEuRange();
+  /**
+   * Returns the Value of the InstrumentNumberRange child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable NumberRange getInstrumentNumberRange();
 
-  void setEuRange(Range value);
+  /**
+   * Sets the Value of the InstrumentNumberRange child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setInstrumentNumberRange(@Nullable NumberRange value);
 
-  PropertyType getEuRangeNode();
+  /**
+   * Returns the optional InstrumentRange child, a PropertyType with DataType Range.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getInstrumentRangeNode();
 
-  NumberRange getEuNumberRange();
+  /**
+   * Returns the Value of the InstrumentRange child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Range getInstrumentRange();
 
-  void setEuNumberRange(NumberRange value);
+  /**
+   * Sets the Value of the InstrumentRange child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setInstrumentRange(@Nullable Range value);
 
-  PropertyType getEuNumberRangeNode();
+  /**
+   * Returns this node's Value.
+   *
+   * @throws UaRuntimeException if the Value does not convert.
+   */
+  @Nullable Variant getTypedValue();
 
-  EUInformation getEngineeringUnits();
-
-  void setEngineeringUnits(EUInformation value);
-
-  PropertyType getEngineeringUnitsNode();
+  /**
+   * Sets this node's Value.
+   *
+   * @throws UaRuntimeException if the value does not convert.
+   */
+  void setTypedValue(@Nullable Variant value);
 }

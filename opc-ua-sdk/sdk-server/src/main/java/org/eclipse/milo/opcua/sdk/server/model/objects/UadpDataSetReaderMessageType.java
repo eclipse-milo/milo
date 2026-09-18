@@ -1,152 +1,231 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
 import java.util.UUID;
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.structured.UadpDataSetMessageContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.UadpNetworkMessageContentMask;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.2.1/#9.2.1.3">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.2.1/#9.2.1.3</a>
+ * Server API for the UadpDataSetReaderMessageType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.2.1/#9.2.1.3">Model
+ *     documentation</a>
  */
 public interface UadpDataSetReaderMessageType extends DataSetReaderMessageType {
-  QualifiedProperty<UInteger> GROUP_VERSION =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "GroupVersion",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=20998"),
-          -1,
-          UInteger.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 21116L);
 
-  QualifiedProperty<UShort> NETWORK_MESSAGE_NUMBER =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "NetworkMessageNumber",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-          -1,
-          UShort.class);
+  /**
+   * Returns the mandatory DataSetClassId child, a PropertyType with DataType Guid.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getDataSetClassIdNode();
 
-  QualifiedProperty<UShort> DATA_SET_OFFSET =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "DataSetOffset",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-          -1,
-          UShort.class);
+  /**
+   * Returns the Value of the DataSetClassId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UUID getDataSetClassId();
 
-  QualifiedProperty<UUID> DATA_SET_CLASS_ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "DataSetClassId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14"),
-          -1,
-          UUID.class);
+  /**
+   * Sets the Value of the DataSetClassId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setDataSetClassId(@Nullable UUID value);
 
-  QualifiedProperty<UadpNetworkMessageContentMask> NETWORK_MESSAGE_CONTENT_MASK =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "NetworkMessageContentMask",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15642"),
-          -1,
-          UadpNetworkMessageContentMask.class);
+  /**
+   * Returns the mandatory DataSetMessageContentMask child, a PropertyType with DataType
+   * UadpDataSetMessageContentMask.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getDataSetMessageContentMaskNode();
 
-  QualifiedProperty<UadpDataSetMessageContentMask> DATA_SET_MESSAGE_CONTENT_MASK =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "DataSetMessageContentMask",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15646"),
-          -1,
-          UadpDataSetMessageContentMask.class);
+  /**
+   * Returns the Value of the DataSetMessageContentMask child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UadpDataSetMessageContentMask getDataSetMessageContentMask();
 
-  QualifiedProperty<Double> PUBLISHING_INTERVAL =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "PublishingInterval",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
-          -1,
-          Double.class);
+  /**
+   * Sets the Value of the DataSetMessageContentMask child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setDataSetMessageContentMask(@Nullable UadpDataSetMessageContentMask value);
 
-  QualifiedProperty<Double> PROCESSING_OFFSET =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ProcessingOffset",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
-          -1,
-          Double.class);
+  /**
+   * Returns the mandatory DataSetOffset child, a PropertyType with DataType UInt16.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getDataSetOffsetNode();
 
-  QualifiedProperty<Double> RECEIVE_OFFSET =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ReceiveOffset",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
-          -1,
-          Double.class);
+  /**
+   * Returns the Value of the DataSetOffset child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UShort getDataSetOffset();
 
-  UInteger getGroupVersion();
+  /**
+   * Sets the Value of the DataSetOffset child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setDataSetOffset(@Nullable UShort value);
 
-  void setGroupVersion(UInteger value);
+  /**
+   * Returns the mandatory GroupVersion child, a PropertyType with DataType VersionTime.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getGroupVersionNode();
 
-  PropertyType getGroupVersionNode();
+  /**
+   * Returns the Value of the GroupVersion child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getGroupVersion();
 
-  UShort getNetworkMessageNumber();
+  /**
+   * Sets the Value of the GroupVersion child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setGroupVersion(@Nullable UInteger value);
 
-  void setNetworkMessageNumber(UShort value);
+  /**
+   * Returns the mandatory NetworkMessageContentMask child, a PropertyType with DataType
+   * UadpNetworkMessageContentMask.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getNetworkMessageContentMaskNode();
 
-  PropertyType getNetworkMessageNumberNode();
+  /**
+   * Returns the Value of the NetworkMessageContentMask child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UadpNetworkMessageContentMask getNetworkMessageContentMask();
 
-  UShort getDataSetOffset();
+  /**
+   * Sets the Value of the NetworkMessageContentMask child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setNetworkMessageContentMask(@Nullable UadpNetworkMessageContentMask value);
 
-  void setDataSetOffset(UShort value);
+  /**
+   * Returns the mandatory NetworkMessageNumber child, a PropertyType with DataType UInt16.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getNetworkMessageNumberNode();
 
-  PropertyType getDataSetOffsetNode();
+  /**
+   * Returns the Value of the NetworkMessageNumber child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UShort getNetworkMessageNumber();
 
-  UUID getDataSetClassId();
+  /**
+   * Sets the Value of the NetworkMessageNumber child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setNetworkMessageNumber(@Nullable UShort value);
 
-  void setDataSetClassId(UUID value);
+  /**
+   * Returns the mandatory ProcessingOffset child, a PropertyType with DataType Duration.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getProcessingOffsetNode();
 
-  PropertyType getDataSetClassIdNode();
+  /**
+   * Returns the Value of the ProcessingOffset child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Double getProcessingOffset();
 
-  UadpNetworkMessageContentMask getNetworkMessageContentMask();
+  /**
+   * Sets the Value of the ProcessingOffset child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setProcessingOffset(@Nullable Double value);
 
-  void setNetworkMessageContentMask(UadpNetworkMessageContentMask value);
+  /**
+   * Returns the mandatory PublishingInterval child, a PropertyType with DataType Duration.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getPublishingIntervalNode();
 
-  PropertyType getNetworkMessageContentMaskNode();
+  /**
+   * Returns the Value of the PublishingInterval child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Double getPublishingInterval();
 
-  UadpDataSetMessageContentMask getDataSetMessageContentMask();
+  /**
+   * Sets the Value of the PublishingInterval child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setPublishingInterval(@Nullable Double value);
 
-  void setDataSetMessageContentMask(UadpDataSetMessageContentMask value);
+  /**
+   * Returns the mandatory ReceiveOffset child, a PropertyType with DataType Duration.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getReceiveOffsetNode();
 
-  PropertyType getDataSetMessageContentMaskNode();
+  /**
+   * Returns the Value of the ReceiveOffset child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Double getReceiveOffset();
 
-  Double getPublishingInterval();
-
-  void setPublishingInterval(Double value);
-
-  PropertyType getPublishingIntervalNode();
-
-  Double getProcessingOffset();
-
-  void setProcessingOffset(Double value);
-
-  PropertyType getProcessingOffsetNode();
-
-  Double getReceiveOffset();
-
-  void setReceiveOffset(Double value);
-
-  PropertyType getReceiveOffsetNode();
+  /**
+   * Sets the Value of the ReceiveOffset child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setReceiveOffset(@Nullable Double value);
 }

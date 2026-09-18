@@ -1,36 +1,41 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.structured.AddNodesItem;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.20">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.20</a>
+ * Server API for the AuditAddNodesEventType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.20">Model
+ *     documentation</a>
  */
 public interface AuditAddNodesEventType extends AuditNodeManagementEventType {
-  QualifiedProperty<AddNodesItem[]> NODES_TO_ADD =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "NodesToAdd",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=376"),
-          1,
-          AddNodesItem[].class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2091L);
 
-  AddNodesItem[] getNodesToAdd();
+  /**
+   * Returns the mandatory NodesToAdd child, a PropertyType with DataType AddNodesItem.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getNodesToAddNode();
 
-  void setNodesToAdd(AddNodesItem[] value);
+  /**
+   * Returns the Value of the NodesToAdd child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable AddNodesItem @Nullable [] getNodesToAdd();
 
-  PropertyType getNodesToAddNode();
+  /**
+   * Sets the Value of the NodesToAdd child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setNodesToAdd(@Nullable AddNodesItem @Nullable [] value);
 }

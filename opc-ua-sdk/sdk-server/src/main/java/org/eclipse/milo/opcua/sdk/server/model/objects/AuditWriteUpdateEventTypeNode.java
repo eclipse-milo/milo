@@ -1,27 +1,26 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link AuditWriteUpdateEventType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.25">Model
+ *     documentation</a>
+ */
 public class AuditWriteUpdateEventTypeNode extends AuditUpdateEventTypeNode
     implements AuditWriteUpdateEventType {
   public AuditWriteUpdateEventTypeNode(
@@ -29,12 +28,36 @@ public class AuditWriteUpdateEventTypeNode extends AuditUpdateEventTypeNode
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions);
+  }
+
+  public AuditWriteUpdateEventTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         context,
@@ -50,91 +73,104 @@ public class AuditWriteUpdateEventTypeNode extends AuditUpdateEventTypeNode
         eventNotifier);
   }
 
-  public AuditWriteUpdateEventTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions);
-  }
-
   @Override
   public PropertyTypeNode getAttributeIdNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(AuditWriteUpdateEventType.ATTRIBUTE_ID);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "AttributeId",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public UInteger getAttributeId() {
-    return getProperty(AuditWriteUpdateEventType.ATTRIBUTE_ID).orElse(null);
+  public @Nullable UInteger getAttributeId() {
+    return ServerNodeSupport.read(this, getAttributeIdNode(), UInteger.class, null);
   }
 
   @Override
-  public void setAttributeId(UInteger value) {
-    setProperty(AuditWriteUpdateEventType.ATTRIBUTE_ID, value);
+  public void setAttributeId(@Nullable UInteger value) {
+    ServerNodeSupport.write(this, getAttributeIdNode(), value, false, false, false);
   }
 
   @Override
   public PropertyTypeNode getIndexRangeNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(AuditWriteUpdateEventType.INDEX_RANGE);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "IndexRange",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 291L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public String getIndexRange() {
-    return getProperty(AuditWriteUpdateEventType.INDEX_RANGE).orElse(null);
+  public @Nullable String getIndexRange() {
+    return ServerNodeSupport.read(this, getIndexRangeNode(), String.class, null);
   }
 
   @Override
-  public void setIndexRange(String value) {
-    setProperty(AuditWriteUpdateEventType.INDEX_RANGE, value);
-  }
-
-  @Override
-  public PropertyTypeNode getOldValueNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(AuditWriteUpdateEventType.OLD_VALUE);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public Object getOldValue() {
-    return getProperty(AuditWriteUpdateEventType.OLD_VALUE).orElse(null);
-  }
-
-  @Override
-  public void setOldValue(Object value) {
-    setProperty(AuditWriteUpdateEventType.OLD_VALUE, value);
+  public void setIndexRange(@Nullable String value) {
+    ServerNodeSupport.write(this, getIndexRangeNode(), value, false, false, false);
   }
 
   @Override
   public PropertyTypeNode getNewValueNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(AuditWriteUpdateEventType.NEW_VALUE);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "NewValue",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 24L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public Object getNewValue() {
-    return getProperty(AuditWriteUpdateEventType.NEW_VALUE).orElse(null);
+  public @Nullable Variant getNewValue() {
+    return ServerNodeSupport.read(this, getNewValueNode(), Variant.class, null);
   }
 
   @Override
-  public void setNewValue(Object value) {
-    setProperty(AuditWriteUpdateEventType.NEW_VALUE, value);
+  public void setNewValue(@Nullable Variant value) {
+    ServerNodeSupport.write(this, getNewValueNode(), value, false, false, false);
+  }
+
+  @Override
+  public PropertyTypeNode getOldValueNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "OldValue",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 24L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable Variant getOldValue() {
+    return ServerNodeSupport.read(this, getOldValueNode(), Variant.class, null);
+  }
+
+  @Override
+  public void setOldValue(@Nullable Variant value) {
+    ServerNodeSupport.write(this, getOldValueNode(), value, false, false, false);
+  }
+
+  @Override
+  public void validateChildren() {
+    super.validateChildren();
+    getAttributeIdNode();
+    getIndexRangeNode();
+    getNewValueNode();
+    getOldValueNode();
   }
 }

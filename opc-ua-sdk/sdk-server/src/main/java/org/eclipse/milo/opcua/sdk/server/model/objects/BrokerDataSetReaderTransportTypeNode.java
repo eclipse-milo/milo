@@ -1,19 +1,9 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -22,7 +12,15 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.BrokerTransportQualityOfService;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link BrokerDataSetReaderTransportType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.3.2/#9.3.2.4">Model
+ *     documentation</a>
+ */
 public class BrokerDataSetReaderTransportTypeNode extends DataSetReaderTransportTypeNode
     implements BrokerDataSetReaderTransportType {
   public BrokerDataSetReaderTransportTypeNode(
@@ -30,12 +28,36 @@ public class BrokerDataSetReaderTransportTypeNode extends DataSetReaderTransport
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions);
+  }
+
+  public BrokerDataSetReaderTransportTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         context,
@@ -51,112 +73,132 @@ public class BrokerDataSetReaderTransportTypeNode extends DataSetReaderTransport
         eventNotifier);
   }
 
-  public BrokerDataSetReaderTransportTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions);
-  }
-
-  @Override
-  public PropertyTypeNode getQueueNameNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(BrokerDataSetReaderTransportType.QUEUE_NAME);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public String getQueueName() {
-    return getProperty(BrokerDataSetReaderTransportType.QUEUE_NAME).orElse(null);
-  }
-
-  @Override
-  public void setQueueName(String value) {
-    setProperty(BrokerDataSetReaderTransportType.QUEUE_NAME, value);
-  }
-
-  @Override
-  public PropertyTypeNode getResourceUriNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(BrokerDataSetReaderTransportType.RESOURCE_URI);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public String getResourceUri() {
-    return getProperty(BrokerDataSetReaderTransportType.RESOURCE_URI).orElse(null);
-  }
-
-  @Override
-  public void setResourceUri(String value) {
-    setProperty(BrokerDataSetReaderTransportType.RESOURCE_URI, value);
-  }
-
   @Override
   public PropertyTypeNode getAuthenticationProfileUriNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(BrokerDataSetReaderTransportType.AUTHENTICATION_PROFILE_URI);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "AuthenticationProfileUri",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public String getAuthenticationProfileUri() {
-    return getProperty(BrokerDataSetReaderTransportType.AUTHENTICATION_PROFILE_URI).orElse(null);
+  public @Nullable String getAuthenticationProfileUri() {
+    return ServerNodeSupport.read(this, getAuthenticationProfileUriNode(), String.class, null);
   }
 
   @Override
-  public void setAuthenticationProfileUri(String value) {
-    setProperty(BrokerDataSetReaderTransportType.AUTHENTICATION_PROFILE_URI, value);
-  }
-
-  @Override
-  public PropertyTypeNode getRequestedDeliveryGuaranteeNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(BrokerDataSetReaderTransportType.REQUESTED_DELIVERY_GUARANTEE);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public BrokerTransportQualityOfService getRequestedDeliveryGuarantee() {
-    return getProperty(BrokerDataSetReaderTransportType.REQUESTED_DELIVERY_GUARANTEE).orElse(null);
-  }
-
-  @Override
-  public void setRequestedDeliveryGuarantee(BrokerTransportQualityOfService value) {
-    setProperty(BrokerDataSetReaderTransportType.REQUESTED_DELIVERY_GUARANTEE, value);
+  public void setAuthenticationProfileUri(@Nullable String value) {
+    ServerNodeSupport.write(this, getAuthenticationProfileUriNode(), value, false, false, false);
   }
 
   @Override
   public PropertyTypeNode getMetaDataQueueNameNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(BrokerDataSetReaderTransportType.META_DATA_QUEUE_NAME);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "MetaDataQueueName",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public String getMetaDataQueueName() {
-    return getProperty(BrokerDataSetReaderTransportType.META_DATA_QUEUE_NAME).orElse(null);
+  public @Nullable String getMetaDataQueueName() {
+    return ServerNodeSupport.read(this, getMetaDataQueueNameNode(), String.class, null);
   }
 
   @Override
-  public void setMetaDataQueueName(String value) {
-    setProperty(BrokerDataSetReaderTransportType.META_DATA_QUEUE_NAME, value);
+  public void setMetaDataQueueName(@Nullable String value) {
+    ServerNodeSupport.write(this, getMetaDataQueueNameNode(), value, false, false, false);
+  }
+
+  @Override
+  public PropertyTypeNode getQueueNameNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "QueueName",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable String getQueueName() {
+    return ServerNodeSupport.read(this, getQueueNameNode(), String.class, null);
+  }
+
+  @Override
+  public void setQueueName(@Nullable String value) {
+    ServerNodeSupport.write(this, getQueueNameNode(), value, false, false, false);
+  }
+
+  @Override
+  public PropertyTypeNode getRequestedDeliveryGuaranteeNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "RequestedDeliveryGuarantee",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 15008L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable BrokerTransportQualityOfService getRequestedDeliveryGuarantee() {
+    return ServerNodeSupport.read(
+        this,
+        getRequestedDeliveryGuaranteeNode(),
+        BrokerTransportQualityOfService.class,
+        BrokerTransportQualityOfService::from);
+  }
+
+  @Override
+  public void setRequestedDeliveryGuarantee(@Nullable BrokerTransportQualityOfService value) {
+    ServerNodeSupport.write(this, getRequestedDeliveryGuaranteeNode(), value, false, true, false);
+  }
+
+  @Override
+  public PropertyTypeNode getResourceUriNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "ResourceUri",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable String getResourceUri() {
+    return ServerNodeSupport.read(this, getResourceUriNode(), String.class, null);
+  }
+
+  @Override
+  public void setResourceUri(@Nullable String value) {
+    ServerNodeSupport.write(this, getResourceUriNode(), value, false, false, false);
+  }
+
+  @Override
+  public void validateChildren() {
+    super.validateChildren();
+    getAuthenticationProfileUriNode();
+    getMetaDataQueueNameNode();
+    getQueueNameNode();
+    getRequestedDeliveryGuaranteeNode();
+    getResourceUriNode();
   }
 }

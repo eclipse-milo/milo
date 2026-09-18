@@ -1,25 +1,20 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.Reference;
-import org.eclipse.milo.opcua.sdk.core.nodes.ObjectNode;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.core.model.methods.PubSubConnectionTypeAddReaderGroup;
+import org.eclipse.milo.opcua.sdk.core.model.methods.PubSubConnectionTypeAddWriterGroup;
+import org.eclipse.milo.opcua.sdk.core.model.methods.PubSubConnectionTypeRemoveGroup;
+import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
+import org.eclipse.milo.opcua.sdk.server.methods.InvalidArgumentException;
+import org.eclipse.milo.opcua.sdk.server.methods.MethodArgumentValidator;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.SelectionListTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaArgumentConversionException;
+import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -27,21 +22,54 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
+import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.types.structured.KeyValuePair;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link PubSubConnectionType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.2">Model
+ *     documentation</a>
+ */
 public class PubSubConnectionTypeNode extends BaseObjectTypeNode implements PubSubConnectionType {
   public PubSubConnectionTypeNode(
       UaNodeContext context,
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions);
+  }
+
+  public PubSubConnectionTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         context,
@@ -57,139 +85,392 @@ public class PubSubConnectionTypeNode extends BaseObjectTypeNode implements PubS
         eventNotifier);
   }
 
-  public PubSubConnectionTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions);
-  }
-
   @Override
-  public PropertyTypeNode getPublisherIdNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(PubSubConnectionType.PUBLISHER_ID);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public Object getPublisherId() {
-    return getProperty(PubSubConnectionType.PUBLISHER_ID).orElse(null);
-  }
-
-  @Override
-  public void setPublisherId(Object value) {
-    setProperty(PubSubConnectionType.PUBLISHER_ID, value);
+  public NetworkAddressTypeNode getAddressNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "Address",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 21145L),
+        null,
+        -1,
+        NetworkAddressTypeNode.class);
   }
 
   @Override
   public PropertyTypeNode getConnectionPropertiesNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(PubSubConnectionType.CONNECTION_PROPERTIES);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "ConnectionProperties",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 14533L),
+        1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public KeyValuePair[] getConnectionProperties() {
-    return getProperty(PubSubConnectionType.CONNECTION_PROPERTIES).orElse(null);
+  public @Nullable KeyValuePair @Nullable [] getConnectionProperties() {
+    return ServerNodeSupport.readArray(
+        this, getConnectionPropertiesNode(), KeyValuePair.class, null);
   }
 
   @Override
-  public void setConnectionProperties(KeyValuePair[] value) {
-    setProperty(PubSubConnectionType.CONNECTION_PROPERTIES, value);
+  public void setConnectionProperties(@Nullable KeyValuePair @Nullable [] value) {
+    ServerNodeSupport.write(this, getConnectionPropertiesNode(), value, true, false, true);
   }
 
   @Override
-  public SelectionListTypeNode getTransportProfileUriNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "TransportProfileUri");
-    return (SelectionListTypeNode) component.orElse(null);
+  public @Nullable PubSubDiagnosticsConnectionTypeNode getDiagnosticsNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "Diagnostics",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 19786L),
+        null,
+        -1,
+        PubSubDiagnosticsConnectionTypeNode.class);
   }
 
   @Override
-  public String getTransportProfileUri() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "TransportProfileUri");
-    return component.map(node -> (String) node.getValue().getValue().getValue()).orElse(null);
+  public PropertyTypeNode getPublisherIdNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "PublisherId",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 24L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public void setTransportProfileUri(String value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "TransportProfileUri")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public @Nullable Variant getPublisherId() {
+    return ServerNodeSupport.read(this, getPublisherIdNode(), Variant.class, null);
   }
 
   @Override
-  public NetworkAddressTypeNode getAddressNode() {
-    Optional<ObjectNode> component = getObjectComponent("http://opcfoundation.org/UA/", "Address");
-    return (NetworkAddressTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public ConnectionTransportTypeNode getTransportSettingsNode() {
-    Optional<ObjectNode> component =
-        getObjectComponent("http://opcfoundation.org/UA/", "TransportSettings");
-    return (ConnectionTransportTypeNode) component.orElse(null);
+  public void setPublisherId(@Nullable Variant value) {
+    ServerNodeSupport.write(this, getPublisherIdNode(), value, false, false, false);
   }
 
   @Override
   public PubSubStatusTypeNode getStatusNode() {
-    Optional<ObjectNode> component = getObjectComponent("http://opcfoundation.org/UA/", "Status");
-    return (PubSubStatusTypeNode) component.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "Status",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 14643L),
+        null,
+        -1,
+        PubSubStatusTypeNode.class);
   }
 
   @Override
-  public PubSubDiagnosticsConnectionTypeNode getDiagnosticsNode() {
-    Optional<ObjectNode> component =
-        getObjectComponent("http://opcfoundation.org/UA/", "Diagnostics");
-    return (PubSubDiagnosticsConnectionTypeNode) component.orElse(null);
+  public SelectionListTypeNode getTransportProfileUriNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "TransportProfileUri",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 16309L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        SelectionListTypeNode.class);
   }
 
   @Override
-  public UaMethodNode getAddWriterGroupMethodNode() {
-    Optional<UaNode> methodNode =
-        findNode(
-            "http://opcfoundation.org/UA/",
-            "AddWriterGroup",
-            node -> node instanceof UaMethodNode,
-            Reference.HAS_COMPONENT_PREDICATE);
-    return (UaMethodNode) methodNode.orElse(null);
+  public @Nullable String getTransportProfileUri() {
+    return ServerNodeSupport.read(this, getTransportProfileUriNode(), String.class, null);
   }
 
   @Override
-  public UaMethodNode getAddReaderGroupMethodNode() {
-    Optional<UaNode> methodNode =
-        findNode(
-            "http://opcfoundation.org/UA/",
-            "AddReaderGroup",
-            node -> node instanceof UaMethodNode,
-            Reference.HAS_COMPONENT_PREDICATE);
-    return (UaMethodNode) methodNode.orElse(null);
+  public void setTransportProfileUri(@Nullable String value) {
+    ServerNodeSupport.write(this, getTransportProfileUriNode(), value, false, false, false);
   }
 
   @Override
-  public UaMethodNode getRemoveGroupMethodNode() {
-    Optional<UaNode> methodNode =
-        findNode(
-            "http://opcfoundation.org/UA/",
-            "RemoveGroup",
-            node -> node instanceof UaMethodNode,
-            Reference.HAS_COMPONENT_PREDICATE);
-    return (UaMethodNode) methodNode.orElse(null);
+  public @Nullable ConnectionTransportTypeNode getTransportSettingsNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "TransportSettings",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 17721L),
+        null,
+        -1,
+        ConnectionTransportTypeNode.class);
+  }
+
+  @Override
+  public void validateChildren() {
+    super.validateChildren();
+    getAddressNode();
+    getConnectionPropertiesNode();
+    getDiagnosticsNode();
+    getPublisherIdNode();
+    getStatusNode();
+    getTransportProfileUriNode();
+    getTransportSettingsNode();
+  }
+
+  @Override
+  public @Nullable UaMethodNode getAddReaderGroupMethodNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        "http://opcfoundation.org/UA/",
+        "AddReaderGroup",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.NULL_VALUE,
+        null,
+        -1,
+        UaMethodNode.class);
+  }
+
+  @Override
+  public void setAddReaderGroupHandler(
+      PubSubConnectionType.@Nullable AddReaderGroupHandler handler) {
+    UaMethodNode method =
+        ServerNodeSupport.present(
+            this, getAddReaderGroupMethodNode(), "http://opcfoundation.org/UA/", "AddReaderGroup");
+    setMethodHandler(
+        method.getNodeId(),
+        handler == null
+            ? null
+            : new AbstractMethodInvocationHandler(method) {
+              private final MethodArgumentValidator outputValidator =
+                  new MethodArgumentValidator(getNodeContext().getServer());
+
+              @Override
+              public Argument[] getInputArguments() {
+                Argument[] declared = method.getInputArguments();
+                return declared != null
+                    ? declared
+                    : PubSubConnectionTypeAddReaderGroup.inputArguments(
+                        getNodeContext().getServer().getNamespaceTable());
+              }
+
+              @Override
+              public Argument[] getOutputArguments() {
+                Argument[] declared = method.getOutputArguments();
+                return declared != null
+                    ? declared
+                    : PubSubConnectionTypeAddReaderGroup.outputArguments(
+                        getNodeContext().getServer().getNamespaceTable());
+              }
+
+              @Override
+              protected int getRequiredInputArgumentCount(Argument[] arguments) {
+                return 1;
+              }
+
+              @Override
+              protected Variant[] invoke(
+                  AbstractMethodInvocationHandler.InvocationContext context, Variant[] values)
+                  throws UaException {
+                PubSubConnectionTypeAddReaderGroup.Inputs input;
+                try {
+                  input =
+                      PubSubConnectionTypeAddReaderGroup.Inputs.fromVariants(
+                          getNodeContext().getServer().getStaticEncodingContext(), values);
+                } catch (UaArgumentConversionException failure) {
+                  throw InvalidArgumentException.builder()
+                      .argument(
+                          failure.getArgumentIndex(),
+                          StatusCodes.Bad_TypeMismatch,
+                          failure.getMessage())
+                      .build();
+                }
+                PubSubConnectionTypeAddReaderGroup.Outputs output =
+                    new PubSubConnectionTypeAddReaderGroup.Outputs(
+                        handler.addReaderGroup(context, input.configuration()));
+                Variant[] encoded =
+                    output.toVariants(getNodeContext().getServer().getStaticEncodingContext());
+                try {
+                  outputValidator.validate(getOutputArguments(), encoded);
+                } catch (UaException failure) {
+                  throw new UaException(StatusCodes.Bad_TypeMismatch, failure);
+                }
+                return encoded;
+              }
+            });
+  }
+
+  @Override
+  public @Nullable UaMethodNode getAddWriterGroupMethodNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        "http://opcfoundation.org/UA/",
+        "AddWriterGroup",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.NULL_VALUE,
+        null,
+        -1,
+        UaMethodNode.class);
+  }
+
+  @Override
+  public void setAddWriterGroupHandler(
+      PubSubConnectionType.@Nullable AddWriterGroupHandler handler) {
+    UaMethodNode method =
+        ServerNodeSupport.present(
+            this, getAddWriterGroupMethodNode(), "http://opcfoundation.org/UA/", "AddWriterGroup");
+    setMethodHandler(
+        method.getNodeId(),
+        handler == null
+            ? null
+            : new AbstractMethodInvocationHandler(method) {
+              private final MethodArgumentValidator outputValidator =
+                  new MethodArgumentValidator(getNodeContext().getServer());
+
+              @Override
+              public Argument[] getInputArguments() {
+                Argument[] declared = method.getInputArguments();
+                return declared != null
+                    ? declared
+                    : PubSubConnectionTypeAddWriterGroup.inputArguments(
+                        getNodeContext().getServer().getNamespaceTable());
+              }
+
+              @Override
+              public Argument[] getOutputArguments() {
+                Argument[] declared = method.getOutputArguments();
+                return declared != null
+                    ? declared
+                    : PubSubConnectionTypeAddWriterGroup.outputArguments(
+                        getNodeContext().getServer().getNamespaceTable());
+              }
+
+              @Override
+              protected int getRequiredInputArgumentCount(Argument[] arguments) {
+                return 1;
+              }
+
+              @Override
+              protected Variant[] invoke(
+                  AbstractMethodInvocationHandler.InvocationContext context, Variant[] values)
+                  throws UaException {
+                PubSubConnectionTypeAddWriterGroup.Inputs input;
+                try {
+                  input =
+                      PubSubConnectionTypeAddWriterGroup.Inputs.fromVariants(
+                          getNodeContext().getServer().getStaticEncodingContext(), values);
+                } catch (UaArgumentConversionException failure) {
+                  throw InvalidArgumentException.builder()
+                      .argument(
+                          failure.getArgumentIndex(),
+                          StatusCodes.Bad_TypeMismatch,
+                          failure.getMessage())
+                      .build();
+                }
+                PubSubConnectionTypeAddWriterGroup.Outputs output =
+                    new PubSubConnectionTypeAddWriterGroup.Outputs(
+                        handler.addWriterGroup(context, input.configuration()));
+                Variant[] encoded =
+                    output.toVariants(getNodeContext().getServer().getStaticEncodingContext());
+                try {
+                  outputValidator.validate(getOutputArguments(), encoded);
+                } catch (UaException failure) {
+                  throw new UaException(StatusCodes.Bad_TypeMismatch, failure);
+                }
+                return encoded;
+              }
+            });
+  }
+
+  @Override
+  public @Nullable UaMethodNode getRemoveGroupMethodNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        "http://opcfoundation.org/UA/",
+        "RemoveGroup",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.NULL_VALUE,
+        null,
+        -1,
+        UaMethodNode.class);
+  }
+
+  @Override
+  public void setRemoveGroupHandler(PubSubConnectionType.@Nullable RemoveGroupHandler handler) {
+    UaMethodNode method =
+        ServerNodeSupport.present(
+            this, getRemoveGroupMethodNode(), "http://opcfoundation.org/UA/", "RemoveGroup");
+    setMethodHandler(
+        method.getNodeId(),
+        handler == null
+            ? null
+            : new AbstractMethodInvocationHandler(method) {
+              private final MethodArgumentValidator outputValidator =
+                  new MethodArgumentValidator(getNodeContext().getServer());
+
+              @Override
+              public Argument[] getInputArguments() {
+                Argument[] declared = method.getInputArguments();
+                return declared != null
+                    ? declared
+                    : PubSubConnectionTypeRemoveGroup.inputArguments(
+                        getNodeContext().getServer().getNamespaceTable());
+              }
+
+              @Override
+              public Argument[] getOutputArguments() {
+                Argument[] declared = method.getOutputArguments();
+                return declared != null
+                    ? declared
+                    : PubSubConnectionTypeRemoveGroup.outputArguments(
+                        getNodeContext().getServer().getNamespaceTable());
+              }
+
+              @Override
+              protected int getRequiredInputArgumentCount(Argument[] arguments) {
+                return 1;
+              }
+
+              @Override
+              protected Variant[] invoke(
+                  AbstractMethodInvocationHandler.InvocationContext context, Variant[] values)
+                  throws UaException {
+                PubSubConnectionTypeRemoveGroup.Inputs input;
+                try {
+                  input =
+                      PubSubConnectionTypeRemoveGroup.Inputs.fromVariants(
+                          getNodeContext().getServer().getStaticEncodingContext(), values);
+                } catch (UaArgumentConversionException failure) {
+                  throw InvalidArgumentException.builder()
+                      .argument(
+                          failure.getArgumentIndex(),
+                          StatusCodes.Bad_TypeMismatch,
+                          failure.getMessage())
+                      .build();
+                }
+                handler.removeGroup(context, input.groupId());
+                Variant[] encoded = new Variant[0];
+                try {
+                  outputValidator.validate(getOutputArguments(), encoded);
+                } catch (UaException failure) {
+                  throw new UaException(StatusCodes.Bad_TypeMismatch, failure);
+                }
+                return encoded;
+              }
+            });
+  }
+
+  @Override
+  public void setMethods(PubSubConnectionType.@Nullable Methods methods) {
+    if (getAddReaderGroupMethodNode() != null) {
+      setAddReaderGroupHandler(methods == null ? null : methods::addReaderGroup);
+    }
+    if (getAddWriterGroupMethodNode() != null) {
+      setAddWriterGroupHandler(methods == null ? null : methods::addWriterGroup);
+    }
+    if (getRemoveGroupMethodNode() != null) {
+      setRemoveGroupHandler(methods == null ? null : methods::removeGroup);
+    }
   }
 }

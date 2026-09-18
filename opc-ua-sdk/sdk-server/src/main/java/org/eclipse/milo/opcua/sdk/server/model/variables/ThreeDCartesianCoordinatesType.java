@@ -1,35 +1,103 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.variables;
 
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.structured.ThreeDCartesianCoordinates;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
+
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.24">https://reference.opcfoundation.org/v105/Core/docs/Part5/7.24</a>
+ * Server API for the 3DCartesianCoordinatesType VariableType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.24">Model
+ *     documentation</a>
  */
 public interface ThreeDCartesianCoordinatesType extends CartesianCoordinatesType {
-  BaseDataVariableType getXNode();
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 18774L);
 
-  Double getX();
+  /**
+   * Returns the mandatory X child, a BaseDataVariableType with DataType Double.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  BaseDataVariableTypeNode getXNode();
 
-  void setX(Double value);
+  /**
+   * Returns the Value of the X child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Double getX();
 
-  BaseDataVariableType getYNode();
+  /**
+   * Sets the Value of the X child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setX(@Nullable Double value);
 
-  Double getY();
+  /**
+   * Returns the mandatory Y child, a BaseDataVariableType with DataType Double.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  BaseDataVariableTypeNode getYNode();
 
-  void setY(Double value);
+  /**
+   * Returns the Value of the Y child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Double getY();
 
-  BaseDataVariableType getZNode();
+  /**
+   * Sets the Value of the Y child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setY(@Nullable Double value);
 
-  Double getZ();
+  /**
+   * Returns the mandatory Z child, a BaseDataVariableType with DataType Double.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  BaseDataVariableTypeNode getZNode();
 
-  void setZ(Double value);
+  /**
+   * Returns the Value of the Z child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Double getZ();
+
+  /**
+   * Sets the Value of the Z child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setZ(@Nullable Double value);
+
+  /**
+   * Returns this node's Value.
+   *
+   * @throws UaRuntimeException if the Value does not convert.
+   */
+  @Nullable ThreeDCartesianCoordinates getThreeDCartesianCoordinatesValue();
+
+  /**
+   * Sets this node's Value.
+   *
+   * @throws UaRuntimeException if the value does not convert.
+   */
+  void setThreeDCartesianCoordinatesValue(@Nullable ThreeDCartesianCoordinates value);
 }

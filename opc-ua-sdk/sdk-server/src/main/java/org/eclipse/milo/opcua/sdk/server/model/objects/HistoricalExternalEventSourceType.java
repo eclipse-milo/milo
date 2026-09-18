@@ -1,122 +1,193 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.structured.EventFilter;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.5.2">https://reference.opcfoundation.org/v105/Core/docs/Part11/5.5.2</a>
+ * Server API for the HistoricalExternalEventSourceType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.5.2">Model
+ *     documentation</a>
  */
 public interface HistoricalExternalEventSourceType extends BaseObjectType {
-  QualifiedProperty<String> SERVER =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Server",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 32625L);
 
-  QualifiedProperty<String> ENDPOINT_URL =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "EndpointUrl",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  /**
+   * Returns the optional EndpointUrl child, a PropertyType with DataType String.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getEndpointUrlNode();
 
-  QualifiedProperty<MessageSecurityMode> SECURITY_MODE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "SecurityMode",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=302"),
-          -1,
-          MessageSecurityMode.class);
+  /**
+   * Returns the Value of the EndpointUrl child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getEndpointUrl();
 
-  QualifiedProperty<String> SECURITY_POLICY_URI =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "SecurityPolicyUri",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  /**
+   * Sets the Value of the EndpointUrl child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setEndpointUrl(@Nullable String value);
 
-  QualifiedProperty<UserTokenPolicy> IDENTITY_TOKEN_POLICY =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "IdentityTokenPolicy",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=304"),
-          -1,
-          UserTokenPolicy.class);
+  /**
+   * Returns the mandatory HistoricalEventFilter child, a PropertyType with DataType EventFilter.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getHistoricalEventFilterNode();
 
-  QualifiedProperty<String> TRANSPORT_PROFILE_URI =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "TransportProfileUri",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  /**
+   * Returns the Value of the HistoricalEventFilter child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable EventFilter getHistoricalEventFilter();
 
-  QualifiedProperty<EventFilter> HISTORICAL_EVENT_FILTER =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "HistoricalEventFilter",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=725"),
-          -1,
-          EventFilter.class);
+  /**
+   * Sets the Value of the HistoricalEventFilter child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setHistoricalEventFilter(@Nullable EventFilter value);
 
-  String getServer();
+  /**
+   * Returns the optional IdentityTokenPolicy child, a PropertyType with DataType UserTokenPolicy.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getIdentityTokenPolicyNode();
 
-  void setServer(String value);
+  /**
+   * Returns the Value of the IdentityTokenPolicy child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UserTokenPolicy getIdentityTokenPolicy();
 
-  PropertyType getServerNode();
+  /**
+   * Sets the Value of the IdentityTokenPolicy child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setIdentityTokenPolicy(@Nullable UserTokenPolicy value);
 
-  String getEndpointUrl();
+  /**
+   * Returns the optional SecurityMode child, a PropertyType with DataType MessageSecurityMode.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getSecurityModeNode();
 
-  void setEndpointUrl(String value);
+  /**
+   * Returns the Value of the SecurityMode child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable MessageSecurityMode getSecurityMode();
 
-  PropertyType getEndpointUrlNode();
+  /**
+   * Sets the Value of the SecurityMode child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setSecurityMode(@Nullable MessageSecurityMode value);
 
-  MessageSecurityMode getSecurityMode();
+  /**
+   * Returns the optional SecurityPolicyUri child, a PropertyType with DataType String.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getSecurityPolicyUriNode();
 
-  void setSecurityMode(MessageSecurityMode value);
+  /**
+   * Returns the Value of the SecurityPolicyUri child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getSecurityPolicyUri();
 
-  PropertyType getSecurityModeNode();
+  /**
+   * Sets the Value of the SecurityPolicyUri child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setSecurityPolicyUri(@Nullable String value);
 
-  String getSecurityPolicyUri();
+  /**
+   * Returns the optional Server child, a PropertyType with DataType String.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getServerNode();
 
-  void setSecurityPolicyUri(String value);
+  /**
+   * Returns the Value of the Server child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getServer();
 
-  PropertyType getSecurityPolicyUriNode();
+  /**
+   * Sets the Value of the Server child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setServer(@Nullable String value);
 
-  UserTokenPolicy getIdentityTokenPolicy();
+  /**
+   * Returns the optional TransportProfileUri child, a PropertyType with DataType String.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getTransportProfileUriNode();
 
-  void setIdentityTokenPolicy(UserTokenPolicy value);
+  /**
+   * Returns the Value of the TransportProfileUri child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getTransportProfileUri();
 
-  PropertyType getIdentityTokenPolicyNode();
-
-  String getTransportProfileUri();
-
-  void setTransportProfileUri(String value);
-
-  PropertyType getTransportProfileUriNode();
-
-  EventFilter getHistoricalEventFilter();
-
-  void setHistoricalEventFilter(EventFilter value);
-
-  PropertyType getHistoricalEventFilterNode();
+  /**
+   * Sets the Value of the TransportProfileUri child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setTransportProfileUri(@Nullable String value);
 }

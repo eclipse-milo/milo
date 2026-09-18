@@ -1,310 +1,357 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.core.nodes.MethodNode;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
-import org.eclipse.milo.opcua.sdk.server.methods.Out;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
-import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
-import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
-import org.eclipse.milo.opcua.stack.core.util.Lazy;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/8.6.1">https://reference.opcfoundation.org/v105/Core/docs/Part14/8.6.1</a>
+ * Server API for the PubSubKeyPushTargetType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/8.6.1">Model
+ *     documentation</a>
  */
 public interface PubSubKeyPushTargetType extends BaseObjectType {
-  QualifiedProperty<String> APPLICATION_URI =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ApplicationUri",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 25337L);
 
-  QualifiedProperty<String> ENDPOINT_URL =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "EndpointUrl",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  /**
+   * Returns the mandatory ApplicationUri child, a PropertyType with DataType String.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getApplicationUriNode();
 
-  QualifiedProperty<String> SECURITY_POLICY_URI =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "SecurityPolicyUri",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  /**
+   * Returns the Value of the ApplicationUri child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getApplicationUri();
 
-  QualifiedProperty<UserTokenPolicy> USER_TOKEN_TYPE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "UserTokenType",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=304"),
-          -1,
-          UserTokenPolicy.class);
+  /**
+   * Sets the Value of the ApplicationUri child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setApplicationUri(@Nullable String value);
 
-  QualifiedProperty<UShort> REQUESTED_KEY_COUNT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "RequestedKeyCount",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-          -1,
-          UShort.class);
+  /**
+   * Returns the mandatory EndpointUrl child, a PropertyType with DataType String.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getEndpointUrlNode();
 
-  QualifiedProperty<Double> RETRY_INTERVAL =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "RetryInterval",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
-          -1,
-          Double.class);
+  /**
+   * Returns the Value of the EndpointUrl child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getEndpointUrl();
 
-  QualifiedProperty<DateTime> LAST_PUSH_EXECUTION_TIME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "LastPushExecutionTime",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=13"),
-          -1,
-          DateTime.class);
+  /**
+   * Sets the Value of the EndpointUrl child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setEndpointUrl(@Nullable String value);
 
-  QualifiedProperty<DateTime> LAST_PUSH_ERROR_TIME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "LastPushErrorTime",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=13"),
-          -1,
-          DateTime.class);
+  /**
+   * Returns the mandatory LastPushErrorTime child, a PropertyType with DataType DateTime.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getLastPushErrorTimeNode();
 
-  String getApplicationUri();
+  /**
+   * Returns the Value of the LastPushErrorTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable DateTime getLastPushErrorTime();
 
-  void setApplicationUri(String value);
+  /**
+   * Sets the Value of the LastPushErrorTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setLastPushErrorTime(@Nullable DateTime value);
 
-  PropertyType getApplicationUriNode();
+  /**
+   * Returns the mandatory LastPushExecutionTime child, a PropertyType with DataType DateTime.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getLastPushExecutionTimeNode();
 
-  String getEndpointUrl();
+  /**
+   * Returns the Value of the LastPushExecutionTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable DateTime getLastPushExecutionTime();
 
-  void setEndpointUrl(String value);
+  /**
+   * Sets the Value of the LastPushExecutionTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setLastPushExecutionTime(@Nullable DateTime value);
 
-  PropertyType getEndpointUrlNode();
+  /**
+   * Returns the mandatory RequestedKeyCount child, a PropertyType with DataType UInt16.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getRequestedKeyCountNode();
 
-  String getSecurityPolicyUri();
+  /**
+   * Returns the Value of the RequestedKeyCount child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UShort getRequestedKeyCount();
 
-  void setSecurityPolicyUri(String value);
+  /**
+   * Sets the Value of the RequestedKeyCount child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setRequestedKeyCount(@Nullable UShort value);
 
-  PropertyType getSecurityPolicyUriNode();
+  /**
+   * Returns the mandatory RetryInterval child, a PropertyType with DataType Duration.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getRetryIntervalNode();
 
-  UserTokenPolicy getUserTokenType();
+  /**
+   * Returns the Value of the RetryInterval child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Double getRetryInterval();
 
-  void setUserTokenType(UserTokenPolicy value);
+  /**
+   * Sets the Value of the RetryInterval child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setRetryInterval(@Nullable Double value);
 
-  PropertyType getUserTokenTypeNode();
+  /**
+   * Returns the mandatory SecurityPolicyUri child, a PropertyType with DataType String.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getSecurityPolicyUriNode();
 
-  UShort getRequestedKeyCount();
+  /**
+   * Returns the Value of the SecurityPolicyUri child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getSecurityPolicyUri();
 
-  void setRequestedKeyCount(UShort value);
+  /**
+   * Sets the Value of the SecurityPolicyUri child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setSecurityPolicyUri(@Nullable String value);
 
-  PropertyType getRequestedKeyCountNode();
+  /**
+   * Returns the mandatory UserTokenType child, a PropertyType with DataType UserTokenPolicy.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getUserTokenTypeNode();
 
-  Double getRetryInterval();
+  /**
+   * Returns the Value of the UserTokenType child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UserTokenPolicy getUserTokenType();
 
-  void setRetryInterval(Double value);
+  /**
+   * Sets the Value of the UserTokenType child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setUserTokenType(@Nullable UserTokenPolicy value);
 
-  PropertyType getRetryIntervalNode();
+  /**
+   * Returns the mandatory ConnectSecurityGroups Method node.
+   *
+   * @throws UaRuntimeException if the Method is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/8.6.3">Model
+   *     documentation</a>
+   */
+  UaMethodNode getConnectSecurityGroupsMethodNode();
 
-  DateTime getLastPushExecutionTime();
+  /**
+   * Sets this instance's ConnectSecurityGroups handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setConnectSecurityGroupsHandler(@Nullable ConnectSecurityGroupsHandler handler);
 
-  void setLastPushExecutionTime(DateTime value);
+  /**
+   * Returns the mandatory DisconnectSecurityGroups Method node.
+   *
+   * @throws UaRuntimeException if the Method is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/8.6.4">Model
+   *     documentation</a>
+   */
+  UaMethodNode getDisconnectSecurityGroupsMethodNode();
 
-  PropertyType getLastPushExecutionTimeNode();
+  /**
+   * Sets this instance's DisconnectSecurityGroups handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setDisconnectSecurityGroupsHandler(@Nullable DisconnectSecurityGroupsHandler handler);
 
-  DateTime getLastPushErrorTime();
+  /**
+   * Returns the mandatory TriggerKeyUpdate Method node.
+   *
+   * @throws UaRuntimeException if the Method is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/8.6.6">Model
+   *     documentation</a>
+   */
+  UaMethodNode getTriggerKeyUpdateMethodNode();
 
-  void setLastPushErrorTime(DateTime value);
+  /**
+   * Sets this instance's TriggerKeyUpdate handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setTriggerKeyUpdateHandler(@Nullable TriggerKeyUpdateHandler handler);
 
-  PropertyType getLastPushErrorTimeNode();
+  /**
+   * Sets this instance's Method handlers, including inherited handlers, from one implementation;
+   * null clears them and restores Method-node fallback. Absent optional Methods are skipped.
+   * Changes are applied in order; a failure does not roll back earlier changes.
+   *
+   * @throws UaRuntimeException if a mandatory Method is absent, or a Method is ambiguous or
+   *     incompatible.
+   */
+  void setMethods(@Nullable Methods methods);
 
-  MethodNode getConnectSecurityGroupsMethodNode();
-
-  MethodNode getDisconnectSecurityGroupsMethodNode();
-
-  MethodNode getTriggerKeyUpdateMethodNode();
-
-  abstract class ConnectSecurityGroupsMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-    public ConnectSecurityGroupsMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "SecurityGroupIds",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "ConnectResults",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=19")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      NodeId[] securityGroupIds = (NodeId[]) inputValues[0].getValue();
-      Out<StatusCode[]> connectResults = new Out<>();
-      invoke(context, securityGroupIds, connectResults);
-      return new Variant[] {new Variant(connectResults.get())};
-    }
-
-    protected abstract void invoke(
+  /**
+   * Handles calls to the ConnectSecurityGroups Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/8.6.3">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface ConnectSecurityGroupsHandler {
+    /**
+     * Handles a call to the ConnectSecurityGroups Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    StatusCode @Nullable [] connectSecurityGroups(
         AbstractMethodInvocationHandler.InvocationContext context,
-        NodeId[] securityGroupIds,
-        Out<StatusCode[]> connectResults)
+        NodeId @Nullable [] securityGroupIds)
         throws UaException;
   }
 
-  abstract class DisconnectSecurityGroupsMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-    public DisconnectSecurityGroupsMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "SecurityGroupIds",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "DisconnectResults",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=19")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      NodeId[] securityGroupIds = (NodeId[]) inputValues[0].getValue();
-      Out<StatusCode[]> disconnectResults = new Out<>();
-      invoke(context, securityGroupIds, disconnectResults);
-      return new Variant[] {new Variant(disconnectResults.get())};
-    }
-
-    protected abstract void invoke(
+  /**
+   * Handles calls to the DisconnectSecurityGroups Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/8.6.4">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface DisconnectSecurityGroupsHandler {
+    /**
+     * Handles a call to the DisconnectSecurityGroups Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    StatusCode @Nullable [] disconnectSecurityGroups(
         AbstractMethodInvocationHandler.InvocationContext context,
-        NodeId[] securityGroupIds,
-        Out<StatusCode[]> disconnectResults)
+        NodeId @Nullable [] securityGroupIds)
         throws UaException;
   }
 
-  abstract class TriggerKeyUpdateMethod extends AbstractMethodInvocationHandler {
-    public TriggerKeyUpdateMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      invoke(context);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context)
+  /**
+   * Handles calls to the TriggerKeyUpdate Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/8.6.6">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface TriggerKeyUpdateHandler {
+    /**
+     * Handles a call to the TriggerKeyUpdate Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void triggerKeyUpdate(AbstractMethodInvocationHandler.InvocationContext context)
         throws UaException;
+  }
+
+  /** Implements this type's Methods. Unimplemented Methods report Bad_NotImplemented. */
+  interface Methods {
+    /**
+     * Handles a call to the ConnectSecurityGroups Method; see {@link
+     * ConnectSecurityGroupsHandler#connectSecurityGroups}.
+     */
+    default StatusCode @Nullable [] connectSecurityGroups(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        NodeId @Nullable [] securityGroupIds)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /**
+     * Handles a call to the DisconnectSecurityGroups Method; see {@link
+     * DisconnectSecurityGroupsHandler#disconnectSecurityGroups}.
+     */
+    default StatusCode @Nullable [] disconnectSecurityGroups(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        NodeId @Nullable [] securityGroupIds)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /**
+     * Handles a call to the TriggerKeyUpdate Method; see {@link
+     * TriggerKeyUpdateHandler#triggerKeyUpdate}.
+     */
+    default void triggerKeyUpdate(AbstractMethodInvocationHandler.InvocationContext context)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
   }
 }

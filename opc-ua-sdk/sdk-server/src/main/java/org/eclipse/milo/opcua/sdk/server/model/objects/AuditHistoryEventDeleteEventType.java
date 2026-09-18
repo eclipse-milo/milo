@@ -1,51 +1,65 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.structured.HistoryEventFieldList;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.8.8">https://reference.opcfoundation.org/v105/Core/docs/Part11/5.8.8</a>
+ * Server API for the AuditHistoryEventDeleteEventType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.8.8">Model
+ *     documentation</a>
  */
 public interface AuditHistoryEventDeleteEventType extends AuditHistoryDeleteEventType {
-  QualifiedProperty<ByteString[]> EVENT_IDS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "EventIds",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15"),
-          1,
-          ByteString[].class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 3022L);
 
-  QualifiedProperty<HistoryEventFieldList> OLD_VALUES =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "OldValues",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=920"),
-          -1,
-          HistoryEventFieldList.class);
+  /**
+   * Returns the mandatory EventIds child, a PropertyType with DataType ByteString.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getEventIdsNode();
 
-  ByteString[] getEventIds();
+  /**
+   * Returns the Value of the EventIds child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  ByteString @Nullable [] getEventIds();
 
-  void setEventIds(ByteString[] value);
+  /**
+   * Sets the Value of the EventIds child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setEventIds(ByteString @Nullable [] value);
 
-  PropertyType getEventIdsNode();
+  /**
+   * Returns the mandatory OldValues child, a PropertyType with DataType HistoryEventFieldList.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getOldValuesNode();
 
-  HistoryEventFieldList getOldValues();
+  /**
+   * Returns the Value of the OldValues child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable HistoryEventFieldList getOldValues();
 
-  void setOldValues(HistoryEventFieldList value);
-
-  PropertyType getOldValuesNode();
+  /**
+   * Sets the Value of the OldValues child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setOldValues(@Nullable HistoryEventFieldList value);
 }

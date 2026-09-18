@@ -1,246 +1,407 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.12/#9.1.12.1">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.12/#9.1.12.1</a>
+ * Server API for the PubSubCapabilitiesType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.12/#9.1.12.1">Model
+ *     documentation</a>
  */
 public interface PubSubCapabilitiesType extends BaseObjectType {
-  QualifiedProperty<UInteger> MAX_PUB_SUB_CONNECTIONS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxPubSubConnections",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 23832L);
 
-  QualifiedProperty<UInteger> MAX_WRITER_GROUPS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxWriterGroups",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  /**
+   * Returns the mandatory MaxDataSetReaders child, a PropertyType with DataType UInt32.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getMaxDataSetReadersNode();
 
-  QualifiedProperty<UInteger> MAX_READER_GROUPS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxReaderGroups",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  /**
+   * Returns the Value of the MaxDataSetReaders child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getMaxDataSetReaders();
 
-  QualifiedProperty<UInteger> MAX_DATA_SET_WRITERS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxDataSetWriters",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  /**
+   * Sets the Value of the MaxDataSetReaders child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMaxDataSetReaders(@Nullable UInteger value);
 
-  QualifiedProperty<UInteger> MAX_DATA_SET_READERS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxDataSetReaders",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  /**
+   * Returns the mandatory MaxDataSetWriters child, a PropertyType with DataType UInt32.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getMaxDataSetWritersNode();
 
-  QualifiedProperty<UInteger> MAX_FIELDS_PER_DATA_SET =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxFieldsPerDataSet",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  /**
+   * Returns the Value of the MaxDataSetWriters child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getMaxDataSetWriters();
 
-  QualifiedProperty<UInteger> MAX_DATA_SET_WRITERS_PER_GROUP =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxDataSetWritersPerGroup",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  /**
+   * Sets the Value of the MaxDataSetWriters child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMaxDataSetWriters(@Nullable UInteger value);
 
-  QualifiedProperty<UInteger> MAX_SECURITY_GROUPS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxSecurityGroups",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  /**
+   * Returns the optional MaxDataSetWritersPerGroup child, a PropertyType with DataType UInt32.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getMaxDataSetWritersPerGroupNode();
 
-  QualifiedProperty<UInteger> MAX_PUSH_TARGETS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxPushTargets",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  /**
+   * Returns the Value of the MaxDataSetWritersPerGroup child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getMaxDataSetWritersPerGroup();
 
-  QualifiedProperty<UInteger> MAX_PUBLISHED_DATA_SETS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxPublishedDataSets",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  /**
+   * Sets the Value of the MaxDataSetWritersPerGroup child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMaxDataSetWritersPerGroup(@Nullable UInteger value);
 
-  QualifiedProperty<UInteger> MAX_STANDALONE_SUBSCRIBED_DATA_SETS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxStandaloneSubscribedDataSets",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  /**
+   * Returns the mandatory MaxFieldsPerDataSet child, a PropertyType with DataType UInt32.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getMaxFieldsPerDataSetNode();
 
-  QualifiedProperty<UInteger> MAX_NETWORK_MESSAGE_SIZE_DATAGRAM =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxNetworkMessageSizeDatagram",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  /**
+   * Returns the Value of the MaxFieldsPerDataSet child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getMaxFieldsPerDataSet();
 
-  QualifiedProperty<UInteger> MAX_NETWORK_MESSAGE_SIZE_BROKER =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxNetworkMessageSizeBroker",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  /**
+   * Sets the Value of the MaxFieldsPerDataSet child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMaxFieldsPerDataSet(@Nullable UInteger value);
 
-  QualifiedProperty<Boolean> SUPPORT_SECURITY_KEY_PULL =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "SupportSecurityKeyPull",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
+  /**
+   * Returns the optional MaxNetworkMessageSizeBroker child, a PropertyType with DataType UInt32.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getMaxNetworkMessageSizeBrokerNode();
 
-  QualifiedProperty<Boolean> SUPPORT_SECURITY_KEY_PUSH =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "SupportSecurityKeyPush",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
+  /**
+   * Returns the Value of the MaxNetworkMessageSizeBroker child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getMaxNetworkMessageSizeBroker();
 
-  QualifiedProperty<Boolean> SUPPORT_SECURITY_KEY_SERVER =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "SupportSecurityKeyServer",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
+  /**
+   * Sets the Value of the MaxNetworkMessageSizeBroker child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMaxNetworkMessageSizeBroker(@Nullable UInteger value);
 
-  UInteger getMaxPubSubConnections();
+  /**
+   * Returns the optional MaxNetworkMessageSizeDatagram child, a PropertyType with DataType UInt32.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getMaxNetworkMessageSizeDatagramNode();
 
-  void setMaxPubSubConnections(UInteger value);
+  /**
+   * Returns the Value of the MaxNetworkMessageSizeDatagram child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getMaxNetworkMessageSizeDatagram();
 
-  PropertyType getMaxPubSubConnectionsNode();
+  /**
+   * Sets the Value of the MaxNetworkMessageSizeDatagram child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMaxNetworkMessageSizeDatagram(@Nullable UInteger value);
 
-  UInteger getMaxWriterGroups();
+  /**
+   * Returns the mandatory MaxPubSubConnections child, a PropertyType with DataType UInt32.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getMaxPubSubConnectionsNode();
 
-  void setMaxWriterGroups(UInteger value);
+  /**
+   * Returns the Value of the MaxPubSubConnections child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getMaxPubSubConnections();
 
-  PropertyType getMaxWriterGroupsNode();
+  /**
+   * Sets the Value of the MaxPubSubConnections child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMaxPubSubConnections(@Nullable UInteger value);
 
-  UInteger getMaxReaderGroups();
+  /**
+   * Returns the optional MaxPublishedDataSets child, a PropertyType with DataType UInt32.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getMaxPublishedDataSetsNode();
 
-  void setMaxReaderGroups(UInteger value);
+  /**
+   * Returns the Value of the MaxPublishedDataSets child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getMaxPublishedDataSets();
 
-  PropertyType getMaxReaderGroupsNode();
+  /**
+   * Sets the Value of the MaxPublishedDataSets child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMaxPublishedDataSets(@Nullable UInteger value);
 
-  UInteger getMaxDataSetWriters();
+  /**
+   * Returns the optional MaxPushTargets child, a PropertyType with DataType UInt32.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getMaxPushTargetsNode();
 
-  void setMaxDataSetWriters(UInteger value);
+  /**
+   * Returns the Value of the MaxPushTargets child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getMaxPushTargets();
 
-  PropertyType getMaxDataSetWritersNode();
+  /**
+   * Sets the Value of the MaxPushTargets child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMaxPushTargets(@Nullable UInteger value);
 
-  UInteger getMaxDataSetReaders();
+  /**
+   * Returns the mandatory MaxReaderGroups child, a PropertyType with DataType UInt32.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getMaxReaderGroupsNode();
 
-  void setMaxDataSetReaders(UInteger value);
+  /**
+   * Returns the Value of the MaxReaderGroups child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getMaxReaderGroups();
 
-  PropertyType getMaxDataSetReadersNode();
+  /**
+   * Sets the Value of the MaxReaderGroups child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMaxReaderGroups(@Nullable UInteger value);
 
-  UInteger getMaxFieldsPerDataSet();
+  /**
+   * Returns the optional MaxSecurityGroups child, a PropertyType with DataType UInt32.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getMaxSecurityGroupsNode();
 
-  void setMaxFieldsPerDataSet(UInteger value);
+  /**
+   * Returns the Value of the MaxSecurityGroups child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getMaxSecurityGroups();
 
-  PropertyType getMaxFieldsPerDataSetNode();
+  /**
+   * Sets the Value of the MaxSecurityGroups child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMaxSecurityGroups(@Nullable UInteger value);
 
-  UInteger getMaxDataSetWritersPerGroup();
+  /**
+   * Returns the optional MaxStandaloneSubscribedDataSets child, a PropertyType with DataType
+   * UInt32.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getMaxStandaloneSubscribedDataSetsNode();
 
-  void setMaxDataSetWritersPerGroup(UInteger value);
+  /**
+   * Returns the Value of the MaxStandaloneSubscribedDataSets child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getMaxStandaloneSubscribedDataSets();
 
-  PropertyType getMaxDataSetWritersPerGroupNode();
+  /**
+   * Sets the Value of the MaxStandaloneSubscribedDataSets child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMaxStandaloneSubscribedDataSets(@Nullable UInteger value);
 
-  UInteger getMaxSecurityGroups();
+  /**
+   * Returns the mandatory MaxWriterGroups child, a PropertyType with DataType UInt32.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getMaxWriterGroupsNode();
 
-  void setMaxSecurityGroups(UInteger value);
+  /**
+   * Returns the Value of the MaxWriterGroups child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getMaxWriterGroups();
 
-  PropertyType getMaxSecurityGroupsNode();
+  /**
+   * Sets the Value of the MaxWriterGroups child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMaxWriterGroups(@Nullable UInteger value);
 
-  UInteger getMaxPushTargets();
+  /**
+   * Returns the optional SupportSecurityKeyPull child, a PropertyType with DataType Boolean.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getSupportSecurityKeyPullNode();
 
-  void setMaxPushTargets(UInteger value);
+  /**
+   * Returns the Value of the SupportSecurityKeyPull child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Boolean getSupportSecurityKeyPull();
 
-  PropertyType getMaxPushTargetsNode();
+  /**
+   * Sets the Value of the SupportSecurityKeyPull child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setSupportSecurityKeyPull(@Nullable Boolean value);
 
-  UInteger getMaxPublishedDataSets();
+  /**
+   * Returns the optional SupportSecurityKeyPush child, a PropertyType with DataType Boolean.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getSupportSecurityKeyPushNode();
 
-  void setMaxPublishedDataSets(UInteger value);
+  /**
+   * Returns the Value of the SupportSecurityKeyPush child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Boolean getSupportSecurityKeyPush();
 
-  PropertyType getMaxPublishedDataSetsNode();
+  /**
+   * Sets the Value of the SupportSecurityKeyPush child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setSupportSecurityKeyPush(@Nullable Boolean value);
 
-  UInteger getMaxStandaloneSubscribedDataSets();
+  /**
+   * Returns the optional SupportSecurityKeyServer child, a PropertyType with DataType Boolean.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getSupportSecurityKeyServerNode();
 
-  void setMaxStandaloneSubscribedDataSets(UInteger value);
+  /**
+   * Returns the Value of the SupportSecurityKeyServer child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Boolean getSupportSecurityKeyServer();
 
-  PropertyType getMaxStandaloneSubscribedDataSetsNode();
-
-  UInteger getMaxNetworkMessageSizeDatagram();
-
-  void setMaxNetworkMessageSizeDatagram(UInteger value);
-
-  PropertyType getMaxNetworkMessageSizeDatagramNode();
-
-  UInteger getMaxNetworkMessageSizeBroker();
-
-  void setMaxNetworkMessageSizeBroker(UInteger value);
-
-  PropertyType getMaxNetworkMessageSizeBrokerNode();
-
-  Boolean getSupportSecurityKeyPull();
-
-  void setSupportSecurityKeyPull(Boolean value);
-
-  PropertyType getSupportSecurityKeyPullNode();
-
-  Boolean getSupportSecurityKeyPush();
-
-  void setSupportSecurityKeyPush(Boolean value);
-
-  PropertyType getSupportSecurityKeyPushNode();
-
-  Boolean getSupportSecurityKeyServer();
-
-  void setSupportSecurityKeyServer(Boolean value);
-
-  PropertyType getSupportSecurityKeyServerNode();
+  /**
+   * Sets the Value of the SupportSecurityKeyServer child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setSupportSecurityKeyServer(@Nullable Boolean value);
 }

@@ -1,246 +1,431 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.18">https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.18</a>
+ * Server API for the LimitAlarmType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.18">Model
+ *     documentation</a>
  */
 public interface LimitAlarmType extends AlarmConditionType {
-  QualifiedProperty<Double> HIGH_HIGH_LIMIT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "HighHighLimit",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
-          -1,
-          Double.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2955L);
 
-  QualifiedProperty<Double> HIGH_LIMIT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "HighLimit",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
-          -1,
-          Double.class);
+  /**
+   * Returns the optional BaseHighHighLimit child, a PropertyType with DataType Double.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getBaseHighHighLimitNode();
 
-  QualifiedProperty<Double> LOW_LIMIT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "LowLimit",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
-          -1,
-          Double.class);
+  /**
+   * Returns the Value of the BaseHighHighLimit child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Double getBaseHighHighLimit();
 
-  QualifiedProperty<Double> LOW_LOW_LIMIT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "LowLowLimit",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
-          -1,
-          Double.class);
+  /**
+   * Sets the Value of the BaseHighHighLimit child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setBaseHighHighLimit(@Nullable Double value);
 
-  QualifiedProperty<Double> BASE_HIGH_HIGH_LIMIT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "BaseHighHighLimit",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
-          -1,
-          Double.class);
+  /**
+   * Returns the optional BaseHighLimit child, a PropertyType with DataType Double.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getBaseHighLimitNode();
 
-  QualifiedProperty<Double> BASE_HIGH_LIMIT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "BaseHighLimit",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
-          -1,
-          Double.class);
+  /**
+   * Returns the Value of the BaseHighLimit child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Double getBaseHighLimit();
 
-  QualifiedProperty<Double> BASE_LOW_LIMIT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "BaseLowLimit",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
-          -1,
-          Double.class);
+  /**
+   * Sets the Value of the BaseHighLimit child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setBaseHighLimit(@Nullable Double value);
 
-  QualifiedProperty<Double> BASE_LOW_LOW_LIMIT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "BaseLowLowLimit",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
-          -1,
-          Double.class);
+  /**
+   * Returns the optional BaseLowLimit child, a PropertyType with DataType Double.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getBaseLowLimitNode();
 
-  QualifiedProperty<UShort> SEVERITY_HIGH_HIGH =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "SeverityHighHigh",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-          -1,
-          UShort.class);
+  /**
+   * Returns the Value of the BaseLowLimit child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Double getBaseLowLimit();
 
-  QualifiedProperty<UShort> SEVERITY_HIGH =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "SeverityHigh",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-          -1,
-          UShort.class);
+  /**
+   * Sets the Value of the BaseLowLimit child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setBaseLowLimit(@Nullable Double value);
 
-  QualifiedProperty<UShort> SEVERITY_LOW =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "SeverityLow",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-          -1,
-          UShort.class);
+  /**
+   * Returns the optional BaseLowLowLimit child, a PropertyType with DataType Double.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getBaseLowLowLimitNode();
 
-  QualifiedProperty<UShort> SEVERITY_LOW_LOW =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "SeverityLowLow",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-          -1,
-          UShort.class);
+  /**
+   * Returns the Value of the BaseLowLowLimit child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Double getBaseLowLowLimit();
 
-  QualifiedProperty<Double> HIGH_HIGH_DEADBAND =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "HighHighDeadband",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
-          -1,
-          Double.class);
+  /**
+   * Sets the Value of the BaseLowLowLimit child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setBaseLowLowLimit(@Nullable Double value);
 
-  QualifiedProperty<Double> HIGH_DEADBAND =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "HighDeadband",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
-          -1,
-          Double.class);
+  /**
+   * Returns the optional HighDeadband child, a PropertyType with DataType Double.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getHighDeadbandNode();
 
-  QualifiedProperty<Double> LOW_DEADBAND =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "LowDeadband",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
-          -1,
-          Double.class);
+  /**
+   * Returns the Value of the HighDeadband child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Double getHighDeadband();
 
-  QualifiedProperty<Double> LOW_LOW_DEADBAND =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "LowLowDeadband",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
-          -1,
-          Double.class);
+  /**
+   * Sets the Value of the HighDeadband child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setHighDeadband(@Nullable Double value);
 
-  Double getHighHighLimit();
+  /**
+   * Returns the optional HighHighDeadband child, a PropertyType with DataType Double.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getHighHighDeadbandNode();
 
-  void setHighHighLimit(Double value);
+  /**
+   * Returns the Value of the HighHighDeadband child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Double getHighHighDeadband();
 
-  PropertyType getHighHighLimitNode();
+  /**
+   * Sets the Value of the HighHighDeadband child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setHighHighDeadband(@Nullable Double value);
 
-  Double getHighLimit();
+  /**
+   * Returns the optional HighHighLimit child, a PropertyType with DataType Double.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getHighHighLimitNode();
 
-  void setHighLimit(Double value);
+  /**
+   * Returns the Value of the HighHighLimit child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Double getHighHighLimit();
 
-  PropertyType getHighLimitNode();
+  /**
+   * Sets the Value of the HighHighLimit child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setHighHighLimit(@Nullable Double value);
 
-  Double getLowLimit();
+  /**
+   * Returns the optional HighLimit child, a PropertyType with DataType Double.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getHighLimitNode();
 
-  void setLowLimit(Double value);
+  /**
+   * Returns the Value of the HighLimit child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Double getHighLimit();
 
-  PropertyType getLowLimitNode();
+  /**
+   * Sets the Value of the HighLimit child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setHighLimit(@Nullable Double value);
 
-  Double getLowLowLimit();
+  /**
+   * Returns the optional LowDeadband child, a PropertyType with DataType Double.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getLowDeadbandNode();
 
-  void setLowLowLimit(Double value);
+  /**
+   * Returns the Value of the LowDeadband child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Double getLowDeadband();
 
-  PropertyType getLowLowLimitNode();
+  /**
+   * Sets the Value of the LowDeadband child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setLowDeadband(@Nullable Double value);
 
-  Double getBaseHighHighLimit();
+  /**
+   * Returns the optional LowLimit child, a PropertyType with DataType Double.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getLowLimitNode();
 
-  void setBaseHighHighLimit(Double value);
+  /**
+   * Returns the Value of the LowLimit child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Double getLowLimit();
 
-  PropertyType getBaseHighHighLimitNode();
+  /**
+   * Sets the Value of the LowLimit child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setLowLimit(@Nullable Double value);
 
-  Double getBaseHighLimit();
+  /**
+   * Returns the optional LowLowDeadband child, a PropertyType with DataType Double.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getLowLowDeadbandNode();
 
-  void setBaseHighLimit(Double value);
+  /**
+   * Returns the Value of the LowLowDeadband child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Double getLowLowDeadband();
 
-  PropertyType getBaseHighLimitNode();
+  /**
+   * Sets the Value of the LowLowDeadband child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setLowLowDeadband(@Nullable Double value);
 
-  Double getBaseLowLimit();
+  /**
+   * Returns the optional LowLowLimit child, a PropertyType with DataType Double.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getLowLowLimitNode();
 
-  void setBaseLowLimit(Double value);
+  /**
+   * Returns the Value of the LowLowLimit child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Double getLowLowLimit();
 
-  PropertyType getBaseLowLimitNode();
+  /**
+   * Sets the Value of the LowLowLimit child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setLowLowLimit(@Nullable Double value);
 
-  Double getBaseLowLowLimit();
+  /**
+   * Returns the optional SeverityHigh child, a PropertyType with DataType UInt16.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getSeverityHighNode();
 
-  void setBaseLowLowLimit(Double value);
+  /**
+   * Returns the Value of the SeverityHigh child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UShort getSeverityHigh();
 
-  PropertyType getBaseLowLowLimitNode();
+  /**
+   * Sets the Value of the SeverityHigh child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setSeverityHigh(@Nullable UShort value);
 
-  UShort getSeverityHighHigh();
+  /**
+   * Returns the optional SeverityHighHigh child, a PropertyType with DataType UInt16.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getSeverityHighHighNode();
 
-  void setSeverityHighHigh(UShort value);
+  /**
+   * Returns the Value of the SeverityHighHigh child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UShort getSeverityHighHigh();
 
-  PropertyType getSeverityHighHighNode();
+  /**
+   * Sets the Value of the SeverityHighHigh child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setSeverityHighHigh(@Nullable UShort value);
 
-  UShort getSeverityHigh();
+  /**
+   * Returns the optional SeverityLow child, a PropertyType with DataType UInt16.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getSeverityLowNode();
 
-  void setSeverityHigh(UShort value);
+  /**
+   * Returns the Value of the SeverityLow child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UShort getSeverityLow();
 
-  PropertyType getSeverityHighNode();
+  /**
+   * Sets the Value of the SeverityLow child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setSeverityLow(@Nullable UShort value);
 
-  UShort getSeverityLow();
+  /**
+   * Returns the optional SeverityLowLow child, a PropertyType with DataType UInt16.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getSeverityLowLowNode();
 
-  void setSeverityLow(UShort value);
+  /**
+   * Returns the Value of the SeverityLowLow child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UShort getSeverityLowLow();
 
-  PropertyType getSeverityLowNode();
+  /**
+   * Sets the Value of the SeverityLowLow child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setSeverityLowLow(@Nullable UShort value);
 
-  UShort getSeverityLowLow();
+  /**
+   * Sets this instance's Method handlers, including inherited handlers, from one implementation;
+   * null clears them and restores Method-node fallback. Absent optional Methods are skipped.
+   * Changes are applied in order; a failure does not roll back earlier changes.
+   *
+   * @throws UaRuntimeException if a mandatory Method is absent, or a Method is ambiguous or
+   *     incompatible.
+   */
+  void setMethods(@Nullable Methods methods);
 
-  void setSeverityLowLow(UShort value);
-
-  PropertyType getSeverityLowLowNode();
-
-  Double getHighHighDeadband();
-
-  void setHighHighDeadband(Double value);
-
-  PropertyType getHighHighDeadbandNode();
-
-  Double getHighDeadband();
-
-  void setHighDeadband(Double value);
-
-  PropertyType getHighDeadbandNode();
-
-  Double getLowDeadband();
-
-  void setLowDeadband(Double value);
-
-  PropertyType getLowDeadbandNode();
-
-  Double getLowLowDeadband();
-
-  void setLowLowDeadband(Double value);
-
-  PropertyType getLowLowDeadbandNode();
+  /** Implements this type's Methods. Unimplemented Methods report Bad_NotImplemented. */
+  interface Methods extends AlarmConditionType.Methods {}
 }

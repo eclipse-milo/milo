@@ -1,171 +1,139 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.server.model.variables.FiniteStateVariableType;
-import org.eclipse.milo.opcua.sdk.server.model.variables.FiniteTransitionVariableType;
-import org.eclipse.milo.opcua.sdk.server.model.variables.ProgramDiagnostic2Type;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.FiniteTransitionVariableTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.variables.ProgramDiagnostic2TypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
-import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.ProgramDiagnostic2DataType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part10/5.2.1">https://reference.opcfoundation.org/v105/Core/docs/Part10/5.2.1</a>
+ * Server API for the ProgramStateMachineType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part10/5.2.1">Model
+ *     documentation</a>
  */
 public interface ProgramStateMachineType extends FiniteStateMachineType {
-  QualifiedProperty<Boolean> CREATABLE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Creatable",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2391L);
 
-  QualifiedProperty<Boolean> DELETABLE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Deletable",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
+  /**
+   * Returns the mandatory AutoDelete child, a PropertyType with DataType Boolean.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getAutoDeleteNode();
 
-  QualifiedProperty<Boolean> AUTO_DELETE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "AutoDelete",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
+  /**
+   * Returns the Value of the AutoDelete child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Boolean getAutoDelete();
 
-  QualifiedProperty<Integer> RECYCLE_COUNT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "RecycleCount",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=6"),
-          -1,
-          Integer.class);
+  /**
+   * Sets the Value of the AutoDelete child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setAutoDelete(@Nullable Boolean value);
 
-  QualifiedProperty<UInteger> INSTANCE_COUNT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "InstanceCount",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  /**
+   * Returns the mandatory Deletable child, a PropertyType with DataType Boolean.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getDeletableNode();
 
-  QualifiedProperty<UInteger> MAX_INSTANCE_COUNT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxInstanceCount",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  /**
+   * Returns the Value of the Deletable child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Boolean getDeletable();
 
-  QualifiedProperty<UInteger> MAX_RECYCLE_COUNT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MaxRecycleCount",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-          -1,
-          UInteger.class);
+  /**
+   * Sets the Value of the Deletable child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setDeletable(@Nullable Boolean value);
 
-  Boolean getCreatable();
+  /**
+   * Returns the optional FinalResultData child, a BaseObjectType.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part10/A.2.6/#A.2.6.2">Model
+   *     documentation</a>
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.2">BaseObjectType
+   *     documentation</a>
+   */
+  @Nullable BaseObjectTypeNode getFinalResultDataNode();
 
-  void setCreatable(Boolean value);
+  /**
+   * Returns the mandatory LastTransition child, a FiniteTransitionVariableType with DataType
+   * LocalizedText.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part16/4.4.7">FiniteTransitionVariableType
+   *     documentation</a>
+   */
+  FiniteTransitionVariableTypeNode getLastTransitionNode();
 
-  PropertyType getCreatableNode();
+  /**
+   * Returns the optional ProgramDiagnostic child, a ProgramDiagnostic2Type with DataType
+   * ProgramDiagnostic2DataType.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part10/5.2.9">ProgramDiagnostic2Type
+   *     documentation</a>
+   */
+  @Nullable ProgramDiagnostic2TypeNode getProgramDiagnosticNode();
 
-  Boolean getDeletable();
+  /**
+   * Returns the Value of the ProgramDiagnostic child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable ProgramDiagnostic2DataType getProgramDiagnostic();
 
-  void setDeletable(Boolean value);
+  /**
+   * Sets the Value of the ProgramDiagnostic child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setProgramDiagnostic(@Nullable ProgramDiagnostic2DataType value);
 
-  PropertyType getDeletableNode();
+  /**
+   * Returns the mandatory RecycleCount child, a PropertyType with DataType Int32.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getRecycleCountNode();
 
-  Boolean getAutoDelete();
+  /**
+   * Returns the Value of the RecycleCount child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Integer getRecycleCount();
 
-  void setAutoDelete(Boolean value);
-
-  PropertyType getAutoDeleteNode();
-
-  Integer getRecycleCount();
-
-  void setRecycleCount(Integer value);
-
-  PropertyType getRecycleCountNode();
-
-  UInteger getInstanceCount();
-
-  void setInstanceCount(UInteger value);
-
-  PropertyType getInstanceCountNode();
-
-  UInteger getMaxInstanceCount();
-
-  void setMaxInstanceCount(UInteger value);
-
-  PropertyType getMaxInstanceCountNode();
-
-  UInteger getMaxRecycleCount();
-
-  void setMaxRecycleCount(UInteger value);
-
-  PropertyType getMaxRecycleCountNode();
-
-  FiniteStateVariableType getCurrentStateNode();
-
-  LocalizedText getCurrentState();
-
-  void setCurrentState(LocalizedText value);
-
-  FiniteTransitionVariableType getLastTransitionNode();
-
-  LocalizedText getLastTransition();
-
-  void setLastTransition(LocalizedText value);
-
-  ProgramDiagnostic2Type getProgramDiagnosticNode();
-
-  ProgramDiagnostic2DataType getProgramDiagnostic();
-
-  void setProgramDiagnostic(ProgramDiagnostic2DataType value);
-
-  BaseObjectType getFinalResultDataNode();
-
-  StateType getHaltedNode();
-
-  StateType getReadyNode();
-
-  StateType getRunningNode();
-
-  StateType getSuspendedNode();
-
-  TransitionType getHaltedToReadyNode();
-
-  TransitionType getReadyToRunningNode();
-
-  TransitionType getRunningToHaltedNode();
-
-  TransitionType getRunningToReadyNode();
-
-  TransitionType getRunningToSuspendedNode();
-
-  TransitionType getSuspendedToRunningNode();
-
-  TransitionType getSuspendedToHaltedNode();
-
-  TransitionType getSuspendedToReadyNode();
-
-  TransitionType getReadyToHaltedNode();
+  /**
+   * Sets the Value of the RecycleCount child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setRecycleCount(@Nullable Integer value);
 }

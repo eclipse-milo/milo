@@ -1,106 +1,158 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.3">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.3</a>
+ * Server API for the AuditEventType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.3">Model
+ *     documentation</a>
  */
 public interface AuditEventType extends BaseEventType {
-  QualifiedProperty<DateTime> ACTION_TIME_STAMP =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ActionTimeStamp",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
-          -1,
-          DateTime.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2052L);
 
-  QualifiedProperty<Boolean> STATUS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Status",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
+  /**
+   * Returns the mandatory ActionTimeStamp child, a PropertyType with DataType UtcTime.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getActionTimeStampNode();
 
-  QualifiedProperty<String> SERVER_ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ServerId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  /**
+   * Returns the Value of the ActionTimeStamp child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable DateTime getActionTimeStamp();
 
-  QualifiedProperty<String> CLIENT_AUDIT_ENTRY_ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ClientAuditEntryId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  /**
+   * Sets the Value of the ActionTimeStamp child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setActionTimeStamp(@Nullable DateTime value);
 
-  QualifiedProperty<String> CLIENT_USER_ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ClientUserId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  /**
+   * Returns the optional ClientApplicationUri child, a PropertyType with DataType String.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getClientApplicationUriNode();
 
-  QualifiedProperty<String> CLIENT_APPLICATION_URI =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ClientApplicationUri",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  /**
+   * Returns the Value of the ClientApplicationUri child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getClientApplicationUri();
 
-  DateTime getActionTimeStamp();
+  /**
+   * Sets the Value of the ClientApplicationUri child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setClientApplicationUri(@Nullable String value);
 
-  void setActionTimeStamp(DateTime value);
+  /**
+   * Returns the mandatory ClientAuditEntryId child, a PropertyType with DataType String.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getClientAuditEntryIdNode();
 
-  PropertyType getActionTimeStampNode();
+  /**
+   * Returns the Value of the ClientAuditEntryId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getClientAuditEntryId();
 
-  Boolean getStatus();
+  /**
+   * Sets the Value of the ClientAuditEntryId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setClientAuditEntryId(@Nullable String value);
 
-  void setStatus(Boolean value);
+  /**
+   * Returns the mandatory ClientUserId child, a PropertyType with DataType String.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getClientUserIdNode();
 
-  PropertyType getStatusNode();
+  /**
+   * Returns the Value of the ClientUserId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getClientUserId();
 
-  String getServerId();
+  /**
+   * Sets the Value of the ClientUserId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setClientUserId(@Nullable String value);
 
-  void setServerId(String value);
+  /**
+   * Returns the mandatory ServerId child, a PropertyType with DataType String.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getServerIdNode();
 
-  PropertyType getServerIdNode();
+  /**
+   * Returns the Value of the ServerId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getServerId();
 
-  String getClientAuditEntryId();
+  /**
+   * Sets the Value of the ServerId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setServerId(@Nullable String value);
 
-  void setClientAuditEntryId(String value);
+  /**
+   * Returns the mandatory Status child, a PropertyType with DataType Boolean.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getStatusNode();
 
-  PropertyType getClientAuditEntryIdNode();
+  /**
+   * Returns the Value of the Status child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Boolean getStatus();
 
-  String getClientUserId();
-
-  void setClientUserId(String value);
-
-  PropertyType getClientUserIdNode();
-
-  String getClientApplicationUri();
-
-  void setClientApplicationUri(String value);
-
-  PropertyType getClientApplicationUriNode();
+  /**
+   * Sets the Value of the Status child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setStatus(@Nullable Boolean value);
 }

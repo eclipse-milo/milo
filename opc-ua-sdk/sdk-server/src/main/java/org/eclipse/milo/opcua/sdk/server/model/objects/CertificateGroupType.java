@@ -1,115 +1,159 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.core.nodes.MethodNode;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
-import org.eclipse.milo.opcua.sdk.server.methods.Out;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
-import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
-import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
-import org.eclipse.milo.opcua.stack.core.util.Lazy;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.3/#7.8.3.1">https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.3/#7.8.3.1</a>
+ * Server API for the CertificateGroupType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.3/#7.8.3.1">Model
+ *     documentation</a>
  */
 public interface CertificateGroupType extends BaseObjectType {
-  QualifiedProperty<NodeId[]> CERTIFICATE_TYPES =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "CertificateTypes",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-          1,
-          NodeId[].class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 12555L);
 
-  QualifiedProperty<NodeId> PURPOSE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "Purpose",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-          -1,
-          NodeId.class);
+  /**
+   * Returns the optional CertificateExpired child, a CertificateExpirationAlarmType.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.24/#5.8.24.7">CertificateExpirationAlarmType
+   *     documentation</a>
+   */
+  @Nullable CertificateExpirationAlarmTypeNode getCertificateExpiredNode();
 
-  NodeId[] getCertificateTypes();
+  /**
+   * Returns the mandatory CertificateTypes child, a PropertyType with DataType NodeId.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getCertificateTypesNode();
 
-  void setCertificateTypes(NodeId[] value);
+  /**
+   * Returns the Value of the CertificateTypes child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  NodeId @Nullable [] getCertificateTypes();
 
-  PropertyType getCertificateTypesNode();
+  /**
+   * Sets the Value of the CertificateTypes child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setCertificateTypes(NodeId @Nullable [] value);
 
-  NodeId getPurpose();
+  /**
+   * Returns the optional Purpose child, a PropertyType with DataType NodeId.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getPurposeNode();
 
-  void setPurpose(NodeId value);
+  /**
+   * Returns the Value of the Purpose child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable NodeId getPurpose();
 
-  PropertyType getPurposeNode();
+  /**
+   * Sets the Value of the Purpose child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setPurpose(@Nullable NodeId value);
 
-  TrustListType getTrustListNode();
+  /**
+   * Returns the mandatory TrustList child, a TrustListType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.2/#7.8.2.1">TrustListType
+   *     documentation</a>
+   */
+  TrustListTypeNode getTrustListNode();
 
-  CertificateExpirationAlarmType getCertificateExpiredNode();
+  /**
+   * Returns the optional TrustListOutOfDate child, a TrustListOutOfDateAlarmType.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.2/#7.8.2.11">TrustListOutOfDateAlarmType
+   *     documentation</a>
+   */
+  @Nullable TrustListOutOfDateAlarmTypeNode getTrustListOutOfDateNode();
 
-  TrustListOutOfDateAlarmType getTrustListOutOfDateNode();
+  /**
+   * Returns the optional GetRejectedList Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.3/#7.8.3.2">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getGetRejectedListMethodNode();
 
-  MethodNode getGetRejectedListMethodNode();
+  /**
+   * Sets this instance's GetRejectedList handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setGetRejectedListHandler(@Nullable GetRejectedListHandler handler);
 
-  abstract class GetRejectedListMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
+  /**
+   * Sets this instance's Method handlers, including inherited handlers, from one implementation;
+   * null clears them and restores Method-node fallback. Absent optional Methods are skipped.
+   * Changes are applied in order; a failure does not roll back earlier changes.
+   *
+   * @throws UaRuntimeException if a mandatory Method is absent, or a Method is ambiguous or
+   *     incompatible.
+   */
+  void setMethods(@Nullable Methods methods);
 
-    public GetRejectedListMethod(UaMethodNode node) {
-      super(node);
+  /**
+   * Handles calls to the GetRejectedList Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.3/#7.8.3.2">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface GetRejectedListHandler {
+    /**
+     * Handles a call to the GetRejectedList Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    ByteString @Nullable [] getRejectedList(
+        AbstractMethodInvocationHandler.InvocationContext context) throws UaException;
+  }
+
+  /** Implements this type's Methods. Unimplemented Methods report Bad_NotImplemented. */
+  interface Methods {
+    /**
+     * Handles a call to the GetRejectedList Method; see {@link
+     * GetRejectedListHandler#getRejectedList}.
+     */
+    default ByteString @Nullable [] getRejectedList(
+        AbstractMethodInvocationHandler.InvocationContext context) throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
     }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "Certificates",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      Out<ByteString[]> certificates = new Out<>();
-      invoke(context, certificates);
-      return new Variant[] {new Variant(certificates.get())};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Out<ByteString[]> certificates)
-        throws UaException;
   }
 }

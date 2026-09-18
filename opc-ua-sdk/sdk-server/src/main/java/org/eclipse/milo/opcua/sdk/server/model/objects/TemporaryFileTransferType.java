@@ -1,279 +1,198 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.core.nodes.MethodNode;
+import org.eclipse.milo.opcua.sdk.core.model.methods.TemporaryFileTransferTypeGenerateFileForRead;
+import org.eclipse.milo.opcua.sdk.core.model.methods.TemporaryFileTransferTypeGenerateFileForWrite;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
-import org.eclipse.milo.opcua.sdk.server.methods.Out;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
-import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
-import org.eclipse.milo.opcua.stack.core.util.Lazy;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.4.1">https://reference.opcfoundation.org/v105/Core/docs/Part20/4.4.1</a>
+ * Server API for the TemporaryFileTransferType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.4.1">Model
+ *     documentation</a>
  */
 public interface TemporaryFileTransferType extends BaseObjectType {
-  QualifiedProperty<Double> CLIENT_PROCESSING_TIMEOUT =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ClientProcessingTimeout",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
-          -1,
-          Double.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 15744L);
 
-  Double getClientProcessingTimeout();
+  /**
+   * Returns the mandatory ClientProcessingTimeout child, a PropertyType with DataType Duration.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getClientProcessingTimeoutNode();
 
-  void setClientProcessingTimeout(Double value);
+  /**
+   * Returns the Value of the ClientProcessingTimeout child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Double getClientProcessingTimeout();
 
-  PropertyType getClientProcessingTimeoutNode();
+  /**
+   * Sets the Value of the ClientProcessingTimeout child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setClientProcessingTimeout(@Nullable Double value);
 
-  MethodNode getGenerateFileForReadMethodNode();
+  /**
+   * Returns the mandatory CloseAndCommit Method node.
+   *
+   * @throws UaRuntimeException if the Method is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.4.5">Model
+   *     documentation</a>
+   */
+  UaMethodNode getCloseAndCommitMethodNode();
 
-  MethodNode getGenerateFileForWriteMethodNode();
+  /**
+   * Sets this instance's CloseAndCommit handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setCloseAndCommitHandler(@Nullable CloseAndCommitHandler handler);
 
-  MethodNode getCloseAndCommitMethodNode();
+  /**
+   * Returns the mandatory GenerateFileForRead Method node.
+   *
+   * @throws UaRuntimeException if the Method is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.4.3">Model
+   *     documentation</a>
+   */
+  UaMethodNode getGenerateFileForReadMethodNode();
 
-  abstract class GenerateFileForReadMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+  /**
+   * Sets this instance's GenerateFileForRead handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setGenerateFileForReadHandler(@Nullable GenerateFileForReadHandler handler);
 
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
+  /**
+   * Returns the mandatory GenerateFileForWrite Method node.
+   *
+   * @throws UaRuntimeException if the Method is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.4.4">Model
+   *     documentation</a>
+   */
+  UaMethodNode getGenerateFileForWriteMethodNode();
 
-    public GenerateFileForReadMethod(UaMethodNode node) {
-      super(node);
-    }
+  /**
+   * Sets this instance's GenerateFileForWrite handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setGenerateFileForWriteHandler(@Nullable GenerateFileForWriteHandler handler);
 
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+  /**
+   * Sets this instance's Method handlers, including inherited handlers, from one implementation;
+   * null clears them and restores Method-node fallback. Absent optional Methods are skipped.
+   * Changes are applied in order; a failure does not roll back earlier changes.
+   *
+   * @throws UaRuntimeException if a mandatory Method is absent, or a Method is ambiguous or
+   *     incompatible.
+   */
+  void setMethods(@Nullable Methods methods);
 
-            return new Argument[] {
-              new Argument(
-                  "GenerateOptions",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "FileNodeId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "FileHandle",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "CompletionStateMachine",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      Object generateOptions = (Object) inputValues[0].getValue();
-      Out<NodeId> fileNodeId = new Out<>();
-      Out<UInteger> fileHandle = new Out<>();
-      Out<NodeId> completionStateMachine = new Out<>();
-      invoke(context, generateOptions, fileNodeId, fileHandle, completionStateMachine);
-      return new Variant[] {
-        new Variant(fileNodeId.get()),
-        new Variant(fileHandle.get()),
-        new Variant(completionStateMachine.get())
-      };
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context,
-        Object generateOptions,
-        Out<NodeId> fileNodeId,
-        Out<UInteger> fileHandle,
-        Out<NodeId> completionStateMachine)
+  /**
+   * Handles calls to the CloseAndCommit Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.4.5">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface CloseAndCommitHandler {
+    /**
+     * Handles a call to the CloseAndCommit Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    @Nullable NodeId closeAndCommit(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable UInteger fileHandle)
         throws UaException;
   }
 
-  abstract class GenerateFileForWriteMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-    public GenerateFileForWriteMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "GenerateOptions",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "FileNodeId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "FileHandle",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      Object generateOptions = (Object) inputValues[0].getValue();
-      Out<NodeId> fileNodeId = new Out<>();
-      Out<UInteger> fileHandle = new Out<>();
-      invoke(context, generateOptions, fileNodeId, fileHandle);
-      return new Variant[] {new Variant(fileNodeId.get()), new Variant(fileHandle.get())};
-    }
-
-    protected abstract void invoke(
+  /**
+   * Handles calls to the GenerateFileForRead Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.4.3">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface GenerateFileForReadHandler {
+    /**
+     * Handles a call to the GenerateFileForRead Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    TemporaryFileTransferTypeGenerateFileForRead.Outputs generateFileForRead(
         AbstractMethodInvocationHandler.InvocationContext context,
-        Object generateOptions,
-        Out<NodeId> fileNodeId,
-        Out<UInteger> fileHandle)
+        @Nullable Variant generateOptions)
         throws UaException;
   }
 
-  abstract class CloseAndCommitMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-    public CloseAndCommitMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "FileHandle",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "CompletionStateMachine",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      UInteger fileHandle = (UInteger) inputValues[0].getValue();
-      Out<NodeId> completionStateMachine = new Out<>();
-      invoke(context, fileHandle, completionStateMachine);
-      return new Variant[] {new Variant(completionStateMachine.get())};
-    }
-
-    protected abstract void invoke(
+  /**
+   * Handles calls to the GenerateFileForWrite Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.4.4">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface GenerateFileForWriteHandler {
+    /**
+     * Handles a call to the GenerateFileForWrite Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    TemporaryFileTransferTypeGenerateFileForWrite.Outputs generateFileForWrite(
         AbstractMethodInvocationHandler.InvocationContext context,
-        UInteger fileHandle,
-        Out<NodeId> completionStateMachine)
+        @Nullable Variant generateOptions)
         throws UaException;
+  }
+
+  /** Implements this type's Methods. Unimplemented Methods report Bad_NotImplemented. */
+  interface Methods {
+    /**
+     * Handles a call to the CloseAndCommit Method; see {@link
+     * CloseAndCommitHandler#closeAndCommit}.
+     */
+    default @Nullable NodeId closeAndCommit(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable UInteger fileHandle)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /**
+     * Handles a call to the GenerateFileForRead Method; see {@link
+     * GenerateFileForReadHandler#generateFileForRead}.
+     */
+    default TemporaryFileTransferTypeGenerateFileForRead.Outputs generateFileForRead(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable Variant generateOptions)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /**
+     * Handles a call to the GenerateFileForWrite Method; see {@link
+     * GenerateFileForWriteHandler#generateFileForWrite}.
+     */
+    default TemporaryFileTransferTypeGenerateFileForWrite.Outputs generateFileForWrite(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable Variant generateOptions)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
   }
 }

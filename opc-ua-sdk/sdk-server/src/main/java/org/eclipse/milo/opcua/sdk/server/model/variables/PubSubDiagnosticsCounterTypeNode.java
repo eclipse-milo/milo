@@ -1,20 +1,10 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.variables;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -25,7 +15,15 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.PubSubDiagnosticsCount
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelExType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link PubSubDiagnosticsCounterType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.11/#9.1.11.5">Model
+ *     documentation</a>
+ */
 public class PubSubDiagnosticsCounterTypeNode extends BaseDataVariableTypeNode
     implements PubSubDiagnosticsCounterType {
   public PubSubDiagnosticsCounterTypeNode(
@@ -33,16 +31,48 @@ public class PubSubDiagnosticsCounterTypeNode extends BaseDataVariableTypeNode
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       DataValue value,
       NodeId dataType,
       Integer valueRank,
-      UInteger[] arrayDimensions,
+      UInteger @Nullable [] arrayDimensions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions,
+        value,
+        dataType,
+        valueRank,
+        arrayDimensions);
+  }
+
+  public PubSubDiagnosticsCounterTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
+      DataValue value,
+      NodeId dataType,
+      Integer valueRank,
+      UInteger @Nullable [] arrayDimensions,
       UByte accessLevel,
       UByte userAccessLevel,
       Double minimumSamplingInterval,
@@ -70,102 +100,127 @@ public class PubSubDiagnosticsCounterTypeNode extends BaseDataVariableTypeNode
         accessLevelEx);
   }
 
-  public PubSubDiagnosticsCounterTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
-      DataValue value,
-      NodeId dataType,
-      Integer valueRank,
-      UInteger[] arrayDimensions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions,
-        value,
-        dataType,
-        valueRank,
-        arrayDimensions);
-  }
-
   @Override
   public PropertyTypeNode getActiveNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(PubSubDiagnosticsCounterType.ACTIVE);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "Active",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public Boolean getActive() {
-    return getProperty(PubSubDiagnosticsCounterType.ACTIVE).orElse(null);
+  public @Nullable Boolean getActive() {
+    return ServerNodeSupport.read(this, getActiveNode(), Boolean.class, null);
   }
 
   @Override
-  public void setActive(Boolean value) {
-    setProperty(PubSubDiagnosticsCounterType.ACTIVE, value);
+  public void setActive(@Nullable Boolean value) {
+    ServerNodeSupport.write(this, getActiveNode(), value, false, false, false);
   }
 
   @Override
   public PropertyTypeNode getClassificationNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(PubSubDiagnosticsCounterType.CLASSIFICATION);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "Classification",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 19730L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PubSubDiagnosticsCounterClassification getClassification() {
-    return getProperty(PubSubDiagnosticsCounterType.CLASSIFICATION).orElse(null);
+  public @Nullable PubSubDiagnosticsCounterClassification getClassification() {
+    return ServerNodeSupport.read(
+        this,
+        getClassificationNode(),
+        PubSubDiagnosticsCounterClassification.class,
+        PubSubDiagnosticsCounterClassification::from);
   }
 
   @Override
-  public void setClassification(PubSubDiagnosticsCounterClassification value) {
-    setProperty(PubSubDiagnosticsCounterType.CLASSIFICATION, value);
+  public void setClassification(@Nullable PubSubDiagnosticsCounterClassification value) {
+    ServerNodeSupport.write(this, getClassificationNode(), value, false, true, false);
   }
 
   @Override
   public PropertyTypeNode getDiagnosticsLevelNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(PubSubDiagnosticsCounterType.DIAGNOSTICS_LEVEL);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "DiagnosticsLevel",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 19723L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public DiagnosticsLevel getDiagnosticsLevel() {
-    return getProperty(PubSubDiagnosticsCounterType.DIAGNOSTICS_LEVEL).orElse(null);
+  public @Nullable DiagnosticsLevel getDiagnosticsLevel() {
+    return ServerNodeSupport.read(
+        this, getDiagnosticsLevelNode(), DiagnosticsLevel.class, DiagnosticsLevel::from);
   }
 
   @Override
-  public void setDiagnosticsLevel(DiagnosticsLevel value) {
-    setProperty(PubSubDiagnosticsCounterType.DIAGNOSTICS_LEVEL, value);
+  public void setDiagnosticsLevel(@Nullable DiagnosticsLevel value) {
+    ServerNodeSupport.write(this, getDiagnosticsLevelNode(), value, false, true, false);
   }
 
   @Override
-  public PropertyTypeNode getTimeFirstChangeNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(PubSubDiagnosticsCounterType.TIME_FIRST_CHANGE);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable PropertyTypeNode getTimeFirstChangeNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "TimeFirstChange",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 13L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public DateTime getTimeFirstChange() {
-    return getProperty(PubSubDiagnosticsCounterType.TIME_FIRST_CHANGE).orElse(null);
+  public @Nullable DateTime getTimeFirstChange() {
+    return ServerNodeSupport.read(this, getTimeFirstChangeNode(), DateTime.class, null);
   }
 
   @Override
-  public void setTimeFirstChange(DateTime value) {
-    setProperty(PubSubDiagnosticsCounterType.TIME_FIRST_CHANGE, value);
+  public void setTimeFirstChange(@Nullable DateTime value) {
+    ServerNodeSupport.write(
+        this,
+        getTimeFirstChangeNode(),
+        Namespaces.OPC_UA,
+        "TimeFirstChange",
+        value,
+        false,
+        false,
+        false);
+  }
+
+  @Override
+  public void validateChildren() {
+    super.validateChildren();
+    getActiveNode();
+    getClassificationNode();
+    getDiagnosticsLevelNode();
+    getTimeFirstChangeNode();
+  }
+
+  @Override
+  public @Nullable UInteger getTypedValue() {
+    return ServerNodeSupport.read(this, this, UInteger.class, null);
+  }
+
+  @Override
+  public void setTypedValue(@Nullable UInteger value) {
+    ServerNodeSupport.write(this, this, value, false, false, false);
   }
 }

@@ -1,257 +1,287 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.core.nodes.MethodNode;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
-import org.eclipse.milo.opcua.sdk.server.methods.Out;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
-import org.eclipse.milo.opcua.sdk.server.model.variables.SelectionListType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.variables.SelectionListTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
-import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.types.structured.KeyValuePair;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReaderGroupDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.WriterGroupDataType;
-import org.eclipse.milo.opcua.stack.core.util.Lazy;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.2">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.2</a>
+ * Server API for the PubSubConnectionType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.2">Model
+ *     documentation</a>
  */
 public interface PubSubConnectionType extends BaseObjectType {
-  QualifiedProperty<Object> PUBLISHER_ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "PublisherId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24"),
-          -1,
-          Object.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 14209L);
 
-  QualifiedProperty<KeyValuePair[]> CONNECTION_PROPERTIES =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ConnectionProperties",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14533"),
-          1,
-          KeyValuePair[].class);
+  /**
+   * Returns the mandatory Address child, a NetworkAddressType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.6">NetworkAddressType
+   *     documentation</a>
+   */
+  NetworkAddressTypeNode getAddressNode();
 
-  Object getPublisherId();
+  /**
+   * Returns the mandatory ConnectionProperties child, a PropertyType with DataType KeyValuePair.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getConnectionPropertiesNode();
 
-  void setPublisherId(Object value);
+  /**
+   * Returns the Value of the ConnectionProperties child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable KeyValuePair @Nullable [] getConnectionProperties();
 
-  PropertyType getPublisherIdNode();
+  /**
+   * Sets the Value of the ConnectionProperties child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setConnectionProperties(@Nullable KeyValuePair @Nullable [] value);
 
-  KeyValuePair[] getConnectionProperties();
+  /**
+   * Returns the optional Diagnostics child, a PubSubDiagnosticsConnectionType.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.11/#9.1.11.8">PubSubDiagnosticsConnectionType
+   *     documentation</a>
+   */
+  @Nullable PubSubDiagnosticsConnectionTypeNode getDiagnosticsNode();
 
-  void setConnectionProperties(KeyValuePair[] value);
+  /**
+   * Returns the mandatory PublisherId child, a PropertyType with DataType BaseDataType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getPublisherIdNode();
 
-  PropertyType getConnectionPropertiesNode();
+  /**
+   * Returns the Value of the PublisherId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Variant getPublisherId();
 
-  SelectionListType getTransportProfileUriNode();
+  /**
+   * Sets the Value of the PublisherId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setPublisherId(@Nullable Variant value);
 
-  String getTransportProfileUri();
+  /**
+   * Returns the mandatory Status child, a PubSubStatusType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.10/#9.1.10.1">PubSubStatusType
+   *     documentation</a>
+   */
+  PubSubStatusTypeNode getStatusNode();
 
-  void setTransportProfileUri(String value);
+  /**
+   * Returns the mandatory TransportProfileUri child, a SelectionListType with DataType String.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.18">SelectionListType
+   *     documentation</a>
+   */
+  SelectionListTypeNode getTransportProfileUriNode();
 
-  NetworkAddressType getAddressNode();
+  /**
+   * Returns the Value of the TransportProfileUri child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getTransportProfileUri();
 
-  ConnectionTransportType getTransportSettingsNode();
+  /**
+   * Sets the Value of the TransportProfileUri child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setTransportProfileUri(@Nullable String value);
 
-  PubSubStatusType getStatusNode();
+  /**
+   * Returns the optional TransportSettings child, a ConnectionTransportType.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.8">ConnectionTransportType
+   *     documentation</a>
+   */
+  @Nullable ConnectionTransportTypeNode getTransportSettingsNode();
 
-  PubSubDiagnosticsConnectionType getDiagnosticsNode();
+  /**
+   * Returns the optional AddReaderGroup Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.4">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getAddReaderGroupMethodNode();
 
-  MethodNode getAddWriterGroupMethodNode();
+  /**
+   * Sets this instance's AddReaderGroup handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setAddReaderGroupHandler(@Nullable AddReaderGroupHandler handler);
 
-  MethodNode getAddReaderGroupMethodNode();
+  /**
+   * Returns the optional AddWriterGroup Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.3">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getAddWriterGroupMethodNode();
 
-  MethodNode getRemoveGroupMethodNode();
+  /**
+   * Sets this instance's AddWriterGroup handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setAddWriterGroupHandler(@Nullable AddWriterGroupHandler handler);
 
-  abstract class AddWriterGroupMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+  /**
+   * Returns the optional RemoveGroup Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.5">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getRemoveGroupMethodNode();
 
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
+  /**
+   * Sets this instance's RemoveGroup handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setRemoveGroupHandler(@Nullable RemoveGroupHandler handler);
 
-    public AddWriterGroupMethod(UaMethodNode node) {
-      super(node);
-    }
+  /**
+   * Sets this instance's Method handlers, including inherited handlers, from one implementation;
+   * null clears them and restores Method-node fallback. Absent optional Methods are skipped.
+   * Changes are applied in order; a failure does not roll back earlier changes.
+   *
+   * @throws UaRuntimeException if a mandatory Method is absent, or a Method is ambiguous or
+   *     incompatible.
+   */
+  void setMethods(@Nullable Methods methods);
 
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "Configuration",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15480")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "GroupId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      WriterGroupDataType configuration = (WriterGroupDataType) inputValues[0].getValue();
-      Out<NodeId> groupId = new Out<>();
-      invoke(context, configuration, groupId);
-      return new Variant[] {new Variant(groupId.get())};
-    }
-
-    protected abstract void invoke(
+  /**
+   * Handles calls to the AddReaderGroup Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.4">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface AddReaderGroupHandler {
+    /**
+     * Handles a call to the AddReaderGroup Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    @Nullable NodeId addReaderGroup(
         AbstractMethodInvocationHandler.InvocationContext context,
-        WriterGroupDataType configuration,
-        Out<NodeId> groupId)
+        @Nullable ReaderGroupDataType configuration)
         throws UaException;
   }
 
-  abstract class AddReaderGroupMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-    public AddReaderGroupMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "Configuration",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15520")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "GroupId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      ReaderGroupDataType configuration = (ReaderGroupDataType) inputValues[0].getValue();
-      Out<NodeId> groupId = new Out<>();
-      invoke(context, configuration, groupId);
-      return new Variant[] {new Variant(groupId.get())};
-    }
-
-    protected abstract void invoke(
+  /**
+   * Handles calls to the AddWriterGroup Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.3">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface AddWriterGroupHandler {
+    /**
+     * Handles a call to the AddWriterGroup Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    @Nullable NodeId addWriterGroup(
         AbstractMethodInvocationHandler.InvocationContext context,
-        ReaderGroupDataType configuration,
-        Out<NodeId> groupId)
+        @Nullable WriterGroupDataType configuration)
         throws UaException;
   }
 
-  abstract class RemoveGroupMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    public RemoveGroupMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "GroupId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      NodeId groupId = (NodeId) inputValues[0].getValue();
-      invoke(context, groupId);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, NodeId groupId)
+  /**
+   * Handles calls to the RemoveGroup Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.5">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface RemoveGroupHandler {
+    /**
+     * Handles a call to the RemoveGroup Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void removeGroup(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable NodeId groupId)
         throws UaException;
+  }
+
+  /** Implements this type's Methods. Unimplemented Methods report Bad_NotImplemented. */
+  interface Methods {
+    /**
+     * Handles a call to the AddReaderGroup Method; see {@link
+     * AddReaderGroupHandler#addReaderGroup}.
+     */
+    default @Nullable NodeId addReaderGroup(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable ReaderGroupDataType configuration)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /**
+     * Handles a call to the AddWriterGroup Method; see {@link
+     * AddWriterGroupHandler#addWriterGroup}.
+     */
+    default @Nullable NodeId addWriterGroup(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable WriterGroupDataType configuration)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /** Handles a call to the RemoveGroup Method; see {@link RemoveGroupHandler#removeGroup}. */
+    default void removeGroup(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable NodeId groupId)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
   }
 }

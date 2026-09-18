@@ -1,20 +1,10 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -22,19 +12,51 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link AuditEventType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.3">Model
+ *     documentation</a>
+ */
 public class AuditEventTypeNode extends BaseEventTypeNode implements AuditEventType {
   public AuditEventTypeNode(
       UaNodeContext context,
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions);
+  }
+
+  public AuditEventTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         context,
@@ -50,123 +72,160 @@ public class AuditEventTypeNode extends BaseEventTypeNode implements AuditEventT
         eventNotifier);
   }
 
-  public AuditEventTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions);
-  }
-
   @Override
   public PropertyTypeNode getActionTimeStampNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(AuditEventType.ACTION_TIME_STAMP);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "ActionTimeStamp",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 294L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public DateTime getActionTimeStamp() {
-    return getProperty(AuditEventType.ACTION_TIME_STAMP).orElse(null);
+  public @Nullable DateTime getActionTimeStamp() {
+    return ServerNodeSupport.read(this, getActionTimeStampNode(), DateTime.class, null);
   }
 
   @Override
-  public void setActionTimeStamp(DateTime value) {
-    setProperty(AuditEventType.ACTION_TIME_STAMP, value);
+  public void setActionTimeStamp(@Nullable DateTime value) {
+    ServerNodeSupport.write(this, getActionTimeStampNode(), value, false, false, false);
   }
 
   @Override
-  public PropertyTypeNode getStatusNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(AuditEventType.STATUS);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable PropertyTypeNode getClientApplicationUriNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "ClientApplicationUri",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public Boolean getStatus() {
-    return getProperty(AuditEventType.STATUS).orElse(null);
+  public @Nullable String getClientApplicationUri() {
+    return ServerNodeSupport.read(this, getClientApplicationUriNode(), String.class, null);
   }
 
   @Override
-  public void setStatus(Boolean value) {
-    setProperty(AuditEventType.STATUS, value);
-  }
-
-  @Override
-  public PropertyTypeNode getServerIdNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(AuditEventType.SERVER_ID);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public String getServerId() {
-    return getProperty(AuditEventType.SERVER_ID).orElse(null);
-  }
-
-  @Override
-  public void setServerId(String value) {
-    setProperty(AuditEventType.SERVER_ID, value);
+  public void setClientApplicationUri(@Nullable String value) {
+    ServerNodeSupport.write(
+        this,
+        getClientApplicationUriNode(),
+        Namespaces.OPC_UA,
+        "ClientApplicationUri",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
   public PropertyTypeNode getClientAuditEntryIdNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(AuditEventType.CLIENT_AUDIT_ENTRY_ID);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "ClientAuditEntryId",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public String getClientAuditEntryId() {
-    return getProperty(AuditEventType.CLIENT_AUDIT_ENTRY_ID).orElse(null);
+  public @Nullable String getClientAuditEntryId() {
+    return ServerNodeSupport.read(this, getClientAuditEntryIdNode(), String.class, null);
   }
 
   @Override
-  public void setClientAuditEntryId(String value) {
-    setProperty(AuditEventType.CLIENT_AUDIT_ENTRY_ID, value);
+  public void setClientAuditEntryId(@Nullable String value) {
+    ServerNodeSupport.write(this, getClientAuditEntryIdNode(), value, false, false, false);
   }
 
   @Override
   public PropertyTypeNode getClientUserIdNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(AuditEventType.CLIENT_USER_ID);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "ClientUserId",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public String getClientUserId() {
-    return getProperty(AuditEventType.CLIENT_USER_ID).orElse(null);
+  public @Nullable String getClientUserId() {
+    return ServerNodeSupport.read(this, getClientUserIdNode(), String.class, null);
   }
 
   @Override
-  public void setClientUserId(String value) {
-    setProperty(AuditEventType.CLIENT_USER_ID, value);
+  public void setClientUserId(@Nullable String value) {
+    ServerNodeSupport.write(this, getClientUserIdNode(), value, false, false, false);
   }
 
   @Override
-  public PropertyTypeNode getClientApplicationUriNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(AuditEventType.CLIENT_APPLICATION_URI);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public PropertyTypeNode getServerIdNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "ServerId",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public String getClientApplicationUri() {
-    return getProperty(AuditEventType.CLIENT_APPLICATION_URI).orElse(null);
+  public @Nullable String getServerId() {
+    return ServerNodeSupport.read(this, getServerIdNode(), String.class, null);
   }
 
   @Override
-  public void setClientApplicationUri(String value) {
-    setProperty(AuditEventType.CLIENT_APPLICATION_URI, value);
+  public void setServerId(@Nullable String value) {
+    ServerNodeSupport.write(this, getServerIdNode(), value, false, false, false);
+  }
+
+  @Override
+  public PropertyTypeNode getStatusNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "Status",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable Boolean getStatus() {
+    return ServerNodeSupport.read(this, getStatusNode(), Boolean.class, null);
+  }
+
+  @Override
+  public void setStatus(@Nullable Boolean value) {
+    ServerNodeSupport.write(this, getStatusNode(), value, false, false, false);
+  }
+
+  @Override
+  public void validateChildren() {
+    super.validateChildren();
+    getActionTimeStampNode();
+    getClientApplicationUriNode();
+    getClientAuditEntryIdNode();
+    getClientUserIdNode();
+    getServerIdNode();
+    getStatusNode();
   }
 }

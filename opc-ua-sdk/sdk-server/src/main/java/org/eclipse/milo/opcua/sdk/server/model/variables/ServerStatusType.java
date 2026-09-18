@@ -1,59 +1,179 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.variables;
 
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ServerState;
 import org.eclipse.milo.opcua.stack.core.types.structured.BuildInfo;
+import org.eclipse.milo.opcua.stack.core.types.structured.ServerStatusDataType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.6">https://reference.opcfoundation.org/v105/Core/docs/Part5/7.6</a>
+ * Server API for the ServerStatusType VariableType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.6">Model
+ *     documentation</a>
  */
 public interface ServerStatusType extends BaseDataVariableType {
-  BaseDataVariableType getStartTimeNode();
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2138L);
 
-  DateTime getStartTime();
+  /**
+   * Returns the mandatory BuildInfo child, a BuildInfoType with DataType BuildInfo.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.7">BuildInfoType
+   *     documentation</a>
+   */
+  BuildInfoTypeNode getBuildInfoNode();
 
-  void setStartTime(DateTime value);
+  /**
+   * Returns the Value of the BuildInfo child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable BuildInfo getBuildInfo();
 
-  BaseDataVariableType getCurrentTimeNode();
+  /**
+   * Sets the Value of the BuildInfo child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setBuildInfo(@Nullable BuildInfo value);
 
-  DateTime getCurrentTime();
+  /**
+   * Returns the mandatory CurrentTime child, a BaseDataVariableType with DataType UtcTime.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  BaseDataVariableTypeNode getCurrentTimeNode();
 
-  void setCurrentTime(DateTime value);
+  /**
+   * Returns the Value of the CurrentTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable DateTime getCurrentTime();
 
-  BaseDataVariableType getStateNode();
+  /**
+   * Sets the Value of the CurrentTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setCurrentTime(@Nullable DateTime value);
 
-  ServerState getState();
+  /**
+   * Returns the mandatory SecondsTillShutdown child, a BaseDataVariableType with DataType UInt32.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  BaseDataVariableTypeNode getSecondsTillShutdownNode();
 
-  void setState(ServerState value);
+  /**
+   * Returns the Value of the SecondsTillShutdown child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getSecondsTillShutdown();
 
-  BuildInfoType getBuildInfoNode();
+  /**
+   * Sets the Value of the SecondsTillShutdown child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setSecondsTillShutdown(@Nullable UInteger value);
 
-  BuildInfo getBuildInfo();
+  /**
+   * Returns the mandatory ShutdownReason child, a BaseDataVariableType with DataType LocalizedText.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  BaseDataVariableTypeNode getShutdownReasonNode();
 
-  void setBuildInfo(BuildInfo value);
+  /**
+   * Returns the Value of the ShutdownReason child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable LocalizedText getShutdownReason();
 
-  BaseDataVariableType getSecondsTillShutdownNode();
+  /**
+   * Sets the Value of the ShutdownReason child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setShutdownReason(@Nullable LocalizedText value);
 
-  UInteger getSecondsTillShutdown();
+  /**
+   * Returns the mandatory StartTime child, a BaseDataVariableType with DataType UtcTime.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  BaseDataVariableTypeNode getStartTimeNode();
 
-  void setSecondsTillShutdown(UInteger value);
+  /**
+   * Returns the Value of the StartTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable DateTime getStartTime();
 
-  BaseDataVariableType getShutdownReasonNode();
+  /**
+   * Sets the Value of the StartTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setStartTime(@Nullable DateTime value);
 
-  LocalizedText getShutdownReason();
+  /**
+   * Returns the mandatory State child, a BaseDataVariableType with DataType ServerState.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  BaseDataVariableTypeNode getStateNode();
 
-  void setShutdownReason(LocalizedText value);
+  /**
+   * Returns the Value of the State child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable ServerState getState();
+
+  /**
+   * Sets the Value of the State child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setState(@Nullable ServerState value);
+
+  /**
+   * Returns this node's Value.
+   *
+   * @throws UaRuntimeException if the Value does not convert.
+   */
+  @Nullable ServerStatusDataType getTypedValue();
+
+  /**
+   * Sets this node's Value.
+   *
+   * @throws UaRuntimeException if the value does not convert.
+   */
+  void setTypedValue(@Nullable ServerStatusDataType value);
 }

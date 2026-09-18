@@ -1,50 +1,138 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.server.model.variables.BaseDataVariableType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.BaseDataVariableTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.5.4">https://reference.opcfoundation.org/v105/Core/docs/Part22/5.5.4</a>
+ * Server API for the LldpRemoteStatisticsType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.5.4">Model
+ *     documentation</a>
  */
 public interface LldpRemoteStatisticsType extends BaseObjectType {
-  BaseDataVariableType getLastChangeTimeNode();
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 18996L);
 
-  UInteger getLastChangeTime();
+  /**
+   * Returns the mandatory LastChangeTime child, a BaseDataVariableType with DataType UInt32.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  BaseDataVariableTypeNode getLastChangeTimeNode();
 
-  void setLastChangeTime(UInteger value);
+  /**
+   * Returns the Value of the LastChangeTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getLastChangeTime();
 
-  BaseDataVariableType getRemoteInsertsNode();
+  /**
+   * Sets the Value of the LastChangeTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setLastChangeTime(@Nullable UInteger value);
 
-  UInteger getRemoteInserts();
+  /**
+   * Returns the mandatory RemoteAgeouts child, a BaseDataVariableType with DataType UInt32.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  BaseDataVariableTypeNode getRemoteAgeoutsNode();
 
-  void setRemoteInserts(UInteger value);
+  /**
+   * Returns the Value of the RemoteAgeouts child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getRemoteAgeouts();
 
-  BaseDataVariableType getRemoteDeletesNode();
+  /**
+   * Sets the Value of the RemoteAgeouts child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setRemoteAgeouts(@Nullable UInteger value);
 
-  UInteger getRemoteDeletes();
+  /**
+   * Returns the mandatory RemoteDeletes child, a BaseDataVariableType with DataType UInt32.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  BaseDataVariableTypeNode getRemoteDeletesNode();
 
-  void setRemoteDeletes(UInteger value);
+  /**
+   * Returns the Value of the RemoteDeletes child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getRemoteDeletes();
 
-  BaseDataVariableType getRemoteDropsNode();
+  /**
+   * Sets the Value of the RemoteDeletes child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setRemoteDeletes(@Nullable UInteger value);
 
-  UInteger getRemoteDrops();
+  /**
+   * Returns the mandatory RemoteDrops child, a BaseDataVariableType with DataType UInt32.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  BaseDataVariableTypeNode getRemoteDropsNode();
 
-  void setRemoteDrops(UInteger value);
+  /**
+   * Returns the Value of the RemoteDrops child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getRemoteDrops();
 
-  BaseDataVariableType getRemoteAgeoutsNode();
+  /**
+   * Sets the Value of the RemoteDrops child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setRemoteDrops(@Nullable UInteger value);
 
-  UInteger getRemoteAgeouts();
+  /**
+   * Returns the mandatory RemoteInserts child, a BaseDataVariableType with DataType UInt32.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  BaseDataVariableTypeNode getRemoteInsertsNode();
 
-  void setRemoteAgeouts(UInteger value);
+  /**
+   * Returns the Value of the RemoteInserts child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getRemoteInserts();
+
+  /**
+   * Sets the Value of the RemoteInserts child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setRemoteInserts(@Nullable UInteger value);
 }

@@ -1,19 +1,9 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -21,7 +11,15 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link AggregateConfigurationType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part13/4.2.1/#4.2.1.2">Model
+ *     documentation</a>
+ */
 public class AggregateConfigurationTypeNode extends BaseObjectTypeNode
     implements AggregateConfigurationType {
   public AggregateConfigurationTypeNode(
@@ -29,12 +27,36 @@ public class AggregateConfigurationTypeNode extends BaseObjectTypeNode
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions);
+  }
+
+  public AggregateConfigurationTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         context,
@@ -50,95 +72,104 @@ public class AggregateConfigurationTypeNode extends BaseObjectTypeNode
         eventNotifier);
   }
 
-  public AggregateConfigurationTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions);
-  }
-
-  @Override
-  public PropertyTypeNode getTreatUncertainAsBadNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(AggregateConfigurationType.TREAT_UNCERTAIN_AS_BAD);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public Boolean getTreatUncertainAsBad() {
-    return getProperty(AggregateConfigurationType.TREAT_UNCERTAIN_AS_BAD).orElse(null);
-  }
-
-  @Override
-  public void setTreatUncertainAsBad(Boolean value) {
-    setProperty(AggregateConfigurationType.TREAT_UNCERTAIN_AS_BAD, value);
-  }
-
   @Override
   public PropertyTypeNode getPercentDataBadNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(AggregateConfigurationType.PERCENT_DATA_BAD);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "PercentDataBad",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 3L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public UByte getPercentDataBad() {
-    return getProperty(AggregateConfigurationType.PERCENT_DATA_BAD).orElse(null);
+  public @Nullable UByte getPercentDataBad() {
+    return ServerNodeSupport.read(this, getPercentDataBadNode(), UByte.class, null);
   }
 
   @Override
-  public void setPercentDataBad(UByte value) {
-    setProperty(AggregateConfigurationType.PERCENT_DATA_BAD, value);
+  public void setPercentDataBad(@Nullable UByte value) {
+    ServerNodeSupport.write(this, getPercentDataBadNode(), value, false, false, false);
   }
 
   @Override
   public PropertyTypeNode getPercentDataGoodNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(AggregateConfigurationType.PERCENT_DATA_GOOD);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "PercentDataGood",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 3L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public UByte getPercentDataGood() {
-    return getProperty(AggregateConfigurationType.PERCENT_DATA_GOOD).orElse(null);
+  public @Nullable UByte getPercentDataGood() {
+    return ServerNodeSupport.read(this, getPercentDataGoodNode(), UByte.class, null);
   }
 
   @Override
-  public void setPercentDataGood(UByte value) {
-    setProperty(AggregateConfigurationType.PERCENT_DATA_GOOD, value);
+  public void setPercentDataGood(@Nullable UByte value) {
+    ServerNodeSupport.write(this, getPercentDataGoodNode(), value, false, false, false);
+  }
+
+  @Override
+  public PropertyTypeNode getTreatUncertainAsBadNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "TreatUncertainAsBad",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable Boolean getTreatUncertainAsBad() {
+    return ServerNodeSupport.read(this, getTreatUncertainAsBadNode(), Boolean.class, null);
+  }
+
+  @Override
+  public void setTreatUncertainAsBad(@Nullable Boolean value) {
+    ServerNodeSupport.write(this, getTreatUncertainAsBadNode(), value, false, false, false);
   }
 
   @Override
   public PropertyTypeNode getUseSlopedExtrapolationNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(AggregateConfigurationType.USE_SLOPED_EXTRAPOLATION);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "UseSlopedExtrapolation",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public Boolean getUseSlopedExtrapolation() {
-    return getProperty(AggregateConfigurationType.USE_SLOPED_EXTRAPOLATION).orElse(null);
+  public @Nullable Boolean getUseSlopedExtrapolation() {
+    return ServerNodeSupport.read(this, getUseSlopedExtrapolationNode(), Boolean.class, null);
   }
 
   @Override
-  public void setUseSlopedExtrapolation(Boolean value) {
-    setProperty(AggregateConfigurationType.USE_SLOPED_EXTRAPOLATION, value);
+  public void setUseSlopedExtrapolation(@Nullable Boolean value) {
+    ServerNodeSupport.write(this, getUseSlopedExtrapolationNode(), value, false, false, false);
+  }
+
+  @Override
+  public void validateChildren() {
+    super.validateChildren();
+    getPercentDataBadNode();
+    getPercentDataGoodNode();
+    getTreatUncertainAsBadNode();
+    getUseSlopedExtrapolationNode();
   }
 }

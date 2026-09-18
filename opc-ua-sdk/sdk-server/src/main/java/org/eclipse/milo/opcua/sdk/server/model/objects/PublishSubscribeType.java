@@ -1,351 +1,389 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.core.nodes.MethodNode;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
-import org.eclipse.milo.opcua.sdk.server.methods.Out;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
-import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.KeyValuePair;
 import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConnectionDataType;
-import org.eclipse.milo.opcua.stack.core.util.Lazy;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.3/#9.1.3.2">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.3/#9.1.3.2</a>
+ * Server API for the PublishSubscribeType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.3/#9.1.3.2">Model
+ *     documentation</a>
  */
 public interface PublishSubscribeType extends PubSubKeyServiceType {
-  QualifiedProperty<String[]> SUPPORTED_TRANSPORT_PROFILES =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "SupportedTransportProfiles",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          1,
-          String[].class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 14416L);
 
-  QualifiedProperty<ULong> DEFAULT_DATAGRAM_PUBLISHER_ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "DefaultDatagramPublisherId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=9"),
-          -1,
-          ULong.class);
+  /**
+   * Returns the optional ConfigurationProperties child, a PropertyType with DataType KeyValuePair.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getConfigurationPropertiesNode();
 
-  QualifiedProperty<UInteger> CONFIGURATION_VERSION =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ConfigurationVersion",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=20998"),
-          -1,
-          UInteger.class);
+  /**
+   * Returns the Value of the ConfigurationProperties child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable KeyValuePair @Nullable [] getConfigurationProperties();
 
-  QualifiedProperty<EndpointDescription[]> DEFAULT_SECURITY_KEY_SERVICES =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "DefaultSecurityKeyServices",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=312"),
-          1,
-          EndpointDescription[].class);
+  /**
+   * Sets the Value of the ConfigurationProperties child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setConfigurationProperties(@Nullable KeyValuePair @Nullable [] value);
 
-  QualifiedProperty<KeyValuePair[]> CONFIGURATION_PROPERTIES =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ConfigurationProperties",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14533"),
-          1,
-          KeyValuePair[].class);
+  /**
+   * Returns the optional ConfigurationVersion child, a PropertyType with DataType VersionTime.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getConfigurationVersionNode();
 
-  String[] getSupportedTransportProfiles();
+  /**
+   * Returns the Value of the ConfigurationVersion child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getConfigurationVersion();
 
-  void setSupportedTransportProfiles(String[] value);
+  /**
+   * Sets the Value of the ConfigurationVersion child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setConfigurationVersion(@Nullable UInteger value);
 
-  PropertyType getSupportedTransportProfilesNode();
+  /**
+   * Returns the optional DataSetClasses child, a FolderType.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.6">FolderType
+   *     documentation</a>
+   */
+  @Nullable FolderTypeNode getDataSetClassesNode();
 
-  ULong getDefaultDatagramPublisherId();
+  /**
+   * Returns the optional DefaultDatagramPublisherId child, a PropertyType with DataType UInt64.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getDefaultDatagramPublisherIdNode();
 
-  void setDefaultDatagramPublisherId(ULong value);
+  /**
+   * Returns the Value of the DefaultDatagramPublisherId child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable ULong getDefaultDatagramPublisherId();
 
-  PropertyType getDefaultDatagramPublisherIdNode();
+  /**
+   * Sets the Value of the DefaultDatagramPublisherId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setDefaultDatagramPublisherId(@Nullable ULong value);
 
-  UInteger getConfigurationVersion();
+  /**
+   * Returns the optional DefaultSecurityKeyServices child, a PropertyType with DataType
+   * EndpointDescription.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  @Nullable PropertyTypeNode getDefaultSecurityKeyServicesNode();
 
-  void setConfigurationVersion(UInteger value);
+  /**
+   * Returns the Value of the DefaultSecurityKeyServices child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable EndpointDescription @Nullable [] getDefaultSecurityKeyServices();
 
-  PropertyType getConfigurationVersionNode();
+  /**
+   * Sets the Value of the DefaultSecurityKeyServices child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setDefaultSecurityKeyServices(@Nullable EndpointDescription @Nullable [] value);
 
-  EndpointDescription[] getDefaultSecurityKeyServices();
+  /**
+   * Returns the optional Diagnostics child, a PubSubDiagnosticsRootType.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.11/#9.1.11.7">PubSubDiagnosticsRootType
+   *     documentation</a>
+   */
+  @Nullable PubSubDiagnosticsRootTypeNode getDiagnosticsNode();
 
-  void setDefaultSecurityKeyServices(EndpointDescription[] value);
+  /**
+   * Returns the optional PubSubCapablities child, a PubSubCapabilitiesType.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.12/#9.1.12.1">PubSubCapabilitiesType
+   *     documentation</a>
+   */
+  @Nullable PubSubCapabilitiesTypeNode getPubSubCapablitiesNode();
 
-  PropertyType getDefaultSecurityKeyServicesNode();
+  /**
+   * Returns the optional PubSubConfiguration child, a PubSubConfigurationType.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.3/#9.1.3.7.1">PubSubConfigurationType
+   *     documentation</a>
+   */
+  @Nullable PubSubConfigurationTypeNode getPubSubConfigurationNode();
 
-  KeyValuePair[] getConfigurationProperties();
+  /**
+   * Returns the mandatory PublishedDataSets child, a DataSetFolderType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.1">DataSetFolderType
+   *     documentation</a>
+   */
+  DataSetFolderTypeNode getPublishedDataSetsNode();
 
-  void setConfigurationProperties(KeyValuePair[] value);
+  /**
+   * Returns the mandatory Status child, a PubSubStatusType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.10/#9.1.10.1">PubSubStatusType
+   *     documentation</a>
+   */
+  PubSubStatusTypeNode getStatusNode();
 
-  PropertyType getConfigurationPropertiesNode();
+  /**
+   * Returns the optional SubscribedDataSets child, a SubscribedDataSetFolderType.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.9/#9.1.9.4.1">SubscribedDataSetFolderType
+   *     documentation</a>
+   */
+  @Nullable SubscribedDataSetFolderTypeNode getSubscribedDataSetsNode();
 
-  MethodNode getSetSecurityKeysMethodNode();
+  /**
+   * Returns the mandatory SupportedTransportProfiles child, a PropertyType with DataType String.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getSupportedTransportProfilesNode();
 
-  MethodNode getAddConnectionMethodNode();
+  /**
+   * Returns the Value of the SupportedTransportProfiles child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String @Nullable [] getSupportedTransportProfiles();
 
-  MethodNode getRemoveConnectionMethodNode();
+  /**
+   * Sets the Value of the SupportedTransportProfiles child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setSupportedTransportProfiles(@Nullable String @Nullable [] value);
 
-  DataSetFolderType getPublishedDataSetsNode();
+  /**
+   * Returns the optional AddConnection Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.3/#9.1.3.4">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getAddConnectionMethodNode();
 
-  SubscribedDataSetFolderType getSubscribedDataSetsNode();
+  /**
+   * Sets this instance's AddConnection handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setAddConnectionHandler(@Nullable AddConnectionHandler handler);
 
-  PubSubConfigurationType getPubSubConfigurationNode();
+  /**
+   * Returns the optional RemoveConnection Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.3/#9.1.3.5">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getRemoveConnectionMethodNode();
 
-  PubSubStatusType getStatusNode();
+  /**
+   * Sets this instance's RemoveConnection handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setRemoveConnectionHandler(@Nullable RemoveConnectionHandler handler);
 
-  PubSubDiagnosticsRootType getDiagnosticsNode();
+  /**
+   * Returns the optional SetSecurityKeys Method node.
+   *
+   * @return the Method node, or null if it is absent.
+   * @throws UaRuntimeException if the Method is ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.3/#9.1.3.3">Model
+   *     documentation</a>
+   */
+  @Nullable UaMethodNode getSetSecurityKeysMethodNode();
 
-  PubSubCapabilitiesType getPubSubCapablitiesNode();
+  /**
+   * Sets this instance's SetSecurityKeys handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setSetSecurityKeysHandler(@Nullable SetSecurityKeysHandler handler);
 
-  FolderType getDataSetClassesNode();
+  /**
+   * Sets this instance's Method handlers, including inherited handlers, from one implementation;
+   * null clears them and restores Method-node fallback. Absent optional Methods are skipped.
+   * Changes are applied in order; a failure does not roll back earlier changes.
+   *
+   * @throws UaRuntimeException if a mandatory Method is absent, or a Method is ambiguous or
+   *     incompatible.
+   */
+  void setMethods(@Nullable Methods methods);
 
-  abstract class SetSecurityKeysMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    public SetSecurityKeysMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "SecurityGroupId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "SecurityPolicyUri",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "CurrentTokenId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=288")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "CurrentKey",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "FutureKeys",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  1,
-                  new UInteger[] {UInteger.valueOf(0)},
-                  new LocalizedText("", "")),
-              new Argument(
-                  "TimeToNextKey",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", "")),
-              new Argument(
-                  "KeyLifetime",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      String securityGroupId = (String) inputValues[0].getValue();
-      String securityPolicyUri = (String) inputValues[1].getValue();
-      UInteger currentTokenId = (UInteger) inputValues[2].getValue();
-      ByteString currentKey = (ByteString) inputValues[3].getValue();
-      ByteString[] futureKeys = (ByteString[]) inputValues[4].getValue();
-      Double timeToNextKey = (Double) inputValues[5].getValue();
-      Double keyLifetime = (Double) inputValues[6].getValue();
-      invoke(
-          context,
-          securityGroupId,
-          securityPolicyUri,
-          currentTokenId,
-          currentKey,
-          futureKeys,
-          timeToNextKey,
-          keyLifetime);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(
+  /**
+   * Handles calls to the AddConnection Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.3/#9.1.3.4">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface AddConnectionHandler {
+    /**
+     * Handles a call to the AddConnection Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    @Nullable NodeId addConnection(
         AbstractMethodInvocationHandler.InvocationContext context,
-        String securityGroupId,
-        String securityPolicyUri,
-        UInteger currentTokenId,
-        ByteString currentKey,
-        ByteString[] futureKeys,
-        Double timeToNextKey,
-        Double keyLifetime)
+        @Nullable PubSubConnectionDataType configuration)
         throws UaException;
   }
 
-  abstract class AddConnectionMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-    public AddConnectionMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "Configuration",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15617")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return outputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "ConnectionId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      PubSubConnectionDataType configuration = (PubSubConnectionDataType) inputValues[0].getValue();
-      Out<NodeId> connectionId = new Out<>();
-      invoke(context, configuration, connectionId);
-      return new Variant[] {new Variant(connectionId.get())};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context,
-        PubSubConnectionDataType configuration,
-        Out<NodeId> connectionId)
+  /**
+   * Handles calls to the RemoveConnection Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.3/#9.1.3.5">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface RemoveConnectionHandler {
+    /**
+     * Handles a call to the RemoveConnection Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void removeConnection(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable NodeId connectionId)
         throws UaException;
   }
 
-  abstract class RemoveConnectionMethod extends AbstractMethodInvocationHandler {
-    private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-    public RemoveConnectionMethod(UaMethodNode node) {
-      super(node);
-    }
-
-    @Override
-    public Argument[] getInputArguments() {
-      return inputArguments.get(
-          () -> {
-            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-            return new Argument[] {
-              new Argument(
-                  "ConnectionId",
-                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
-                      .toNodeId(namespaceTable)
-                      .orElseThrow(),
-                  -1,
-                  null,
-                  new LocalizedText("", ""))
-            };
-          });
-    }
-
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
-
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
-        throws UaException {
-      NodeId connectionId = (NodeId) inputValues[0].getValue();
-      invoke(context, connectionId);
-      return new Variant[] {};
-    }
-
-    protected abstract void invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, NodeId connectionId)
+  /**
+   * Handles calls to the SetSecurityKeys Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.3/#9.1.3.3">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface SetSecurityKeysHandler {
+    /**
+     * Handles a call to the SetSecurityKeys Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void setSecurityKeys(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable String securityGroupId,
+        @Nullable String securityPolicyUri,
+        @Nullable UInteger currentTokenId,
+        @Nullable ByteString currentKey,
+        ByteString @Nullable [] futureKeys,
+        @Nullable Double timeToNextKey,
+        @Nullable Double keyLifetime)
         throws UaException;
+  }
+
+  /** Implements this type's Methods. Unimplemented Methods report Bad_NotImplemented. */
+  interface Methods extends PubSubKeyServiceType.Methods {
+    /**
+     * Handles a call to the AddConnection Method; see {@link AddConnectionHandler#addConnection}.
+     */
+    default @Nullable NodeId addConnection(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable PubSubConnectionDataType configuration)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /**
+     * Handles a call to the RemoveConnection Method; see {@link
+     * RemoveConnectionHandler#removeConnection}.
+     */
+    default void removeConnection(
+        AbstractMethodInvocationHandler.InvocationContext context, @Nullable NodeId connectionId)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
+
+    /**
+     * Handles a call to the SetSecurityKeys Method; see {@link
+     * SetSecurityKeysHandler#setSecurityKeys}.
+     */
+    default void setSecurityKeys(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        @Nullable String securityGroupId,
+        @Nullable String securityPolicyUri,
+        @Nullable UInteger currentTokenId,
+        @Nullable ByteString currentKey,
+        ByteString @Nullable [] futureKeys,
+        @Nullable Double timeToNextKey,
+        @Nullable Double keyLifetime)
+        throws UaException {
+      throw new UaException(StatusCodes.Bad_NotImplemented);
+    }
   }
 }

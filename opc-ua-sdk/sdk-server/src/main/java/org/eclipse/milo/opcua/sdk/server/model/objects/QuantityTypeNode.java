@@ -1,20 +1,9 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.nodes.ObjectNode;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -24,19 +13,51 @@ import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AnnotationDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.QuantityDimension;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link QuantityType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part8/6.4.1">Model
+ *     documentation</a>
+ */
 public class QuantityTypeNode extends BaseObjectTypeNode implements QuantityType {
   public QuantityTypeNode(
       UaNodeContext context,
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions);
+  }
+
+  public QuantityTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         context,
@@ -52,98 +73,128 @@ public class QuantityTypeNode extends BaseObjectTypeNode implements QuantityType
         eventNotifier);
   }
 
-  public QuantityTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions);
+  @Override
+  public @Nullable PropertyTypeNode getAnnotationNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "Annotation",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 32434L),
+        1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getSymbolNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(QuantityType.SYMBOL);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable AnnotationDataType @Nullable [] getAnnotation() {
+    return ServerNodeSupport.readArray(this, getAnnotationNode(), AnnotationDataType.class, null);
   }
 
   @Override
-  public LocalizedText getSymbol() {
-    return getProperty(QuantityType.SYMBOL).orElse(null);
+  public void setAnnotation(@Nullable AnnotationDataType @Nullable [] value) {
+    ServerNodeSupport.write(
+        this, getAnnotationNode(), Namespaces.OPC_UA, "Annotation", value, true, false, true);
   }
 
   @Override
-  public void setSymbol(LocalizedText value) {
-    setProperty(QuantityType.SYMBOL, value);
+  public @Nullable PropertyTypeNode getConversionServiceNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "ConversionService",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 23751L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public PropertyTypeNode getAnnotationNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(QuantityType.ANNOTATION);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+  public @Nullable String getConversionService() {
+    return ServerNodeSupport.read(this, getConversionServiceNode(), String.class, null);
   }
 
   @Override
-  public AnnotationDataType[] getAnnotation() {
-    return getProperty(QuantityType.ANNOTATION).orElse(null);
-  }
-
-  @Override
-  public void setAnnotation(AnnotationDataType[] value) {
-    setProperty(QuantityType.ANNOTATION, value);
-  }
-
-  @Override
-  public PropertyTypeNode getConversionServiceNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(QuantityType.CONVERSION_SERVICE);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public String getConversionService() {
-    return getProperty(QuantityType.CONVERSION_SERVICE).orElse(null);
-  }
-
-  @Override
-  public void setConversionService(String value) {
-    setProperty(QuantityType.CONVERSION_SERVICE, value);
+  public void setConversionService(@Nullable String value) {
+    ServerNodeSupport.write(
+        this,
+        getConversionServiceNode(),
+        Namespaces.OPC_UA,
+        "ConversionService",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
   public PropertyTypeNode getDimensionNode() {
-    Optional<VariableNode> propertyNode = getPropertyNode(QuantityType.DIMENSION);
-    return (PropertyTypeNode) propertyNode.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "Dimension",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 32438L),
+        -1,
+        PropertyTypeNode.class);
   }
 
   @Override
-  public QuantityDimension getDimension() {
-    return getProperty(QuantityType.DIMENSION).orElse(null);
+  public @Nullable QuantityDimension getDimension() {
+    return ServerNodeSupport.read(this, getDimensionNode(), QuantityDimension.class, null);
   }
 
   @Override
-  public void setDimension(QuantityDimension value) {
-    setProperty(QuantityType.DIMENSION, value);
+  public void setDimension(@Nullable QuantityDimension value) {
+    ServerNodeSupport.write(this, getDimensionNode(), value, false, false, true);
   }
 
   @Override
   public BaseObjectTypeNode getServerUnitsNode() {
-    Optional<ObjectNode> component =
-        getObjectComponent("http://opcfoundation.org/UA/", "ServerUnits");
-    return (BaseObjectTypeNode) component.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "ServerUnits",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 58L),
+        null,
+        -1,
+        BaseObjectTypeNode.class);
+  }
+
+  @Override
+  public @Nullable PropertyTypeNode getSymbolNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "Symbol",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 46L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 68L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 21L),
+        -1,
+        PropertyTypeNode.class);
+  }
+
+  @Override
+  public @Nullable LocalizedText getSymbol() {
+    return ServerNodeSupport.read(this, getSymbolNode(), LocalizedText.class, null);
+  }
+
+  @Override
+  public void setSymbol(@Nullable LocalizedText value) {
+    ServerNodeSupport.write(
+        this, getSymbolNode(), Namespaces.OPC_UA, "Symbol", value, false, false, false);
+  }
+
+  @Override
+  public void validateChildren() {
+    super.validateChildren();
+    getAnnotationNode();
+    getConversionServiceNode();
+    getDimensionNode();
+    getServerUnitsNode();
+    getSymbolNode();
   }
 }

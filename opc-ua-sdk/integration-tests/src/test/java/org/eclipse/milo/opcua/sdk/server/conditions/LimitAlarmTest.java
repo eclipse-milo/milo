@@ -668,7 +668,7 @@ public class LimitAlarmTest extends AbstractClientServerTest {
     acknowledgementAlarm.evaluate(92.0);
 
     TwoStateVariableTypeNode ackedState = acknowledgementAlarm.getNode().getAckedStateNode();
-    assertFalse(requireNonNull(ackedState.getId()));
+    assertFalse(requireNonNull(ackedState.getTwoStateVariableTypeId()));
     DateTime firstTransitionTime = ackedState.getTransitionTime();
     ByteString firstEventId = acknowledgementAlarm.currentBranch().getLastEventId();
     assertTrue(acknowledgementAlarm.currentBranch().isAcknowledgeable(firstEventId));
@@ -677,7 +677,7 @@ public class LimitAlarmTest extends AbstractClientServerTest {
     acknowledgementAlarm.evaluate(96.0);
 
     ByteString secondEventId = acknowledgementAlarm.currentBranch().getLastEventId();
-    assertFalse(requireNonNull(ackedState.getId()));
+    assertFalse(requireNonNull(ackedState.getTwoStateVariableTypeId()));
     assertEquals(firstTransitionTime, ackedState.getTransitionTime());
     assertNotEquals(firstEventId, secondEventId);
     assertFalse(acknowledgementAlarm.currentBranch().isAcknowledgeable(firstEventId));
@@ -787,7 +787,8 @@ public class LimitAlarmTest extends AbstractClientServerTest {
     appDrivenAlarm.setActive(true, ExclusiveLimitState.HIGH);
     assertTrue(appDrivenAlarm.isActive());
     assertEquals(ExclusiveLimitState.HIGH, appDrivenAlarm.getLimitState());
-    assertEquals(NodeIds.ExclusiveLimitStateMachineType_High, currentState.getId());
+    assertEquals(
+        NodeIds.ExclusiveLimitStateMachineType_High, currentState.getFiniteStateVariableTypeId());
 
     // Active and limit state must agree.
     assertThrows(IllegalArgumentException.class, () -> appDrivenAlarm.setActive(true, null));
@@ -809,7 +810,7 @@ public class LimitAlarmTest extends AbstractClientServerTest {
     appDrivenAlarm.setActive(false);
     assertFalse(appDrivenAlarm.isActive());
     assertNull(appDrivenAlarm.getLimitState());
-    assertTrue(currentState.getId().isNull());
+    assertTrue(currentState.getFiniteStateVariableTypeId().isNull());
   }
 
   @Test
@@ -852,7 +853,12 @@ public class LimitAlarmTest extends AbstractClientServerTest {
       assertFalse(appDrivenAlarm.isActive());
       assertNull(appDrivenAlarm.getLimitState());
       assertTrue(
-          appDrivenAlarm.getNode().getLimitStateNode().getCurrentStateNode().getId().isNull());
+          appDrivenAlarm
+              .getNode()
+              .getLimitStateNode()
+              .getCurrentStateNode()
+              .getFiniteStateVariableTypeId()
+              .isNull());
 
       assertTrue(events.remove(active), "activation event was not collected");
       assertTrue(events.remove(inactive), "deactivation event was not collected");
@@ -907,7 +913,7 @@ public class LimitAlarmTest extends AbstractClientServerTest {
       assertEquals(ExclusiveLimitState.HIGH, shelvedExclusiveAlarm.getLimitState());
       assertEquals(
           NodeIds.ExclusiveLimitStateMachineType_High,
-          limitStateNode.getCurrentStateNode().getId());
+          limitStateNode.getCurrentStateNode().getFiniteStateVariableTypeId());
     } finally {
       resetShelvedExclusiveAlarm();
     }

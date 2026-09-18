@@ -1,79 +1,111 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.8.6">https://reference.opcfoundation.org/v105/Core/docs/Part11/5.8.6</a>
+ * Server API for the AuditHistoryRawModifyDeleteEventType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.8.6">Model
+ *     documentation</a>
  */
 public interface AuditHistoryRawModifyDeleteEventType extends AuditHistoryDeleteEventType {
-  QualifiedProperty<Boolean> IS_DELETE_MODIFIED =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "IsDeleteModified",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 3014L);
 
-  QualifiedProperty<DateTime> START_TIME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "StartTime",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
-          -1,
-          DateTime.class);
+  /**
+   * Returns the mandatory EndTime child, a PropertyType with DataType UtcTime.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getEndTimeNode();
 
-  QualifiedProperty<DateTime> END_TIME =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "EndTime",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
-          -1,
-          DateTime.class);
+  /**
+   * Returns the Value of the EndTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable DateTime getEndTime();
 
-  QualifiedProperty<DataValue[]> OLD_VALUES =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "OldValues",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=23"),
-          1,
-          DataValue[].class);
+  /**
+   * Sets the Value of the EndTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setEndTime(@Nullable DateTime value);
 
-  Boolean getIsDeleteModified();
+  /**
+   * Returns the mandatory IsDeleteModified child, a PropertyType with DataType Boolean.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getIsDeleteModifiedNode();
 
-  void setIsDeleteModified(Boolean value);
+  /**
+   * Returns the Value of the IsDeleteModified child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Boolean getIsDeleteModified();
 
-  PropertyType getIsDeleteModifiedNode();
+  /**
+   * Sets the Value of the IsDeleteModified child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setIsDeleteModified(@Nullable Boolean value);
 
-  DateTime getStartTime();
+  /**
+   * Returns the mandatory OldValues child, a PropertyType with DataType DataValue.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getOldValuesNode();
 
-  void setStartTime(DateTime value);
+  /**
+   * Returns the Value of the OldValues child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  DataValue @Nullable [] getOldValues();
 
-  PropertyType getStartTimeNode();
+  /**
+   * Sets the Value of the OldValues child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setOldValues(DataValue @Nullable [] value);
 
-  DateTime getEndTime();
+  /**
+   * Returns the mandatory StartTime child, a PropertyType with DataType UtcTime.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getStartTimeNode();
 
-  void setEndTime(DateTime value);
+  /**
+   * Returns the Value of the StartTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable DateTime getStartTime();
 
-  PropertyType getEndTimeNode();
-
-  DataValue[] getOldValues();
-
-  void setOldValues(DataValue[] value);
-
-  PropertyType getOldValuesNode();
+  /**
+   * Sets the Value of the StartTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setStartTime(@Nullable DateTime value);
 }

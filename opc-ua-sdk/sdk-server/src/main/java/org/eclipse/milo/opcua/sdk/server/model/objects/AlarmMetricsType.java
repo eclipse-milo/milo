@@ -1,105 +1,267 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.nodes.MethodNode;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
-import org.eclipse.milo.opcua.sdk.server.model.variables.AlarmRateVariableType;
-import org.eclipse.milo.opcua.sdk.server.model.variables.BaseDataVariableType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.AlarmRateVariableTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.variables.BaseDataVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
-import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/9.2">https://reference.opcfoundation.org/v105/Core/docs/Part9/9.2</a>
+ * Server API for the AlarmMetricsType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/9.2">Model
+ *     documentation</a>
  */
 public interface AlarmMetricsType extends BaseObjectType {
-  BaseDataVariableType getAlarmCountNode();
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 17279L);
 
-  UInteger getAlarmCount();
+  /**
+   * Returns the mandatory AlarmCount child, a BaseDataVariableType with DataType UInt32.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  BaseDataVariableTypeNode getAlarmCountNode();
 
-  void setAlarmCount(UInteger value);
+  /**
+   * Returns the Value of the AlarmCount child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getAlarmCount();
 
-  BaseDataVariableType getStartTimeNode();
+  /**
+   * Sets the Value of the AlarmCount child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setAlarmCount(@Nullable UInteger value);
 
-  DateTime getStartTime();
+  /**
+   * Returns the mandatory AverageAlarmRate child, a AlarmRateVariableType with DataType Double.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/9.3">AlarmRateVariableType
+   *     documentation</a>
+   */
+  AlarmRateVariableTypeNode getAverageAlarmRateNode();
 
-  void setStartTime(DateTime value);
+  /**
+   * Returns the Value of the AverageAlarmRate child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Double getAverageAlarmRate();
 
-  BaseDataVariableType getMaximumActiveStateNode();
+  /**
+   * Sets the Value of the AverageAlarmRate child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setAverageAlarmRate(@Nullable Double value);
 
-  Double getMaximumActiveState();
+  /**
+   * Returns the mandatory CurrentAlarmRate child, a AlarmRateVariableType with DataType Double.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/9.3">AlarmRateVariableType
+   *     documentation</a>
+   */
+  AlarmRateVariableTypeNode getCurrentAlarmRateNode();
 
-  void setMaximumActiveState(Double value);
+  /**
+   * Returns the Value of the CurrentAlarmRate child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Double getCurrentAlarmRate();
 
-  BaseDataVariableType getMaximumUnAckNode();
+  /**
+   * Sets the Value of the CurrentAlarmRate child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setCurrentAlarmRate(@Nullable Double value);
 
-  Double getMaximumUnAck();
+  /**
+   * Returns the mandatory MaximumActiveState child, a BaseDataVariableType with DataType Duration.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  BaseDataVariableTypeNode getMaximumActiveStateNode();
 
-  void setMaximumUnAck(Double value);
+  /**
+   * Returns the Value of the MaximumActiveState child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Double getMaximumActiveState();
 
-  AlarmRateVariableType getCurrentAlarmRateNode();
+  /**
+   * Sets the Value of the MaximumActiveState child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMaximumActiveState(@Nullable Double value);
 
-  Double getCurrentAlarmRate();
+  /**
+   * Returns the mandatory MaximumAlarmRate child, a AlarmRateVariableType with DataType Double.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/9.3">AlarmRateVariableType
+   *     documentation</a>
+   */
+  AlarmRateVariableTypeNode getMaximumAlarmRateNode();
 
-  void setCurrentAlarmRate(Double value);
+  /**
+   * Returns the Value of the MaximumAlarmRate child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Double getMaximumAlarmRate();
 
-  AlarmRateVariableType getMaximumAlarmRateNode();
+  /**
+   * Sets the Value of the MaximumAlarmRate child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMaximumAlarmRate(@Nullable Double value);
 
-  Double getMaximumAlarmRate();
+  /**
+   * Returns the mandatory MaximumReAlarmCount child, a BaseDataVariableType with DataType UInt32.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  BaseDataVariableTypeNode getMaximumReAlarmCountNode();
 
-  void setMaximumAlarmRate(Double value);
+  /**
+   * Returns the Value of the MaximumReAlarmCount child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UInteger getMaximumReAlarmCount();
 
-  BaseDataVariableType getMaximumReAlarmCountNode();
+  /**
+   * Sets the Value of the MaximumReAlarmCount child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMaximumReAlarmCount(@Nullable UInteger value);
 
-  UInteger getMaximumReAlarmCount();
+  /**
+   * Returns the mandatory MaximumUnAck child, a BaseDataVariableType with DataType Duration.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  BaseDataVariableTypeNode getMaximumUnAckNode();
 
-  void setMaximumReAlarmCount(UInteger value);
+  /**
+   * Returns the Value of the MaximumUnAck child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Double getMaximumUnAck();
 
-  AlarmRateVariableType getAverageAlarmRateNode();
+  /**
+   * Sets the Value of the MaximumUnAck child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMaximumUnAck(@Nullable Double value);
 
-  Double getAverageAlarmRate();
+  /**
+   * Returns the mandatory StartTime child, a BaseDataVariableType with DataType UtcTime.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.4">BaseDataVariableType
+   *     documentation</a>
+   */
+  BaseDataVariableTypeNode getStartTimeNode();
 
-  void setAverageAlarmRate(Double value);
+  /**
+   * Returns the Value of the StartTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable DateTime getStartTime();
 
-  MethodNode getResetMethodNode();
+  /**
+   * Sets the Value of the StartTime child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setStartTime(@Nullable DateTime value);
 
-  abstract class ResetMethod extends AbstractMethodInvocationHandler {
-    public ResetMethod(UaMethodNode node) {
-      super(node);
-    }
+  /**
+   * Returns the mandatory Reset Method node.
+   *
+   * @throws UaRuntimeException if the Method is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/9.4">Model
+   *     documentation</a>
+   */
+  UaMethodNode getResetMethodNode();
 
-    @Override
-    public Argument[] getInputArguments() {
-      return new Argument[] {};
-    }
+  /**
+   * Sets this instance's Reset handler; null clears it.
+   *
+   * @throws UaRuntimeException if the Method node is absent, ambiguous or incompatible.
+   */
+  void setResetHandler(@Nullable ResetHandler handler);
 
-    @Override
-    public Argument[] getOutputArguments() {
-      return new Argument[] {};
-    }
+  /**
+   * Sets this instance's Method handlers, including inherited handlers, from one implementation;
+   * null clears them and restores Method-node fallback. Absent optional Methods are skipped.
+   * Changes are applied in order; a failure does not roll back earlier changes.
+   *
+   * @throws UaRuntimeException if a mandatory Method is absent, or a Method is ambiguous or
+   *     incompatible.
+   */
+  void setMethods(@Nullable Methods methods);
 
-    @Override
-    protected Variant[] invoke(
-        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+  /**
+   * Handles calls to the Reset Method.
+   *
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/9.4">Model
+   *     documentation</a>
+   */
+  @FunctionalInterface
+  interface ResetHandler {
+    /**
+     * Handles a call to the Reset Method.
+     *
+     * @throws UaException if the call fails.
+     */
+    void reset(AbstractMethodInvocationHandler.InvocationContext context) throws UaException;
+  }
+
+  /** Implements this type's Methods. Unimplemented Methods report Bad_NotImplemented. */
+  interface Methods {
+    /** Handles a call to the Reset Method; see {@link ResetHandler#reset}. */
+    default void reset(AbstractMethodInvocationHandler.InvocationContext context)
         throws UaException {
-      invoke(context);
-      return new Variant[] {};
+      throw new UaException(StatusCodes.Bad_NotImplemented);
     }
-
-    protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context)
-        throws UaException;
   }
 }

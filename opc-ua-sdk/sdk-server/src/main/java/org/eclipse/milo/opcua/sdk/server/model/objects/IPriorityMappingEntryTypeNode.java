@@ -1,29 +1,25 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.model.variables.BaseDataVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link IPriorityMappingEntryType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.15">Model
+ *     documentation</a>
+ */
 public class IPriorityMappingEntryTypeNode extends BaseInterfaceTypeNode
     implements IPriorityMappingEntryType {
   public IPriorityMappingEntryTypeNode(
@@ -31,12 +27,36 @@ public class IPriorityMappingEntryTypeNode extends BaseInterfaceTypeNode
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions);
+  }
+
+  public IPriorityMappingEntryTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         context,
@@ -52,107 +72,120 @@ public class IPriorityMappingEntryTypeNode extends BaseInterfaceTypeNode
         eventNotifier);
   }
 
-  public IPriorityMappingEntryTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions);
-  }
-
   @Override
   public BaseDataVariableTypeNode getMappingUriNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "MappingUri");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "MappingUri",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public String getMappingUri() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "MappingUri");
-    return component.map(node -> (String) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable String getMappingUri() {
+    return ServerNodeSupport.read(this, getMappingUriNode(), String.class, null);
   }
 
   @Override
-  public void setMappingUri(String value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "MappingUri")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setMappingUri(@Nullable String value) {
+    ServerNodeSupport.write(this, getMappingUriNode(), value, false, false, false);
   }
 
   @Override
   public BaseDataVariableTypeNode getPriorityLabelNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "PriorityLabel");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "PriorityLabel",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public String getPriorityLabel() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "PriorityLabel");
-    return component.map(node -> (String) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable String getPriorityLabel() {
+    return ServerNodeSupport.read(this, getPriorityLabelNode(), String.class, null);
   }
 
   @Override
-  public void setPriorityLabel(String value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "PriorityLabel")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setPriorityLabel(@Nullable String value) {
+    ServerNodeSupport.write(this, getPriorityLabelNode(), value, false, false, false);
   }
 
   @Override
-  public BaseDataVariableTypeNode getPriorityValuePcpNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "PriorityValue_PCP");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+  public @Nullable BaseDataVariableTypeNode getPriorityValue_DSCPNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "PriorityValue_DSCP",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+        -1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public UByte getPriorityValuePcp() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "PriorityValue_PCP");
-    return component.map(node -> (UByte) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable UInteger getPriorityValue_DSCP() {
+    return ServerNodeSupport.read(this, getPriorityValue_DSCPNode(), UInteger.class, null);
   }
 
   @Override
-  public void setPriorityValuePcp(UByte value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "PriorityValue_PCP")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setPriorityValue_DSCP(@Nullable UInteger value) {
+    ServerNodeSupport.write(
+        this,
+        getPriorityValue_DSCPNode(),
+        Namespaces.OPC_UA,
+        "PriorityValue_DSCP",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
-  public BaseDataVariableTypeNode getPriorityValueDscpNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "PriorityValue_DSCP");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+  public @Nullable BaseDataVariableTypeNode getPriorityValue_PCPNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "PriorityValue_PCP",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 3L),
+        -1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public UInteger getPriorityValueDscp() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "PriorityValue_DSCP");
-    return component.map(node -> (UInteger) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable UByte getPriorityValue_PCP() {
+    return ServerNodeSupport.read(this, getPriorityValue_PCPNode(), UByte.class, null);
   }
 
   @Override
-  public void setPriorityValueDscp(UInteger value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "PriorityValue_DSCP")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setPriorityValue_PCP(@Nullable UByte value) {
+    ServerNodeSupport.write(
+        this,
+        getPriorityValue_PCPNode(),
+        Namespaces.OPC_UA,
+        "PriorityValue_PCP",
+        value,
+        false,
+        false,
+        false);
+  }
+
+  @Override
+  public void validateChildren() {
+    super.validateChildren();
+    getMappingUriNode();
+    getPriorityLabelNode();
+    getPriorityValue_DSCPNode();
+    getPriorityValue_PCPNode();
   }
 }

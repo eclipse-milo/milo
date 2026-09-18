@@ -1,24 +1,12 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import java.util.Optional;
-import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.ServerNodeSupport;
 import org.eclipse.milo.opcua.sdk.server.model.variables.BaseDataVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ChassisIdSubtype;
@@ -28,19 +16,51 @@ import org.eclipse.milo.opcua.stack.core.types.structured.LldpManagementAddressT
 import org.eclipse.milo.opcua.stack.core.types.structured.LldpSystemCapabilitiesMap;
 import org.eclipse.milo.opcua.stack.core.types.structured.LldpTlvType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Node implementation of {@link LldpRemoteSystemType}.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.5.6">Model
+ *     documentation</a>
+ */
 public class LldpRemoteSystemTypeNode extends BaseObjectTypeNode implements LldpRemoteSystemType {
   public LldpRemoteSystemTypeNode(
       UaNodeContext context,
       NodeId nodeId,
       QualifiedName browseName,
       LocalizedText displayName,
-      LocalizedText description,
+      @Nullable LocalizedText description,
       UInteger writeMask,
       UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions);
+  }
+
+  public LldpRemoteSystemTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      @Nullable LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType @Nullable [] rolePermissions,
+      RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable AccessRestrictionType accessRestrictions,
       UByte eventNotifier) {
     super(
         context,
@@ -56,339 +76,438 @@ public class LldpRemoteSystemTypeNode extends BaseObjectTypeNode implements Lldp
         eventNotifier);
   }
 
-  public LldpRemoteSystemTypeNode(
-      UaNodeContext context,
-      NodeId nodeId,
-      QualifiedName browseName,
-      LocalizedText displayName,
-      LocalizedText description,
-      UInteger writeMask,
-      UInteger userWriteMask,
-      RolePermissionType[] rolePermissions,
-      RolePermissionType[] userRolePermissions,
-      AccessRestrictionType accessRestrictions) {
-    super(
-        context,
-        nodeId,
-        browseName,
-        displayName,
-        description,
-        writeMask,
-        userWriteMask,
-        rolePermissions,
-        userRolePermissions,
-        accessRestrictions);
+  @Override
+  public BaseDataVariableTypeNode getChassisIdNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "ChassisId",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public BaseDataVariableTypeNode getTimeMarkNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "TimeMark");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+  public @Nullable String getChassisId() {
+    return ServerNodeSupport.read(this, getChassisIdNode(), String.class, null);
   }
 
   @Override
-  public UInteger getTimeMark() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "TimeMark");
-    return component.map(node -> (UInteger) node.getValue().getValue().getValue()).orElse(null);
-  }
-
-  @Override
-  public void setTimeMark(UInteger value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "TimeMark")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-  }
-
-  @Override
-  public BaseDataVariableTypeNode getRemoteIndexNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "RemoteIndex");
-    return (BaseDataVariableTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public UInteger getRemoteIndex() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "RemoteIndex");
-    return component.map(node -> (UInteger) node.getValue().getValue().getValue()).orElse(null);
-  }
-
-  @Override
-  public void setRemoteIndex(UInteger value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "RemoteIndex")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setChassisId(@Nullable String value) {
+    ServerNodeSupport.write(this, getChassisIdNode(), value, false, false, false);
   }
 
   @Override
   public BaseDataVariableTypeNode getChassisIdSubtypeNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "ChassisIdSubtype");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "ChassisIdSubtype",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 18947L),
+        -1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public ChassisIdSubtype getChassisIdSubtype() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "ChassisIdSubtype");
-    return component
-        .map(node -> (ChassisIdSubtype) node.getValue().getValue().getValue())
-        .orElse(null);
+  public @Nullable ChassisIdSubtype getChassisIdSubtype() {
+    return ServerNodeSupport.read(
+        this, getChassisIdSubtypeNode(), ChassisIdSubtype.class, ChassisIdSubtype::from);
   }
 
   @Override
-  public void setChassisIdSubtype(ChassisIdSubtype value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "ChassisIdSubtype")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setChassisIdSubtype(@Nullable ChassisIdSubtype value) {
+    ServerNodeSupport.write(this, getChassisIdSubtypeNode(), value, false, true, false);
   }
 
   @Override
-  public BaseDataVariableTypeNode getChassisIdNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "ChassisId");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+  public @Nullable BaseDataVariableTypeNode getManagementAddressNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "ManagementAddress",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 18954L),
+        1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public String getChassisId() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "ChassisId");
-    return component.map(node -> (String) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable LldpManagementAddressType @Nullable [] getManagementAddress() {
+    return ServerNodeSupport.readArray(
+        this, getManagementAddressNode(), LldpManagementAddressType.class, null);
   }
 
   @Override
-  public void setChassisId(String value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "ChassisId")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setManagementAddress(@Nullable LldpManagementAddressType @Nullable [] value) {
+    ServerNodeSupport.write(
+        this,
+        getManagementAddressNode(),
+        Namespaces.OPC_UA,
+        "ManagementAddress",
+        value,
+        true,
+        false,
+        true);
   }
 
   @Override
-  public BaseDataVariableTypeNode getPortIdSubtypeNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "PortIdSubtype");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+  public @Nullable BaseDataVariableTypeNode getPortDescriptionNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "PortDescription",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public PortIdSubtype getPortIdSubtype() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "PortIdSubtype");
-    return component
-        .map(node -> (PortIdSubtype) node.getValue().getValue().getValue())
-        .orElse(null);
+  public @Nullable String getPortDescription() {
+    return ServerNodeSupport.read(this, getPortDescriptionNode(), String.class, null);
   }
 
   @Override
-  public void setPortIdSubtype(PortIdSubtype value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "PortIdSubtype")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setPortDescription(@Nullable String value) {
+    ServerNodeSupport.write(
+        this,
+        getPortDescriptionNode(),
+        Namespaces.OPC_UA,
+        "PortDescription",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
   public BaseDataVariableTypeNode getPortIdNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "PortId");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "PortId",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public String getPortId() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "PortId");
-    return component.map(node -> (String) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable String getPortId() {
+    return ServerNodeSupport.read(this, getPortIdNode(), String.class, null);
   }
 
   @Override
-  public void setPortId(String value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "PortId")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setPortId(@Nullable String value) {
+    ServerNodeSupport.write(this, getPortIdNode(), value, false, false, false);
   }
 
   @Override
-  public BaseDataVariableTypeNode getPortDescriptionNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "PortDescription");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+  public BaseDataVariableTypeNode getPortIdSubtypeNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "PortIdSubtype",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 18949L),
+        -1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public String getPortDescription() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "PortDescription");
-    return component.map(node -> (String) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable PortIdSubtype getPortIdSubtype() {
+    return ServerNodeSupport.read(
+        this, getPortIdSubtypeNode(), PortIdSubtype.class, PortIdSubtype::from);
   }
 
   @Override
-  public void setPortDescription(String value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "PortDescription")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setPortIdSubtype(@Nullable PortIdSubtype value) {
+    ServerNodeSupport.write(this, getPortIdSubtypeNode(), value, false, true, false);
   }
 
   @Override
-  public BaseDataVariableTypeNode getSystemNameNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "SystemName");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+  public @Nullable BaseDataVariableTypeNode getRemoteChangesNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "RemoteChanges",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+        -1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public String getSystemName() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "SystemName");
-    return component.map(node -> (String) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable Boolean getRemoteChanges() {
+    return ServerNodeSupport.read(this, getRemoteChangesNode(), Boolean.class, null);
   }
 
   @Override
-  public void setSystemName(String value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "SystemName")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setRemoteChanges(@Nullable Boolean value) {
+    ServerNodeSupport.write(
+        this,
+        getRemoteChangesNode(),
+        Namespaces.OPC_UA,
+        "RemoteChanges",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
-  public BaseDataVariableTypeNode getSystemDescriptionNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "SystemDescription");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+  public BaseDataVariableTypeNode getRemoteIndexNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "RemoteIndex",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+        -1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public String getSystemDescription() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "SystemDescription");
-    return component.map(node -> (String) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable UInteger getRemoteIndex() {
+    return ServerNodeSupport.read(this, getRemoteIndexNode(), UInteger.class, null);
   }
 
   @Override
-  public void setSystemDescription(String value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "SystemDescription")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setRemoteIndex(@Nullable UInteger value) {
+    ServerNodeSupport.write(this, getRemoteIndexNode(), value, false, false, false);
   }
 
   @Override
-  public BaseDataVariableTypeNode getSystemCapabilitiesSupportedNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "SystemCapabilitiesSupported");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+  public @Nullable BaseDataVariableTypeNode getRemoteTooManyNeighborsNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "RemoteTooManyNeighbors",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 1L),
+        -1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public LldpSystemCapabilitiesMap getSystemCapabilitiesSupported() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "SystemCapabilitiesSupported");
-    return component
-        .map(node -> (LldpSystemCapabilitiesMap) node.getValue().getValue().getValue())
-        .orElse(null);
+  public @Nullable Boolean getRemoteTooManyNeighbors() {
+    return ServerNodeSupport.read(this, getRemoteTooManyNeighborsNode(), Boolean.class, null);
   }
 
   @Override
-  public void setSystemCapabilitiesSupported(LldpSystemCapabilitiesMap value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "SystemCapabilitiesSupported")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setRemoteTooManyNeighbors(@Nullable Boolean value) {
+    ServerNodeSupport.write(
+        this,
+        getRemoteTooManyNeighborsNode(),
+        Namespaces.OPC_UA,
+        "RemoteTooManyNeighbors",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
-  public BaseDataVariableTypeNode getSystemCapabilitiesEnabledNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "SystemCapabilitiesEnabled");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+  public @Nullable BaseDataVariableTypeNode getRemoteUnknownTlvNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "RemoteUnknownTlv",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 18955L),
+        1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public LldpSystemCapabilitiesMap getSystemCapabilitiesEnabled() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "SystemCapabilitiesEnabled");
-    return component
-        .map(node -> (LldpSystemCapabilitiesMap) node.getValue().getValue().getValue())
-        .orElse(null);
+  public @Nullable LldpTlvType @Nullable [] getRemoteUnknownTlv() {
+    return ServerNodeSupport.readArray(this, getRemoteUnknownTlvNode(), LldpTlvType.class, null);
   }
 
   @Override
-  public void setSystemCapabilitiesEnabled(LldpSystemCapabilitiesMap value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "SystemCapabilitiesEnabled")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setRemoteUnknownTlv(@Nullable LldpTlvType @Nullable [] value) {
+    ServerNodeSupport.write(
+        this,
+        getRemoteUnknownTlvNode(),
+        Namespaces.OPC_UA,
+        "RemoteUnknownTlv",
+        value,
+        true,
+        false,
+        true);
   }
 
   @Override
-  public BaseDataVariableTypeNode getRemoteChangesNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "RemoteChanges");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+  public @Nullable BaseDataVariableTypeNode getSystemCapabilitiesEnabledNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "SystemCapabilitiesEnabled",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 18956L),
+        -1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public Boolean getRemoteChanges() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "RemoteChanges");
-    return component.map(node -> (Boolean) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable LldpSystemCapabilitiesMap getSystemCapabilitiesEnabled() {
+    return ServerNodeSupport.read(
+        this, getSystemCapabilitiesEnabledNode(), LldpSystemCapabilitiesMap.class, null);
   }
 
   @Override
-  public void setRemoteChanges(Boolean value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "RemoteChanges")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setSystemCapabilitiesEnabled(@Nullable LldpSystemCapabilitiesMap value) {
+    ServerNodeSupport.write(
+        this,
+        getSystemCapabilitiesEnabledNode(),
+        Namespaces.OPC_UA,
+        "SystemCapabilitiesEnabled",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
-  public BaseDataVariableTypeNode getRemoteTooManyNeighborsNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "RemoteTooManyNeighbors");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+  public @Nullable BaseDataVariableTypeNode getSystemCapabilitiesSupportedNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "SystemCapabilitiesSupported",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 18956L),
+        -1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public Boolean getRemoteTooManyNeighbors() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "RemoteTooManyNeighbors");
-    return component.map(node -> (Boolean) node.getValue().getValue().getValue()).orElse(null);
+  public @Nullable LldpSystemCapabilitiesMap getSystemCapabilitiesSupported() {
+    return ServerNodeSupport.read(
+        this, getSystemCapabilitiesSupportedNode(), LldpSystemCapabilitiesMap.class, null);
   }
 
   @Override
-  public void setRemoteTooManyNeighbors(Boolean value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "RemoteTooManyNeighbors")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setSystemCapabilitiesSupported(@Nullable LldpSystemCapabilitiesMap value) {
+    ServerNodeSupport.write(
+        this,
+        getSystemCapabilitiesSupportedNode(),
+        Namespaces.OPC_UA,
+        "SystemCapabilitiesSupported",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
-  public BaseDataVariableTypeNode getManagementAddressNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "ManagementAddress");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+  public @Nullable BaseDataVariableTypeNode getSystemDescriptionNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "SystemDescription",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public LldpManagementAddressType[] getManagementAddress() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "ManagementAddress");
-    return component
-        .map(node -> (LldpManagementAddressType[]) node.getValue().getValue().getValue())
-        .orElse(null);
+  public @Nullable String getSystemDescription() {
+    return ServerNodeSupport.read(this, getSystemDescriptionNode(), String.class, null);
   }
 
   @Override
-  public void setManagementAddress(LldpManagementAddressType[] value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "ManagementAddress")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setSystemDescription(@Nullable String value) {
+    ServerNodeSupport.write(
+        this,
+        getSystemDescriptionNode(),
+        Namespaces.OPC_UA,
+        "SystemDescription",
+        value,
+        false,
+        false,
+        false);
   }
 
   @Override
-  public BaseDataVariableTypeNode getRemoteUnknownTlvNode() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "RemoteUnknownTlv");
-    return (BaseDataVariableTypeNode) component.orElse(null);
+  public @Nullable BaseDataVariableTypeNode getSystemNameNode() {
+    return ServerNodeSupport.optionalChild(
+        this,
+        Namespaces.OPC_UA,
+        "SystemName",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 12L),
+        -1,
+        BaseDataVariableTypeNode.class);
   }
 
   @Override
-  public LldpTlvType[] getRemoteUnknownTlv() {
-    Optional<VariableNode> component =
-        getVariableComponent("http://opcfoundation.org/UA/", "RemoteUnknownTlv");
-    return component
-        .map(node -> (LldpTlvType[]) node.getValue().getValue().getValue())
-        .orElse(null);
+  public @Nullable String getSystemName() {
+    return ServerNodeSupport.read(this, getSystemNameNode(), String.class, null);
   }
 
   @Override
-  public void setRemoteUnknownTlv(LldpTlvType[] value) {
-    getVariableComponent("http://opcfoundation.org/UA/", "RemoteUnknownTlv")
-        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  public void setSystemName(@Nullable String value) {
+    ServerNodeSupport.write(
+        this, getSystemNameNode(), Namespaces.OPC_UA, "SystemName", value, false, false, false);
+  }
+
+  @Override
+  public BaseDataVariableTypeNode getTimeMarkNode() {
+    return ServerNodeSupport.mandatoryChild(
+        this,
+        Namespaces.OPC_UA,
+        "TimeMark",
+        ExpandedNodeId.of(Namespaces.OPC_UA, 47L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 63L),
+        ExpandedNodeId.of(Namespaces.OPC_UA, 7L),
+        -1,
+        BaseDataVariableTypeNode.class);
+  }
+
+  @Override
+  public @Nullable UInteger getTimeMark() {
+    return ServerNodeSupport.read(this, getTimeMarkNode(), UInteger.class, null);
+  }
+
+  @Override
+  public void setTimeMark(@Nullable UInteger value) {
+    ServerNodeSupport.write(this, getTimeMarkNode(), value, false, false, false);
+  }
+
+  @Override
+  public void validateChildren() {
+    super.validateChildren();
+    getChassisIdNode();
+    getChassisIdSubtypeNode();
+    getManagementAddressNode();
+    getPortDescriptionNode();
+    getPortIdNode();
+    getPortIdSubtypeNode();
+    getRemoteChangesNode();
+    getRemoteIndexNode();
+    getRemoteTooManyNeighborsNode();
+    getRemoteUnknownTlvNode();
+    getSystemCapabilitiesEnabledNode();
+    getSystemCapabilitiesSupportedNode();
+    getSystemDescriptionNode();
+    getSystemNameNode();
+    getTimeMarkNode();
   }
 }

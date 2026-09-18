@@ -1,64 +1,87 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/9.7.4">https://reference.opcfoundation.org/v105/Core/docs/Part12/9.7.4</a>
+ * Server API for the AuthorizationServiceConfigurationType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/9.7.4">Model
+ *     documentation</a>
  */
 public interface AuthorizationServiceConfigurationType extends BaseObjectType {
-  QualifiedProperty<String> SERVICE_URI =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ServiceUri",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 17852L);
 
-  QualifiedProperty<ByteString> SERVICE_CERTIFICATE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ServiceCertificate",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15"),
-          -1,
-          ByteString.class);
+  /**
+   * Returns the mandatory IssuerEndpointUrl child, a PropertyType with DataType String.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getIssuerEndpointUrlNode();
 
-  QualifiedProperty<String> ISSUER_ENDPOINT_URL =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "IssuerEndpointUrl",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-          -1,
-          String.class);
+  /**
+   * Returns the Value of the IssuerEndpointUrl child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getIssuerEndpointUrl();
 
-  String getServiceUri();
+  /**
+   * Sets the Value of the IssuerEndpointUrl child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setIssuerEndpointUrl(@Nullable String value);
 
-  void setServiceUri(String value);
+  /**
+   * Returns the mandatory ServiceCertificate child, a PropertyType with DataType ByteString.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getServiceCertificateNode();
 
-  PropertyType getServiceUriNode();
+  /**
+   * Returns the Value of the ServiceCertificate child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable ByteString getServiceCertificate();
 
-  ByteString getServiceCertificate();
+  /**
+   * Sets the Value of the ServiceCertificate child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setServiceCertificate(@Nullable ByteString value);
 
-  void setServiceCertificate(ByteString value);
+  /**
+   * Returns the mandatory ServiceUri child, a PropertyType with DataType String.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getServiceUriNode();
 
-  PropertyType getServiceCertificateNode();
+  /**
+   * Returns the Value of the ServiceUri child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable String getServiceUri();
 
-  String getIssuerEndpointUrl();
-
-  void setIssuerEndpointUrl(String value);
-
-  PropertyType getIssuerEndpointUrlNode();
+  /**
+   * Sets the Value of the ServiceUri child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setServiceUri(@Nullable String value);
 }

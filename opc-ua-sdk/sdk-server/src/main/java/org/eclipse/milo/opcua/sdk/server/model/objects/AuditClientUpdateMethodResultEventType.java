@@ -1,92 +1,134 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.37">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.37</a>
+ * Server API for the AuditClientUpdateMethodResultEventType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.37">Model
+ *     documentation</a>
  */
 public interface AuditClientUpdateMethodResultEventType extends AuditClientEventType {
-  QualifiedProperty<ExpandedNodeId> OBJECT_ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ObjectId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=18"),
-          -1,
-          ExpandedNodeId.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 23926L);
 
-  QualifiedProperty<ExpandedNodeId> METHOD_ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "MethodId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=18"),
-          -1,
-          ExpandedNodeId.class);
+  /**
+   * Returns the mandatory InputArguments child, a PropertyType with DataType BaseDataType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getInputArgumentsNode();
 
-  QualifiedProperty<StatusCode> STATUS_CODE_ID =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "StatusCodeId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=19"),
-          -1,
-          StatusCode.class);
+  /**
+   * Returns the Value of the InputArguments child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Variant @Nullable [] getInputArguments();
 
-  QualifiedProperty<Object[]> INPUT_ARGUMENTS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "InputArguments",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24"),
-          1,
-          Object[].class);
+  /**
+   * Sets the Value of the InputArguments child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setInputArguments(@Nullable Variant @Nullable [] value);
 
-  QualifiedProperty<Object[]> OUTPUT_ARGUMENTS =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "OutputArguments",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24"),
-          1,
-          Object[].class);
+  /**
+   * Returns the mandatory MethodId child, a PropertyType with DataType ExpandedNodeId.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getMethodIdNode();
 
-  ExpandedNodeId getObjectId();
+  /**
+   * Returns the Value of the MethodId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable ExpandedNodeId getMethodId();
 
-  void setObjectId(ExpandedNodeId value);
+  /**
+   * Sets the Value of the MethodId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setMethodId(@Nullable ExpandedNodeId value);
 
-  PropertyType getObjectIdNode();
+  /**
+   * Returns the mandatory ObjectId child, a PropertyType with DataType ExpandedNodeId.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getObjectIdNode();
 
-  ExpandedNodeId getMethodId();
+  /**
+   * Returns the Value of the ObjectId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable ExpandedNodeId getObjectId();
 
-  void setMethodId(ExpandedNodeId value);
+  /**
+   * Sets the Value of the ObjectId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setObjectId(@Nullable ExpandedNodeId value);
 
-  PropertyType getMethodIdNode();
+  /**
+   * Returns the mandatory OutputArguments child, a PropertyType with DataType BaseDataType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getOutputArgumentsNode();
 
-  StatusCode getStatusCodeId();
+  /**
+   * Returns the Value of the OutputArguments child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Variant @Nullable [] getOutputArguments();
 
-  void setStatusCodeId(StatusCode value);
+  /**
+   * Sets the Value of the OutputArguments child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setOutputArguments(@Nullable Variant @Nullable [] value);
 
-  PropertyType getStatusCodeIdNode();
+  /**
+   * Returns the mandatory StatusCodeId child, a PropertyType with DataType StatusCode.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getStatusCodeIdNode();
 
-  Object[] getInputArguments();
+  /**
+   * Returns the Value of the StatusCodeId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable StatusCode getStatusCodeId();
 
-  void setInputArguments(Object[] value);
-
-  PropertyType getInputArgumentsNode();
-
-  Object[] getOutputArguments();
-
-  void setOutputArguments(Object[] value);
-
-  PropertyType getOutputArgumentsNode();
+  /**
+   * Sets the Value of the StatusCodeId child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setStatusCodeId(@Nullable StatusCode value);
 }

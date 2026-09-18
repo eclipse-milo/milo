@@ -1,79 +1,112 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.structured.UadpDataSetMessageContentMask;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.2.1/#9.2.1.2">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.2.1/#9.2.1.2</a>
+ * Server API for the UadpDataSetWriterMessageType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.2.1/#9.2.1.2">Model
+ *     documentation</a>
  */
 public interface UadpDataSetWriterMessageType extends DataSetWriterMessageType {
-  QualifiedProperty<UadpDataSetMessageContentMask> DATA_SET_MESSAGE_CONTENT_MASK =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "DataSetMessageContentMask",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15646"),
-          -1,
-          UadpDataSetMessageContentMask.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 21111L);
 
-  QualifiedProperty<UShort> CONFIGURED_SIZE =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ConfiguredSize",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-          -1,
-          UShort.class);
+  /**
+   * Returns the mandatory ConfiguredSize child, a PropertyType with DataType UInt16.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getConfiguredSizeNode();
 
-  QualifiedProperty<UShort> NETWORK_MESSAGE_NUMBER =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "NetworkMessageNumber",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-          -1,
-          UShort.class);
+  /**
+   * Returns the Value of the ConfiguredSize child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UShort getConfiguredSize();
 
-  QualifiedProperty<UShort> DATA_SET_OFFSET =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "DataSetOffset",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-          -1,
-          UShort.class);
+  /**
+   * Sets the Value of the ConfiguredSize child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setConfiguredSize(@Nullable UShort value);
 
-  UadpDataSetMessageContentMask getDataSetMessageContentMask();
+  /**
+   * Returns the mandatory DataSetMessageContentMask child, a PropertyType with DataType
+   * UadpDataSetMessageContentMask.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getDataSetMessageContentMaskNode();
 
-  void setDataSetMessageContentMask(UadpDataSetMessageContentMask value);
+  /**
+   * Returns the Value of the DataSetMessageContentMask child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UadpDataSetMessageContentMask getDataSetMessageContentMask();
 
-  PropertyType getDataSetMessageContentMaskNode();
+  /**
+   * Sets the Value of the DataSetMessageContentMask child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setDataSetMessageContentMask(@Nullable UadpDataSetMessageContentMask value);
 
-  UShort getConfiguredSize();
+  /**
+   * Returns the mandatory DataSetOffset child, a PropertyType with DataType UInt16.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getDataSetOffsetNode();
 
-  void setConfiguredSize(UShort value);
+  /**
+   * Returns the Value of the DataSetOffset child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UShort getDataSetOffset();
 
-  PropertyType getConfiguredSizeNode();
+  /**
+   * Sets the Value of the DataSetOffset child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setDataSetOffset(@Nullable UShort value);
 
-  UShort getNetworkMessageNumber();
+  /**
+   * Returns the mandatory NetworkMessageNumber child, a PropertyType with DataType UInt16.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getNetworkMessageNumberNode();
 
-  void setNetworkMessageNumber(UShort value);
+  /**
+   * Returns the Value of the NetworkMessageNumber child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable UShort getNetworkMessageNumber();
 
-  PropertyType getNetworkMessageNumberNode();
-
-  UShort getDataSetOffset();
-
-  void setDataSetOffset(UShort value);
-
-  PropertyType getDataSetOffsetNode();
+  /**
+   * Sets the Value of the NetworkMessageNumber child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setNetworkMessageNumber(@Nullable UShort value);
 }

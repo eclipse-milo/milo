@@ -1,51 +1,65 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.8.7">https://reference.opcfoundation.org/v105/Core/docs/Part11/5.8.7</a>
+ * Server API for the AuditHistoryAtTimeDeleteEventType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.8.7">Model
+ *     documentation</a>
  */
 public interface AuditHistoryAtTimeDeleteEventType extends AuditHistoryDeleteEventType {
-  QualifiedProperty<DateTime[]> REQ_TIMES =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "ReqTimes",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
-          1,
-          DateTime[].class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 3019L);
 
-  QualifiedProperty<DataValue[]> OLD_VALUES =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "OldValues",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=23"),
-          1,
-          DataValue[].class);
+  /**
+   * Returns the mandatory OldValues child, a PropertyType with DataType DataValue.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getOldValuesNode();
 
-  DateTime[] getReqTimes();
+  /**
+   * Returns the Value of the OldValues child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  DataValue @Nullable [] getOldValues();
 
-  void setReqTimes(DateTime[] value);
+  /**
+   * Sets the Value of the OldValues child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setOldValues(DataValue @Nullable [] value);
 
-  PropertyType getReqTimesNode();
+  /**
+   * Returns the mandatory ReqTimes child, a PropertyType with DataType UtcTime.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getReqTimesNode();
 
-  DataValue[] getOldValues();
+  /**
+   * Returns the Value of the ReqTimes child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  DateTime @Nullable [] getReqTimes();
 
-  void setOldValues(DataValue[] value);
-
-  PropertyType getOldValuesNode();
+  /**
+   * Sets the Value of the ReqTimes child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setReqTimes(DateTime @Nullable [] value);
 }

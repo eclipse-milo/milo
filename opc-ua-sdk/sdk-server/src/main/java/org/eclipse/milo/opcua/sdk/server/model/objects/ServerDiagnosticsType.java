@@ -1,61 +1,135 @@
-/*
- * Copyright (c) 2026 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
-import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
-import org.eclipse.milo.opcua.sdk.server.model.variables.SamplingIntervalDiagnosticsArrayType;
-import org.eclipse.milo.opcua.sdk.server.model.variables.ServerDiagnosticsSummaryType;
-import org.eclipse.milo.opcua.sdk.server.model.variables.SubscriptionDiagnosticsArrayType;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.variables.SamplingIntervalDiagnosticsArrayTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.variables.ServerDiagnosticsSummaryTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.variables.SubscriptionDiagnosticsArrayTypeNode;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.structured.SamplingIntervalDiagnosticsDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ServerDiagnosticsSummaryDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SubscriptionDiagnosticsDataType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 /**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.3">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.3</a>
+ * Server API for the ServerDiagnosticsType ObjectType.
+ *
+ * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.3">Model
+ *     documentation</a>
  */
 public interface ServerDiagnosticsType extends BaseObjectType {
-  QualifiedProperty<Boolean> ENABLED_FLAG =
-      new QualifiedProperty<>(
-          "http://opcfoundation.org/UA/",
-          "EnabledFlag",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-          -1,
-          Boolean.class);
+  ExpandedNodeId TYPE_ID = ExpandedNodeId.of(Namespaces.OPC_UA, 2020L);
 
-  Boolean getEnabledFlag();
+  /**
+   * Returns the mandatory EnabledFlag child, a PropertyType with DataType Boolean.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.3">PropertyType
+   *     documentation</a>
+   */
+  PropertyTypeNode getEnabledFlagNode();
 
-  void setEnabledFlag(Boolean value);
+  /**
+   * Returns the Value of the EnabledFlag child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable Boolean getEnabledFlag();
 
-  PropertyType getEnabledFlagNode();
+  /**
+   * Sets the Value of the EnabledFlag child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setEnabledFlag(@Nullable Boolean value);
 
-  ServerDiagnosticsSummaryType getServerDiagnosticsSummaryNode();
+  /**
+   * Returns the optional SamplingIntervalDiagnosticsArray child, a
+   * SamplingIntervalDiagnosticsArrayType with DataType SamplingIntervalDiagnosticsDataType.
+   *
+   * @return the child, or null if it is absent.
+   * @throws UaRuntimeException if the child is ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.9">SamplingIntervalDiagnosticsArrayType
+   *     documentation</a>
+   */
+  @Nullable SamplingIntervalDiagnosticsArrayTypeNode getSamplingIntervalDiagnosticsArrayNode();
 
-  ServerDiagnosticsSummaryDataType getServerDiagnosticsSummary();
+  /**
+   * Returns the Value of the SamplingIntervalDiagnosticsArray child.
+   *
+   * @return the value, or null if the child is absent or the Value is null.
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable SamplingIntervalDiagnosticsDataType @Nullable [] getSamplingIntervalDiagnosticsArray();
 
-  void setServerDiagnosticsSummary(ServerDiagnosticsSummaryDataType value);
+  /**
+   * Sets the Value of the SamplingIntervalDiagnosticsArray child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setSamplingIntervalDiagnosticsArray(
+      @Nullable SamplingIntervalDiagnosticsDataType @Nullable [] value);
 
-  SamplingIntervalDiagnosticsArrayType getSamplingIntervalDiagnosticsArrayNode();
+  /**
+   * Returns the mandatory ServerDiagnosticsSummary child, a ServerDiagnosticsSummaryType with
+   * DataType ServerDiagnosticsSummaryDataType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.8">ServerDiagnosticsSummaryType
+   *     documentation</a>
+   */
+  ServerDiagnosticsSummaryTypeNode getServerDiagnosticsSummaryNode();
 
-  SamplingIntervalDiagnosticsDataType[] getSamplingIntervalDiagnosticsArray();
+  /**
+   * Returns the Value of the ServerDiagnosticsSummary child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable ServerDiagnosticsSummaryDataType getServerDiagnosticsSummary();
 
-  void setSamplingIntervalDiagnosticsArray(SamplingIntervalDiagnosticsDataType[] value);
+  /**
+   * Sets the Value of the ServerDiagnosticsSummary child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setServerDiagnosticsSummary(@Nullable ServerDiagnosticsSummaryDataType value);
 
-  SubscriptionDiagnosticsArrayType getSubscriptionDiagnosticsArrayNode();
+  /**
+   * Returns the mandatory SessionsDiagnosticsSummary child, a SessionsDiagnosticsSummaryType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.4">SessionsDiagnosticsSummaryType
+   *     documentation</a>
+   */
+  SessionsDiagnosticsSummaryTypeNode getSessionsDiagnosticsSummaryNode();
 
-  SubscriptionDiagnosticsDataType[] getSubscriptionDiagnosticsArray();
+  /**
+   * Returns the mandatory SubscriptionDiagnosticsArray child, a SubscriptionDiagnosticsArrayType
+   * with DataType SubscriptionDiagnosticsDataType.
+   *
+   * @throws UaRuntimeException if the child is absent, ambiguous or incompatible.
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.11">SubscriptionDiagnosticsArrayType
+   *     documentation</a>
+   */
+  SubscriptionDiagnosticsArrayTypeNode getSubscriptionDiagnosticsArrayNode();
 
-  void setSubscriptionDiagnosticsArray(SubscriptionDiagnosticsDataType[] value);
+  /**
+   * Returns the Value of the SubscriptionDiagnosticsArray child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the Value does not convert.
+   */
+  @Nullable SubscriptionDiagnosticsDataType @Nullable [] getSubscriptionDiagnosticsArray();
 
-  SessionsDiagnosticsSummaryType getSessionsDiagnosticsSummaryNode();
+  /**
+   * Sets the Value of the SubscriptionDiagnosticsArray child.
+   *
+   * @throws UaRuntimeException if the child is invalid or the value does not convert.
+   */
+  void setSubscriptionDiagnosticsArray(
+      @Nullable SubscriptionDiagnosticsDataType @Nullable [] value);
 }

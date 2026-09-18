@@ -817,11 +817,12 @@ public class ConditionAttachAdoptTest extends AbstractClientServerTest {
     node.setMaxTimeShelved(60_000.0);
     FiniteStateVariableTypeNode currentState =
         requireNonNull(requireNonNull(node.getShelvingStateNode()).getCurrentStateNode());
-    currentState.setId(ShelvedState.ONE_SHOT_SHELVED.stateId());
+    currentState.setFiniteStateVariableTypeId(ShelvedState.ONE_SHOT_SHELVED.stateId());
     currentState.setValue(new DataValue(new Variant(LocalizedText.english("OneShotShelved"))));
     FiniteTransitionVariableTypeNode lastTransition =
         requireNonNull(requireNonNull(node.getShelvingStateNode()).getLastTransitionNode());
-    lastTransition.setId(NodeIds.ShelvedStateMachineType_UnshelvedToOneShotShelved);
+    lastTransition.setFiniteTransitionVariableTypeId(
+        NodeIds.ShelvedStateMachineType_UnshelvedToOneShotShelved);
     lastTransition.setValue(
         new DataValue(new Variant(LocalizedText.english("UnshelvedToOneShotShelved"))));
     lastTransition.setTransitionTime(transitionTime);
@@ -895,13 +896,13 @@ public class ConditionAttachAdoptTest extends AbstractClientServerTest {
     AlarmConditionTypeNode node = rawAlarm("UnknownShelvingState", true);
     FiniteStateVariableTypeNode currentState =
         requireNonNull(requireNonNull(node.getShelvingStateNode()).getCurrentStateNode());
-    currentState.setId(new NodeId(1, "UnknownShelvingState/State"));
+    currentState.setFiniteStateVariableTypeId(new NodeId(1, "UnknownShelvingState/State"));
     currentState.setValue(new DataValue(new Variant(LocalizedText.english("Unknown"))));
     node.setSuppressedOrShelved(true);
 
     AlarmCondition condition = AlarmCondition.attach(node);
 
-    assertEquals(ShelvedState.UNSHELVED.stateId(), currentState.getId());
+    assertEquals(ShelvedState.UNSHELVED.stateId(), currentState.getFiniteStateVariableTypeId());
     assertEquals(
         LocalizedText.english("Unshelved"),
         requireNonNull(currentState.getValue()).value().value());
@@ -996,7 +997,7 @@ public class ConditionAttachAdoptTest extends AbstractClientServerTest {
 
     var shelvingState = requireNonNull(loaded.getNode().getShelvingStateNode());
     var currentState = requireNonNull(shelvingState.getCurrentStateNode());
-    currentState.setId(ShelvedState.TIMED_SHELVED.stateId());
+    currentState.setFiniteStateVariableTypeId(ShelvedState.TIMED_SHELVED.stateId());
     currentState.setValue(new DataValue(new Variant(LocalizedText.english("TimedShelved"))));
     loaded.getNode().setSuppressedOrShelved(true);
     ByteString eventId = loaded.getNode().getEventId();
@@ -1007,7 +1008,7 @@ public class ConditionAttachAdoptTest extends AbstractClientServerTest {
         ShelvedState.UNSHELVED.stateId(),
         requireNonNull(
                 requireNonNull(normalized.getNode().getShelvingStateNode()).getCurrentStateNode())
-            .getId());
+            .getFiniteStateVariableTypeId());
     assertEquals(Boolean.FALSE, normalized.getNode().getSuppressedOrShelved());
     assertEquals(eventId, normalized.getNode().getEventId());
   }
@@ -1187,8 +1188,10 @@ public class ConditionAttachAdoptTest extends AbstractClientServerTest {
   private static void setTwoState(
       TwoStateVariableTypeNode state, boolean id, String text, DateTime time) {
     state.setValue(new DataValue(new Variant(LocalizedText.english(text))));
-    state.setId(id);
-    state.setTransitionTime(time);
+    state.setTwoStateVariableTypeId(id);
+    if (state.getTransitionTimeNode() != null) {
+      state.setTransitionTime(time);
+    }
   }
 
   private static long behaviorFilterCount(UaVariableNode node, Condition.BehaviorFilterKind kind) {
