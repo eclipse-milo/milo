@@ -160,7 +160,10 @@ public final class ULong extends UNumber implements Comparable<ULong> {
   @Override
   public float floatValue() {
     if (value < 0) {
-      return ((float) (value & Long.MAX_VALUE)) + Long.MAX_VALUE;
+      // Halve the value so it fits the signed range, keeping the bit shifted out as a sticky bit so
+      // the conversion still sees a value that is not exactly halfway, then scale back by a power
+      // of two, which is exact. Masking the sign bit off and adding it back would round twice.
+      return ((float) ((value >>> 1) | (value & 1))) * 2.0f;
     } else {
       return value;
     }
@@ -169,7 +172,8 @@ public final class ULong extends UNumber implements Comparable<ULong> {
   @Override
   public double doubleValue() {
     if (value < 0) {
-      return ((double) (value & Long.MAX_VALUE)) + Long.MAX_VALUE;
+      // Halved and made sticky for the reason given in floatValue().
+      return ((double) ((value >>> 1) | (value & 1))) * 2.0;
     } else {
       return value;
     }
