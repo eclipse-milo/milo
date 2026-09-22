@@ -235,13 +235,20 @@ public class OperationLimits {
   }
 
   /**
-   * Apply configured overrides to these limits, which the Server advertised.
+   * Combine these limits, as advertised by a Server, with overrides.
    *
-   * @param overrides the configured override for each limit, or empty to leave the advertised value
-   *     alone.
-   * @return the effective limits, as resolved by {@link #resolve(UInteger, UInteger)}.
+   * <p>For each limit, an empty override or an override of 0 leaves the advertised value alone. An
+   * override replaces a limit that is absent or advertised as 0 ("no limit"). When both are
+   * non-zero, the smaller value wins.
+   *
+   * <p>{@link OpcUaClient#getOperationLimits()} already applies the overrides from {@link
+   * OpcUaClientConfig#getOperationLimitOverrides()}. Use this method for limits obtained some other
+   * way.
+   *
+   * @param overrides the override for each limit, or empty to leave the advertised value alone.
+   * @return the effective limits.
    */
-  OperationLimits withOverrides(Function<OperationLimit, Optional<UInteger>> overrides) {
+  public OperationLimits withOverrides(Function<OperationLimit, Optional<UInteger>> overrides) {
     var effective = new EnumMap<OperationLimit, UInteger>(OperationLimit.class);
 
     for (OperationLimit limit : LIMITS) {

@@ -19,16 +19,16 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClientConfig;
 import org.eclipse.milo.opcua.sdk.client.OpcUaSession;
 import org.eclipse.milo.opcua.sdk.client.OperationLimit;
-import org.eclipse.milo.opcua.sdk.client.OperationLimits;
 import org.eclipse.milo.opcua.sdk.core.NumericRange;
 import org.eclipse.milo.opcua.sdk.core.dtd.BsdParser;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
@@ -222,37 +222,68 @@ class BinaryDataTypeDictionaryReaderTest {
     Assertions.assertEquals(dictionary, typeDictionaryBs);
   }
 
-  // The reader must partition description Reads by the client's effective MaxNodesPerRead, which
-  // includes any configured override, rather than reading the server's advertised value directly.
+  // Description Reads are partitioned by the MaxNodesPerRead the server advertises.
   @Test
-  void descriptionReadsUseEffectiveMaxNodesPerRead() throws Exception {
-    assertEquals(List.of(2, 2, 1), descriptionReadSizes(uint(2), 5));
+  void descriptionReadsUseAdvertisedMaxNodesPerRead() throws Exception {
+    assertEquals(List.of(2, 2, 1), descriptionReadSizes(maxNodesPerRead(uint(2)), null, 5));
+  }
+
+  // A configured override must reach the dictionary reader too: it supplies a limit the server
+  // omits and clamps one the server advertises too high.
+  @Test
+  void descriptionReadsApplyConfiguredOverride() throws Exception {
+    assertEquals(
+        List.of(2, 2, 1),
+        descriptionReadSizes(new DataValue(StatusCodes.Bad_NodeIdUnknown), uint(2), 5));
+    assertEquals(List.of(2, 2, 1), descriptionReadSizes(maxNodesPerRead(uint(1000)), uint(2), 5));
   }
 
   // Without a usable limit the reader falls back to 64 per Read. Part 5 defines 0 as "no limit",
   // so it must not collapse the partition to one node per Read.
   @Test
   void descriptionReadsFallBackTo64WhenMaxNodesPerReadIsAbsentOrZero() throws Exception {
-    assertEquals(List.of(64, 6), descriptionReadSizes(null, 70));
-    assertEquals(List.of(64, 6), descriptionReadSizes(uint(0), 70));
+    assertEquals(
+        List.of(64, 6),
+        descriptionReadSizes(new DataValue(StatusCodes.Bad_NodeIdUnknown), null, 70));
+    assertEquals(List.of(64, 6), descriptionReadSizes(maxNodesPerRead(uint(0)), null, 70));
   }
 
-  private List<Integer> descriptionReadSizes(@Nullable UInteger maxNodesPerRead, int nodeCount)
-      throws Exception {
+  private static DataValue maxNodesPerRead(UInteger value) {
+    return new DataValue(new Variant(value));
+  }
 
-    Map<OperationLimit, UInteger> limits =
-        maxNodesPerRead == null
-            ? Map.of()
-            : Map.of(OperationLimit.MaxNodesPerRead, maxNodesPerRead);
-    Mockito.when(client.getOperationLimits()).thenReturn(new OperationLimits(limits));
+  /**
+   * Read {@code nodeCount} description values and return the size of each description Read.
+   *
+   * @param advertised the value the server returns for MaxNodesPerRead.
+   * @param override the configured MaxNodesPerRead override, or {@code null} for none.
+   * @param nodeCount the number of description nodes to read.
+   */
+  private List<Integer> descriptionReadSizes(
+      DataValue advertised, @Nullable UInteger override, int nodeCount) throws Exception {
+
+    Function<OperationLimit, Optional<UInteger>> overrides =
+        limit ->
+            limit == OperationLimit.MaxNodesPerRead
+                ? Optional.ofNullable(override)
+                : Optional.empty();
+    Mockito.when(clientConfig.getOperationLimitOverrides())
+        .thenReturn(override == null ? Optional.empty() : Optional.of(overrides));
 
     var sizes = new ArrayList<Integer>();
     Mockito.doAnswer(
             invocation -> {
               ReadRequest request = invocation.getArgument(0);
-              int size = Objects.requireNonNull(request.getNodesToRead()).length;
-              sizes.add(size);
-              DataValue[] values = new DataValue[size];
+              ReadValueId[] nodesToRead = Objects.requireNonNull(request.getNodesToRead());
+
+              if (nodesToRead[0]
+                  .getNodeId()
+                  .equals(NodeIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerRead)) {
+                return completedFuture(new ReadResponse(null, new DataValue[] {advertised}, null));
+              }
+
+              sizes.add(nodesToRead.length);
+              DataValue[] values = new DataValue[nodesToRead.length];
               Arrays.fill(values, new DataValue(new Variant("description")));
               return completedFuture(new ReadResponse(null, values, null));
             })

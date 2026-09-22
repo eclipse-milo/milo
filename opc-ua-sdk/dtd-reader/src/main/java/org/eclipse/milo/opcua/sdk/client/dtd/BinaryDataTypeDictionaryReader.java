@@ -31,6 +31,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
+import org.eclipse.milo.opcua.sdk.client.OperationLimit;
+import org.eclipse.milo.opcua.sdk.client.OperationLimits;
 import org.eclipse.milo.opcua.sdk.core.dtd.BinaryDataTypeCodec;
 import org.eclipse.milo.opcua.sdk.core.dtd.BinaryDataTypeDictionary;
 import org.eclipse.milo.opcua.sdk.core.dtd.BsdParser;
@@ -44,6 +46,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.BrowseDirection;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.BrowseResultMask;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
@@ -52,6 +55,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.*;
 import org.eclipse.milo.opcua.stack.core.util.FutureUtils;
 import org.eclipse.milo.opcua.stack.core.util.Lists;
 import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 import org.opcfoundation.opcua.binaryschema.StructuredType;
 import org.opcfoundation.opcua.binaryschema.TypeDictionary;
 import org.slf4j.Logger;
@@ -480,10 +484,18 @@ public class BinaryDataTypeDictionaryReader {
   }
 
   CompletableFuture<List<String>> readDataTypeDescriptionValues(List<NodeId> nodeIds) {
-    // getOperationLimits() may block on a Read, so keep it off the thread completing this chain.
+    // Read the advertised limit asynchronously rather than through client.getOperationLimits(),
+    // which blocks, and this chain may be running on the transport executor that completes Reads.
     CompletableFuture<Integer> getPartitionSize =
-        CompletableFuture.supplyAsync(
-            this::getReadPartitionSize, client.getTransport().getConfig().getExecutor());
+        readNode(
+                new ReadValueId(
+                    NodeIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerRead,
+                    AttributeId.Value.uid(),
+                    null,
+                    QualifiedName.NULL_VALUE))
+            .thenApply(BinaryDataTypeDictionaryReader::advertisedMaxNodesPerRead)
+            .exceptionally(ex -> new OperationLimits(Map.of()))
+            .thenApply(this::getReadPartitionSize);
 
     return getPartitionSize.thenCompose(
         partitionSize -> {
@@ -516,18 +528,30 @@ public class BinaryDataTypeDictionaryReader {
         });
   }
 
-  private int getReadPartitionSize() {
-    try {
-      return client
-          .getOperationLimits()
-          .maxNodesPerRead()
-          .filter(m -> m.longValue() > 0)
-          .map(m -> Ints.saturatedCast(m.longValue()))
-          .orElse(PARTITION_SIZE);
-    } catch (UaException e) {
-      logger.debug("Failed to read OperationLimits, using partition size {}", PARTITION_SIZE, e);
-      return PARTITION_SIZE;
+  private static OperationLimits advertisedMaxNodesPerRead(@Nullable DataValue value) {
+    if (value != null
+        && !value.statusCode().isBad()
+        && value.value().value() instanceof Number number) {
+      return new OperationLimits(
+          Map.of(OperationLimit.MaxNodesPerRead, UInteger.valueOf(number.longValue())));
+    } else {
+      return new OperationLimits(Map.of());
     }
+  }
+
+  private int getReadPartitionSize(OperationLimits advertised) {
+    OperationLimits effective =
+        client
+            .getConfig()
+            .getOperationLimitOverrides()
+            .map(advertised::withOverrides)
+            .orElse(advertised);
+
+    return effective
+        .maxNodesPerRead()
+        .filter(m -> m.longValue() > 0)
+        .map(m -> Ints.saturatedCast(m.longValue()))
+        .orElse(PARTITION_SIZE);
   }
 
   private CompletableFuture<List<NodeId>> browseDataTypeEncodingNodeIds(
