@@ -19,12 +19,16 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClientConfig;
 import org.eclipse.milo.opcua.sdk.client.OpcUaSession;
+import org.eclipse.milo.opcua.sdk.client.OperationLimit;
+import org.eclipse.milo.opcua.sdk.client.OperationLimits;
 import org.eclipse.milo.opcua.sdk.core.NumericRange;
 import org.eclipse.milo.opcua.sdk.core.dtd.BsdParser;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
@@ -36,11 +40,13 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransport;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransportConfig;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DynamicTest;
@@ -214,5 +220,51 @@ class BinaryDataTypeDictionaryReaderTest {
             .get(5, TimeUnit.SECONDS);
 
     Assertions.assertEquals(dictionary, typeDictionaryBs);
+  }
+
+  // The reader must partition description Reads by the client's effective MaxNodesPerRead, which
+  // includes any configured override, rather than reading the server's advertised value directly.
+  @Test
+  void descriptionReadsUseEffectiveMaxNodesPerRead() throws Exception {
+    assertEquals(List.of(2, 2, 1), descriptionReadSizes(uint(2), 5));
+  }
+
+  // Without a usable limit the reader falls back to 64 per Read. Part 5 defines 0 as "no limit",
+  // so it must not collapse the partition to one node per Read.
+  @Test
+  void descriptionReadsFallBackTo64WhenMaxNodesPerReadIsAbsentOrZero() throws Exception {
+    assertEquals(List.of(64, 6), descriptionReadSizes(null, 70));
+    assertEquals(List.of(64, 6), descriptionReadSizes(uint(0), 70));
+  }
+
+  private List<Integer> descriptionReadSizes(@Nullable UInteger maxNodesPerRead, int nodeCount)
+      throws Exception {
+
+    Map<OperationLimit, UInteger> limits =
+        maxNodesPerRead == null
+            ? Map.of()
+            : Map.of(OperationLimit.MaxNodesPerRead, maxNodesPerRead);
+    Mockito.when(client.getOperationLimits()).thenReturn(new OperationLimits(limits));
+
+    var sizes = new ArrayList<Integer>();
+    Mockito.doAnswer(
+            invocation -> {
+              ReadRequest request = invocation.getArgument(0);
+              int size = Objects.requireNonNull(request.getNodesToRead()).length;
+              sizes.add(size);
+              DataValue[] values = new DataValue[size];
+              Arrays.fill(values, new DataValue(new Variant("description")));
+              return completedFuture(new ReadResponse(null, values, null));
+            })
+        .when(transport)
+        .sendRequestMessage(ArgumentMatchers.any(ReadRequest.class));
+
+    List<NodeId> nodeIds = IntStream.range(0, nodeCount).mapToObj(i -> new NodeId(1, i)).toList();
+
+    List<String> values =
+        dictionaryReader.readDataTypeDescriptionValues(nodeIds).get(5, TimeUnit.SECONDS);
+
+    assertEquals(nodeCount, values.size());
+    return sizes;
   }
 }

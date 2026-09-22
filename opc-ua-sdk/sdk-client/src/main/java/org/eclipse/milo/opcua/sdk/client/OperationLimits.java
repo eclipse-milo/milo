@@ -10,9 +10,13 @@
 
 package org.eclipse.milo.opcua.sdk.client;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import org.eclipse.milo.opcua.stack.core.NodeIds;
+import java.util.function.Function;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
@@ -24,24 +28,39 @@ import org.jspecify.annotations.Nullable;
 /**
  * Operation limits of the Server, obtained by reading Variables of the OperationLimits Object.
  *
+ * <p>The limits returned by {@link OpcUaClient#getOperationLimits()} are the effective limits: the
+ * values the Server advertised combined with any overrides configured through {@link
+ * OpcUaClientConfig#getOperationLimitOverrides()}.
+ *
  * @see <a href="https://reference.opcfoundation.org/Core/Part5/v105/docs/6.3.11">
  *     https://reference.opcfoundation.org/Core/Part5/v105/docs/6.3.11</a>
  */
 public class OperationLimits {
 
-  private final UInteger maxNodesPerRead;
-  private final UInteger maxNodesPerWrite;
-  private final UInteger maxNodesPerMethodCall;
-  private final UInteger maxNodesPerBrowse;
-  private final UInteger maxNodesPerRegisterNodes;
-  private final UInteger maxNodesPerTranslateBrowsePathsToNodeIds;
-  private final UInteger maxNodesPerNodeManagement;
-  private final UInteger maxMonitoredItemsPerCall;
-  private final UInteger maxNodesPerHistoryReadData;
-  private final UInteger maxNodesPerHistoryReadEvents;
-  private final UInteger maxNodesPerHistoryUpdateData;
-  private final UInteger maxNodesPerHistoryUpdateEvents;
+  private static final List<OperationLimit> LIMITS = List.of(OperationLimit.values());
 
+  private static final List<NodeId> LIMIT_NODE_IDS =
+      LIMITS.stream().map(OperationLimit::getNodeId).toList();
+
+  private final Map<OperationLimit, UInteger> limits;
+
+  /**
+   * Create an {@link OperationLimits} from a map of known limit values.
+   *
+   * <p>A limit missing from {@code limits} is reported as absent.
+   *
+   * @param limits the known limit values.
+   */
+  public OperationLimits(Map<OperationLimit, UInteger> limits) {
+    this.limits = new EnumMap<>(OperationLimit.class);
+    this.limits.putAll(limits);
+  }
+
+  /**
+   * Create an {@link OperationLimits} from individual limit values.
+   *
+   * <p>A {@code null} argument means the limit is absent.
+   */
   public OperationLimits(
       @Nullable UInteger maxNodesPerRead,
       @Nullable UInteger maxNodesPerWrite,
@@ -56,39 +75,52 @@ public class OperationLimits {
       @Nullable UInteger maxNodesPerHistoryUpdateData,
       @Nullable UInteger maxNodesPerHistoryUpdateEvents) {
 
-    this.maxNodesPerRead = maxNodesPerRead;
-    this.maxNodesPerWrite = maxNodesPerWrite;
-    this.maxNodesPerMethodCall = maxNodesPerMethodCall;
-    this.maxNodesPerBrowse = maxNodesPerBrowse;
-    this.maxNodesPerRegisterNodes = maxNodesPerRegisterNodes;
-    this.maxNodesPerTranslateBrowsePathsToNodeIds = maxNodesPerTranslateBrowsePathsToNodeIds;
-    this.maxNodesPerNodeManagement = maxNodesPerNodeManagement;
-    this.maxMonitoredItemsPerCall = maxMonitoredItemsPerCall;
-    this.maxNodesPerHistoryReadData = maxNodesPerHistoryReadData;
-    this.maxNodesPerHistoryReadEvents = maxNodesPerHistoryReadEvents;
-    this.maxNodesPerHistoryUpdateData = maxNodesPerHistoryUpdateData;
-    this.maxNodesPerHistoryUpdateEvents = maxNodesPerHistoryUpdateEvents;
+    this(
+        toMap(
+            Arrays.asList(
+                maxNodesPerRead,
+                maxNodesPerWrite,
+                maxNodesPerMethodCall,
+                maxNodesPerBrowse,
+                maxNodesPerRegisterNodes,
+                maxNodesPerTranslateBrowsePathsToNodeIds,
+                maxNodesPerNodeManagement,
+                maxMonitoredItemsPerCall,
+                maxNodesPerHistoryReadData,
+                maxNodesPerHistoryReadEvents,
+                maxNodesPerHistoryUpdateData,
+                maxNodesPerHistoryUpdateEvents)));
+  }
+
+  /**
+   * Get the value of {@code limit}.
+   *
+   * @param limit the limit to get.
+   * @return the value of {@code limit}, or empty if the limit is absent.
+   */
+  public Optional<UInteger> get(OperationLimit limit) {
+    return Optional.ofNullable(limits.get(limit));
   }
 
   /**
    * @return the maximum size of the nodesToRead array when a Client calls the Read Service.
    */
   public Optional<UInteger> maxNodesPerRead() {
-    return Optional.ofNullable(maxNodesPerRead);
+    return get(OperationLimit.MaxNodesPerRead);
   }
 
   /**
    * @return the maximum size of the nodesToWrite array when a Client calls the Write Service.
    */
   public Optional<UInteger> maxNodesPerWrite() {
-    return Optional.ofNullable(maxNodesPerWrite);
+    return get(OperationLimit.MaxNodesPerWrite);
   }
 
   /**
    * @return the maximum size of the methodsToCall array when a Client calls the Call Service.
    */
   public Optional<UInteger> maxNodesPerMethodCall() {
-    return Optional.ofNullable(maxNodesPerMethodCall);
+    return get(OperationLimit.MaxNodesPerMethodCall);
   }
 
   /**
@@ -96,7 +128,7 @@ public class OperationLimits {
    *     the continuationPoints array when a Client calls the BrowseNext Service.
    */
   public Optional<UInteger> maxNodesPerBrowse() {
-    return Optional.ofNullable(maxNodesPerBrowse);
+    return get(OperationLimit.MaxNodesPerBrowse);
   }
 
   /**
@@ -105,7 +137,7 @@ public class OperationLimits {
    *     UnregisterNodes Service.
    */
   public Optional<UInteger> maxNodesPerRegisterNodes() {
-    return Optional.ofNullable(maxNodesPerRegisterNodes);
+    return get(OperationLimit.MaxNodesPerRegisterNodes);
   }
 
   /**
@@ -113,7 +145,7 @@ public class OperationLimits {
    *     TranslateBrowsePathsToNodeIds Service.
    */
   public Optional<UInteger> maxNodesPerTranslateBrowsePathsToNodeIds() {
-    return Optional.ofNullable(maxNodesPerTranslateBrowsePathsToNodeIds);
+    return get(OperationLimit.MaxNodesPerTranslateBrowsePathsToNodeIds);
   }
 
   /**
@@ -122,7 +154,7 @@ public class OperationLimits {
    *     DeleteReferences Services.
    */
   public Optional<UInteger> maxNodesPerNodeManagement() {
-    return Optional.ofNullable(maxNodesPerNodeManagement);
+    return get(OperationLimit.MaxNodesPerNodeManagement);
   }
 
   /**
@@ -130,7 +162,7 @@ public class OperationLimits {
    *     ModifyMonitoredItems, DeleteMonitoredItems, SetMonitoringMode, and SetTriggering services.
    */
   public Optional<UInteger> maxMonitoredItemsPerCall() {
-    return Optional.ofNullable(maxMonitoredItemsPerCall);
+    return get(OperationLimit.MaxMonitoredItemsPerCall);
   }
 
   /**
@@ -138,7 +170,7 @@ public class OperationLimits {
    *     for data.
    */
   public Optional<UInteger> maxNodesPerHistoryReadData() {
-    return Optional.ofNullable(maxNodesPerHistoryReadData);
+    return get(OperationLimit.MaxNodesPerHistoryReadData);
   }
 
   /**
@@ -146,7 +178,7 @@ public class OperationLimits {
    *     for events.
    */
   public Optional<UInteger> maxNodesPerHistoryReadEvents() {
-    return Optional.ofNullable(maxNodesPerHistoryReadEvents);
+    return get(OperationLimit.MaxNodesPerHistoryReadEvents);
   }
 
   /**
@@ -154,7 +186,7 @@ public class OperationLimits {
    *     HistoryUpdate Service for data.
    */
   public Optional<UInteger> maxNodesPerHistoryUpdateData() {
-    return Optional.ofNullable(maxNodesPerHistoryUpdateData);
+    return get(OperationLimit.MaxNodesPerHistoryUpdateData);
   }
 
   /**
@@ -162,24 +194,8 @@ public class OperationLimits {
    *     HistoryUpdate Service for events.
    */
   public Optional<UInteger> maxNodesPerHistoryUpdateEvents() {
-    return Optional.ofNullable(maxNodesPerHistoryUpdateEvents);
+    return get(OperationLimit.MaxNodesPerHistoryUpdateEvents);
   }
-
-  private static final List<NodeId> OPERATION_LIMITS_NODES =
-      List.of(
-          NodeIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerRead,
-          NodeIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerWrite,
-          NodeIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerMethodCall,
-          NodeIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerBrowse,
-          NodeIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerRegisterNodes,
-          NodeIds
-              .Server_ServerCapabilities_OperationLimits_MaxNodesPerTranslateBrowsePathsToNodeIds,
-          NodeIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerNodeManagement,
-          NodeIds.Server_ServerCapabilities_OperationLimits_MaxMonitoredItemsPerCall,
-          NodeIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerHistoryReadData,
-          NodeIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerHistoryReadEvents,
-          NodeIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerHistoryUpdateData,
-          NodeIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerHistoryUpdateEvents);
 
   static OperationLimits read(OpcUaClient client) throws UaException {
     try {
@@ -196,96 +212,85 @@ public class OperationLimits {
   }
 
   private static OperationLimits readAllNodes(OpcUaClient client) throws UaException {
-    List<DataValue> values =
-        client.readValues(0.0, TimestampsToReturn.Neither, OPERATION_LIMITS_NODES);
+    List<DataValue> values = client.readValues(0.0, TimestampsToReturn.Neither, LIMIT_NODE_IDS);
 
-    if (values == null || values.size() != OPERATION_LIMITS_NODES.size()) {
+    if (values == null || values.size() != LIMIT_NODE_IDS.size()) {
       throw new UaException(
           StatusCodes.Bad_UnexpectedError,
           "Read returned %s OperationLimits results, expected %s"
-              .formatted(values == null ? "null" : values.size(), OPERATION_LIMITS_NODES.size()));
+              .formatted(values == null ? "null" : values.size(), LIMIT_NODE_IDS.size()));
     }
 
-    UInteger maxNodesPerRead = toUInteger(values.get(0));
-    UInteger maxNodesPerWrite = toUInteger(values.get(1));
-    UInteger maxNodesPerMethodCall = toUInteger(values.get(2));
-    UInteger maxNodesPerBrowse = toUInteger(values.get(3));
-    UInteger maxNodesPerRegisterNodes = toUInteger(values.get(4));
-    UInteger maxNodesPerTranslateBrowsePathsToNodeIds = toUInteger(values.get(5));
-    UInteger maxNodesPerNodeManagement = toUInteger(values.get(6));
-    UInteger maxMonitoredItemsPerCall = toUInteger(values.get(7));
-    UInteger maxNodesPerHistoryReadData = toUInteger(values.get(8));
-    UInteger maxNodesPerHistoryReadEvents = toUInteger(values.get(9));
-    UInteger maxNodesPerHistoryUpdateData = toUInteger(values.get(10));
-    UInteger maxNodesPerHistoryUpdateEvents = toUInteger(values.get(11));
-
-    return new OperationLimits(
-        maxNodesPerRead,
-        maxNodesPerWrite,
-        maxNodesPerMethodCall,
-        maxNodesPerBrowse,
-        maxNodesPerRegisterNodes,
-        maxNodesPerTranslateBrowsePathsToNodeIds,
-        maxNodesPerNodeManagement,
-        maxMonitoredItemsPerCall,
-        maxNodesPerHistoryReadData,
-        maxNodesPerHistoryReadEvents,
-        maxNodesPerHistoryUpdateData,
-        maxNodesPerHistoryUpdateEvents);
+    return new OperationLimits(toMap(values.stream().map(OperationLimits::toUInteger).toList()));
   }
 
   private static OperationLimits readIndividualNodes(OpcUaClient client) throws UaException {
-    // checkstyle:off
-    UInteger maxNodesPerRead =
-        readNode(client, NodeIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerRead);
-    UInteger maxNodesPerWrite =
-        readNode(client, NodeIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerWrite);
-    UInteger maxNodesPerMethodCall =
-        readNode(client, NodeIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerMethodCall);
-    UInteger maxNodesPerBrowse =
-        readNode(client, NodeIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerBrowse);
-    UInteger maxNodesPerRegisterNodes =
-        readNode(
-            client, NodeIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerRegisterNodes);
-    UInteger maxNodesPerTranslateBrowsePathsToNodeIds =
-        readNode(
-            client,
-            NodeIds
-                .Server_ServerCapabilities_OperationLimits_MaxNodesPerTranslateBrowsePathsToNodeIds);
-    UInteger maxNodesPerNodeManagement =
-        readNode(
-            client, NodeIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerNodeManagement);
-    UInteger maxMonitoredItemsPerCall =
-        readNode(
-            client, NodeIds.Server_ServerCapabilities_OperationLimits_MaxMonitoredItemsPerCall);
-    UInteger maxNodesPerHistoryReadData =
-        readNode(
-            client, NodeIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerHistoryReadData);
-    UInteger maxNodesPerHistoryReadEvents =
-        readNode(
-            client, NodeIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerHistoryReadEvents);
-    UInteger maxNodesPerHistoryUpdateData =
-        readNode(
-            client, NodeIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerHistoryUpdateData);
-    UInteger maxNodesPerHistoryUpdateEvents =
-        readNode(
-            client,
-            NodeIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerHistoryUpdateEvents);
-    // checkstyle:on
+    var values = new ArrayList<@Nullable UInteger>(LIMITS.size());
 
-    return new OperationLimits(
-        maxNodesPerRead,
-        maxNodesPerWrite,
-        maxNodesPerMethodCall,
-        maxNodesPerBrowse,
-        maxNodesPerRegisterNodes,
-        maxNodesPerTranslateBrowsePathsToNodeIds,
-        maxNodesPerNodeManagement,
-        maxMonitoredItemsPerCall,
-        maxNodesPerHistoryReadData,
-        maxNodesPerHistoryReadEvents,
-        maxNodesPerHistoryUpdateData,
-        maxNodesPerHistoryUpdateEvents);
+    for (OperationLimit limit : LIMITS) {
+      values.add(readNode(client, limit.getNodeId()));
+    }
+
+    return new OperationLimits(toMap(values));
+  }
+
+  /**
+   * Apply configured overrides to these limits, which the Server advertised.
+   *
+   * @param overrides the configured override for each limit, or empty to leave the advertised value
+   *     alone.
+   * @return the effective limits, as resolved by {@link #resolve(UInteger, UInteger)}.
+   */
+  OperationLimits withOverrides(Function<OperationLimit, Optional<UInteger>> overrides) {
+    var effective = new EnumMap<OperationLimit, UInteger>(OperationLimit.class);
+
+    for (OperationLimit limit : LIMITS) {
+      UInteger value = resolve(limits.get(limit), overrides.apply(limit).orElse(null));
+
+      if (value != null) {
+        effective.put(limit, value);
+      }
+    }
+
+    return new OperationLimits(effective);
+  }
+
+  /**
+   * Resolve the effective value of one limit from the value the Server advertised and a configured
+   * override.
+   *
+   * <p>Part 5 defines 0 as "no limit", so an advertised 0 does not constrain the override, and an
+   * override of 0 leaves the advertised value alone. When both are non-zero, the smaller wins.
+   *
+   * @param advertised the value the Server advertised, or {@code null} if absent.
+   * @param override the configured override, or {@code null} if not configured.
+   * @return the effective value, or {@code null} if absent.
+   */
+  static @Nullable UInteger resolve(@Nullable UInteger advertised, @Nullable UInteger override) {
+    if (override == null || override.longValue() == 0L) {
+      return advertised;
+    }
+    if (advertised == null || advertised.longValue() == 0L) {
+      return override;
+    }
+    return advertised.compareTo(override) <= 0 ? advertised : override;
+  }
+
+  /**
+   * Map values listed in {@link OperationLimit} declaration order to their limits, omitting {@code
+   * null} values.
+   */
+  private static Map<OperationLimit, UInteger> toMap(List<@Nullable UInteger> values) {
+    var map = new EnumMap<OperationLimit, UInteger>(OperationLimit.class);
+
+    for (int i = 0; i < LIMITS.size(); i++) {
+      UInteger value = values.get(i);
+      if (value != null) {
+        map.put(LIMITS.get(i), value);
+      }
+    }
+
+    return map;
   }
 
   private static @Nullable UInteger readNode(OpcUaClient client, NodeId nodeId) throws UaException {

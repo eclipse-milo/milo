@@ -15,7 +15,9 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import org.eclipse.milo.opcua.sdk.client.identity.AnonymousProvider;
 import org.eclipse.milo.opcua.sdk.client.identity.IdentityProvider;
@@ -70,6 +72,8 @@ public class OpcUaClientConfigBuilder {
   private boolean sessionEndpointValidationEnabled = false;
 
   private @Nullable SecurityKeysListener securityKeysListener;
+
+  private @Nullable Function<OperationLimit, Optional<UInteger>> operationLimitOverrides;
 
   public OpcUaClientConfigBuilder setApplicationName(LocalizedText applicationName) {
     this.applicationName = applicationName;
@@ -306,6 +310,50 @@ public class OpcUaClientConfigBuilder {
     return this;
   }
 
+  /**
+   * Set a function that supplies an override for each OperationLimit the server advertises.
+   *
+   * <p>Return empty from the function to leave a limit alone. See {@link
+   * OpcUaClientConfig#getOperationLimitOverrides()} for how an override combines with the value the
+   * server advertises. Use {@link #setOperationLimitOverrides(Map)} for a fixed set of values.
+   *
+   * @param operationLimitOverrides the override function, or {@code null} to remove overrides.
+   * @return this builder.
+   */
+  public OpcUaClientConfigBuilder setOperationLimitOverrides(
+      @Nullable Function<OperationLimit, Optional<UInteger>> operationLimitOverrides) {
+    this.operationLimitOverrides = operationLimitOverrides;
+    return this;
+  }
+
+  /**
+   * Set fixed overrides for the OperationLimits the server advertises.
+   *
+   * <p>Limits missing from {@code operationLimitOverrides} are left alone. See {@link
+   * OpcUaClientConfig#getOperationLimitOverrides()} for how an override combines with the value the
+   * server advertises.
+   *
+   * <pre>{@code
+   * OpcUaClientConfig config =
+   *     OpcUaClientConfig.builder()
+   *         .setEndpoint(endpoint)
+   *         .setOperationLimitOverrides(
+   *             Map.of(
+   *                 OperationLimit.MaxNodesPerRead, uint(500),
+   *                 OperationLimit.MaxNodesPerBrowse, uint(100)))
+   *         .build();
+   * }</pre>
+   *
+   * @param operationLimitOverrides the override value for each limit to override.
+   * @return this builder.
+   */
+  public OpcUaClientConfigBuilder setOperationLimitOverrides(
+      Map<OperationLimit, UInteger> operationLimitOverrides) {
+    Map<OperationLimit, UInteger> overrides = Map.copyOf(operationLimitOverrides);
+    this.operationLimitOverrides = limit -> Optional.ofNullable(overrides.get(limit));
+    return this;
+  }
+
   public OpcUaClientConfig build() {
     if (sessionName == null) {
       sessionName =
@@ -357,7 +405,8 @@ public class OpcUaClientConfigBuilder {
         keepAliveInterval,
         keepAliveTimeout,
         sessionEndpointValidationEnabled,
-        securityKeysListener);
+        securityKeysListener,
+        operationLimitOverrides);
   }
 
   static class OpcUaClientConfigImpl implements OpcUaClientConfig {
@@ -386,6 +435,7 @@ public class OpcUaClientConfigBuilder {
     private final UInteger keepAliveTimeout;
     private final boolean sessionEndpointValidationEnabled;
     private final @Nullable SecurityKeysListener securityKeysListener;
+    private final @Nullable Function<OperationLimit, Optional<UInteger>> operationLimitOverrides;
 
     OpcUaClientConfigImpl(
         EndpointDescription endpoint,
@@ -410,7 +460,8 @@ public class OpcUaClientConfigBuilder {
         UInteger keepAliveInterval,
         UInteger keepAliveTimeout,
         boolean sessionEndpointValidationEnabled,
-        @Nullable SecurityKeysListener securityKeysListener) {
+        @Nullable SecurityKeysListener securityKeysListener,
+        @Nullable Function<OperationLimit, Optional<UInteger>> operationLimitOverrides) {
 
       this.endpoint = endpoint;
       this.discoveryEndpoints = discoveryEndpoints;
@@ -435,6 +486,7 @@ public class OpcUaClientConfigBuilder {
       this.keepAliveTimeout = keepAliveTimeout;
       this.sessionEndpointValidationEnabled = sessionEndpointValidationEnabled;
       this.securityKeysListener = securityKeysListener;
+      this.operationLimitOverrides = operationLimitOverrides;
     }
 
     @Override
@@ -550,6 +602,11 @@ public class OpcUaClientConfigBuilder {
     @Override
     public Optional<SecurityKeysListener> getSecurityKeysListener() {
       return Optional.ofNullable(securityKeysListener);
+    }
+
+    @Override
+    public Optional<Function<OperationLimit, Optional<UInteger>>> getOperationLimitOverrides() {
+      return Optional.ofNullable(operationLimitOverrides);
     }
   }
 }

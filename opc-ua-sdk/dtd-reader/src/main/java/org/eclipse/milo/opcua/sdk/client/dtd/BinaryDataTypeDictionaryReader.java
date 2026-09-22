@@ -44,7 +44,6 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.BrowseDirection;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.BrowseResultMask;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
@@ -480,20 +479,11 @@ public class BinaryDataTypeDictionaryReader {
                 .collect(Collectors.toList()));
   }
 
-  private CompletableFuture<List<String>> readDataTypeDescriptionValues(List<NodeId> nodeIds) {
-    CompletableFuture<UInteger> maxNodesPerRead =
-        readNode(
-                new ReadValueId(
-                    NodeIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerRead,
-                    AttributeId.Value.uid(),
-                    null,
-                    QualifiedName.NULL_VALUE))
-            .thenApply(dv -> (UInteger) dv.value().value());
-
+  CompletableFuture<List<String>> readDataTypeDescriptionValues(List<NodeId> nodeIds) {
+    // getOperationLimits() may block on a Read, so keep it off the thread completing this chain.
     CompletableFuture<Integer> getPartitionSize =
-        maxNodesPerRead
-            .thenApply(m -> Math.max(1, Ints.saturatedCast(m.longValue())))
-            .exceptionally(ex -> PARTITION_SIZE);
+        CompletableFuture.supplyAsync(
+            this::getReadPartitionSize, client.getTransport().getConfig().getExecutor());
 
     return getPartitionSize.thenCompose(
         partitionSize -> {
@@ -524,6 +514,20 @@ public class BinaryDataTypeDictionaryReader {
                       .map(v -> (String) v.value().value())
                       .collect(Collectors.toList()));
         });
+  }
+
+  private int getReadPartitionSize() {
+    try {
+      return client
+          .getOperationLimits()
+          .maxNodesPerRead()
+          .filter(m -> m.longValue() > 0)
+          .map(m -> Ints.saturatedCast(m.longValue()))
+          .orElse(PARTITION_SIZE);
+    } catch (UaException e) {
+      logger.debug("Failed to read OperationLimits, using partition size {}", PARTITION_SIZE, e);
+      return PARTITION_SIZE;
+    }
   }
 
   private CompletableFuture<List<NodeId>> browseDataTypeEncodingNodeIds(
