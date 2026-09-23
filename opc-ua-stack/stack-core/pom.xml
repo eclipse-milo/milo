@@ -92,13 +92,20 @@
         <artifactId>maven-bundle-plugin</artifactId>
         <configuration>
           <instructions>
-            <Export-Package>
-              org.eclipse.milo.shaded.com.google.common.*,
-              org.eclipse.milo.shaded.com.google.common.collect,
-              *
-            </Export-Package>
+            <!--
+              This bundle embeds the relocated Guava classes. org.eclipse.milo.shaded only holds
+              GuavaClasses, which lists the classes to keep when minimizing Guava.
+            -->
+            <Export-Package>!org.eclipse.milo.shaded, !*.internal*, !*.impl*, *</Export-Package>
+            <!-- Treat Guava's optional dependencies the way Guava's own manifest does. -->
             <Import-Package>
-              !com.google.common.*,
+              !com.google.appengine.*,
+              !com.google.apphosting.*,
+              !com.google.errorprone.annotations.*,
+              sun.misc;resolution:=optional,
+              com.sun.management.*;resolution:=optional,
+              sun.security.*;resolution:=optional,
+              !javax.annotation.*,
               *
             </Import-Package>
           </instructions>

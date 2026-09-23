@@ -45,7 +45,7 @@
         <version>${maven-shade-plugin.version}</version>
         <executions>
           <execution>
-            <phase>package</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>shade</goal>
             </goals>
