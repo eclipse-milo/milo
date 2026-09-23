@@ -42,6 +42,13 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <!-- No test uses it directly. It is here so OsgiManifestIT checks its packaged bundle. -->
+      <groupId>org.eclipse.milo</groupId>
+      <artifactId>milo-dtd-manager</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.milo</groupId>
       <artifactId>milo-sdk-server</artifactId>
       <version>${project.version}</version>
