@@ -196,6 +196,7 @@ public class PublishSequenceRegressionTest {
             + " discarding it drops every NotificationMessage until the numbering catches back up,"
             + " which for a renumbered Subscription is never");
 
+    awaitParkedPublishRequests();
     sendDataChange(2, uint(1), uint(2));
     sendDataChange(3, uint(1), uint(2), uint(3));
 
@@ -236,6 +237,7 @@ public class PublishSequenceRegressionTest {
 
     // Exactly DUPLICATE_WINDOW behind the expected 101.
     long duplicate = 101 - DUPLICATE_WINDOW;
+    awaitParkedPublishRequests();
     sendDataChange(duplicate, uint(duplicate));
 
     // The next message in the established numbering, which is delivered: the serial processing
@@ -297,6 +299,7 @@ public class PublishSequenceRegressionTest {
     }
 
     // A retransmitted copy of NotificationMessage 2, which the client has already accounted for.
+    awaitParkedPublishRequests();
     sendDataChange(2, uint(1), uint(2), uint(3));
     sendDataChange(4, uint(1), uint(2), uint(3), uint(4));
 
@@ -351,6 +354,18 @@ public class PublishSequenceRegressionTest {
     Field lastSequenceNumberField = details.getClass().getDeclaredField("lastSequenceNumber");
     lastSequenceNumberField.setAccessible(true);
     lastSequenceNumberField.setLong(details, sequenceNumber);
+  }
+
+  /**
+   * Waits until at least two Publish requests are parked at the Server, before a test sends two
+   * responses back to back. The test thread answers parked requests in the order it enqueues
+   * responses. A response enqueued while no request is parked waits for the next Publish request
+   * instead, and two such requests can be answered on different Server threads in either order.
+   */
+  private void awaitParkedPublishRequests() throws Exception {
+    assertTrue(
+        awaitTrue(() -> scriptable.getParkedRequestCount() >= 2),
+        "the client did not refill its Publish pipeline");
   }
 
   private boolean awaitDelivered(int value) throws Exception {
