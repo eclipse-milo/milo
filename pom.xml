@@ -76,6 +76,7 @@
     <checkstyle.version>12.3.1</checkstyle.version>
     <jaxb2-maven-plugin.version>4.1.0</jaxb2-maven-plugin.version>
     <license-tool-plugin.version>1.1.0</license-tool-plugin.version>
+    <maven-antrun-plugin.version>3.2.0</maven-antrun-plugin.version>
     <maven-bundle-plugin.version>6.0.2</maven-bundle-plugin.version>
     <maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
     <maven-clean-plugin.version>3.5.0</maven-clean-plugin.version>
@@ -423,6 +424,13 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
           <version>${maven-jar-plugin.version}</version>
+          <executions>
+            <execution>
+              <!-- Package early so maven-shade-plugin can run in prepare-package. -->
+              <id>default-jar</id>
+              <phase>prepare-package</phase>
+            </execution>
+          </executions>
           <configuration>
             <archive>
               <manifest>
@@ -431,35 +439,85 @@
               <manifestEntries>
                 <Automatic-Module-Name>${javaModuleName}</Automatic-Module-Name>
               </manifestEntries>
-              <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
             </archive>
           </configuration>
         </plugin>
 
+        <!--
+          Generate the OSGi manifest from the packaged jar rather than from target/classes.
+          maven-shade-plugin relocates Guava in prepare-package, so the jar's bytecode refers to
+          org.eclipse.milo.shaded.com.google.common. Analyzing that jar makes Import-Package and
+          Export-Package name the same packages. The write-manifest execution of
+          maven-antrun-plugin then stores the manifest in the jar.
+        -->
         <plugin>
           <groupId>org.apache.felix</groupId>
           <artifactId>maven-bundle-plugin</artifactId>
           <version>${maven-bundle-plugin.version}</version>
+          <configuration>
+            <supportedProjectTypes>
+              <supportedProjectType>jar</supportedProjectType>
+              <supportedProjectType>bundle</supportedProjectType>
+            </supportedProjectTypes>
+            <!-- The plugin analyzes whatever outputDirectory points to, including a jar. -->
+            <outputDirectory>${project.build.directory}/${project.build.finalName}.jar</outputDirectory>
+            <manifestLocation>${project.build.directory}/osgi</manifestLocation>
+            <instructions>
+              <!--
+                The plugin computes its default exports only from a classes directory. This is
+                the same default: export everything except .internal and .impl packages.
+              -->
+              <Export-Package>!*.internal*, !*.impl*, *</Export-Package>
+              <Import-Package>
+                com.sun.management.*;resolution:=optional,
+                sun.security.*;resolution:=optional,
+                !javax.annotation.*,
+                *
+              </Import-Package>
+            </instructions>
+          </configuration>
           <executions>
             <execution>
               <id>generate-manifest</id>
-              <phase>process-classes</phase>
+              <phase>package</phase>
               <goals>
                 <goal>manifest</goal>
               </goals>
+            </execution>
+          </executions>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-antrun-plugin</artifactId>
+          <version>${maven-antrun-plugin.version}</version>
+          <executions>
+            <execution>
+              <id>write-manifest</id>
+              <phase>package</phase>
+              <goals>
+                <goal>run</goal>
+              </goals>
               <configuration>
-                <supportedProjectTypes>
-                  <supportedProjectType>jar</supportedProjectType>
-                  <supportedProjectType>bundle</supportedProjectType>
-                </supportedProjectTypes>
-                <instructions>
-                  <Import-Package>
-                    com.sun.management.*;resolution:=optional,
-                    sun.security.*;resolution:=optional,
-                    !javax.annotation.*,
-                    *
-                  </Import-Package>
-                </instructions>
+                <!--
+                  Copy the jar with the generated manifest as its first entry. Ant's zip update
+                  mode is not used because it skips a file less than 2 seconds newer than the
+                  entry it replaces. Parent POMs inherit this execution too, but have no jar.
+                -->
+                <target xmlns:if="ant:if">
+                  <condition property="jar.packaging">
+                    <equals arg1="${project.packaging}" arg2="jar"/>
+                  </condition>
+                  <sequential if:set="jar.packaging">
+                    <delete file="${project.build.directory}/osgi/${project.build.finalName}.jar"/>
+                    <zip destfile="${project.build.directory}/osgi/${project.build.finalName}.jar">
+                      <zipfileset file="${project.build.directory}/osgi/MANIFEST.MF" fullpath="META-INF/MANIFEST.MF"/>
+                      <zipfileset src="${project.build.directory}/${project.build.finalName}.jar" excludes="META-INF/MANIFEST.MF"/>
+                    </zip>
+                    <move file="${project.build.directory}/osgi/${project.build.finalName}.jar"
+                          tofile="${project.build.directory}/${project.build.finalName}.jar" overwrite="true"/>
+                  </sequential>
+                </target>
               </configuration>
             </execution>
           </executions>
