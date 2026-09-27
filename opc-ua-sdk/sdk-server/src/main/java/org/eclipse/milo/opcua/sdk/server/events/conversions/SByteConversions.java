@@ -109,43 +109,26 @@ final class SByteConversions {
 
   @Nullable
   static Object explicitConversion(@NonNull Byte b, OpcUaDataType targetType) {
-    // @formatter:off
-    switch (targetType) {
-      case Boolean:
-        return sByteToBoolean(b);
-      case Byte:
-        return sByteToByte(b);
-      case String:
-        return sByteToString(b);
-      default:
-        return implicitConversion(b, targetType);
-    }
-    // @formatter:on
+    return switch (targetType) {
+      case Boolean -> sByteToBoolean(b);
+      case Byte -> sByteToByte(b);
+      case String -> sByteToString(b);
+      default -> implicitConversion(b, targetType);
+    };
   }
 
   @Nullable
   static Object implicitConversion(@NonNull Byte b, OpcUaDataType targetType) {
-    // @formatter:off
-    switch (targetType) {
-      case Double:
-        return sByteToDouble(b);
-      case Float:
-        return sByteToFloat(b);
-      case Int16:
-        return sByteToInt16(b);
-      case Int32:
-        return sByteToInt32(b);
-      case Int64:
-        return sByteToInt64(b);
-      case UInt16:
-        return sByteToUInt16(b);
-      case UInt32:
-        return sByteToUInt32(b);
-      case UInt64:
-        return sByteToUInt64(b);
-      default:
-        return null;
-    }
-    // @formatter:on
+    return switch (targetType) {
+      case Double -> sByteToDouble(b);
+      case Float -> sByteToFloat(b);
+      case Int16 -> sByteToInt16(b);
+      case Int32 -> sByteToInt32(b);
+      case Int64 -> sByteToInt64(b);
+      case UInt16 -> sByteToUInt16(b);
+      case UInt32 -> sByteToUInt32(b);
+      case UInt64 -> sByteToUInt64(b);
+      default -> null;
+    };
   }
 }

@@ -128,45 +128,27 @@ final class UInt32Conversions {
 
   @Nullable
   static Object explicitConversion(@NonNull UInteger ui, OpcUaDataType targetType) {
-    // @formatter:off
-    switch (targetType) {
-      case Boolean:
-        return uInt32ToBoolean(ui);
-      case Byte:
-        return uInt32ToByte(ui);
-      case Int16:
-        return uInt32ToInt16(ui);
-      case SByte:
-        return uInt32ToSByte(ui);
-      case StatusCode:
-        return uInt32ToStatusCode(ui);
-      case String:
-        return uInt32ToString(ui);
-      case UInt16:
-        return uInt32ToUInt16(ui);
-      default:
-        return implicitConversion(ui, targetType);
-    }
-    // @formatter:on
+    return switch (targetType) {
+      case Boolean -> uInt32ToBoolean(ui);
+      case Byte -> uInt32ToByte(ui);
+      case Int16 -> uInt32ToInt16(ui);
+      case SByte -> uInt32ToSByte(ui);
+      case StatusCode -> uInt32ToStatusCode(ui);
+      case String -> uInt32ToString(ui);
+      case UInt16 -> uInt32ToUInt16(ui);
+      default -> implicitConversion(ui, targetType);
+    };
   }
 
   @Nullable
   static Object implicitConversion(@NonNull UInteger ui, OpcUaDataType targetType) {
-    // @formatter:off
-    switch (targetType) {
-      case Double:
-        return uInt32ToDouble(ui);
-      case Float:
-        return uInt32ToFloat(ui);
-      case Int32:
-        return uInt32ToInt32(ui);
-      case Int64:
-        return uInt32ToInt64(ui);
-      case UInt64:
-        return uInt32ToUInt64(ui);
-      default:
-        return null;
-    }
-    // @formatter:on
+    return switch (targetType) {
+      case Double -> uInt32ToDouble(ui);
+      case Float -> uInt32ToFloat(ui);
+      case Int32 -> uInt32ToInt32(ui);
+      case Int64 -> uInt32ToInt64(ui);
+      case UInt64 -> uInt32ToUInt64(ui);
+      default -> null;
+    };
   }
 }
