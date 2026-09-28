@@ -45,67 +45,46 @@ public class ExplicitConversions {
   private static Object convert(
       @NonNull Object sourceValue, OpcUaDataType sourceType, OpcUaDataType targetType) {
 
-    switch (sourceType) {
-      case Boolean:
-        return BooleanConversions.convert(sourceValue, targetType, false);
-      case Byte:
-        return ByteConversions.convert(sourceValue, targetType, false);
+    return switch (sourceType) {
+      case Boolean -> BooleanConversions.convert(sourceValue, targetType, false);
+      case Byte -> ByteConversions.convert(sourceValue, targetType, false);
 
-      case ByteString:
-        return ByteStringConversions.convert(sourceValue, targetType, false);
+      case ByteString -> ByteStringConversions.convert(sourceValue, targetType, false);
 
-      case DateTime:
-        return DateTimeConversions.convert(sourceValue, targetType, false);
+      case DateTime -> DateTimeConversions.convert(sourceValue, targetType, false);
 
-      case Double:
-        return DoubleConversions.convert(sourceValue, targetType, false);
+      case Double -> DoubleConversions.convert(sourceValue, targetType, false);
 
-      case ExpandedNodeId:
-        return ExpandedNodeIdConversions.convert(sourceValue, targetType, false);
+      case ExpandedNodeId -> ExpandedNodeIdConversions.convert(sourceValue, targetType, false);
 
-      case Float:
-        return FloatConversions.convert(sourceValue, targetType, false);
-      case Guid:
-        return GuidConversions.convert(sourceValue, targetType, false);
+      case Float -> FloatConversions.convert(sourceValue, targetType, false);
+      case Guid -> GuidConversions.convert(sourceValue, targetType, false);
 
-      case Int16:
-        return Int16Conversions.convert(sourceValue, targetType, false);
+      case Int16 -> Int16Conversions.convert(sourceValue, targetType, false);
 
-      case Int32:
-        return Int32Conversions.convert(sourceValue, targetType, false);
+      case Int32 -> Int32Conversions.convert(sourceValue, targetType, false);
 
-      case Int64:
-        return Int64Conversions.convert(sourceValue, targetType, false);
+      case Int64 -> Int64Conversions.convert(sourceValue, targetType, false);
 
-      case NodeId:
-        return NodeIdConversions.convert(sourceValue, targetType, false);
+      case NodeId -> NodeIdConversions.convert(sourceValue, targetType, false);
 
-      case SByte:
-        return SByteConversions.convert(sourceValue, targetType, false);
+      case SByte -> SByteConversions.convert(sourceValue, targetType, false);
 
-      case StatusCode:
-        return StatusCodeConversions.convert(sourceValue, targetType, false);
+      case StatusCode -> StatusCodeConversions.convert(sourceValue, targetType, false);
 
-      case String:
-        return StringConversions.convert(sourceValue, targetType, false);
+      case String -> StringConversions.convert(sourceValue, targetType, false);
 
-      case LocalizedText:
-        return LocalizedTextConversions.convert(sourceValue, targetType, false);
+      case LocalizedText -> LocalizedTextConversions.convert(sourceValue, targetType, false);
 
-      case QualifiedName:
-        return QualifiedNameConversions.convert(sourceValue, targetType, false);
+      case QualifiedName -> QualifiedNameConversions.convert(sourceValue, targetType, false);
 
-      case UInt16:
-        return UInt16Conversions.convert(sourceValue, targetType, false);
+      case UInt16 -> UInt16Conversions.convert(sourceValue, targetType, false);
 
-      case UInt32:
-        return UInt32Conversions.convert(sourceValue, targetType, false);
+      case UInt32 -> UInt32Conversions.convert(sourceValue, targetType, false);
 
-      case UInt64:
-        return UInt64Conversions.convert(sourceValue, targetType, false);
+      case UInt64 -> UInt64Conversions.convert(sourceValue, targetType, false);
 
-      default:
-        return null;
-    }
+      default -> null;
+    };
   }
 }

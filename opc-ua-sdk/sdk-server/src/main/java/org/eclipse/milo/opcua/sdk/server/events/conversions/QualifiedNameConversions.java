@@ -46,15 +46,10 @@ final class QualifiedNameConversions {
 
   @Nullable
   static Object implicitConversion(@NonNull QualifiedName name, OpcUaDataType targetType) {
-    // @formatter:off
-    switch (targetType) {
-      case String:
-        return qualifiedNameToString(name);
-      case LocalizedText:
-        return qualifiedNameToLocalizedText(name);
-      default:
-        return null;
-    }
-    // @formatter:on
+    return switch (targetType) {
+      case String -> qualifiedNameToString(name);
+      case LocalizedText -> qualifiedNameToLocalizedText(name);
+      default -> null;
+    };
   }
 }
