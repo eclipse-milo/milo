@@ -850,7 +850,7 @@ class OpcUaJsonEncoderTest {
       encoder.encodeDataValue(null, allFieldsValue);
       assertEquals(
           String.format(
-              "{\"Value\":{\"UaType\":12,\"Value\":\"foo\"},\"Status\":{\"Code\":3080192},\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}",
+              "{\"UaType\":12,\"Value\":\"foo\",\"Status\":{\"Code\":3080192},\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}",
               isoNow, isoNow),
           encoder.getOutputString());
 
@@ -868,7 +868,7 @@ class OpcUaJsonEncoderTest {
       encoder.encodeDataValue(null, allFieldsValue.copy(b -> b.setStatus(StatusCode.GOOD)));
       assertEquals(
           String.format(
-              "{\"Value\":{\"UaType\":12,\"Value\":\"foo\"},\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}",
+              "{\"UaType\":12,\"Value\":\"foo\",\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}",
               isoNow, isoNow),
           encoder.getOutputString());
 
@@ -877,7 +877,7 @@ class OpcUaJsonEncoderTest {
       encoder.encodeDataValue(null, allFieldsValue.copy(b -> b.setSourceTime(null)));
       assertEquals(
           String.format(
-              "{\"Value\":{\"UaType\":12,\"Value\":\"foo\"},\"Status\":{\"Code\":3080192},\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}",
+              "{\"UaType\":12,\"Value\":\"foo\",\"Status\":{\"Code\":3080192},\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}",
               isoNow),
           encoder.getOutputString());
 
@@ -886,7 +886,7 @@ class OpcUaJsonEncoderTest {
       encoder.encodeDataValue(null, allFieldsValue.copy(b -> b.setSourcePicoseconds(null)));
       assertEquals(
           String.format(
-              "{\"Value\":{\"UaType\":12,\"Value\":\"foo\"},\"Status\":{\"Code\":3080192},\"SourceTimestamp\":\"%s\",\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}",
+              "{\"UaType\":12,\"Value\":\"foo\",\"Status\":{\"Code\":3080192},\"SourceTimestamp\":\"%s\",\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}",
               isoNow, isoNow),
           encoder.getOutputString());
 
@@ -895,7 +895,7 @@ class OpcUaJsonEncoderTest {
       encoder.encodeDataValue(null, allFieldsValue.copy(b -> b.setServerTime(null)));
       assertEquals(
           String.format(
-              "{\"Value\":{\"UaType\":12,\"Value\":\"foo\"},\"Status\":{\"Code\":3080192},\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerPicoseconds\":200}",
+              "{\"UaType\":12,\"Value\":\"foo\",\"Status\":{\"Code\":3080192},\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerPicoseconds\":200}",
               isoNow),
           encoder.getOutputString());
 
@@ -904,21 +904,14 @@ class OpcUaJsonEncoderTest {
       encoder.encodeDataValue(null, allFieldsValue.copy(b -> b.setServerPicoseconds(null)));
       assertEquals(
           String.format(
-              "{\"Value\":{\"UaType\":12,\"Value\":\"foo\"},\"Status\":{\"Code\":3080192},\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\"}",
+              "{\"UaType\":12,\"Value\":\"foo\",\"Status\":{\"Code\":3080192},\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\"}",
               isoNow, isoNow),
           encoder.getOutputString());
 
-      // omit all fields
+      // all fields omitted: a null DataValue outside a structure
       encoder.reset();
       encoder.encodeDataValue(null, new DataValue(Variant.NULL_VALUE, StatusCode.GOOD, null));
-      assertEquals("", encoder.getOutputString());
-
-      // omit all fields while embedded in object
-      encoder.reset();
-      encoder.jsonWriter.beginObject();
-      encoder.encodeDataValue("foo", new DataValue(Variant.NULL_VALUE, StatusCode.GOOD, null));
-      encoder.jsonWriter.endObject();
-      assertEquals("{}", encoder.getOutputString());
+      assertEquals("null", encoder.getOutputString());
     }
   }
 

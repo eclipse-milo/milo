@@ -100,6 +100,54 @@ class ULongTest {
     }
   }
 
+  // A value at or above 2^63 has the sign bit set in the backing long. Masking the sign bit off,
+  // converting, and adding the bit back rounds twice, and the second rounding can land one ulp away
+  // from the value IEEE 754 requires. UInt64 to Double and UInt64 to Float are implicit conversions
+  // that UInt64Conversions performs by delegating here, so the error reaches ContentFilter and
+  // EventFilter comparisons against a large UInt64 operand.
+  @ParameterizedTest
+  @CsvSource({
+    "17230979562634597548, 1.7230979562634598E19, 1.723098E19",
+    "11716038989414409317, 1.171603898941441E19, 1.1716039E19",
+    "14167230856923196323, 1.4167230856923195E19, 1.416723E19",
+  })
+  void convertsToFloatingPointWithASingleRounding(
+      String value, double expectedDouble, float expectedFloat) {
+    assertEquals(expectedDouble, u(value).doubleValue());
+    assertEquals(expectedFloat, u(value).floatValue());
+  }
+
+  // The endpoints of the range and the signed boundary already converted correctly, so they guard
+  // against a fix that shifts values which were never wrong.
+  @ParameterizedTest
+  @CsvSource({
+    "0, 0.0, 0.0",
+    "1, 1.0, 1.0",
+    "9223372036854775807, 9.223372036854776E18, 9.223372E18",
+    "9223372036854775808, 9.223372036854776E18, 9.223372E18",
+    "18446744073709551615, 1.8446744073709552E19, 1.8446744E19",
+  })
+  void convertsBoundaryValuesToFloatingPointUnchanged(
+      String value, double expectedDouble, float expectedFloat) {
+    assertEquals(expectedDouble, u(value).doubleValue());
+    assertEquals(expectedFloat, u(value).floatValue());
+  }
+
+  // The named cases above pin a few points. BigInteger rounds once by construction, so comparing
+  // against it across the whole value space catches a regression the named cases do not reach.
+  @Test
+  void floatingPointConversionsMatchBigInteger() {
+    var random = new Random(2);
+
+    for (int i = 0; i < 10_000; i++) {
+      ULong value = ULong.valueOf(random.nextLong());
+      BigInteger exact = value.toBigInteger();
+
+      assertEquals(exact.doubleValue(), value.doubleValue(), () -> "doubleValue of " + value);
+      assertEquals(exact.floatValue(), value.floatValue(), () -> "floatValue of " + value);
+    }
+  }
+
   private static void assertMatches(BigInteger expected, Supplier<ULong> operation) {
     if (expected.signum() >= 0 && expected.compareTo(TWO_POW_64) < 0) {
       assertEquals(expected, operation.get().toBigInteger());

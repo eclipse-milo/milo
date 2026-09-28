@@ -116,6 +116,16 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
       </plugin>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <configuration>
+          <instructions>
+            <!-- The schemas directory holds XSD resources, not a Java package. -->
+            <Export-Package>!schemas, !*.internal*, !*.impl*, *</Export-Package>
+          </instructions>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 

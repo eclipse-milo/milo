@@ -31,6 +31,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.structured.XVType;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class JsonStructuredVariantSerializationTest {
@@ -67,6 +68,51 @@ class JsonStructuredVariantSerializationTest {
     assertStructureElements(
         values, assertInstanceOf(ExtensionObject[].class, decoded.getElements()));
     assertEquals(JsonToken.END_DOCUMENT, decoder.jsonReader.peek());
+  }
+
+  // Part 6 §5.4.5 also applies to already-encoded ExtensionObjects, in arrays and Matrices.
+  @ParameterizedTest
+  @EnumSource(Encoding.class)
+  void extensionObjectArrayAndMatrixPreserveNullElements(Encoding encoding) throws Exception {
+    ExtensionObject value =
+        ExtensionObject.of(
+            "{\"X\":1.0,\"Value\":2.0}",
+            XVType.TYPE_ID.toNodeId(context.getNamespaceTable()).orElseThrow());
+    ExtensionObject[] values = {null, value, null, value};
+    String arrayJson = encode(new Variant(values), encoding);
+    assertEquals(
+        "{\"UaType\":22,\"Value\":[null,{\"UaTypeId\":\"i=12080\",\"X\":1.0,\"Value\":2.0},"
+            + "null,{\"UaTypeId\":\"i=12080\",\"X\":1.0,\"Value\":2.0}]}",
+        arrayJson);
+    var decoder = new OpcUaJsonDecoder(context, arrayJson);
+    decoder.setEncoding(encoding);
+    assertArrayEquals(
+        values, assertInstanceOf(ExtensionObject[].class, decoder.decodeVariant(null).value()));
+    assertEquals(JsonToken.END_DOCUMENT, decoder.jsonReader.peek());
+
+    var matrix = new Matrix(values, new int[] {2, 2});
+    String matrixJson = encode(new Variant(matrix), encoding);
+    assertEquals(
+        arrayJson.substring(0, arrayJson.length() - 1) + ",\"Dimensions\":[2,2]}", matrixJson);
+    decoder = new OpcUaJsonDecoder(context, matrixJson);
+    decoder.setEncoding(encoding);
+    Matrix decoded = assertInstanceOf(Matrix.class, decoder.decodeVariant(null).value());
+    assertArrayEquals(new int[] {2, 2}, decoded.getDimensions());
+    assertArrayEquals(values, assertInstanceOf(ExtensionObject[].class, decoded.getElements()));
+    assertEquals(JsonToken.END_DOCUMENT, decoder.jsonReader.peek());
+
+    try (var encoder = new OpcUaJsonEncoder(context)) {
+      encoder.setEncoding(encoding);
+      encoder.encodeMatrix(null, matrix);
+      String json = encoder.getOutputString();
+      assertEquals(matrixJson.replace("\"UaType\":22,\"Value\"", "\"Array\""), json);
+      decoder = new OpcUaJsonDecoder(context, json);
+      decoder.setEncoding(encoding);
+      decoded = decoder.decodeMatrix(null, OpcUaDataType.ExtensionObject);
+      assertArrayEquals(values, assertInstanceOf(ExtensionObject[].class, decoded.getElements()));
+      assertArrayEquals(new int[] {2, 2}, decoded.getDimensions());
+      assertEquals(JsonToken.END_DOCUMENT, decoder.jsonReader.peek());
+    }
   }
 
   private String encode(Variant value, Encoding encoding) throws Exception {

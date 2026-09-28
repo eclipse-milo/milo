@@ -36,5 +36,14 @@
  * client certificate and server certificate. Reactivation uses those Session inputs together with
  * the new channel's certificate and thumbprint; failed reactivation follows normal Session and
  * subscription recovery. Neither discovery nor a server error grants trust in a new certificate.
+ *
+ * <p>Operation limits flow through one cache per Session. {@link
+ * org.eclipse.milo.opcua.sdk.client.OpcUaClient#getOperationLimits()} reads the server's
+ * OperationLimits on first use after each Session activation, applies any overrides from {@link
+ * org.eclipse.milo.opcua.sdk.client.OpcUaClientConfig#getOperationLimitOverrides()}, and caches the
+ * result. SDK code that splits large requests into partitions, such as the type tree builders and
+ * subscription monitored-item batching, reads its limits from this cache, so an override reaches
+ * every such consumer. The bulk service methods on {@code OpcUaClient} send requests as given and
+ * do not partition them.
  */
 package org.eclipse.milo.opcua.sdk.client;

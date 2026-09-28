@@ -1477,14 +1477,26 @@ public class OpcUaClient {
   }
 
   /**
-   * Get the local copy of the server's {@link OperationLimits}, or read them from the server if
+   * Get the local copy of the effective {@link OperationLimits}, or read them from the server if
    * they have not been read.
    *
-   * @return the server's {@link OperationLimits}.
+   * <p>The effective limits are the limits the server advertises combined with any overrides from
+   * {@link OpcUaClientConfig#getOperationLimitOverrides()}. The local copy is discarded each time a
+   * Session is activated.
+   *
+   * @return the effective {@link OperationLimits}.
    * @throws UaException if an error occurs reading the operation limits.
    */
   public OperationLimits getOperationLimits() throws UaException {
-    return operationLimits.getOrThrow(() -> OperationLimits.read(this));
+    return operationLimits.getOrThrow(
+        () -> {
+          OperationLimits advertised = OperationLimits.read(this);
+
+          return config
+              .getOperationLimitOverrides()
+              .map(advertised::withOverrides)
+              .orElse(advertised);
+        });
   }
 
   /** Reset the cached {@link OperationLimits}. */
@@ -1493,9 +1505,10 @@ public class OpcUaClient {
   }
 
   /**
-   * Read the server's OperationLimits and update the local copy.
+   * Read the server's OperationLimits and update the local copy of the effective limits.
    *
-   * @return the server's {@link OperationLimits}.
+   * @return the effective {@link OperationLimits}.
+   * @see #getOperationLimits()
    * @throws UaException if an error occurs reading the operation limits.
    */
   public OperationLimits readOperationLimits() throws UaException {

@@ -19,9 +19,11 @@
  * Null array fields are omitted in COMPACT and emitted as named JSON {@code null} in VERBOSE. Empty
  * arrays remain {@code []} in both modes. Outside a structure, null arrays are emitted as JSON
  * {@code null}, preserving positions in enclosing arrays. Array decoders accept both omitted fields
- * and explicit JSON {@code null} as null arrays, while preserving empty arrays. ExtensionObject
- * arrays preserve null elements as JSON {@code null} in both modes. The scalar VERBOSE
- * ExtensionObject default of {@code {}} applies outside these array elements.
+ * and explicit JSON {@code null} as null arrays, while preserving empty arrays. ExtensionObject and
+ * DiagnosticInfo arrays preserve null elements as JSON {@code null} in both modes, including
+ * Variant arrays and Matrices. Scalar empty-object defaults apply outside these array elements.
+ * DiagnosticInfo fields omit their built-in defaults in both modes; VERBOSE structure-field rules
+ * do not apply inside DiagnosticInfo.
  *
  * <p>COMPACT is the default mode for both directions. For VERBOSE, configure the encoder and
  * decoder with {@code OpcUaJsonEncoder.Encoding.VERBOSE}. Structure codecs must use the semantic
@@ -51,6 +53,13 @@
  * their own unknown-field policies. Input character and buffered-container depth limits come from
  * the encoding context; size or depth violations report {@code Bad_EncodingLimitsExceeded}, while
  * malformed values report {@code Bad_DecodingError}.
+ *
+ * <p>A DataValue writes its Variant's {@code UaType}, {@code Value}, and {@code Dimensions} fields
+ * beside its status and timestamp fields in one object, and the decoder accepts them in any order.
+ * An all-default DataValue is null. Array elements are JSON {@code null} in both modes. Otherwise,
+ * COMPACT omits it from a structure and writes JSON {@code null} elsewhere, while VERBOSE writes
+ * {@code {}}. The decoder returns an all-default DataValue for JSON {@code null} and omitted
+ * fields.
  *
  * <p>Variants carry structures as ExtensionObjects. Non-null structure bodies use their registered
  * encoding. Null elements of typed structure arrays and Matrices are JSON {@code null} in both

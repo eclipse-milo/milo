@@ -704,7 +704,7 @@ class OpcUaJsonDecoderTest {
     decoder.reset(
         new StringReader(
             String.format(
-                "{\"Value\":{\"Type\":12,\"Body\":\"foo\"},\"Status\":3080192,\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}",
+                "{\"UaType\":12,\"Value\":\"foo\",\"Status\":3080192,\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}",
                 isoNow, isoNow)));
     assertEquals(allFieldsValue, decoder.decodeDataValue(null));
 
@@ -721,7 +721,7 @@ class OpcUaJsonDecoderTest {
     decoder.reset(
         new StringReader(
             String.format(
-                "{\"Value\":{\"Type\":12,\"Body\":\"foo\"},\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}",
+                "{\"UaType\":12,\"Value\":\"foo\",\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}",
                 isoNow, isoNow)));
     assertEquals(
         allFieldsValue.copy(b -> b.setStatus(StatusCode.GOOD)), decoder.decodeDataValue(null));
@@ -730,7 +730,7 @@ class OpcUaJsonDecoderTest {
     decoder.reset(
         new StringReader(
             String.format(
-                "{\"Value\":{\"Type\":12,\"Body\":\"foo\"},\"Status\":3080192,\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}",
+                "{\"UaType\":12,\"Value\":\"foo\",\"Status\":3080192,\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}",
                 isoNow)));
     assertEquals(allFieldsValue.copy(b -> b.setSourceTime(null)), decoder.decodeDataValue(null));
 
@@ -738,7 +738,7 @@ class OpcUaJsonDecoderTest {
     decoder.reset(
         new StringReader(
             String.format(
-                "{\"Value\":{\"Type\":12,\"Body\":\"foo\"},\"Status\":3080192,\"SourceTimestamp\":\"%s\",\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}",
+                "{\"UaType\":12,\"Value\":\"foo\",\"Status\":3080192,\"SourceTimestamp\":\"%s\",\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}",
                 isoNow, isoNow)));
     assertEquals(
         allFieldsValue.copy(b -> b.setSourcePicoseconds(null)), decoder.decodeDataValue(null));
@@ -747,7 +747,7 @@ class OpcUaJsonDecoderTest {
     decoder.reset(
         new StringReader(
             String.format(
-                "{\"Value\":{\"Type\":12,\"Body\":\"foo\"},\"Status\":3080192,\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerPicoseconds\":200}",
+                "{\"UaType\":12,\"Value\":\"foo\",\"Status\":3080192,\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerPicoseconds\":200}",
                 isoNow)));
     assertEquals(allFieldsValue.copy(b -> b.setServerTime(null)), decoder.decodeDataValue(null));
 
@@ -755,7 +755,7 @@ class OpcUaJsonDecoderTest {
     decoder.reset(
         new StringReader(
             String.format(
-                "{\"Value\":{\"Type\":12,\"Body\":\"foo\"},\"Status\":3080192,\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\"}",
+                "{\"UaType\":12,\"Value\":\"foo\",\"Status\":3080192,\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\"}",
                 isoNow, isoNow)));
     assertEquals(
         allFieldsValue.copy(b -> b.setServerPicoseconds(null)), decoder.decodeDataValue(null));
@@ -768,7 +768,7 @@ class OpcUaJsonDecoderTest {
     decoder.reset(
         new StringReader(
             String.format(
-                "{\"foo\":{\"Value\":{\"Type\":12,\"Body\":\"foo\"},\"Status\":3080192,\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}}",
+                "{\"foo\":{\"UaType\":12,\"Value\":\"foo\",\"Status\":3080192,\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}}",
                 isoNow, isoNow)));
     decoder.jsonReader.beginObject();
     assertEquals(allFieldsValue, decoder.decodeDataValue("foo"));

@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import org.eclipse.milo.opcua.sdk.client.identity.IdentityProvider;
 import org.eclipse.milo.opcua.stack.core.UaException;
@@ -237,6 +238,30 @@ public interface OpcUaClientConfig {
   }
 
   /**
+   * Get the overrides applied to the OperationLimits the server advertises.
+   *
+   * <p>The function is called once per {@link OperationLimit} each time the client reads the
+   * server's limits, which happens on first use after each Session activation. For each limit:
+   *
+   * <ul>
+   *   <li>if the function returns empty or 0, the server's value is used unchanged;
+   *   <li>if the server does not advertise the limit, or advertises 0 ("no limit"), the override is
+   *       used;
+   *   <li>otherwise the smaller of the two is used.
+   * </ul>
+   *
+   * <p>Use overrides for servers that omit OperationLimits, so the client can send more than one
+   * operation per request, or that advertise a higher limit than they enforce. The effective limits
+   * are reported by {@link OpcUaClient#getOperationLimits()}.
+   *
+   * @return an {@link Optional} containing the override function, if configured.
+   * @see OpcUaClientConfigBuilder#setOperationLimitOverrides(java.util.Map)
+   */
+  default Optional<Function<OperationLimit, Optional<UInteger>>> getOperationLimitOverrides() {
+    return Optional.empty();
+  }
+
+  /**
    * @return a new {@link OpcUaClientConfigBuilder}.
    */
   static OpcUaClientConfigBuilder builder() {
@@ -276,6 +301,7 @@ public interface OpcUaClientConfig {
     builder.setSessionLocaleIds(config.getSessionLocaleIds());
     builder.setSessionEndpointValidationEnabled(config.isSessionEndpointValidationEnabled());
     config.getSecurityKeysListener().ifPresent(builder::setSecurityKeysListener);
+    config.getOperationLimitOverrides().ifPresent(builder::setOperationLimitOverrides);
 
     return builder;
   }

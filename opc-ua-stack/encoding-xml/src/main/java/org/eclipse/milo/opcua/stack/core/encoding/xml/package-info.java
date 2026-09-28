@@ -19,6 +19,12 @@
  * including trailing fields and all fields of an empty structure, use the field decoder defaults.
  * Reads without an available element outside a structure remain decoding errors.
  *
+ * <p>Builtin scalar text uses the XML Schema types that Part 6 assigns to each OPC UA type. The
+ * decoder accepts leading and trailing XML whitespace, rejects text outside the lexical form or
+ * value range of the target type, and reports both as decoding errors. Base64 values may contain
+ * XML whitespace but must be padded. DateTime values keep 100 ns precision; a value without a time
+ * zone is read in the JVM default time zone.
+ *
  * <p>XML element namespaces are separate from NodeId namespaces. Supply authoritative
  * model-to-schema mappings through {@code EncodingContext.withXmlNamespaceUris} and pass that view
  * to the encoder or Default XML ExtensionObject encoding. Internally created encoders use the same
