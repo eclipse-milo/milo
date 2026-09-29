@@ -75,8 +75,8 @@ Examples of `<goals>`: `spotless:apply`, `clean compile`, `-pl opc-ua-stack/stac
 ## Long Builds
 
 If the shell call returns before Maven exits, for example with a running session id instead of
-the `EXIT` line, keep waiting on that session until it reports an exit code. If you can't wait on
-the session, wait for `RUN.exit` with this bounded loop:
+the `EXIT` line, keep waiting on that session until it reports an exit code, for at most about
+1 hour in total. If you can't wait on the session, wait for `RUN.exit` with this bounded loop:
 
 ```bash
 run='<RUN>'
@@ -87,6 +87,8 @@ if [ -f "$run.exit" ]; then echo "EXIT $(cat "$run.exit") $run.log"; else echo "
 - The loop ends within 9 minutes. If it prints `RUNNING`, run it again. Stop after 6 rounds
   (about 1 hour) and report that Maven is still running, with the log path. Do not report success
   or failure in that case.
+- The 1-hour limit covers the whole wait, whether on the session, the loop, or both. When it runs
+  out, report that Maven is still running the same way.
 - Never use `tail -f`, and never poll for a file other than `RUN.exit`. Those waits never end.
 
 ## Reading Results
@@ -99,13 +101,18 @@ for the lines that matter:
 ```bash
 run='<RUN>'
 wc -c <"$run.log"
+grep -c -E '^\[ERROR\]|Tests run:|BUILD (SUCCESS|FAILURE)' "$run.log"
 grep -n -m 100 -E '^\[ERROR\]|Tests run:|BUILD (SUCCESS|FAILURE)' "$run.log"
 ```
 
 - `-m 100` caps the matches, so the output stays small.
+- The `grep -c` line counts all matches. If there are more than 100, also print the last `[ERROR]`
+  lines, where Maven summarizes the failed goal: `grep -n -E '^\[ERROR\]' "$run.log" | tail -n 40`.
+  Piping `grep` is fine here because the result comes from `RUN.exit`.
 - For context around a match, print a range of at most 200 lines, for example
   `sed -n '120,200p' "$run.log"`.
-- With `-q`, a passing build prints few or no lines, so an empty grep is normal after exit code 0.
+- With `-q`, a passing build prints few or no lines, so an empty grep, which exits 1, is normal
+  after exit code 0.
 
 For test counts, read the surefire and failsafe reports in this worktree. Filter them with
 `-newer "$run"` so reports left over from earlier runs don't count:

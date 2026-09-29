@@ -94,12 +94,16 @@ Test output can make a log several MB, which is too large for the Read tool. Nev
 ```bash
 run='<RUN>'
 wc -c <"$run.log"
+grep -c -E '^\[ERROR\]|Tests run:|BUILD (SUCCESS|FAILURE)' "$run.log"
 grep -n -m 100 -E '^\[ERROR\]|Tests run:|BUILD (SUCCESS|FAILURE)' "$run.log"
 ```
 
 - `-m 100` caps the matches, so the output stays small.
+- The `grep -c` line counts all matches. If there are more than 100, also print the last `[ERROR]`
+  lines, where Maven summarizes the failed goal: `grep -n -E '^\[ERROR\]' "$run.log" | tail -n 40`.
+  Piping `grep` is fine here because the result comes from `RUN.exit`.
 - For context around a match, use the Read tool with `offset` and `limit` (at most 200 lines).
-- With `-q`, a passing build prints few or no lines, so an empty grep is normal after exit code 0.
+- With `-q`, a passing build prints few or no lines, so an empty grep, which exits 1, is normal after exit code 0.
 
 For test counts, read the surefire and failsafe reports in this worktree. Filter them with `-newer "$run"` so reports left over from earlier runs don't count:
 
