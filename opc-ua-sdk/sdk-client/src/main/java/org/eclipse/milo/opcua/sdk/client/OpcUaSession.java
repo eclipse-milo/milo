@@ -128,6 +128,9 @@ public class OpcUaSession extends ConcurrentHashMap<String, Object> implements U
   /**
    * Get the application certificate originally used by the client for this Session.
    *
+   * <p>This is the DER-encoded leaf certificate, without any issuer certificates the client sent
+   * with it in CreateSession.
+   *
    * @return the original certificate, or empty for a manually constructed Session without metadata.
    */
   public Optional<ByteString> getClientCertificate() {
