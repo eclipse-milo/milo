@@ -601,7 +601,7 @@ public class SessionEndpointBindingTest {
                 endpointUrl("/test"),
                 securedChannel(1L, chainedServerCertificate, securityPolicy),
                 endpoint);
-        var create = createSessionRequest(clientCertificate.byteString());
+        CreateSessionRequest create = createSessionRequest(clientCertificate.byteString());
         CreateSessionResponse created = sessions.createSession(context, create);
 
         byte[] data =
