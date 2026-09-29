@@ -241,6 +241,10 @@ class CreateSessionClientCertificateChainTest {
                   new UserTokenPolicy("anonymous", UserTokenType.Anonymous, null, null, null))
               .build();
 
+      clientKey = keyPair();
+      clientCertificate = signedCertificate(clientKey, CLIENT_URI, caKey, ca);
+      clientGroup = group(clientKey, clientCertificate);
+
       server =
           new OpcUaServer(
               OpcUaServerConfig.builder()
@@ -253,17 +257,27 @@ class CreateSessionClientCertificateChainTest {
                   .build(),
               profile ->
                   new OpcTcpServerTransport(OpcTcpServerTransportConfig.newBuilder().build()));
-      server.startup().get(5, TimeUnit.SECONDS);
 
+      // Later setup steps can throw before close() is reachable, so shut the server down here.
+      try {
+        server.startup().get(5, TimeUnit.SECONDS);
+        client = newClient(endpoint.getEndpointUrl());
+      } catch (Exception e) {
+        try {
+          server.shutdown().get(5, TimeUnit.SECONDS);
+        } catch (Exception shutdownFailure) {
+          e.addSuppressed(shutdownFailure);
+        }
+        throw e;
+      }
+    }
+
+    private OpcUaClient newClient(String endpointUrl) throws Exception {
       EndpointDescription selected =
-          DiscoveryClient.getEndpoints(endpoint.getEndpointUrl()).get(5, TimeUnit.SECONDS).stream()
+          DiscoveryClient.getEndpoints(endpointUrl).get(5, TimeUnit.SECONDS).stream()
               .filter(e -> policy.getUri().equals(e.getSecurityPolicyUri()))
               .findFirst()
               .orElseThrow();
-
-      clientKey = keyPair();
-      clientCertificate = signedCertificate(clientKey, CLIENT_URI, caKey, ca);
-      clientGroup = group(clientKey, clientCertificate);
 
       var transportConfig =
           OpcTcpClientTransportConfig.newBuilder()
@@ -289,7 +303,7 @@ class CreateSessionClientCertificateChainTest {
             }
           };
 
-      client =
+      var opcUaClient =
           new OpcUaClient(
               OpcUaClientConfig.builder()
                   .setApplicationUri(CLIENT_URI)
@@ -299,7 +313,7 @@ class CreateSessionClientCertificateChainTest {
                   .build(),
               transport);
 
-      client.addSessionActivityListener(
+      opcUaClient.addSessionActivityListener(
           new SessionActivityListener() {
             @Override
             public void onSessionActive(UaSession session) {
@@ -309,6 +323,8 @@ class CreateSessionClientCertificateChainTest {
             @Override
             public void onSessionInactive(UaSession session) {}
           });
+
+      return opcUaClient;
     }
 
     void connect() throws Exception {
