@@ -32,7 +32,8 @@ import org.jspecify.annotations.NullMarked;
  *     {@code None}) or captured no thumbprint. It is never Java {@code null}; provider authors must
  *     test {@link ByteString#isNullOrEmpty()} (not {@code == null}) to detect the unsecured case.
  * @param clientNonce the original client nonce from CreateSession.
- * @param serverCertificate the CreateSession server certificate, signed verbatim as received.
+ * @param serverCertificate the CreateSession server certificate, exactly as received. It may
+ *     include the issuer chain after the leaf; the enhancement layouts hash only the leaf.
  * @param serverChannelCertificate the server certificate used by the SecureChannel.
  * @param clientCertificate the CreateSession client (application) certificate.
  */

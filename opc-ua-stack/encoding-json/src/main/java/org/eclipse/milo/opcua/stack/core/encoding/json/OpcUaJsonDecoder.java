@@ -740,11 +740,47 @@ public class OpcUaJsonDecoder implements UaDecoder {
 
         return new QualifiedName(index, name);
       } else {
-        return new QualifiedName(0, s);
+        return parseQualifiedNameWithoutUri(s);
       }
     } catch (IOException | IllegalStateException | IllegalArgumentException e) {
       throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
     }
+  }
+
+  /**
+   * Parse a QualifiedName string that does not use the {@code nsu=} form.
+   *
+   * <p>Part 6 §5.1.12, Table 7 defines {@code <short-index> ":" <name>}, where {@code
+   * <short-index>} is one or more ASCII digits. Names in namespace 0 may not start with that
+   * prefix, so a string without it is a namespace 0 name. Part 6 §5.4.2.14 permits this form when
+   * the encoder cannot map the NamespaceIndex to a URI, and requires the decoder to pass the index
+   * through, so the index is not checked against the NamespaceTable.
+   *
+   * @param s the non-empty QualifiedName string.
+   * @return the decoded QualifiedName.
+   * @throws UaSerializationException if the {@code <short-index>} is outside the UInt16 range.
+   */
+  private static QualifiedName parseQualifiedNameWithoutUri(String s) {
+    int colon = 0;
+    while (colon < s.length() && s.charAt(colon) >= '0' && s.charAt(colon) <= '9') {
+      colon++;
+    }
+
+    if (colon == 0 || colon == s.length() || s.charAt(colon) != ':') {
+      return new QualifiedName(0, s);
+    }
+
+    int index = 0;
+    for (int i = 0; i < colon; i++) {
+      index = index * 10 + (s.charAt(i) - '0');
+
+      if (index > UShort.MAX_VALUE) {
+        throw new UaSerializationException(
+            StatusCodes.Bad_DecodingError, "readQualifiedName: namespace index out of range: " + s);
+      }
+    }
+
+    return new QualifiedName(index, s.substring(colon + 1));
   }
 
   @Override

@@ -18,11 +18,13 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.google.common.primitives.Bytes;
 import io.netty.channel.Channel;
 import java.io.ByteArrayOutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.security.KeyPair;
+import java.security.MessageDigest;
 import java.security.cert.X509Certificate;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -114,12 +116,24 @@ public class SessionEndpointBindingTest {
   private static CertificateMaterial certificateA;
   private static CertificateMaterial certificateB;
   private static CertificateMaterial clientCertificate;
+  private static CertificateMaterial chainedServerCertificate;
+
+  private static final ByteString CHANNEL_THUMBPRINT = NonceUtil.generateNonce(32);
 
   @BeforeAll
   static void generateCertificates() throws Exception {
     certificateA = rsaCertificate("server-a");
     certificateB = rsaCertificate("server-b");
     clientCertificate = rsaCertificate("client");
+
+    // Session signatures only concatenate or hash the chain's encodings; the issuer relationship
+    // is not validated on this path, so another self-signed certificate stands in for the issuer.
+    X509Certificate issuer = rsaCertificate("issuer").certificate();
+    chainedServerCertificate =
+        new CertificateMaterial(
+            NodeIds.RsaSha256ApplicationCertificateType,
+            certificateA.keyPair(),
+            new X509Certificate[] {certificateA.certificate(), issuer});
   }
 
   @Nested
@@ -558,6 +572,144 @@ public class SessionEndpointBindingTest {
     }
   }
 
+  /**
+   * Part 4 §6.1.8: a server certificate field may carry the issuer chain after the leaf. Legacy
+   * ActivateSession signatures may cover either the leaf or that chain, while channel-bound
+   * signatures always hash only the leaf. The expected signed bytes are built here from the spec
+   * layout, not with ChannelBoundSignatureData, so a matching mistake in Milo's client and server
+   * cannot make these tests pass.
+   */
+  @Nested
+  class ClientSignatureCertificateChain {
+
+    // Backward compatibility: legacy clients sign the CreateSession certificate bytes as received,
+    // and some sign the full chain, so the server accepts both forms.
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void legacyClientSignatureOverLeafOrChainIsAccepted(boolean signChain) throws Exception {
+      byte[] serverCertificate =
+          signChain ? chainedServerCertificate.chainBytes() : chainedServerCertificate.leafBytes();
+
+      assertActivation(
+          SecurityPolicy.Basic256Sha256,
+          (serverNonce, clientNonce) -> Bytes.concat(serverCertificate, serverNonce));
+    }
+
+    // A legacy signature over bytes the server never sent must still be rejected.
+    @Test
+    void legacyClientSignatureOverOtherCertificateIsRejected() throws Exception {
+      UaException failure =
+          assertThrows(
+              UaException.class,
+              () ->
+                  assertActivation(
+                      SecurityPolicy.Basic256Sha256,
+                      (serverNonce, clientNonce) ->
+                          Bytes.concat(certificateB.certificate().getEncoded(), serverNonce)));
+
+      assertEquals(StatusCodes.Bad_ApplicationSignatureInvalid, failure.getStatusCode().value());
+    }
+
+    // Channel-bound signatures hash only the leaf of the CreateSession server certificate.
+    @Test
+    void enhancedClientSignatureOverLeafHashIsAccepted() throws Exception {
+      assertActivation(
+          SecurityPolicy.RSA_DH_AesGcm,
+          (serverNonce, clientNonce) ->
+              enhancedClientSignatureData(
+                  serverNonce, clientNonce, chainedServerCertificate.leafBytes()));
+    }
+
+    // Hashing the whole chain is not a valid channel-bound input, so the legacy leaf-then-chain
+    // fallback must not accept it for an enhanced policy.
+    @Test
+    void enhancedClientSignatureOverChainHashIsRejected() throws Exception {
+      UaException failure =
+          assertThrows(
+              UaException.class,
+              () ->
+                  assertActivation(
+                      SecurityPolicy.RSA_DH_AesGcm,
+                      (serverNonce, clientNonce) ->
+                          enhancedClientSignatureData(
+                              serverNonce, clientNonce, chainedServerCertificate.chainBytes())));
+
+      assertEquals(StatusCodes.Bad_ApplicationSignatureInvalid, failure.getStatusCode().value());
+    }
+
+    /**
+     * Create a Session on a channel whose server certificate group carries a leaf and issuer, then
+     * activate it with a client signature over {@code signedData}.
+     */
+    private void assertActivation(SecurityPolicy securityPolicy, SignedData signedData)
+        throws Exception {
+
+      OpcUaServer server =
+          server(
+              manager(group(GROUP_A, chainedServerCertificate)),
+              List.of(securedEndpoint(GROUP_A, securityPolicy, ANONYMOUS_POLICY)));
+      SessionManager sessions = server.getSessionManager();
+      try {
+        EndpointDescription endpoint = endpointForPath(server, "/test");
+        assertArrayEquals(
+            chainedServerCertificate.leafBytes(),
+            endpoint.getServerCertificate().bytesOrEmpty(),
+            "control: the endpoint advertises only the leaf");
+
+        var context =
+            new TestServiceRequestContext(
+                endpointUrl("/test"),
+                securedChannel(1L, chainedServerCertificate, securityPolicy),
+                endpoint);
+        CreateSessionRequest create = createSessionRequest(clientCertificate.byteString());
+        CreateSessionResponse created = sessions.createSession(context, create);
+
+        byte[] data =
+            signedData.bytes(
+                created.getServerNonce().bytesOrEmpty(), create.getClientNonce().bytesOrEmpty());
+        SignatureData signature =
+            ChannelBoundSignatureData.sign(
+                securityPolicy, clientCertificate.keyPair().getPrivate(), data);
+
+        sessions.activateSession(
+            context,
+            new ActivateSessionRequest(
+                requestHeader(created.getAuthenticationToken()),
+                signature,
+                null,
+                null,
+                null,
+                new SignatureData(null, null)));
+      } finally {
+        sessions.shutdown();
+      }
+    }
+
+    // Part 4 §6.1.8 Table 101 ClientSignature: ChannelThumbprint | ServerNonce |
+    // HASH(ServerCertificate) | HASH(ServerChannelCertificate) | HASH(ClientChannelCertificate) |
+    // ClientNonce, with SHA-256 as the RSA-DH CertificateThumbprintAlgorithm.
+    private byte[] enhancedClientSignatureData(
+        byte[] serverNonce, byte[] clientNonce, byte[] serverCertificate) throws Exception {
+
+      return Bytes.concat(
+          CHANNEL_THUMBPRINT.bytesOrEmpty(),
+          serverNonce,
+          sha256(serverCertificate),
+          sha256(chainedServerCertificate.leafBytes()),
+          sha256(clientCertificate.certificate().getEncoded()),
+          clientNonce);
+    }
+  }
+
+  @FunctionalInterface
+  private interface SignedData {
+    byte[] bytes(byte[] serverNonce, byte[] clientNonce) throws Exception;
+  }
+
+  private static byte[] sha256(byte[] bytes) throws Exception {
+    return MessageDigest.getInstance("SHA-256").digest(bytes);
+  }
+
   private static Optional<EndpointDescription> selectSecuredEndpoint(
       OpcUaServer server, ByteString thumbprint) {
 
@@ -593,12 +745,18 @@ public class SessionEndpointBindingTest {
   }
 
   private static EndpointConfig securedEndpoint(NodeId groupId, UserTokenPolicy... tokenPolicies) {
+    return securedEndpoint(groupId, SecurityPolicy.Basic256Sha256, tokenPolicies);
+  }
+
+  private static EndpointConfig securedEndpoint(
+      NodeId groupId, SecurityPolicy securityPolicy, UserTokenPolicy... tokenPolicies) {
+
     return EndpointConfig.newBuilder()
         .setBindAddress("localhost")
         .setBindPort(4840)
         .setHostname("localhost")
         .setPath("/test")
-        .setSecurityPolicy(SecurityPolicy.Basic256Sha256)
+        .setSecurityPolicy(securityPolicy)
         .setSecurityMode(MessageSecurityMode.SignAndEncrypt)
         .setEndpointCertificateConfig(
             EndpointCertificateConfig.newBuilder().setCertificateGroupId(groupId).build())
@@ -657,9 +815,19 @@ public class SessionEndpointBindingTest {
   private static ServerSecureChannel securedChannel(
       long channelId, CertificateMaterial serverCertificate) throws Exception {
 
+    return securedChannel(channelId, serverCertificate, SecurityPolicy.Basic256Sha256);
+  }
+
+  private static ServerSecureChannel securedChannel(
+      long channelId, CertificateMaterial serverCertificate, SecurityPolicy securityPolicy)
+      throws Exception {
+
     var secureChannel = new ServerSecureChannel();
     secureChannel.setChannelId(channelId);
-    secureChannel.setSecurityPolicy(SecurityPolicy.Basic256Sha256);
+    secureChannel.setSecurityPolicy(securityPolicy);
+    if (securityPolicy.getProfile().secureChannelEnhancements()) {
+      secureChannel.setChannelThumbprint(CHANNEL_THUMBPRINT);
+    }
     secureChannel.setMessageSecurityMode(MessageSecurityMode.SignAndEncrypt);
     secureChannel.setLocalCertificate(serverCertificate.certificate());
     secureChannel.setLocalCertificateChain(serverCertificate.certificateChain());
@@ -783,6 +951,18 @@ public class SessionEndpointBindingTest {
 
     ByteString byteString() throws Exception {
       return ByteString.of(certificate().getEncoded());
+    }
+
+    byte[] leafBytes() throws Exception {
+      return certificate().getEncoded();
+    }
+
+    byte[] chainBytes() throws Exception {
+      byte[][] encodings = new byte[certificateChain.length][];
+      for (int i = 0; i < certificateChain.length; i++) {
+        encodings[i] = certificateChain[i].getEncoded();
+      }
+      return Bytes.concat(encodings);
     }
   }
 

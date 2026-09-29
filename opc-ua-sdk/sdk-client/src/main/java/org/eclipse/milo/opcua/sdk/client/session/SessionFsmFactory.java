@@ -1317,12 +1317,18 @@ public class SessionFsmFactory {
     }
   }
 
-  /** The inputs of one CreateSession attempt, captured when the request is built. */
+  /**
+   * The inputs of one CreateSession attempt, captured when the request is built.
+   *
+   * @param clientCertificate the client leaf certificate that identifies the client.
+   * @param clientCertificateChain the leaf and issuer certificates sent in the request.
+   */
   private record CreateSessionAttempt(
       EndpointConfiguration endpoints,
       SecurityPolicy securityPolicy,
       ByteString clientNonce,
       ByteString clientCertificate,
+      ByteString clientCertificateChain,
       CreateSessionRequest request) {}
 
   @SuppressWarnings("Duplicates")
@@ -1374,18 +1380,16 @@ public class SessionFsmFactory {
     // reactivation on a different SecureChannel.
     KEY_CREATE_SESSION_CLIENT_NONCE.set(ctx, clientNonce);
 
-    ByteString clientCertificate =
-        certificateIdentity
-            .map(CertificateIdentity::certificate)
-            .map(
-                c -> {
-                  try {
-                    return ByteString.of(c.getEncoded());
-                  } catch (CertificateEncodingException e) {
-                    return ByteString.NULL_VALUE;
-                  }
-                })
-            .orElse(ByteString.NULL_VALUE);
+    // The request carries the same chain the SecureChannel sent as its SenderCertificate. The
+    // Session keeps only the leaf because the leaf identifies the client application.
+    ByteString clientCertificate = ByteString.NULL_VALUE;
+    ByteString clientCertificateChain = ByteString.NULL_VALUE;
+    if (certificateIdentity.isPresent()) {
+      clientCertificate = certificateBytes(certificateIdentity.get().certificate());
+      clientCertificateChain =
+          CertificateUtil.getCertificateChainBytes(
+              Arrays.asList(certificateIdentity.get().certificateChain()));
+    }
 
     KEY_CREATE_SESSION_CLIENT_CERTIFICATE.set(ctx, clientCertificate);
 
@@ -1415,7 +1419,7 @@ public class SessionFsmFactory {
             endpoint.getEndpointUrl(),
             client.getConfig().getSessionName().get(),
             clientNonce,
-            clientCertificate,
+            clientCertificateChain,
             client.getConfig().getSessionTimeout().doubleValue(),
             client.getConfig().getMaxResponseMessageSize());
 
@@ -1424,7 +1428,12 @@ public class SessionFsmFactory {
     }
 
     return new CreateSessionAttempt(
-        endpointConfiguration, securityPolicy, clientNonce, clientCertificate, request);
+        endpointConfiguration,
+        securityPolicy,
+        clientNonce,
+        clientCertificate,
+        clientCertificateChain,
+        request);
   }
 
   private static CompletableFuture<CreateSessionResponse> verifyCreateSessionResponse(
@@ -1468,20 +1477,16 @@ public class SessionFsmFactory {
                 new String[] {EndpointUtil.getHost(endpoint.getEndpointUrl())},
                 securityPolicy.getProfile());
 
-        SignatureData serverSignature = response.getServerSignature();
-
-        byte[] dataBytes =
-            ChannelBoundSignatureData.serverSignatureData(
-                securityPolicy.getProfile(),
-                client.getTransport().getChannelThumbprint(),
-                clientNonce,
-                certificateBytes(certificateFromEndpoint),
-                clientCertificate,
-                response.getServerNonce(),
-                clientCertificate);
-
-        ChannelBoundSignatureData.verify(
-            securityPolicy, serverCertificate, dataBytes, serverSignature);
+        verifyServerSignature(
+            securityPolicy,
+            serverCertificate,
+            client.getTransport().getChannelThumbprint(),
+            clientNonce,
+            certificateBytes(certificateFromEndpoint),
+            clientCertificate,
+            attempt.clientCertificateChain(),
+            response.getServerNonce(),
+            response.getServerSignature());
       }
 
       if (client.getConfig().isSessionEndpointValidationEnabled()) {
@@ -1496,6 +1501,71 @@ public class SessionFsmFactory {
       return completedFuture(response);
     } catch (UaException e) {
       return failedFuture(e);
+    }
+  }
+
+  /**
+   * Verify the CreateSession {@code serverSignature}.
+   *
+   * <p>Legacy policies sign the client certificate plus the client nonce. Part 4 §6.1.8 lets the
+   * server sign either the client leaf or the chain sent in the request, and has the verifier try
+   * the leaf first and then the chain. Policies with SecureChannel enhancements hash only the leaf,
+   * so they get a single attempt.
+   *
+   * @param securityPolicy the SecurityPolicy of the session endpoint.
+   * @param serverCertificate the server leaf certificate whose key made the signature.
+   * @param channelThumbprint the SecureChannel thumbprint, used by enhanced policies.
+   * @param clientNonce the client nonce sent in the request.
+   * @param serverChannelCertificate the server leaf certificate used by the SecureChannel.
+   * @param clientCertificate the client leaf certificate.
+   * @param clientCertificateChain the client certificate chain sent in the request.
+   * @param serverNonce the server nonce returned in the response.
+   * @param serverSignature the signature returned in the response.
+   * @throws UaException if no accepted input verifies the signature.
+   */
+  static void verifyServerSignature(
+      SecurityPolicy securityPolicy,
+      X509Certificate serverCertificate,
+      ByteString channelThumbprint,
+      ByteString clientNonce,
+      ByteString serverChannelCertificate,
+      ByteString clientCertificate,
+      ByteString clientCertificateChain,
+      ByteString serverNonce,
+      SignatureData serverSignature)
+      throws UaException {
+
+    byte[] dataBytes =
+        ChannelBoundSignatureData.serverSignatureData(
+            securityPolicy.getProfile(),
+            channelThumbprint,
+            clientNonce,
+            serverChannelCertificate,
+            clientCertificate,
+            serverNonce,
+            clientCertificate);
+
+    try {
+      ChannelBoundSignatureData.verify(
+          securityPolicy, serverCertificate, dataBytes, serverSignature);
+    } catch (UaException e) {
+      if (securityPolicy.getProfile().secureChannelEnhancements()
+          || clientCertificate.equals(clientCertificateChain)) {
+        throw e;
+      }
+
+      byte[] chainDataBytes =
+          ChannelBoundSignatureData.serverSignatureData(
+              securityPolicy.getProfile(),
+              channelThumbprint,
+              clientNonce,
+              serverChannelCertificate,
+              clientCertificate,
+              serverNonce,
+              clientCertificateChain);
+
+      ChannelBoundSignatureData.verify(
+          securityPolicy, serverCertificate, chainDataBytes, serverSignature);
     }
   }
 
@@ -1944,7 +2014,8 @@ public class SessionFsmFactory {
                 && !originalClientCertificate.equals(
                     getClientCertificate(
                         client, SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri())))) {
-              // Part 4 6.7: a different application certificate requires a new Session.
+              // Part 4 6.7: a different application certificate requires a new Session. Both sides
+              // are leaf certificates, so a change to the issuer chain alone is not a change.
               throw new UaException(
                   StatusCodes.Bad_SessionIdInvalid, "client application certificate changed");
             }

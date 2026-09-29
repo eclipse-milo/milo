@@ -19,26 +19,50 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.google.common.primitives.Bytes;
 import java.security.KeyPair;
 import java.security.MessageDigest;
+import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.util.List;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.structured.SignatureData;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
+import org.eclipse.milo.opcua.stack.core.util.validation.CaSignedCertificateBuilder;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 class ChannelBoundSignatureDataTest {
 
+  private static X509Certificate issuer;
+  private static X509Certificate serverLeaf;
+  private static X509Certificate serverChannelLeaf;
+  private static X509Certificate clientLeaf;
+  private static X509Certificate clientChannelLeaf;
+
+  @BeforeAll
+  static void createCertificates() throws Exception {
+    KeyPair issuerKeyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+    issuer =
+        new SelfSignedCertificateBuilder(issuerKeyPair)
+            .setCommonName("Test CA")
+            .setApplicationUri("urn:eclipse:milo:test:ca")
+            .build();
+    serverLeaf = caSignedCertificate(issuerKeyPair, "server");
+    serverChannelLeaf = caSignedCertificate(issuerKeyPair, "server-channel");
+    clientLeaf = caSignedCertificate(issuerKeyPair, "client");
+    clientChannelLeaf = caSignedCertificate(issuerKeyPair, "client-channel");
+  }
+
   // SecureChannelEnhancements bind CreateSession server signatures to the first OpenSecureChannel
   // response signature and channel certificates; the legacy nonce-only layout is not interoperable.
+  // Part 4 §6.1.8: channel-bound signatures always hash the leaf, even when a certificate field
+  // carries the issuer chain.
   @Test
   void enhancedServerSignatureDataIncludesChannelThumbprintAndCertificateHashes() throws Exception {
     SecurityPolicyProfile profile = SecurityPolicy.ECC_nistP256_AesGcm.getProfile();
     ByteString channelThumbprint = bytes(0x01, 0x02);
     ByteString clientNonce = bytes(0x03);
-    ByteString serverChannelCertificate = bytes(0x04, 0x05);
-    ByteString clientChannelCertificate = bytes(0x06);
     ByteString serverNonce = bytes(0x07);
 
     byte[] data =
@@ -46,31 +70,29 @@ class ChannelBoundSignatureDataTest {
             profile,
             channelThumbprint,
             clientNonce,
-            serverChannelCertificate,
-            clientChannelCertificate,
+            chain(serverLeaf),
+            chain(clientLeaf),
             serverNonce,
-            bytes(0x7f));
+            chain(clientLeaf));
 
     assertArrayEquals(
         Bytes.concat(
             channelThumbprint.bytesOrEmpty(),
             clientNonce.bytesOrEmpty(),
-            sha256(serverChannelCertificate),
-            sha256(clientChannelCertificate),
+            sha256(serverLeaf),
+            sha256(clientLeaf),
             serverNonce.bytesOrEmpty()),
         data);
   }
 
   // ActivateSession client signatures add the endpoint server certificate hash to the same channel
-  // binding, which catches certificate substitution across discovery and session activation.
+  // binding, which catches certificate substitution across discovery and session activation. A
+  // server may return its issuer chain in CreateSession, but only the leaf is hashed.
   @Test
   void enhancedClientSignatureDataIncludesEndpointAndChannelCertificateHashes() throws Exception {
     SecurityPolicyProfile profile = SecurityPolicy.ECC_nistP256_AesGcm.getProfile();
     ByteString channelThumbprint = bytes(0x01, 0x02);
     ByteString serverNonce = bytes(0x03);
-    ByteString serverCertificate = bytes(0x04);
-    ByteString serverChannelCertificate = bytes(0x05);
-    ByteString clientChannelCertificate = bytes(0x06);
     ByteString clientNonce = bytes(0x07);
 
     byte[] data =
@@ -78,20 +100,97 @@ class ChannelBoundSignatureDataTest {
             profile,
             channelThumbprint,
             serverNonce,
-            serverCertificate,
-            serverChannelCertificate,
-            clientChannelCertificate,
+            chain(serverLeaf),
+            leaf(serverChannelLeaf),
+            chain(clientLeaf),
             clientNonce);
 
     assertArrayEquals(
         Bytes.concat(
             channelThumbprint.bytesOrEmpty(),
             serverNonce.bytesOrEmpty(),
-            sha256(serverCertificate),
-            sha256(serverChannelCertificate),
-            sha256(clientChannelCertificate),
+            sha256(serverLeaf),
+            sha256(serverChannelLeaf),
+            sha256(clientLeaf),
             clientNonce.bytesOrEmpty()),
         data);
+  }
+
+  // Part 4 §6.1.8: HASH() of a null or empty certificate is a zero-length value, so the slot
+  // contributes no bytes rather than a digest of nothing.
+  @Test
+  void enhancedSignatureDataOmitsHashOfEmptyCertificate() throws Exception {
+    SecurityPolicyProfile profile = SecurityPolicy.ECC_nistP256_AesGcm.getProfile();
+    ByteString channelThumbprint = bytes(0x01, 0x02);
+    ByteString serverNonce = bytes(0x03);
+    ByteString clientNonce = bytes(0x07);
+
+    byte[] data =
+        ChannelBoundSignatureData.clientSignatureData(
+            profile,
+            channelThumbprint,
+            serverNonce,
+            chain(serverLeaf),
+            ByteString.NULL_VALUE,
+            ByteString.of(new byte[0]),
+            clientNonce);
+
+    assertArrayEquals(
+        Bytes.concat(
+            channelThumbprint.bytesOrEmpty(),
+            serverNonce.bytesOrEmpty(),
+            sha256(serverLeaf),
+            clientNonce.bytesOrEmpty()),
+        data);
+  }
+
+  // Hashing the leaf requires decoding it; bytes that are not a certificate must fail rather than
+  // be hashed into a signature the peer cannot reproduce.
+  @Test
+  void enhancedSignatureDataRejectsNonCertificateBytes() {
+    UaException exception =
+        assertThrows(
+            UaException.class,
+            () ->
+                ChannelBoundSignatureData.clientSignatureData(
+                    SecurityPolicy.ECC_nistP256_AesGcm.getProfile(),
+                    bytes(0x01, 0x02),
+                    bytes(0x03),
+                    bytes(0x04),
+                    chain(serverLeaf),
+                    chain(clientLeaf),
+                    bytes(0x07)));
+
+    assertEquals(StatusCodes.Bad_CertificateInvalid, exception.getStatusCode().getValue());
+  }
+
+  // Part 6 §6.2.6 encodes a chain as DER certificates appended leaf first. A PKCS#7 certificate
+  // set has no leaf-first guarantee and may hold no certificates, so it must not be searched for a
+  // leaf to hash.
+  @Test
+  void enhancedSignatureDataRejectsPkcs7CertificateContainers() throws Exception {
+    CertificateFactory factory = CertificateFactory.getInstance("X.509");
+    ByteString issuerFirst =
+        ByteString.of(factory.generateCertPath(List.of(issuer, serverLeaf)).getEncoded("PKCS7"));
+    ByteString noCertificates =
+        ByteString.of(factory.generateCertPath(List.of()).getEncoded("PKCS7"));
+
+    for (ByteString serverCertificate : List.of(issuerFirst, noCertificates)) {
+      UaException exception =
+          assertThrows(
+              UaException.class,
+              () ->
+                  ChannelBoundSignatureData.clientSignatureData(
+                      SecurityPolicy.ECC_nistP256_AesGcm.getProfile(),
+                      bytes(0x01, 0x02),
+                      bytes(0x03),
+                      serverCertificate,
+                      chain(serverLeaf),
+                      chain(clientLeaf),
+                      bytes(0x07)));
+
+      assertEquals(StatusCodes.Bad_CertificateInvalid, exception.getStatusCode().getValue());
+    }
   }
 
   // RSA-era policies keep the historical CreateSession/ActivateSession signature layout so ECC
@@ -159,16 +258,13 @@ class ChannelBoundSignatureDataTest {
 
   // ActivateSession user-token (X509) signatures use the client-signature channel binding plus an
   // extra HASH(ClientCertificate), per OPC UA Part 4 §6.1.8 Table 101. This ties the user-token
-  // signature to the application certificate that created the session.
+  // signature to the application certificate that created the session. Every hash covers only the
+  // leaf of a chained certificate field.
   @Test
   void enhancedUserTokenSignatureDataInsertsClientCertificateHash() throws Exception {
     SecurityPolicyProfile profile = SecurityPolicy.RSA_DH_AesGcm.getProfile();
     ByteString channelThumbprint = bytes(0x01, 0x02);
     ByteString serverNonce = bytes(0x03);
-    ByteString serverCertificate = bytes(0x04);
-    ByteString serverChannelCertificate = bytes(0x05);
-    ByteString clientCertificate = bytes(0x08);
-    ByteString clientChannelCertificate = bytes(0x06);
     ByteString clientNonce = bytes(0x07);
 
     byte[] data =
@@ -177,31 +273,31 @@ class ChannelBoundSignatureDataTest {
             true,
             channelThumbprint,
             serverNonce,
-            serverCertificate,
-            serverChannelCertificate,
-            clientCertificate,
-            clientChannelCertificate,
+            chain(serverLeaf),
+            leaf(serverChannelLeaf),
+            chain(clientLeaf),
+            chain(clientChannelLeaf),
             clientNonce);
 
     assertArrayEquals(
         Bytes.concat(
             channelThumbprint.bytesOrEmpty(),
             serverNonce.bytesOrEmpty(),
-            sha256(serverCertificate),
-            sha256(serverChannelCertificate),
-            sha256(clientCertificate),
-            sha256(clientChannelCertificate),
+            sha256(serverLeaf),
+            sha256(serverChannelLeaf),
+            sha256(clientLeaf),
+            sha256(clientChannelLeaf),
             clientNonce.bytesOrEmpty()),
         data);
   }
 
   // When an enhanced user-token policy is used over an unsecured (SecurityMode None) channel there
   // is no channel thumbprint or channel certificate to bind, so Table 101 uses a reduced layout.
+  // The CreateSession server certificate may still be a chain; only its leaf is hashed.
   @Test
   void unsecuredChannelUserTokenSignatureDataUsesReducedLayout() throws Exception {
     SecurityPolicyProfile profile = SecurityPolicy.RSA_DH_AesGcm.getProfile();
     ByteString serverNonce = bytes(0x03);
-    ByteString serverCertificate = bytes(0x04);
     ByteString clientNonce = bytes(0x07);
 
     byte[] data =
@@ -210,15 +306,14 @@ class ChannelBoundSignatureDataTest {
             false,
             null,
             serverNonce,
-            serverCertificate,
+            chain(serverLeaf),
             bytes(0x7f),
             bytes(0x7f),
             bytes(0x7f),
             clientNonce);
 
     assertArrayEquals(
-        Bytes.concat(
-            serverNonce.bytesOrEmpty(), sha256(serverCertificate), clientNonce.bytesOrEmpty()),
+        Bytes.concat(serverNonce.bytesOrEmpty(), sha256(serverLeaf), clientNonce.bytesOrEmpty()),
         data);
   }
 
@@ -329,8 +424,28 @@ class ChannelBoundSignatureDataTest {
     return ByteString.of(bytes);
   }
 
-  private static byte[] sha256(ByteString value) throws Exception {
-    return MessageDigest.getInstance("SHA-256").digest(value.bytesOrEmpty());
+  // The expected hash input is the leaf encoding produced by the certificate builder, independent
+  // of how ChannelBoundSignatureData extracts the leaf from a chain.
+  private static byte[] sha256(X509Certificate certificate) throws Exception {
+    return MessageDigest.getInstance("SHA-256").digest(certificate.getEncoded());
+  }
+
+  private static ByteString leaf(X509Certificate certificate) throws Exception {
+    return ByteString.of(certificate.getEncoded());
+  }
+
+  // A certificate field carrying the leaf followed by its issuer, as allowed on the wire.
+  private static ByteString chain(X509Certificate certificate) throws Exception {
+    return ByteString.of(Bytes.concat(certificate.getEncoded(), issuer.getEncoded()));
+  }
+
+  private static X509Certificate caSignedCertificate(KeyPair issuerKeyPair, String commonName)
+      throws Exception {
+    KeyPair keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+    return new CaSignedCertificateBuilder(keyPair, issuer, issuerKeyPair.getPrivate())
+        .setCommonName(commonName)
+        .setApplicationUri("urn:eclipse:milo:test:" + commonName)
+        .build();
   }
 
   private static X509Certificate selfSignedCertificate(String commonName) throws Exception {
