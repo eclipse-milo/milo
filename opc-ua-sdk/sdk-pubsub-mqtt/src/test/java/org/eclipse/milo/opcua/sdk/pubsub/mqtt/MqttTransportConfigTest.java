@@ -13,15 +13,14 @@ package org.eclipse.milo.opcua.sdk.pubsub.mqtt;
 import static org.eclipse.milo.opcua.sdk.pubsub.mqtt.PubSubMqttTestSupport.TIMEOUT;
 import static org.eclipse.milo.opcua.sdk.pubsub.mqtt.PubSubMqttTestSupport.assertStartupFails;
 import static org.eclipse.milo.opcua.sdk.pubsub.mqtt.PubSubMqttTestSupport.assertUaFailure;
-import static org.eclipse.milo.opcua.sdk.pubsub.mqtt.PubSubMqttTestSupport.awaitTrue;
 import static org.eclipse.milo.opcua.sdk.pubsub.mqtt.PubSubMqttTestSupport.freeTcpPort;
-import static org.eclipse.milo.opcua.sdk.pubsub.mqtt.PubSubMqttTestSupport.lastError;
 import static org.eclipse.milo.opcua.sdk.pubsub.mqtt.PubSubMqttTestSupport.mapSource;
 import static org.eclipse.milo.opcua.sdk.pubsub.mqtt.PubSubMqttTestSupport.mqttServiceConfig;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -35,10 +34,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.milo.opcua.sdk.pubsub.PubSubBindings;
+import org.eclipse.milo.opcua.sdk.pubsub.PubSubDiagnosticsEvent;
 import org.eclipse.milo.opcua.sdk.pubsub.PubSubService;
 import org.eclipse.milo.opcua.sdk.pubsub.config.BrokerTransportSettings;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetReaderConfig;
@@ -455,7 +456,7 @@ class MqttTransportConfigTest {
   }
 
   @Test
-  void unreachableBrokerSurfacesSendFailuresInDiagnosticsWithoutHanging() throws Exception {
+  void unreachableBrokerDefersPublicationWithoutHanging() throws Exception {
     PublishedDataSetConfig dataSet =
         PublishedDataSetConfig.builder("ds")
             .field(FieldDefinition.builder("value").dataType(NodeIds.Int32).build())
@@ -489,20 +490,16 @@ class MqttTransportConfigTest {
                 PubSubBindings.builder().source(dataSet.ref(), mapSource(values)).build(),
                 mqttServiceConfig()));
 
+    var diagnostics = new LinkedBlockingQueue<PubSubDiagnosticsEvent>();
+    service.addDiagnosticsListener(diagnostics::add);
+
     // channel open is non-blocking and the connect retries in the background, so startup
     // completes even though the broker is unreachable
     service.startup().get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
 
-    // every publish fails fast (Bad_ServerNotConnected from the channel) and is recorded by
-    // the engine as a send failure on the writer group path; the real channel code surfaces
-    // un-flattened. The session never connected, so no transport-down edge fires and the
-    // connection is never failed to Error.
-    awaitTrue(
-        () -> {
-          var error = lastError(service, "pub-conn/grp");
-          return error != null && error.value() == StatusCodes.Bad_ServerNotConnected;
-        },
-        "Bad_ServerNotConnected diagnostics on the writer group");
+    // Connection setup is not a failed publication. Several scheduled cycles elapse without
+    // sending anything or producing diagnostics; direct channel sends still fail fast.
+    assertNull(diagnostics.poll(500, TimeUnit.MILLISECONDS));
 
     // and shutdown completes promptly despite the broker never having been reachable
     service.shutdown().get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);

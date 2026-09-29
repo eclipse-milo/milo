@@ -168,7 +168,7 @@ final class BrokerStatusPublisher {
 
     PublisherChannel channel = connection.publisherChannel();
     PublisherId publisherId = connection.config().publisherId();
-    if (channel == null || publisherId == null) {
+    if (channel == null || publisherId == null || !channel.isReady()) {
       return;
     }
 

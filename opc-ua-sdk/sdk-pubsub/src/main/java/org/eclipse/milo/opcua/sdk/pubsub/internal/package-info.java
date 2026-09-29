@@ -13,6 +13,14 @@
  * Part 14 state machine, publish scheduling and keep-alive, reader matching and dispatch, the
  * metadata cache, diagnostics collection, and the reconfigure diff. Everything in this package is
  * implementation detail and not part of the public API; it may change without notice.
+ *
+ * <p>Publishers check transport readiness before encoding or consuming data and events. Service
+ * startup activates the component tree without waiting for broker availability. The connection's
+ * initial transport-up callback triggers deferred retained metadata and status publication and
+ * wakes event-triggered writer groups. Later outages and recovery use the normal state cascade to
+ * pause and reactivate writers. Closing channels resets transport edge tracking for their next
+ * activation. Queued transport callbacks are checked against the current channel lifetime under the
+ * engine lock, so a closed session cannot change the replacement session's state.
  */
 @NullMarked
 package org.eclipse.milo.opcua.sdk.pubsub.internal;

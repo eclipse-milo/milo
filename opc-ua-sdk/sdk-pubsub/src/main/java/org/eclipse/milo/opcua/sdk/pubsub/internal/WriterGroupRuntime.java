@@ -620,7 +620,7 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
     MessageMappingProvider mapping = this.mapping;
     PublisherChannel channel = connection.publisherChannel();
     PublisherId publisherId = connection.config().publisherId();
-    if (mapping == null || channel == null || publisherId == null) {
+    if (mapping == null || channel == null || publisherId == null || !channel.isReady()) {
       return;
     }
 

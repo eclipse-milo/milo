@@ -74,8 +74,9 @@ import org.jspecify.annotations.Nullable;
  * TransportStateListener}, when supplied: losing an established session notifies a down edge with
  * {@code Bad_ServerNotConnected} (the engine fails the connection to {@code Error}), and a
  * reconnect notifies an up edge after the subscriptions have been re-issued (the engine recovers
- * the connection to {@code Operational}). Sends attempted while disconnected still surface as send
- * failures in the engine's diagnostics.
+ * the connection to {@code Operational}). Publisher channels report readiness after connection and
+ * subscription setup, so the engine defers publication until then. A disconnect racing a send still
+ * surfaces as a send failure in diagnostics.
  *
  * <p>Threading: channels perform network I/O on the HiveMQ client's Netty threads, which run on the
  * service event loop group supplied by the transport context (the client never shuts a

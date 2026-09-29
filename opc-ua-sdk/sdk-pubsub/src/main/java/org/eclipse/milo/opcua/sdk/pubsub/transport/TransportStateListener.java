@@ -22,8 +22,9 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
  * invoked for the initial establishment.
  *
  * <p>Connection state reflects broker liveness only after the first established session: the
- * initial connect is asynchronous and sends fail fast until it completes, without a down
- * notification.
+ * initial connect is asynchronous, without a down notification. Publishers defer sends while {@link
+ * PublisherChannel#isReady()} is false; the initial up notification releases deferred announcements
+ * and queued events. Direct channel sends while disconnected may still fail fast.
  */
 public interface TransportStateListener {
 

@@ -65,6 +65,11 @@ final class MqttPublisherChannel implements PublisherChannel {
   }
 
   @Override
+  public boolean isReady() {
+    return !closed.get() && session.isReady();
+  }
+
+  @Override
   public CompletableFuture<Void> send(ByteBuf message) {
     message.release();
 

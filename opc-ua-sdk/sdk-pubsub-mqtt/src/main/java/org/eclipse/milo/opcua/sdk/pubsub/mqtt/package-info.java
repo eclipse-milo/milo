@@ -15,6 +15,11 @@
  * via {@code PubSubServiceConfig.Builder#transportProvider(TransportProvider)} for connections
  * configured with {@code MqttConnectionConfig}.
  *
+ * <p>MQTT connection setup is asynchronous. Publisher channels become ready after the connection
+ * and subscription setup completes; the engine defers data, metadata, and status sends until then.
+ * The first transport-up notification releases the initial retained announcements. A listener
+ * registered after connection setup receives the current readiness notification immediately.
+ *
  * <p>The transport also owns MQTT broker behavior around retained publication: data uses the
  * configured or derived data topics, metadata is published retained for broker discovery, and
  * JSON-mapped publisher status is published retained on the status topic. Where a single JSON

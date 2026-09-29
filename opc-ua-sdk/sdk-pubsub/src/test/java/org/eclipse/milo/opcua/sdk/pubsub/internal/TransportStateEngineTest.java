@@ -22,6 +22,7 @@ import java.net.DatagramSocket;
 import java.net.SocketException;
 import java.net.URI;
 import java.time.Duration;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
@@ -71,6 +72,8 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.PubSubState;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Engine mapping of the {@code TransportStateListener} edges, exercised without a broker via a stub
@@ -208,6 +211,146 @@ class TransportStateEngineTest {
   }
 
   @Test
+  void initialConnectDefersAllPublicationsUntilTransportReady() throws Exception {
+    var transport = new StubTransport();
+    transport.ready = false;
+    startJsonMqttPublisher(transport);
+
+    // Startup must complete without the broker. Even repeated publish cycles must not attempt
+    // data, retained status, or retained metadata while connection setup is still pending.
+    assertNull(transport.sends.poll(SILENCE.toMillis(), TimeUnit.MILLISECONDS));
+    assertTrue(diagnosticsEvents.isEmpty());
+
+    transport.ready = true;
+    TransportStateListener listener = transport.listener.get();
+    assertNotNull(listener);
+    listener.onTransportUp();
+
+    awaitAllPublicationKinds(transport.sends);
+    assertTrue(diagnosticsEvents.isEmpty());
+  }
+
+  // A deliberate close has no down edge. Each replacement session must release its own deferred
+  // announcements, including when the previous session was already down at disable time.
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void reenabledConnectionPublishesAnnouncementsWhenReady(boolean disableWhileDown)
+      throws Exception {
+    var transport = new StubTransport();
+    transport.ready = false;
+    startJsonMqttPublisher(transport);
+    TransportStateListener originalListener = transport.listener.get();
+    assertNotNull(originalListener);
+    transport.ready = true;
+    originalListener.onTransportUp();
+    awaitAllPublicationKinds(transport.sends);
+
+    PubSubHandle connection = service.components().connection("conn").orElseThrow();
+    if (disableWhileDown) {
+      transport.ready = false;
+      originalListener.onTransportDown(new StatusCode(StatusCodes.Bad_ServerNotConnected));
+      awaitState(connection, PubSubState.Error);
+    }
+    service.disable(connection);
+    transport.ready = false;
+    awaitPublishQuiescence(transport.sends);
+    service.enable(connection);
+    assertNull(transport.sends.poll(SILENCE.toMillis(), TimeUnit.MILLISECONDS));
+
+    TransportStateListener replacementListener = transport.listener.get();
+    assertNotNull(replacementListener);
+    transport.ready = true;
+    replacementListener.onTransportUp();
+
+    awaitAllPublicationKinds(transport.sends);
+    assertEquals(PubSubState.Operational, service.state(connection));
+    assertTrue(diagnosticsEvents.isEmpty());
+  }
+
+  // Late callbacks from a closed session must neither fail the replacement nor consume its up edge.
+  @Test
+  void closedSessionNotificationsDoNotAffectReenabledConnection() throws Exception {
+    var transport = new StubTransport();
+    transport.ready = false;
+    startJsonMqttPublisher(transport);
+    TransportStateListener originalListener = transport.listener.get();
+    assertNotNull(originalListener);
+
+    PubSubHandle connection = service.components().connection("conn").orElseThrow();
+    service.disable(connection);
+    service.enable(connection);
+
+    originalListener.onTransportUp();
+    originalListener.onTransportDown(new StatusCode(StatusCodes.Bad_ServerNotConnected));
+    transportExecutor.submit(() -> {}).get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+    assertEquals(PubSubState.Operational, service.state(connection));
+    assertNull(transport.sends.poll(SILENCE.toMillis(), TimeUnit.MILLISECONDS));
+
+    TransportStateListener replacementListener = transport.listener.get();
+    assertNotNull(replacementListener);
+    transport.ready = true;
+    replacementListener.onTransportUp();
+    awaitAllPublicationKinds(transport.sends);
+  }
+
+  // The lifetime check must also reject edges queued before the channels were closed.
+  @Test
+  void queuedClosedSessionNotificationsDoNotAffectReenabledConnection() throws Exception {
+    var transport = new StubTransport();
+    transport.ready = false;
+    startJsonMqttPublisher(transport);
+    TransportStateListener originalListener = transport.listener.get();
+    assertNotNull(originalListener);
+
+    var dispatchBlocked = new CompletableFuture<Void>();
+    var resumeDispatch = new CompletableFuture<Void>();
+    transportExecutor.submit(
+        () -> {
+          dispatchBlocked.complete(null);
+          resumeDispatch.get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+          return null;
+        });
+    PubSubHandle connection = service.components().connection("conn").orElseThrow();
+    try {
+      dispatchBlocked.get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+      originalListener.onTransportDown(new StatusCode(StatusCodes.Bad_ServerNotConnected));
+      service.disable(connection);
+      service.enable(connection);
+    } finally {
+      resumeDispatch.complete(null);
+    }
+
+    transportExecutor.submit(() -> {}).get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+    assertEquals(PubSubState.Operational, service.state(connection));
+    assertNull(transport.sends.poll(SILENCE.toMillis(), TimeUnit.MILLISECONDS));
+
+    TransportStateListener replacementListener = transport.listener.get();
+    assertNotNull(replacementListener);
+    transport.ready = true;
+    replacementListener.onTransportUp();
+    awaitAllPublicationKinds(transport.sends);
+  }
+
+  private static void awaitAllPublicationKinds(BlockingQueue<Send> sends)
+      throws InterruptedException {
+    var kinds = EnumSet.noneOf(MessageAddress.Kind.class);
+    long deadline = System.nanoTime() + TIMEOUT.toNanos();
+    while (kinds.size() < 3) {
+      Send send = sends.poll(Math.max(1, deadline - System.nanoTime()), TimeUnit.NANOSECONDS);
+      assertNotNull(
+          send, "readiness must release data, status, and on-change-only metadata; saw " + kinds);
+      MessageAddress address = send.address();
+      assertNotNull(address);
+      kinds.add(address.kind());
+      assertEquals(address.kind() != MessageAddress.Kind.DATA, address.retain());
+    }
+    assertEquals(
+        EnumSet.of(
+            MessageAddress.Kind.DATA, MessageAddress.Kind.METADATA, MessageAddress.Kind.STATUS),
+        kinds);
+  }
+
+  @Test
   void initialBrokerUpPublishesRetainedJsonStatusWithoutStateTransition() throws Exception {
     var transport = new StubTransport();
     startJsonMqttPublisher(transport);
@@ -298,6 +441,7 @@ class TransportStateEngineTest {
     final AtomicReference<@Nullable TransportStateListener> listener = new AtomicReference<>();
     final BlockingQueue<Send> sends = new LinkedBlockingQueue<>();
     volatile boolean pendingStatusSends = false;
+    volatile boolean ready = true;
 
     @Override
     public String transportProfileUri() {
@@ -316,6 +460,11 @@ class TransportStateEngineTest {
         listener.set(contextListener);
       }
       return new PublisherChannel() {
+        @Override
+        public boolean isReady() {
+          return ready;
+        }
+
         @Override
         public CompletableFuture<Void> send(ByteBuf message) {
           message.release();

@@ -14,6 +14,7 @@ import static org.eclipse.milo.opcua.sdk.pubsub.mqtt.PubSubMqttTestSupport.TIMEO
 import static org.eclipse.milo.opcua.sdk.pubsub.mqtt.PubSubMqttTestSupport.awaitTrue;
 import static org.eclipse.milo.opcua.sdk.pubsub.mqtt.PubSubMqttTestSupport.freeTcpPort;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -202,6 +203,29 @@ class MqttChannelLifecycleTest {
   }
 
   @Test
+  void listenerRegisteredAfterConnectReceivesReadiness() throws Exception {
+    MqttConnectionConfig connection =
+        connectionConfig("late-listener", "milo/test/late/data", null);
+    MqttClientSession session = MqttClientSession.create(connection, eventLoopGroup);
+    try {
+      assertFalse(session.isReady());
+      session.start();
+      awaitTrue(session::isReady, "session ready before listener registration");
+
+      // A fast connection can finish before the provider has constructed its channel. Replaying
+      // readiness prevents that channel's deferred startup publications from waiting forever.
+      var listener = new RecordingStateListener();
+      session.addTransportStateListener(listener);
+      assertEquals(1, listener.ups.get());
+      assertEquals(0, listener.downs.get());
+      session.removeTransportStateListener(listener);
+    } finally {
+      session.disconnect().get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+    }
+    assertFalse(session.isReady());
+  }
+
+  @Test
   void noDownNotificationForANeverConnectedSession() throws Exception {
     // connect-refused broker: the session never establishes, so the repeated connect
     // failures are first-connect retries, not an outage — the down edge is connected-gated
@@ -221,6 +245,7 @@ class MqttChannelLifecycleTest {
       Thread.sleep(2_500);
       assertEquals(0, listener.downs.get(), "no down edge for a never-connected session");
       assertEquals(0, listener.ups.get(), "no up edge for a never-connected session");
+      assertFalse(channel.isReady());
     } finally {
       channel.closeAsync().get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
     }

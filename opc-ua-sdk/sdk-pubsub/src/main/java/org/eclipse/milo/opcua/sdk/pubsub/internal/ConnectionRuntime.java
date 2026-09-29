@@ -78,9 +78,10 @@ final class ConnectionRuntime extends AbstractComponentRuntime {
 
   /**
    * Maps the transport's liveness edges onto this connection's PubSubState; one edge-tracked
-   * handler shared by both data channels. Discovery channels never carry a listener.
+   * handler shared by both data channels for their current lifetime. Discovery channels never carry
+   * a listener.
    */
-  private final TransportStateHandler transportStateHandler = new TransportStateHandler();
+  private volatile TransportStateHandler transportStateHandler = new TransportStateHandler();
 
   private volatile List<WriterGroupRuntime> writerGroups;
   private volatile List<ReaderGroupRuntime> readerGroups;
@@ -303,6 +304,10 @@ final class ConnectionRuntime extends AbstractComponentRuntime {
 
   /** Close any open channels; idempotent. */
   void closeChannels() {
+    // Deliberate channel closure need not emit a down edge. Start fresh for the next open and
+    // invalidate callbacks still in flight from the old channels before closing them.
+    transportStateHandler = new TransportStateHandler();
+
     service.getReaderDispatcher().cancelStatusTimeouts(handle());
 
     PublisherChannel publisherChannel = this.publisherChannel;
@@ -514,14 +519,14 @@ final class ConnectionRuntime extends AbstractComponentRuntime {
    * <p>Edge tracking (CAS on {@link #transportDown}) makes duplicate notifications (both channels
    * of a connection may share one session) harmless, and prevents a transport-up from "recovering"
    * an Error the transport did not cause — an activation-failure Error has no preceding down edge.
-   * The initial connect is state-neutral, but still gives broker status publishing a chance to
-   * write its retained Operational status after the async MQTT client is actually connected.
+   * The initial connect is state-neutral, but triggers retained status and metadata deferred until
+   * transport readiness and wakes event writers whose first publish was skipped while connecting.
    *
    * <p>Threading: callbacks arrive on transport threads and only CAS + enqueue; the state machine
    * runs on the serialized per-connection dispatch queue (order-preserving down→up), where {@code
-   * fail}/{@code recover} take the engine lock. A handler firing on a disposed runtime (reconfigure
-   * or shutdown race) is inert: the {@code disposed} check plus the state machine's no-op
-   * transitions leave a replaced runtime untouched.
+   * fail}/{@code recover} run under the engine lock. The handler's identity is checked under that
+   * lock before applying a queued edge, so callbacks from closed channels cannot affect a later
+   * activation of the same runtime. Disposed runtimes ignore all callbacks.
    */
   private final class TransportStateHandler implements TransportStateListener {
 
@@ -530,21 +535,16 @@ final class ConnectionRuntime extends AbstractComponentRuntime {
 
     @Override
     public void onTransportDown(StatusCode statusCode) {
-      if (disposed || !transportDown.compareAndSet(false, true)) {
+      if (!isCurrent() || !transportDown.compareAndSet(false, true)) {
         return;
       }
       transportConnected.set(false);
-      submitSafely(
-          () -> {
-            if (!disposed) {
-              service.getStateMachine().fail(ConnectionRuntime.this, statusCode);
-            }
-          });
+      submitSafely(() -> service.getStateMachine().fail(ConnectionRuntime.this, statusCode));
     }
 
     @Override
     public void onTransportUp() {
-      if (disposed) {
+      if (!isCurrent()) {
         return;
       }
 
@@ -556,21 +556,34 @@ final class ConnectionRuntime extends AbstractComponentRuntime {
 
       submitSafely(
           () -> {
-            if (disposed) {
-              return;
-            }
-
             if (recovering) {
               service.getStateMachine().recover(ConnectionRuntime.this);
-            } else if (state() == PubSubState.Operational && statusPublisher != null) {
-              statusPublisher.onConnectionState(PubSubState.Operational);
+            } else if (state() == PubSubState.Operational) {
+              if (statusPublisher != null) {
+                statusPublisher.onConnectionState(PubSubState.Operational);
+              }
+              if (metaDataPublisher != null) {
+                metaDataPublisher.onConfigurationApplied();
+              }
+              writerGroupRuntimes().forEach(WriterGroupRuntime::triggerEventPublish);
             }
           });
     }
 
+    private boolean isCurrent() {
+      return !disposed && transportStateHandler == this;
+    }
+
     private void submitSafely(Runnable task) {
       try {
-        submitToDispatchQueue(task);
+        submitToDispatchQueue(
+            () -> {
+              synchronized (service.getEngineLock()) {
+                if (isCurrent()) {
+                  task.run();
+                }
+              }
+            });
       } catch (RejectedExecutionException e) {
         // the service is shutting down; the edge is moot
       }

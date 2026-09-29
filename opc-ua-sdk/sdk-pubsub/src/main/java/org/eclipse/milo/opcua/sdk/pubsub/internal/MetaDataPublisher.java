@@ -58,10 +58,10 @@ import org.slf4j.LoggerFactory;
  * </ul>
  *
  * <p>The {@link #lastPublished} on-change baseline records only <i>confirmed</i> sends: a failed
- * send leaves the baseline untouched and is retried with bounded backoff until the first success,
- * covering the common case of the activation publish racing the transport's asynchronous broker
- * connect (broker channels fail fast until connected). After the bounded retries are exhausted the
- * periodic task and the reconfigure on-change check remain as retry opportunities. Broker
+ * send leaves the baseline untouched and is retried with bounded backoff until the first success.
+ * Publication waits for transport readiness; the initial transport-up notification triggers the
+ * on-change check for announcements deferred during connection setup. After retries are exhausted
+ * the periodic task and the reconfigure on-change check remain as retry opportunities. Broker
  * reconnects republish through the activation hook: a broker outage reported via {@code
  * TransportStateListener} fails the connection, deactivating its writers (clearing their
  * baselines), and the recovery on reconnect reactivates them, republishing every writer's retained
@@ -300,9 +300,10 @@ final class MetaDataPublisher {
     MessageMappingProvider mapping = group.mapping();
     PublisherId publisherId = connection.config().publisherId();
 
-    if (channel == null || mapping == null || publisherId == null) {
+    if (channel == null || mapping == null || publisherId == null || !channel.isReady()) {
       LOGGER.debug(
-          "metadata publication for '{}' skipped: channel/mapping/publisherId unavailable",
+          "metadata publication for '{}' skipped: channel not ready or mapping/publisherId"
+              + " unavailable",
           writer.path());
       return;
     }

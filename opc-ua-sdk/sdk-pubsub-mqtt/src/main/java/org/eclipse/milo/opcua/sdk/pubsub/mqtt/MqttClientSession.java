@@ -66,8 +66,8 @@ import org.slf4j.LoggerFactory;
  * expiry of 0 and MQTT 3.1.1 sessions with clean session, so explicit resubscription keeps both
  * versions uniform. HiveMQ's own resubscribe-on-reconnect is disabled: it would retain the previous
  * connection's subscribed-publish flows alongside the explicitly re-issued ones, delivering each
- * message once per flow. Sends while disconnected fail fast and surface through the engine's
- * send-failure diagnostics.
+ * message once per flow. The engine waits for publisher-channel readiness before sending. Direct
+ * sends while disconnected, including disconnects racing an engine send, still fail fast.
  *
  * <p>Transport state: channels register {@link TransportStateListener}s with the session. A
  * disconnect of a previously connected session notifies {@code onTransportDown} with {@code
@@ -156,6 +156,9 @@ final class MqttClientSession {
    */
   private boolean connected = false;
 
+  /** Whether the current connection's subscriptions have settled. Guarded by {@link #lock}. */
+  private boolean ready = false;
+
   /** Whether the BestAvailable fallback to MQTT 3.1.1 has been taken. Guarded by {@link #lock}. */
   private boolean fellBack = false;
 
@@ -232,6 +235,12 @@ final class MqttClientSession {
 
   MqttConnectionConfig config() {
     return config;
+  }
+
+  boolean isReady() {
+    synchronized (lock) {
+      return ready && !closed;
+    }
   }
 
   /** Initiate the (async) initial connect; failures are retried by automatic reconnect. */
@@ -330,7 +339,14 @@ final class MqttClientSession {
    * register their context's listener on open and remove it on close.
    */
   void addTransportStateListener(TransportStateListener listener) {
-    transportStateListeners.add(listener);
+    synchronized (notificationLock) {
+      transportStateListeners.add(listener);
+      // The provider starts connecting before the channel registers its listener. Replay an up
+      // edge if that connect already completed, or deferred startup announcements could be lost.
+      if (isReady()) {
+        notifyTransportUp(listener);
+      }
+    }
   }
 
   /** Remove one registration of {@code listener}; removing a never-added listener is a no-op. */
@@ -443,6 +459,7 @@ final class MqttClientSession {
                 boolean stillConnected;
                 synchronized (lock) {
                   stillConnected = connected && !this.closed;
+                  ready = stillConnected;
                 }
                 if (stillConnected) {
                   notifyTransportUp();
@@ -455,11 +472,15 @@ final class MqttClientSession {
 
   private void notifyTransportUp() {
     for (TransportStateListener listener : transportStateListeners) {
-      try {
-        listener.onTransportUp();
-      } catch (RuntimeException e) {
-        LOGGER.warn("connection '{}': transport state listener failed", config.name(), e);
-      }
+      notifyTransportUp(listener);
+    }
+  }
+
+  private void notifyTransportUp(TransportStateListener listener) {
+    try {
+      listener.onTransportUp();
+    } catch (RuntimeException e) {
+      LOGGER.warn("connection '{}': transport state listener failed", config.name(), e);
     }
   }
 
@@ -478,6 +499,7 @@ final class MqttClientSession {
     synchronized (lock) {
       wasConnected = connected;
       connected = false;
+      ready = false;
     }
 
     // HiveMQ would otherwise retain this connection's subscribed-publish flows across the

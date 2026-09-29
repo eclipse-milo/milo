@@ -15,6 +15,13 @@
  * transports the engine resolves {@code MessageAddress} values for data, metadata, and status
  * messages before handing payloads to the channel. Built-in implementations live in subpackages;
  * external modules (e.g. MQTT) plug in through this SPI.
+ *
+ * <p>Asynchronous publisher channels report readiness through {@code PublisherChannel.isReady()}
+ * and {@code TransportStateListener}. The engine skips publish cycles until ready, without
+ * consuming events or advancing data baselines. The initial up notification releases deferred
+ * metadata and status announcements and wakes event-triggered writers. Connectionless transports
+ * retain the default ready-on-open behavior. Readiness is a snapshot; send failures after readiness
+ * still reach diagnostics.
  */
 @NullMarked
 package org.eclipse.milo.opcua.sdk.pubsub.transport;

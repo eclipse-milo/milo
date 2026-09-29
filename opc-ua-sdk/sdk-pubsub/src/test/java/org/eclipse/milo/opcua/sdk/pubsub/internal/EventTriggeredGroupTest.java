@@ -74,6 +74,7 @@ import org.eclipse.milo.opcua.sdk.pubsub.transport.PublisherTransportContext;
 import org.eclipse.milo.opcua.sdk.pubsub.transport.SubscriberChannel;
 import org.eclipse.milo.opcua.sdk.pubsub.transport.SubscriberTransportContext;
 import org.eclipse.milo.opcua.sdk.pubsub.transport.TransportProvider;
+import org.eclipse.milo.opcua.sdk.pubsub.transport.TransportStateListener;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DataSetMessageKind;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodeContext;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedDataSetMessage;
@@ -185,6 +186,8 @@ class EventTriggeredGroupTest {
   private static final class StubTransport implements TransportProvider {
 
     final BlockingQueue<byte[]> sent = new LinkedBlockingQueue<>();
+    volatile boolean ready = true;
+    @Nullable TransportStateListener listener;
 
     @Override
     public String transportProfileUri() {
@@ -198,7 +201,13 @@ class EventTriggeredGroupTest {
 
     @Override
     public PublisherChannel openPublisher(PublisherTransportContext context) {
+      listener = context.transportStateListener();
       return new PublisherChannel() {
+        @Override
+        public boolean isReady() {
+          return ready;
+        }
+
         @Override
         public CompletableFuture<Void> send(ByteBuf message) {
           try {
@@ -489,6 +498,53 @@ class EventTriggeredGroupTest {
   }
 
   // endregion
+
+  @Test
+  void eventQueuedBeforeTransportReadyPublishesOnInitialUp() throws Exception {
+    StubTransport transport =
+        startService(
+            eventConfig(null, uint(0), NM_MASK, ushort(0), discovery("239.255.75.1", 24801)), null);
+    transport.ready = false;
+    service.publishEvent(EVENTS_REF, eventFields(7));
+
+    // No periodic timer or later event will rescue a drained or stranded startup event.
+    assertNull(transport.sent.poll(300, TimeUnit.MILLISECONDS));
+    transport.ready = true;
+    assertNotNull(transport.listener);
+    transport.listener.onTransportUp();
+
+    DecodedDataSetMessage message = nextFrame(transport);
+    assertEquals(DataSetMessageKind.EVENT, message.kind());
+    assertEquals(ushort(7), message.fields().get(0).value().value().value());
+    assertNull(transport.sent.poll(300, TimeUnit.MILLISECONDS));
+  }
+
+  // Reopening the connection must wake queued events even without a timer or another event.
+  @Test
+  void eventQueuedAfterReenablePublishesWhenReplacementTransportIsReady() throws Exception {
+    StubTransport transport =
+        startService(
+            eventConfig(null, uint(0), NM_MASK, ushort(0), discovery("239.255.75.1", 24801)), null);
+    assertNotNull(transport.listener);
+    transport.listener.onTransportUp();
+    service.publishEvent(EVENTS_REF, eventFields(1));
+    assertEquals(ushort(1), nextFrame(transport).fields().get(0).value().value().value());
+
+    PubSubHandle connection = service.components().connection("conn").orElseThrow();
+    service.disable(connection);
+    transport.ready = false;
+    service.enable(connection);
+    service.publishEvent(EVENTS_REF, eventFields(7));
+    assertNull(transport.sent.poll(300, TimeUnit.MILLISECONDS));
+
+    transport.ready = true;
+    assertNotNull(transport.listener);
+    transport.listener.onTransportUp();
+    DecodedDataSetMessage message = nextFrame(transport);
+    assertEquals(DataSetMessageKind.EVENT, message.kind());
+    assertEquals(ushort(7), message.fields().get(0).value().value().value());
+    assertNull(transport.sent.poll(300, TimeUnit.MILLISECONDS));
+  }
 
   /**
    * An interval-0 all-event group with no keepAliveTime runs no fixed-rate publish task: nothing is

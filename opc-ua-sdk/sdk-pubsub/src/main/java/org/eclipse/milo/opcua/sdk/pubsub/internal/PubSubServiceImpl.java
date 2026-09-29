@@ -1226,6 +1226,11 @@ public final class PubSubServiceImpl implements PubSubService {
     return stateMachine;
   }
 
+  /** Lock guarding runtime configuration and state transitions. */
+  Object getEngineLock() {
+    return lock;
+  }
+
   ReaderDispatcher getReaderDispatcher() {
     return readerDispatcher;
   }

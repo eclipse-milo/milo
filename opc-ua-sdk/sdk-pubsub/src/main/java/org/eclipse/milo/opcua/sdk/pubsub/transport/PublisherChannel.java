@@ -21,6 +21,23 @@ import org.slf4j.LoggerFactory;
 public interface PublisherChannel extends AutoCloseable {
 
   /**
+   * Whether the transport is ready to accept publications without waiting for connection setup.
+   *
+   * <p>The engine skips publication while this returns {@code false}. Asynchronous transports must
+   * notify the context's {@link TransportStateListener#onTransportUp()} when ready, including when
+   * the transport becomes ready before the listener is registered, so deferred metadata and status
+   * announcements and queued events can be published. Connectionless transports are ready on open.
+   *
+   * <p>This is a non-blocking snapshot, not a delivery guarantee: a disconnect racing a subsequent
+   * send still completes that send exceptionally.
+   *
+   * @return whether publication may proceed.
+   */
+  default boolean isReady() {
+    return true;
+  }
+
+  /**
    * Send an encoded NetworkMessage.
    *
    * <p>Implementations must not block the calling thread: the engine invokes send from its shared
