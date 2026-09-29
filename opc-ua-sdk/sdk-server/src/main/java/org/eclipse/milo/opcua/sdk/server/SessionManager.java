@@ -1144,7 +1144,11 @@ public class SessionManager {
           throw new UaException(StatusCodes.Bad_ApplicationSignatureInvalid, e);
         }
       } catch (UaException e) {
-        // Maybe try again using the full certificate chain bytes instead
+        // Legacy clients may sign the full certificate chain instead of the leaf. Channel-bound
+        // signatures always hash the leaf (Part 4 §6.1.8), so there is no second input to try.
+        if (securityPolicy.getProfile().secureChannelEnhancements()) {
+          throw e;
+        }
 
         ByteString serverCertificateChainBs =
             createdUnsecured

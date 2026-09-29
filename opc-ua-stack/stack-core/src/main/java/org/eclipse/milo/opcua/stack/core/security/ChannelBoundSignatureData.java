@@ -11,10 +11,13 @@
 package org.eclipse.milo.opcua.stack.core.security;
 
 import com.google.common.primitives.Bytes;
+import java.io.ByteArrayInputStream;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +37,11 @@ import org.jspecify.annotations.Nullable;
  * Enhancements also bind the session signature to the SecureChannel that carried the session
  * service. That binding starts with the first OpenSecureChannel response signature, exposed as the
  * channel thumbprint, and includes certificate hashes from the current channel context.
+ *
+ * <p>Each {@code HASH(certificate)} input covers only the leaf certificate (Part 4 §6.1.8). A
+ * certificate field such as {@code CreateSessionResponse.serverCertificate} may carry the issuer
+ * chain after the leaf, so the leaf DER encoding is decoded out of the supplied bytes before
+ * hashing. A null or empty certificate hashes to a zero-length value.
  *
  * <p>The {@code *SignatureData} methods own the protocol byte layout; {@link #sign} and {@link
  * #verify} apply the policy's asymmetric algorithm to those bytes and encode the {@link
@@ -398,6 +406,11 @@ public final class ChannelBoundSignatureData {
         : securityPolicy.getAsymmetricSignatureAlgorithm();
   }
 
+  /**
+   * Return {@code HASH(certificate)} for a channel-bound signature: the digest of the leaf
+   * certificate's DER encoding, or a zero-length array when {@code certificate} is null or empty.
+   * Issuer certificates that follow the leaf are not hashed.
+   */
   private static byte[] certificateHash(SecurityPolicyProfile profile, ByteString certificate)
       throws UaException {
 
@@ -406,11 +419,23 @@ public final class ChannelBoundSignatureData {
       return bytes;
     }
 
+    // Part 6 §6.2.6: a chain is DER certificates appended leaf first. Read only the first
+    // certificate; other container formats such as PKCS#7 are rejected rather than searched.
+    byte[] leafBytes;
+    try {
+      leafBytes =
+          CertificateFactory.getInstance("X.509")
+              .generateCertificate(new ByteArrayInputStream(bytes))
+              .getEncoded();
+    } catch (CertificateException e) {
+      throw new UaException(StatusCodes.Bad_CertificateInvalid, e);
+    }
+
     try {
       MessageDigest digest =
           MessageDigest.getInstance(profile.certificateThumbprintAlgorithm().getTransformation());
 
-      return digest.digest(bytes);
+      return digest.digest(leafBytes);
     } catch (NoSuchAlgorithmException e) {
       throw new UaException(StatusCodes.Bad_SecurityPolicyRejected, e);
     }
