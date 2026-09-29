@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.primitives.Bytes;
 import io.netty.channel.Channel;
+import java.io.ByteArrayOutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.security.KeyPair;
@@ -59,6 +60,7 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ActivateSessionRequest;
+import org.eclipse.milo.opcua.stack.core.types.structured.ActivateSessionResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.CreateSessionRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.CreateSessionResponse;
@@ -470,6 +472,64 @@ public class SessionEndpointBindingTest {
     }
 
     /**
+     * Part 4 §6.1.8: a legacy ActivateSession signature may cover the server leaf certificate or
+     * the whole transmitted chain, and verifiers try the leaf first, then the chain. Milo's client
+     * signs the leaf, but older clients may sign the chain, so both must activate. A signature over
+     * neither must still be rejected.
+     */
+    @Test
+    void legacyClientSignatureVerifiesOverServerLeafOrChain() throws Exception {
+      X509Certificate issuer = rsaCertificate("issuer").certificate();
+      var chained =
+          new CertificateMaterial(
+              certificateA.certificateTypeId(),
+              certificateA.keyPair(),
+              new X509Certificate[] {certificateA.certificate(), issuer});
+      OpcUaServer server =
+          server(
+              manager(group(GROUP_A, chained)),
+              List.of(securedEndpoint(GROUP_A, ANONYMOUS_POLICY)));
+      SessionManager sessions = server.getSessionManager();
+      try {
+        var context =
+            new TestServiceRequestContext(
+                endpointUrl("/test"),
+                securedChannel(1L, chained),
+                endpointForPath(server, "/test"));
+        var create = createSessionRequest(clientCertificate.byteString());
+        CreateSessionResponse created = sessions.createSession(context, create);
+        NodeId token = created.getAuthenticationToken();
+        ByteString clientNonce = create.getClientNonce();
+        ByteString leaf = chained.byteString();
+        var chainBytes = new ByteArrayOutputStream();
+        chainBytes.write(certificateA.certificate().getEncoded());
+        chainBytes.write(issuer.getEncoded());
+        ByteString chain = ByteString.of(chainBytes.toByteArray());
+
+        ActivateSessionResponse leafSigned =
+            sessions.activateSession(
+                context, signedActivationOver(leaf, token, created.getServerNonce(), clientNonce));
+        ActivateSessionResponse chainSigned =
+            sessions.activateSession(
+                context,
+                signedActivationOver(chain, token, leafSigned.getServerNonce(), clientNonce));
+
+        ByteString issuerOnly = ByteString.of(issuer.getEncoded());
+        UaException invalid =
+            assertThrows(
+                UaException.class,
+                () ->
+                    sessions.activateSession(
+                        context,
+                        signedActivationOver(
+                            issuerOnly, token, chainSigned.getServerNonce(), clientNonce)));
+        assertEquals(StatusCodes.Bad_ApplicationSignatureInvalid, invalid.getStatusCode().value());
+      } finally {
+        sessions.shutdown();
+      }
+    }
+
+    /**
      * When a Session is reactivated onto a replacement SecureChannel, its endpoint association must
      * follow the endpoint selected by that new channel; identity validation runs against the new
      * endpoint's token policies before the Session's security state is changed.
@@ -802,12 +862,29 @@ public class SessionEndpointBindingTest {
       ByteString clientNonce,
       @Nullable ExtensionObject additionalHeader)
       throws Exception {
+    return signedActivation(
+        token, serverNonce, clientNonce, certificateA.byteString(), additionalHeader);
+  }
+
+  private static ActivateSessionRequest signedActivationOver(
+      ByteString serverCertificate, NodeId token, ByteString serverNonce, ByteString clientNonce)
+      throws Exception {
+    return signedActivation(token, serverNonce, clientNonce, serverCertificate, null);
+  }
+
+  private static ActivateSessionRequest signedActivation(
+      NodeId token,
+      ByteString serverNonce,
+      ByteString clientNonce,
+      ByteString serverCertificate,
+      @Nullable ExtensionObject additionalHeader)
+      throws Exception {
     byte[] data =
         ChannelBoundSignatureData.clientSignatureData(
             SecurityPolicy.Basic256Sha256.getProfile(),
             ByteString.NULL_VALUE,
             serverNonce,
-            certificateA.byteString(),
+            serverCertificate,
             certificateA.byteString(),
             clientCertificate.byteString(),
             clientNonce);
