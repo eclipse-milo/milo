@@ -2371,16 +2371,11 @@ public class SessionFsmFactory {
   /**
    * Build the ActivateSession {@code clientSignature} over the channel-bound signature data.
    *
-   * <p>For legacy (non-enhancement) policies the {@code serverCertificate} {@code ByteString} is
-   * passed straight through to {@link ChannelBoundSignatureData#clientSignatureData} and signed
-   * verbatim: the raw bytes exactly as received in {@code CreateSessionResponse.serverCertificate}
-   * (here {@code csr.getServerCertificate()}) or replayed from the session on reactivation. The
-   * blob is intentionally <b>not</b> re-decoded to sign only the first (leaf) certificate encoding.
-   * Signing the transmitted bytes as-is aligns with the OPC UA reference (.NET) stack and the wire
-   * semantics. A chain-returning peer that verifies against only a re-extracted leaf would reject
-   * this signature; Milo's server avoids that by verifying with a leaf-then-chain dual attempt (see
-   * {@code SessionManager.verifyClientSignature}). The byte layout is pinned by {@code
-   * ChannelBoundSignatureDataTest}.
+   * <p>{@code serverCertificate} is the certificate returned by CreateSession, which may be a
+   * chain. For legacy (non-enhancement) policies the client signs only its first (leaf) certificate
+   * plus {@code serverNonce}. Part 4 §6.1.8 has verifiers try the leaf first and then the chain,
+   * but some servers only check the leaf. Enhancement policies hash the CreateSession bytes
+   * unchanged.
    */
   @SuppressWarnings("Duplicates")
   private static SignatureData buildClientSignature(
@@ -2407,13 +2402,18 @@ public class SessionFsmFactory {
                           "client certificate identity is required for session signature"));
       ByteString clientCertificate = getClientCertificate(client, securityPolicy);
       ByteString serverChannelCertificate = resolveServerChannelCertificateBytes(client, endpoint);
+      ByteString signedServerCertificate =
+          securityPolicy.getProfile().secureChannelEnhancements()
+              ? serverCertificate
+              : certificateBytes(
+                  CertificateUtil.decodeCertificate(serverCertificate.bytesOrEmpty()));
 
       byte[] dataToSign =
           ChannelBoundSignatureData.clientSignatureData(
               securityPolicy.getProfile(),
               client.getTransport().getChannelThumbprint(),
               serverNonce,
-              serverCertificate,
+              signedServerCertificate,
               serverChannelCertificate,
               clientCertificate,
               clientNonce);
