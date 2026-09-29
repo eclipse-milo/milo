@@ -716,84 +716,34 @@ public class OpcUaBinaryEncoder implements UaEncoder {
 
   private void encodeBuiltinType(int typeId, Object value) throws UaSerializationException {
     switch (typeId) {
-      case 1:
-        encodeBoolean(null, (Boolean) value);
-        break;
-      case 2:
-        encodeSByte((Byte) value);
-        break;
-      case 3:
-        encodeByte((UByte) value);
-        break;
-      case 4:
-        encodeInt16((Short) value);
-        break;
-      case 5:
-        encodeUInt16((UShort) value);
-        break;
-      case 6:
-        encodeInt32((Integer) value);
-        break;
-      case 7:
-        encodeUInt32((UInteger) value);
-        break;
-      case 8:
-        encodeInt64((Long) value);
-        break;
-      case 9:
-        encodeUInt64((ULong) value);
-        break;
-      case 10:
-        encodeFloat((Float) value);
-        break;
-      case 11:
-        encodeDouble((Double) value);
-        break;
-      case 12:
-        encodeString((String) value);
-        break;
-      case 13:
-        encodeDateTime((DateTime) value);
-        break;
-      case 14:
-        encodeGuid((UUID) value);
-        break;
-      case 15:
-        encodeByteString((ByteString) value);
-        break;
-      case 16:
-        encodeXmlElement((XmlElement) value);
-        break;
-      case 17:
-        encodeNodeId((NodeId) value);
-        break;
-      case 18:
-        encodeExpandedNodeId((ExpandedNodeId) value);
-        break;
-      case 19:
-        encodeStatusCode((StatusCode) value);
-        break;
-      case 20:
-        encodeQualifiedName((QualifiedName) value);
-        break;
-      case 21:
-        encodeLocalizedText((LocalizedText) value);
-        break;
-      case 22:
-        encodeExtensionObject((ExtensionObject) value);
-        break;
-      case 23:
-        encodeDataValue((DataValue) value);
-        break;
-      case 24:
-        encodeVariant((Variant) value);
-        break;
-      case 25:
-        encodeDiagnosticInfo((DiagnosticInfo) value);
-        break;
-      default:
-        throw new UaSerializationException(
-            StatusCodes.Bad_EncodingError, "unknown builtin type: " + typeId);
+      case 1 -> encodeBoolean(null, (Boolean) value);
+      case 2 -> encodeSByte((Byte) value);
+      case 3 -> encodeByte((UByte) value);
+      case 4 -> encodeInt16((Short) value);
+      case 5 -> encodeUInt16((UShort) value);
+      case 6 -> encodeInt32((Integer) value);
+      case 7 -> encodeUInt32((UInteger) value);
+      case 8 -> encodeInt64((Long) value);
+      case 9 -> encodeUInt64((ULong) value);
+      case 10 -> encodeFloat((Float) value);
+      case 11 -> encodeDouble((Double) value);
+      case 12 -> encodeString((String) value);
+      case 13 -> encodeDateTime((DateTime) value);
+      case 14 -> encodeGuid((UUID) value);
+      case 15 -> encodeByteString((ByteString) value);
+      case 16 -> encodeXmlElement((XmlElement) value);
+      case 17 -> encodeNodeId((NodeId) value);
+      case 18 -> encodeExpandedNodeId((ExpandedNodeId) value);
+      case 19 -> encodeStatusCode((StatusCode) value);
+      case 20 -> encodeQualifiedName((QualifiedName) value);
+      case 21 -> encodeLocalizedText((LocalizedText) value);
+      case 22 -> encodeExtensionObject((ExtensionObject) value);
+      case 23 -> encodeDataValue((DataValue) value);
+      case 24 -> encodeVariant((Variant) value);
+      case 25 -> encodeDiagnosticInfo((DiagnosticInfo) value);
+      default ->
+          throw new UaSerializationException(
+              StatusCodes.Bad_EncodingError, "unknown builtin type: " + typeId);
     }
   }
 
