@@ -46,16 +46,11 @@ final class GuidConversions {
 
   @Nullable
   static Object explicitConversion(@NonNull UUID uuid, OpcUaDataType targetType) {
-    // @formatter:off
-    switch (targetType) {
-      case ByteString:
-        return guidToByteString(uuid);
-      case String:
-        return guidToString(uuid);
-      default:
-        return implicitConversion(uuid, targetType);
-    }
-    // @formatter:on
+    return switch (targetType) {
+      case ByteString -> guidToByteString(uuid);
+      case String -> guidToString(uuid);
+      default -> implicitConversion(uuid, targetType);
+    };
   }
 
   @Nullable

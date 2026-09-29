@@ -40,13 +40,9 @@ final class LocalizedTextConversions {
 
   @Nullable
   static Object implicitConversion(@NonNull LocalizedText text, OpcUaDataType targetType) {
-    // @formatter:off
-    switch (targetType) {
-      case String:
-        return localizedTextToString(text);
-      default:
-        return null;
-    }
-    // @formatter:on
+    return switch (targetType) {
+      case String -> localizedTextToString(text);
+      default -> null;
+    };
   }
 }

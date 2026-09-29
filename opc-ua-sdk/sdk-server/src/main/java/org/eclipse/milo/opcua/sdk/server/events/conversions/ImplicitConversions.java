@@ -34,112 +34,70 @@ public class ImplicitConversions {
   private static Object convert(
       @NonNull Object sourceValue, OpcUaDataType sourceType, OpcUaDataType targetType) {
 
-    switch (sourceType) {
-      case Boolean:
-        return BooleanConversions.convert(sourceValue, targetType, true);
-      case Byte:
-        return ByteConversions.convert(sourceValue, targetType, true);
+    return switch (sourceType) {
+      case Boolean -> BooleanConversions.convert(sourceValue, targetType, true);
+      case Byte -> ByteConversions.convert(sourceValue, targetType, true);
 
-      case ByteString:
-        return ByteStringConversions.convert(sourceValue, targetType, true);
+      case ByteString -> ByteStringConversions.convert(sourceValue, targetType, true);
 
-      case DateTime:
-        return DateTimeConversions.convert(sourceValue, targetType, true);
+      case DateTime -> DateTimeConversions.convert(sourceValue, targetType, true);
 
-      case Double:
-        return DoubleConversions.convert(sourceValue, targetType, true);
+      case Double -> DoubleConversions.convert(sourceValue, targetType, true);
 
-      case ExpandedNodeId:
-        return ExpandedNodeIdConversions.convert(sourceValue, targetType, true);
+      case ExpandedNodeId -> ExpandedNodeIdConversions.convert(sourceValue, targetType, true);
 
-      case Float:
-        return FloatConversions.convert(sourceValue, targetType, true);
-      case Guid:
-        return GuidConversions.convert(sourceValue, targetType, true);
+      case Float -> FloatConversions.convert(sourceValue, targetType, true);
+      case Guid -> GuidConversions.convert(sourceValue, targetType, true);
 
-      case Int16:
-        return Int16Conversions.convert(sourceValue, targetType, true);
+      case Int16 -> Int16Conversions.convert(sourceValue, targetType, true);
 
-      case Int32:
-        return Int32Conversions.convert(sourceValue, targetType, true);
+      case Int32 -> Int32Conversions.convert(sourceValue, targetType, true);
 
-      case Int64:
-        return Int64Conversions.convert(sourceValue, targetType, true);
+      case Int64 -> Int64Conversions.convert(sourceValue, targetType, true);
 
-      case NodeId:
-        return NodeIdConversions.convert(sourceValue, targetType, true);
+      case NodeId -> NodeIdConversions.convert(sourceValue, targetType, true);
 
-      case SByte:
-        return SByteConversions.convert(sourceValue, targetType, true);
+      case SByte -> SByteConversions.convert(sourceValue, targetType, true);
 
-      case StatusCode:
-        return StatusCodeConversions.convert(sourceValue, targetType, true);
+      case StatusCode -> StatusCodeConversions.convert(sourceValue, targetType, true);
 
-      case String:
-        return StringConversions.convert(sourceValue, targetType, true);
+      case String -> StringConversions.convert(sourceValue, targetType, true);
 
-      case LocalizedText:
-        return LocalizedTextConversions.convert(sourceValue, targetType, true);
+      case LocalizedText -> LocalizedTextConversions.convert(sourceValue, targetType, true);
 
-      case QualifiedName:
-        return QualifiedNameConversions.convert(sourceValue, targetType, true);
+      case QualifiedName -> QualifiedNameConversions.convert(sourceValue, targetType, true);
 
-      case UInt16:
-        return UInt16Conversions.convert(sourceValue, targetType, true);
+      case UInt16 -> UInt16Conversions.convert(sourceValue, targetType, true);
 
-      case UInt32:
-        return UInt32Conversions.convert(sourceValue, targetType, true);
+      case UInt32 -> UInt32Conversions.convert(sourceValue, targetType, true);
 
-      case UInt64:
-        return UInt64Conversions.convert(sourceValue, targetType, true);
+      case UInt64 -> UInt64Conversions.convert(sourceValue, targetType, true);
 
-      default:
-        return null;
-    }
+      default -> null;
+    };
   }
 
   public static int getPrecedence(@NonNull OpcUaDataType dataType) {
-    // @formatter:off
-    switch (dataType) {
-      case Double:
-        return 18;
-      case Float:
-        return 17;
-      case Int64:
-        return 16;
-      case UInt64:
-        return 15;
-      case Int32:
-        return 14;
-      case UInt32:
-        return 13;
-      case StatusCode:
-        return 12;
-      case Int16:
-        return 11;
-      case UInt16:
-        return 10;
-      case SByte:
-        return 9;
-      case Byte:
-        return 8;
-      case Boolean:
-        return 7;
-      case Guid:
-        return 6;
-      case String:
-        return 5;
-      case ExpandedNodeId:
-        return 4;
-      case NodeId:
-        return 3;
-      case LocalizedText:
-        return 2;
-      case QualifiedName:
-        return 1;
-      default:
-        return 0;
-    }
-    // @formatter:on
+    return switch (dataType) {
+      case Double -> 18;
+      case Float -> 17;
+      case Int64 -> 16;
+      case UInt64 -> 15;
+      case Int32 -> 14;
+      case UInt32 -> 13;
+      case StatusCode -> 12;
+      case Int16 -> 11;
+      case UInt16 -> 10;
+      case SByte -> 9;
+      case Byte -> 8;
+      case Boolean -> 7;
+      case Guid -> 6;
+      case String -> 5;
+      case ExpandedNodeId -> 4;
+      case NodeId -> 3;
+      case LocalizedText -> 2;
+      case QualifiedName -> 1;
+      default -> 0;
+    };
   }
 }

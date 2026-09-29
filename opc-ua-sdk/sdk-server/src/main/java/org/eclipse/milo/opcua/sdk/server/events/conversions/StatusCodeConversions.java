@@ -67,33 +67,21 @@ final class StatusCodeConversions {
 
   @Nullable
   static Object explicitConversion(@NonNull StatusCode s, OpcUaDataType targetType) {
-    // @formatter:off
-    switch (targetType) {
-      case Int16:
-        return statusCodeToInt16(s);
-      case UInt16:
-        return statusCodeToUInt16(s);
-      default:
-        return implicitConversion(s, targetType);
-    }
-    // @formatter:on
+    return switch (targetType) {
+      case Int16 -> statusCodeToInt16(s);
+      case UInt16 -> statusCodeToUInt16(s);
+      default -> implicitConversion(s, targetType);
+    };
   }
 
   @Nullable
   static Object implicitConversion(@NonNull StatusCode s, OpcUaDataType targetType) {
-    // @formatter:off
-    switch (targetType) {
-      case Int32:
-        return statusCodeToInt32(s);
-      case Int64:
-        return statusCodeToInt64(s);
-      case UInt32:
-        return statusCodeToUInt32(s);
-      case UInt64:
-        return statusCodeToUInt64(s);
-      default:
-        return null;
-    }
-    // @formatter:on
+    return switch (targetType) {
+      case Int32 -> statusCodeToInt32(s);
+      case Int64 -> statusCodeToInt64(s);
+      case UInt32 -> statusCodeToUInt32(s);
+      case UInt64 -> statusCodeToUInt64(s);
+      default -> null;
+    };
   }
 }

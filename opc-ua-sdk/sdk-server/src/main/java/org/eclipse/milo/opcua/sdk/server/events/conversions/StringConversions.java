@@ -206,55 +206,32 @@ final class StringConversions {
 
   @Nullable
   static Object explicitConversion(@NonNull String s, OpcUaDataType targetType) {
-    // @formatter:off
-    switch (targetType) {
-      case DateTime:
-        return stringToDateTime(s);
-      case ExpandedNodeId:
-        return stringToExpandedNodeId(s);
-      case NodeId:
-        return stringToNodeId(s);
-      case LocalizedText:
-        return stringToLocalizedText(s);
-      case QualifiedName:
-        return stringToQualifiedName(s);
-      default:
-        return implicitConversion(s, targetType);
-    }
-    // @formatter:on
+    return switch (targetType) {
+      case DateTime -> stringToDateTime(s);
+      case ExpandedNodeId -> stringToExpandedNodeId(s);
+      case NodeId -> stringToNodeId(s);
+      case LocalizedText -> stringToLocalizedText(s);
+      case QualifiedName -> stringToQualifiedName(s);
+      default -> implicitConversion(s, targetType);
+    };
   }
 
   @Nullable
   static Object implicitConversion(@NonNull String s, OpcUaDataType targetType) {
-    // @formatter:off
-    switch (targetType) {
-      case Boolean:
-        return stringToBoolean(s);
-      case Byte:
-        return stringToByte(s);
-      case Double:
-        return stringToDouble(s);
-      case Float:
-        return stringToFloat(s);
-      case Guid:
-        return stringToGuid(s);
-      case Int16:
-        return stringToInt16(s);
-      case Int32:
-        return stringToInt32(s);
-      case Int64:
-        return stringToInt64(s);
-      case SByte:
-        return stringToSByte(s);
-      case UInt16:
-        return stringToUInt16(s);
-      case UInt32:
-        return stringToUInt32(s);
-      case UInt64:
-        return stringToUInt64(s);
-      default:
-        return null;
-    }
-    // @formatter:on
+    return switch (targetType) {
+      case Boolean -> stringToBoolean(s);
+      case Byte -> stringToByte(s);
+      case Double -> stringToDouble(s);
+      case Float -> stringToFloat(s);
+      case Guid -> stringToGuid(s);
+      case Int16 -> stringToInt16(s);
+      case Int32 -> stringToInt32(s);
+      case Int64 -> stringToInt64(s);
+      case SByte -> stringToSByte(s);
+      case UInt16 -> stringToUInt16(s);
+      case UInt32 -> stringToUInt32(s);
+      case UInt64 -> stringToUInt64(s);
+      default -> null;
+    };
   }
 }
