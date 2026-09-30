@@ -954,26 +954,17 @@ public class AddressSpace {
       return failedUaFuture(StatusCodes.Bad_NodeClassInvalid);
     }
 
-    switch (nodeClass) {
-      case DataType:
-        return createDataTypeNodeFromBaseAttributes(nodeId, baseAttributeValues);
-      case Method:
-        return createMethodNodeFromBaseAttributes(nodeId, baseAttributeValues);
-      case Object:
-        return createObjectNodeFromBaseAttributes(nodeId, baseAttributeValues);
-      case ObjectType:
-        return createObjectTypeNodeFromBaseAttributes(nodeId, baseAttributeValues);
-      case ReferenceType:
-        return createReferenceTypeNodeFromBaseAttributes(nodeId, baseAttributeValues);
-      case Variable:
-        return createVariableNodeFromBaseAttributes(nodeId, baseAttributeValues);
-      case VariableType:
-        return createVariableTypeNodeFromBaseAttributes(nodeId, baseAttributeValues);
-      case View:
-        return createViewNodeFromBaseAttributes(nodeId, baseAttributeValues);
-      default:
-        throw new IllegalArgumentException("NodeClass: " + nodeClass);
-    }
+    return switch (nodeClass) {
+      case DataType -> createDataTypeNodeFromBaseAttributes(nodeId, baseAttributeValues);
+      case Method -> createMethodNodeFromBaseAttributes(nodeId, baseAttributeValues);
+      case Object -> createObjectNodeFromBaseAttributes(nodeId, baseAttributeValues);
+      case ObjectType -> createObjectTypeNodeFromBaseAttributes(nodeId, baseAttributeValues);
+      case ReferenceType -> createReferenceTypeNodeFromBaseAttributes(nodeId, baseAttributeValues);
+      case Variable -> createVariableNodeFromBaseAttributes(nodeId, baseAttributeValues);
+      case VariableType -> createVariableTypeNodeFromBaseAttributes(nodeId, baseAttributeValues);
+      case View -> createViewNodeFromBaseAttributes(nodeId, baseAttributeValues);
+      default -> throw new IllegalArgumentException("NodeClass: " + nodeClass);
+    };
   }
 
   private CompletableFuture<UaDataTypeNode> createDataTypeNodeFromBaseAttributes(

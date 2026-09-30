@@ -326,21 +326,12 @@ public class UaDataTypeNode extends UaNode implements DataTypeNode {
   @Override
   protected void setAttributeValue(AttributeId attributeId, DataValue value) {
     switch (attributeId) {
-      case IsAbstract:
-        {
-          setIsAbstract((Boolean) value.value().value());
-          break;
-        }
-      case DataTypeDefinition:
-        {
-          ExtensionObject xo = (ExtensionObject) value.value().value();
-          setDataTypeDefinition((DataTypeDefinition) xo.decode(client.getStaticEncodingContext()));
-          break;
-        }
-      default:
-        {
-          super.setAttributeValue(attributeId, value);
-        }
+      case IsAbstract -> setIsAbstract((Boolean) value.value().value());
+      case DataTypeDefinition -> {
+        ExtensionObject xo = (ExtensionObject) value.value().value();
+        setDataTypeDefinition((DataTypeDefinition) xo.decode(client.getStaticEncodingContext()));
+      }
+      default -> super.setAttributeValue(attributeId, value);
     }
   }
 }

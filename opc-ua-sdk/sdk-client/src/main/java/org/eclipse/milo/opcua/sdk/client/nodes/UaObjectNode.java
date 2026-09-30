@@ -650,15 +650,8 @@ public class UaObjectNode extends UaNode implements ObjectNode {
   @Override
   protected void setAttributeValue(AttributeId attributeId, DataValue value) {
     switch (attributeId) {
-      case EventNotifier:
-        {
-          setEventNotifier((UByte) value.value().value());
-          break;
-        }
-      default:
-        {
-          super.setAttributeValue(attributeId, value);
-        }
+      case EventNotifier -> setEventNotifier((UByte) value.value().value());
+      default -> super.setAttributeValue(attributeId, value);
     }
   }
 }
