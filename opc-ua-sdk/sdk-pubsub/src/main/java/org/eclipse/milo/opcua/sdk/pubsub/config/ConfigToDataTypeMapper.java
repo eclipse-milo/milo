@@ -15,8 +15,8 @@ import static org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfigMapperUtil.NU
 import static org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfigMapperUtil.PROFILE_MQTT_JSON;
 import static org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfigMapperUtil.PROFILE_MQTT_UADP;
 import static org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfigMapperUtil.PROFILE_UDP_UADP;
+import static org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfigMapperUtil.builtInType;
 import static org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfigMapperUtil.decodeRaw;
-import static org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfigMapperUtil.deriveBuiltInType;
 import static org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfigMapperUtil.emptyMetaData;
 import static org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfigMapperUtil.newEncodingContext;
 import static org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfigMapperUtil.toKeyValuePairs;
@@ -738,7 +738,7 @@ final class ConfigToDataTypeMapper {
                         field.name(),
                         LocalizedText.NULL_VALUE,
                         DataSetFieldFlags.of(),
-                        deriveBuiltInType(field.dataTypeId()),
+                        builtInType(field),
                         field.dataTypeId(),
                         field.valueRank(),
                         field.arrayDimensions(),

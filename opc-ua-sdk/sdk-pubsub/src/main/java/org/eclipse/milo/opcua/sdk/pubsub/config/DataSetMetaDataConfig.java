@@ -20,6 +20,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.jspecify.annotations.Nullable;
@@ -146,18 +147,27 @@ public final class DataSetMetaDataConfig {
   /**
    * A single field entry in a {@link DataSetMetaDataConfig}.
    *
+   * <p>{@code builtInType} is the Part 14 {@code FieldMetaData.BuiltInType}: the built-in type the
+   * field's values are transferred as. It matters when {@code dataTypeId} is not itself a built-in
+   * DataType, e.g. a subtype such as UtcTime (transferred as DateTime) or an Enumeration
+   * (transferred as Int32). Leave it {@code null} when the built-in type follows from {@code
+   * dataTypeId} or is unknown.
+   *
    * @param name the name of the field.
    * @param dataTypeId the NodeId of the field's DataType.
    * @param dataSetFieldId the stable wire identity of the field.
    * @param valueRank the value rank of the field; {@code -1} (scalar) by default.
    * @param arrayDimensions the array dimensions of the field, or {@code null} if not applicable.
+   * @param builtInType the built-in type the field's values are transferred as, or {@code null} if
+   *     not specified.
    */
   public record Field(
       String name,
       NodeId dataTypeId,
       UUID dataSetFieldId,
       int valueRank,
-      UInteger @Nullable [] arrayDimensions) {
+      UInteger @Nullable [] arrayDimensions,
+      @Nullable OpcUaDataType builtInType) {
 
     /**
      * Create a {@link Field}, defensively copying {@code arrayDimensions}.
@@ -167,9 +177,30 @@ public final class DataSetMetaDataConfig {
      * @param dataSetFieldId the stable wire identity of the field.
      * @param valueRank the value rank of the field.
      * @param arrayDimensions the array dimensions of the field, or {@code null}.
+     * @param builtInType the built-in type the field's values are transferred as, or {@code null}.
      */
     public Field {
       arrayDimensions = arrayDimensions == null ? null : arrayDimensions.clone();
+    }
+
+    /**
+     * Create a {@link Field} with no explicit built-in type, defensively copying {@code
+     * arrayDimensions}.
+     *
+     * @param name the name of the field.
+     * @param dataTypeId the NodeId of the field's DataType.
+     * @param dataSetFieldId the stable wire identity of the field.
+     * @param valueRank the value rank of the field.
+     * @param arrayDimensions the array dimensions of the field, or {@code null}.
+     */
+    public Field(
+        String name,
+        NodeId dataTypeId,
+        UUID dataSetFieldId,
+        int valueRank,
+        UInteger @Nullable [] arrayDimensions) {
+
+      this(name, dataTypeId, dataSetFieldId, valueRank, arrayDimensions, null);
     }
 
     @Override
@@ -189,20 +220,28 @@ public final class DataSetMetaDataConfig {
           && name.equals(that.name)
           && dataTypeId.equals(that.dataTypeId)
           && dataSetFieldId.equals(that.dataSetFieldId)
-          && Arrays.equals(arrayDimensions, that.arrayDimensions);
+          && Arrays.equals(arrayDimensions, that.arrayDimensions)
+          && builtInType == that.builtInType;
     }
 
     @Override
     public int hashCode() {
-      int result = Objects.hash(name, dataTypeId, dataSetFieldId, valueRank);
+      int result = Objects.hash(name, dataTypeId, dataSetFieldId, valueRank, builtInType);
       result = 31 * result + Arrays.hashCode(arrayDimensions);
       return result;
     }
 
     @Override
     public String toString() {
-      return "Field{name='%s', dataTypeId=%s, dataSetFieldId=%s, valueRank=%s, arrayDimensions=%s}"
-          .formatted(name, dataTypeId, dataSetFieldId, valueRank, Arrays.toString(arrayDimensions));
+      return ("Field{name='%s', dataTypeId=%s, dataSetFieldId=%s, valueRank=%s,"
+              + " arrayDimensions=%s, builtInType=%s}")
+          .formatted(
+              name,
+              dataTypeId,
+              dataSetFieldId,
+              valueRank,
+              Arrays.toString(arrayDimensions),
+              builtInType);
     }
   }
 

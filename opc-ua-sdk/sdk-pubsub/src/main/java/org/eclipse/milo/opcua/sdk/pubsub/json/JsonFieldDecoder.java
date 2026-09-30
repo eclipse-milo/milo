@@ -51,7 +51,8 @@ import org.slf4j.LoggerFactory;
  * decode against it (Part 14 §6.2.3: the DataSetMetaData carries "the information necessary to
  * decode DataSetMessages"): collapsed Verbose {@code StatusCode} objects decode as StatusCode
  * <em>values</em> on StatusCode-typed fields, Int64/UInt64/DateTime/Guid/ByteString/XmlElement/
- * NodeId/QualifiedName strings decode to their declared types, LocalizedText objects decode as
+ * NodeId/QualifiedName strings decode to their declared types, Verbose Enumeration strings ({@code
+ * "Name_Value"}) decode as Int32 on Int32-typed fields, LocalizedText objects decode as
  * LocalizedText, numbers take their declared width and signedness, and arrays — including empty
  * ones — decode as arrays of the declared type. A value that does not parse as its declared type
  * falls back to the shape-based decode below (incoherent-publisher tolerance).
@@ -308,7 +309,7 @@ final class JsonFieldDecoder {
       case Byte -> Unsigned.ubyte(element.getAsInt());
       case Int16 -> element.getAsShort();
       case UInt16 -> Unsigned.ushort(element.getAsInt());
-      case Int32 -> element.getAsInt();
+      case Int32 -> decodeInt32(element);
       case UInt32 -> Unsigned.uint(element.getAsLong());
       case Int64 -> Long.parseLong(element.getAsString());
       case UInt64 -> ULong.valueOf(element.getAsString());
@@ -347,6 +348,20 @@ final class JsonFieldDecoder {
       Array.set(result, i, decodeTypedScalar(dataType, array.get(i)));
     }
     return result;
+  }
+
+  /**
+   * Decode an Int32 value: a JSON number, or a string holding a Verbose Enumeration value, either
+   * {@code "<name>_<value>"} or the bare numeric value (OPC 10000-6 §5.4.4.2). Enumeration fields
+   * are transferred as Int32 (Part 14 §6.2.3.2.4), and only the numeric value is kept.
+   */
+  private static int decodeInt32(JsonElement element) {
+    JsonPrimitive primitive = element.getAsJsonPrimitive();
+    if (primitive.isString()) {
+      String value = primitive.getAsString();
+      return Integer.parseInt(value.substring(value.lastIndexOf('_') + 1));
+    }
+    return primitive.getAsInt();
   }
 
   private float decodeFloat(JsonElement element) {

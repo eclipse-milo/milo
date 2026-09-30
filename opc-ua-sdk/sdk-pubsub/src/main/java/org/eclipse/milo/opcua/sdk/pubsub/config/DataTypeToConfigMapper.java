@@ -16,6 +16,7 @@ import static org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfigMapperUtil.PR
 import static org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfigMapperUtil.PROFILE_MQTT_UADP;
 import static org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfigMapperUtil.PROFILE_UDP_UADP;
 import static org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfigMapperUtil.encodeRaw;
+import static org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfigMapperUtil.explicitBuiltInType;
 import static org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfigMapperUtil.fromKeyValuePairs;
 import static org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfigMapperUtil.fromMillis;
 import static org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfigMapperUtil.isEmptyMetaData;
@@ -1183,7 +1184,12 @@ final class DataTypeToConfigMapper {
         int valueRank = field.getValueRank() != null ? field.getValueRank() : -1;
         builder.field(
             new DataSetMetaDataConfig.Field(
-                fieldName, dataTypeId, dataSetFieldId, valueRank, field.getArrayDimensions()));
+                fieldName,
+                dataTypeId,
+                dataSetFieldId,
+                valueRank,
+                field.getArrayDimensions(),
+                explicitBuiltInType(field.getBuiltInType(), dataTypeId)));
       }
     }
 

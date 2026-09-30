@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -30,10 +31,13 @@ import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodeContext;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedField;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedNetworkMessage;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
@@ -41,6 +45,8 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
 import org.eclipse.milo.opcua.stack.core.types.structured.ConfigurationVersionDataType;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 /**
  * Pins the two decode improvements found against the PubSub JSON reference publisher's
@@ -52,6 +58,8 @@ import org.junit.jupiter.api.Test;
  *       integral literals decode to mixed Java widths.
  *   <li>With a {@link DataSetMetaDataResolver} on the {@link DecodeContext}, shape-ambiguous
  *       Verbose values decode against the field's metadata-declared built-in type.
+ *   <li>Fields whose DataType is not built-in, such as UtcTime or an Enumeration, decode against
+ *       the field's BuiltInType, and Enumeration fields accept the Verbose string forms.
  * </ul>
  */
 class JsonMetaDataDirectedDecodeTest {
@@ -335,6 +343,106 @@ class JsonMetaDataDirectedDecodeTest {
         resolver);
 
     assertEquals(List.of("line-7/5", "line-7/9"), identities);
+  }
+
+  // endregion
+
+  // region DataTypes that are not built-in
+
+  /**
+   * Metadata as announced for fields whose DataType is not itself built-in: the field BuiltInType
+   * names the transfer type (Part 14 §6.2.3.2.4, special cases 2 and 4).
+   */
+  private static final DataSetMetaDataConfig SUBTYPE_META =
+      DataSetMetaDataConfig.builder("Subtypes")
+          .field(field("UtcTime", NodeIds.UtcTime, -1, OpcUaDataType.DateTime))
+          .field(field("Duration", NodeIds.Duration, -1, OpcUaDataType.Double))
+          .field(field("State", NodeIds.ServerState, -1, OpcUaDataType.Int32))
+          .field(field("StateArray", NodeIds.ServerState, 1, OpcUaDataType.Int32))
+          .field(field("Text", NodeIds.String, -1, OpcUaDataType.Int32))
+          .configurationVersion(uint(7), uint(7))
+          .build();
+
+  private static final DataSetMetaDataResolver SUBTYPE_RESOLVER = request -> SUBTYPE_META;
+
+  private static DataSetMetaDataConfig.Field field(
+      String name, NodeId dataTypeId, int valueRank, OpcUaDataType builtInType) {
+
+    return new DataSetMetaDataConfig.Field(
+        name, dataTypeId, UUID.randomUUID(), valueRank, null, builtInType);
+  }
+
+  /** A UtcTime field decodes as DateTime, its BuiltInType, not as the ISO 8601 String (#2049). */
+  @Test
+  void derivedDateTimeFieldDecodesAsDateTime() throws Exception {
+    DataValue value =
+        fieldValue(
+            decode(keyFrame("{\"UtcTime\":\"2026-09-30T08:40:51.656Z\"}"), SUBTYPE_RESOLVER),
+            "UtcTime");
+
+    assertEquals(StatusCode.GOOD, value.statusCode());
+    assertEquals(new DateTime(Instant.parse("2026-09-30T08:40:51.656Z")), value.value().value());
+  }
+
+  /** A Duration field takes its Double BuiltInType even when the literal is integral. */
+  @Test
+  void derivedDoubleFieldDecodesAsDouble() throws Exception {
+    DataValue value =
+        fieldValue(decode(keyFrame("{\"Duration\":1500}"), SUBTYPE_RESOLVER), "Duration");
+
+    assertEquals(1500.0, value.value().value());
+  }
+
+  /**
+   * An Enumeration field decodes as Int32 from each Verbose form, {@code "<name>_<value>"} or the
+   * bare numeric string (OPC 10000-6 §5.4.4.2), and from the Compact number (#2050). The value is
+   * taken after the last underscore, so literal names may contain underscores.
+   */
+  @ParameterizedTest
+  @CsvSource(
+      delimiter = '|',
+      value = {
+        "\"Running_0\"      | 0",
+        "\"Suspended_3\"    | 3",
+        "\"Comm_Fault_6\"   | 6",
+        "\"0\"              | 0",
+        "0                  | 0"
+      })
+  void enumerationFieldDecodesAsInt32(String json, int expected) throws Exception {
+    DataValue value =
+        fieldValue(decode(keyFrame("{\"State\":" + json + "}"), SUBTYPE_RESOLVER), "State");
+
+    assertEquals(StatusCode.GOOD, value.statusCode());
+    assertEquals(expected, value.value().value());
+  }
+
+  @Test
+  void enumerationArrayDecodesAsInt32Array() throws Exception {
+    DataValue value =
+        fieldValue(
+            decode(keyFrame("{\"StateArray\":[\"Running_0\",\"Suspended_3\"]}"), SUBTYPE_RESOLVER),
+            "StateArray");
+
+    assertArrayEquals(new Integer[] {0, 3}, (Integer[]) value.value().value());
+  }
+
+  /** An Enumeration string with no numeric value keeps the shape-based String fallback. */
+  @Test
+  void enumerationStringWithoutValueFallsBackToString() throws Exception {
+    DataValue value =
+        fieldValue(decode(keyFrame("{\"State\":\"Running\"}"), SUBTYPE_RESOLVER), "State");
+
+    assertEquals(StatusCode.GOOD, value.statusCode());
+    assertEquals("Running", value.value().value());
+  }
+
+  /** A built-in DataType NodeId is authoritative; the field BuiltInType does not override it. */
+  @Test
+  void builtInDataTypeTakesPrecedenceOverFieldBuiltInType() throws Exception {
+    DataValue value =
+        fieldValue(decode(keyFrame("{\"Text\":\"Running_0\"}"), SUBTYPE_RESOLVER), "Text");
+
+    assertEquals("Running_0", value.value().value());
   }
 
   // endregion
