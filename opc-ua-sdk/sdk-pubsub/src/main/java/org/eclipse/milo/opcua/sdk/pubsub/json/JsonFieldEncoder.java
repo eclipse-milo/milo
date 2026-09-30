@@ -32,6 +32,10 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Matrix;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUI16;
+import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUI32;
+import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUI64;
+import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUI8;
 import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
@@ -546,6 +550,18 @@ final class JsonFieldEncoder {
   private static int builtinTypeIdOfClass(Class<?> clazz) {
     if (UaEnumeratedType.class.isAssignableFrom(clazz)) {
       return OpcUaDataType.Int32.getTypeId();
+    }
+    if (OptionSetUInteger.class.isAssignableFrom(clazz)) {
+      // an OptionSet transfers as its UInteger value (Part 14 Table 7 rule 5)
+      if (OptionSetUI8.class.isAssignableFrom(clazz)) {
+        return OpcUaDataType.Byte.getTypeId();
+      } else if (OptionSetUI16.class.isAssignableFrom(clazz)) {
+        return OpcUaDataType.UInt16.getTypeId();
+      } else if (OptionSetUI32.class.isAssignableFrom(clazz)) {
+        return OpcUaDataType.UInt32.getTypeId();
+      } else if (OptionSetUI64.class.isAssignableFrom(clazz)) {
+        return OpcUaDataType.UInt64.getTypeId();
+      }
     }
     if (UaStructuredType.class.isAssignableFrom(clazz)
         || ExtensionObject.class.isAssignableFrom(clazz)) {

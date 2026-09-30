@@ -10,6 +10,8 @@
 
 package org.eclipse.milo.opcua.sdk.pubsub.server;
 
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
+
 import java.util.List;
 import java.util.Set;
 import org.eclipse.milo.opcua.sdk.core.AccessLevel;
@@ -20,12 +22,14 @@ import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig;
 import org.eclipse.milo.opcua.sdk.server.items.DataItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredItem;
+import org.eclipse.milo.opcua.sdk.server.nodes.UaDataTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.eclipse.milo.opcua.stack.core.types.structured.DataTypeDefinition;
 
 /**
  * A minimal embedded {@link OpcUaServer} fixture for sdk-pubsub-server tests, modeled on the
@@ -51,6 +55,8 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
  *   <li>{@link #getVariableNode(NodeId)}, {@link #getValue(NodeId)}, {@link #setValue(NodeId,
  *       DataValue)} — direct node access for assertions and live-value updates.
  *   <li>{@link #nodeId(String)} — a NodeId in the test namespace without creating a node.
+ *   <li>{@link #addDataType(String, NodeId, DataTypeDefinition)} — a concrete DataType node under a
+ *       supertype, with the server's DataTypeTree rebuilt.
  * </ul>
  *
  * <p>Writable variables are created with {@code allowNulls=true} because the Part 14 Table 80
@@ -153,6 +159,16 @@ final class TestPubSubServer implements AutoCloseable {
     return new NodeId(getNamespaceIndex(), name);
   }
 
+  /**
+   * Add a concrete DataType node named {@code name} under {@code superTypeId} carrying {@code
+   * definition}, and rebuild the server's DataTypeTree so it is visible there.
+   */
+  NodeId addDataType(String name, NodeId superTypeId, DataTypeDefinition definition) {
+    NodeId nodeId = namespace.addDataType(name, superTypeId, definition).getNodeId();
+    server.updateDataTypeTree();
+    return nodeId;
+  }
+
   @Override
   public void close() {
     namespace.shutdown();
@@ -192,6 +208,31 @@ final class TestPubSubServer implements AutoCloseable {
               node.getNodeId(),
               NodeIds.HasComponent,
               NodeIds.ObjectsFolder.expanded(),
+              Reference.Direction.INVERSE));
+
+      getNodeManager().addNode(node);
+
+      return node;
+    }
+
+    UaDataTypeNode addDataType(String name, NodeId superTypeId, DataTypeDefinition definition) {
+      var node =
+          new UaDataTypeNode(
+              getNodeContext(),
+              newNodeId(name),
+              newQualifiedName(name),
+              LocalizedText.english(name),
+              LocalizedText.NULL_VALUE,
+              uint(0),
+              uint(0),
+              false);
+      node.setDataTypeDefinition(definition);
+
+      node.addReference(
+          new Reference(
+              node.getNodeId(),
+              NodeIds.HasSubtype,
+              superTypeId.expanded(),
               Reference.Direction.INVERSE));
 
       getNodeManager().addNode(node);

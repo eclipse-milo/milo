@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.pubsub.json;
 
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -26,6 +27,7 @@ import io.netty.buffer.Unpooled;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
@@ -81,6 +83,7 @@ import org.eclipse.milo.opcua.stack.core.types.DataTypeManager;
 import org.eclipse.milo.opcua.stack.core.types.DefaultDataTypeManager;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
@@ -89,11 +92,14 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.BrokerTransportQualityOfService;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.PubSubState;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.ServerState;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.StructureType;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetMetaDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.EnumDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.FieldMetaData;
 import org.eclipse.milo.opcua.stack.core.types.structured.JsonDataSetMessageContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.JsonNetworkMessageContentMask;
+import org.eclipse.milo.opcua.stack.core.types.structured.SimpleTypeDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.StructureDefinition;
 import org.eclipse.milo.opcua.stack.core.types.structured.StructureDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.StructureField;
@@ -130,6 +136,10 @@ class JsonEngineEndToEndTest {
   private static final UUID CONFIGURED_STATUS_FIELD_ID = new UUID(0L, 0xC2L);
 
   private static final UUID POSITION_FIELD_ID = new UUID(0L, 0xD1L);
+
+  private static final UUID TIME_FIELD_ID = new UUID(0L, 0xE1L);
+
+  private static final UUID STATE_FIELD_ID = new UUID(0L, 0xE2L);
 
   private record Sent(MessageAddress address, String json) {}
 
@@ -932,6 +942,159 @@ class JsonEngineEndToEndTest {
     assertEquals(2.5, body.get("Y").getAsDouble());
 
     // endregion
+  }
+
+  /**
+   * Milo to Milo over JSON with Part 14 Table 7 metadata: the publisher describes UtcTime and
+   * ServerState in its DataTypeSchemaHeader and announces their fields as DateTime (13) and Int32
+   * (6); the subscriber, which decodes by the announced BuiltInType (#2051), receives a DateTime
+   * and an Int32 instead of the Strings it received while the publisher announced ExtensionObject
+   * (#2052).
+   */
+  @Test
+  void derivedAndEnumerationFieldsDecodeTypedEndToEnd() throws Exception {
+    var publisherTransport = new StubBrokerTransport();
+    var subscriberTransport = new StubBrokerTransport();
+    subscriberExecutor = Executors.newSingleThreadExecutor();
+
+    Instant time = Instant.parse("2026-09-30T08:40:51.656Z");
+
+    PublishedDataSetConfig dataSet =
+        PublishedDataSetConfig.builder("typed-ds")
+            .field(
+                FieldDefinition.builder("time")
+                    .dataType(NodeIds.UtcTime)
+                    .dataSetFieldId(TIME_FIELD_ID)
+                    .build())
+            .field(
+                FieldDefinition.builder("state")
+                    .dataType(NodeIds.ServerState)
+                    .dataSetFieldId(STATE_FIELD_ID)
+                    .build())
+            .simpleDataType(
+                new SimpleTypeDescription(
+                    NodeIds.UtcTime, new QualifiedName(0, "UtcTime"), NodeIds.DateTime, ubyte(13)))
+            .enumDataType(
+                new EnumDescription(
+                    NodeIds.ServerState,
+                    new QualifiedName(0, "ServerState"),
+                    ServerState.definition(),
+                    ubyte(6)))
+            .build();
+
+    PubSubConfig publisherConfig =
+        PubSubConfig.builder()
+            .publishedDataSet(dataSet)
+            .connection(
+                PubSubConnectionConfig.mqtt("pub-conn")
+                    .publisherId(PUBLISHER_ID)
+                    .brokerUri(URI.create("mqtt://127.0.0.1:1883"))
+                    .writerGroup(
+                        WriterGroupConfig.builder("grp")
+                            .writerGroupId(ushort(1))
+                            .publishingInterval(Duration.ofMillis(75))
+                            .messageSettings(JsonWriterGroupSettings.builder().build())
+                            .dataSetWriter(
+                                DataSetWriterConfig.builder("writer")
+                                    .dataSet(dataSet.ref())
+                                    .dataSetWriterId(ushort(1))
+                                    .settings(JsonDataSetWriterSettings.builder().build())
+                                    .build())
+                            .build())
+                    .build())
+            .build();
+
+    PublishedDataSetSource source =
+        context -> {
+          DataSetSnapshot.Builder builder = DataSetSnapshot.builder(context);
+          builder.field("time", new DataValue(Variant.of(new DateTime(time))));
+          builder.field("state", new DataValue(Variant.of(ServerState.Running)));
+          return builder.build();
+        };
+
+    publisher =
+        PubSubService.create(
+            publisherConfig,
+            PubSubBindings.builder().source(dataSet.ref(), source).build(),
+            PubSubServiceConfig.builder().transportProvider(publisherTransport).build());
+
+    PubSubConfig subscriberConfig =
+        PubSubConfig.builder()
+            .connection(
+                PubSubConnectionConfig.mqtt("sub-conn")
+                    .brokerUri(URI.create("mqtt://127.0.0.1:1883"))
+                    .readerGroup(
+                        ReaderGroupConfig.builder("rgrp")
+                            .dataSetReader(
+                                DataSetReaderConfig.builder("reader")
+                                    .publisherId(PUBLISHER_ID)
+                                    .dataSetWriterId(ushort(1))
+                                    .metadataPolicy(MetadataPolicy.ACCEPT_DISCOVERED)
+                                    .settings(JsonDataSetReaderSettings.builder().build())
+                                    .brokerTransport(
+                                        BrokerTransportSettings.builder()
+                                            .queueName("opcua/json/data/line-7/grp")
+                                            .build())
+                                    .build())
+                            .build())
+                    .build())
+            .build();
+
+    var events = new LinkedBlockingQueue<DataSetReceivedEvent>();
+    var metaDataEvents = new LinkedBlockingQueue<MetaDataReceivedEvent>();
+
+    subscriber =
+        PubSubService.create(
+            subscriberConfig,
+            PubSubBindings.builder()
+                .listener(new DataSetReaderRef("sub-conn", "rgrp", "reader"), events::add)
+                .build(),
+            PubSubServiceConfig.builder()
+                .transportProvider(subscriberTransport)
+                .transportExecutor(subscriberExecutor)
+                .build());
+    subscriber.addMetaDataListener(metaDataEvents::add);
+
+    subscriber.startup().get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+    publisher.startup().get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+
+    Sent metaDataSent = awaitSent(publisherTransport, MessageAddress.Kind.METADATA);
+    Sent dataSent = awaitSent(publisherTransport, MessageAddress.Kind.DATA);
+
+    // the announced metadata carries Table 7 BuiltInTypes and the descriptions behind them
+    JsonObject metaDataWire =
+        JsonParser.parseString(metaDataSent.json())
+            .getAsJsonObject()
+            .get("MetaData")
+            .getAsJsonObject();
+    var fieldsWire = metaDataWire.get("Fields").getAsJsonArray();
+    assertEquals(13, fieldsWire.get(0).getAsJsonObject().get("BuiltInType").getAsInt());
+    assertEquals(6, fieldsWire.get(1).getAsJsonObject().get("BuiltInType").getAsInt());
+    assertEquals(1, metaDataWire.get("SimpleDataTypes").getAsJsonArray().size());
+    assertEquals(1, metaDataWire.get("EnumDataTypes").getAsJsonArray().size());
+
+    // the data message collapses both fields to their bare values (no UaType wrapper)
+    JsonObject payload = firstDataSetMessage(dataSent).get("Payload").getAsJsonObject();
+    assertTrue(payload.get("time").isJsonPrimitive(), "collapsed DateTime");
+    assertEquals("Running_0", payload.get("state").getAsString());
+
+    subscriberTransport.inject("opcua/json/metadata/line-7/grp/writer", metaDataSent.json());
+    flushSubscriber();
+    MetaDataReceivedEvent metaDataEvent =
+        awaitMetaDataEvent(metaDataEvents, "sub-conn/rgrp/reader");
+    assertEquals(ubyte(13), metaDataEvent.metaData().getFields()[0].getBuiltInType());
+    assertEquals(ubyte(6), metaDataEvent.metaData().getFields()[1].getBuiltInType());
+
+    subscriberTransport.inject("opcua/json/data/line-7/grp", dataSent.json());
+    flushSubscriber();
+
+    DataSetReceivedEvent dataEvent = events.poll(10, TimeUnit.SECONDS);
+    assertNotNull(dataEvent);
+    assertEquals("typed-ds", dataEvent.dataSetName());
+
+    // decoded by the announced BuiltInType: DateTime and Int32, not String
+    assertEquals(new DateTime(time), dataEvent.fieldsByName().get("time").value().value());
+    assertEquals(0, dataEvent.fieldsByName().get("state").value().value());
   }
 
   /** The first DataSetMessage object of a captured {@code ua-data} document. */

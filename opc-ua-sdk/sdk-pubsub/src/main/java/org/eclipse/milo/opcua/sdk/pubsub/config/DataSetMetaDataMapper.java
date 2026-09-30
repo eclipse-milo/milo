@@ -12,19 +12,24 @@ package org.eclipse.milo.opcua.sdk.pubsub.config;
 
 import static org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfigMapperUtil.MILO_SOURCE_KEY;
 import static org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfigMapperUtil.NULL_UUID;
-import static org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfigMapperUtil.deriveBuiltInType;
 import static org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfigMapperUtil.toKeyValuePairs;
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.structured.ConfigurationVersionDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetFieldFlags;
@@ -46,7 +51,13 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>This is the single source of truth for published dataset metadata derivation: the config
  * mapper builds the {@code PublishedDataSetDataType.dataSetMetaData} emitted by {@link
- * PubSubConfig#toDataType(NamespaceTable)} through this class.
+ * PubSubConfig#toDataType(NamespaceTable)} through this class, and the dataset writer runtime
+ * encodes JSON payloads against the same {@link FieldMetaData}.
+ *
+ * <p>Derivation is a pure function of the {@link PublishedDataSetConfig}: nothing is looked up
+ * outside the dataset, so the {@link FieldMetaData#getBuiltInType() BuiltInType} announced for a
+ * field always agrees with the DataTypeSchemaHeader descriptions shipped beside it (see {@link
+ * #toDataSetMetaDataType}).
  */
 public final class DataSetMetaDataMapper {
 
@@ -75,6 +86,23 @@ public final class DataSetMetaDataMapper {
    * headers with the version read from the same {@link PublishedDataSetConfig} getters, so callers
    * must derive from the same (live) config generation the writers read, not from a stale snapshot.
    *
+   * <p>Each field's {@link FieldMetaData#getBuiltInType() BuiltInType} follows OPC UA 10000-14
+   * §6.2.3.2.4 Table 7, resolved from the field's DataType NodeId and the dataset's type
+   * descriptions:
+   *
+   * <ul>
+   *   <li>a built-in DataType ({@code i=1} to {@code i=25}) maps to its own built-in type id;
+   *   <li>the abstract DataTypes Number, Integer, UInteger, and Enumeration map to Variant (24);
+   *   <li>a DataType described in {@link PublishedDataSetConfig#getSimpleDataTypes()} or {@link
+   *       PublishedDataSetConfig#getEnumDataTypes()} maps to that description's BuiltInType (e.g.
+   *       DateTime for UtcTime, Int32 for an Enumeration, the UInteger type of an OptionSet);
+   *   <li>a DataType described in {@link PublishedDataSetConfig#getStructureDataTypes()} maps to
+   *       ExtensionObject (22);
+   *   <li>any other DataType maps to Variant (24), the only announcement a subscriber can always
+   *       decode: the JSON field encoder then writes the {@code UaType} wrapper naming the value's
+   *       actual built-in type (§7.2.5.4.3).
+   * </ul>
+   *
    * <p>The DataTypeSchemaHeader content of the emitted metadata (namespaces, structureDataTypes,
    * enumDataTypes, simpleDataTypes; OPC UA 10000-14 §6.2.3.2.2) is derived as follows:
    *
@@ -83,7 +111,8 @@ public final class DataSetMetaDataMapper {
    *       PublishedDataSetConfig#getStructureDataTypes()}, {@link
    *       PublishedDataSetConfig#getEnumDataTypes()}, and {@link
    *       PublishedDataSetConfig#getSimpleDataTypes()}, in authored order; each list maps to {@code
-   *       null} when empty.
+   *       null} when empty. Nothing is inferred from field DataType NodeIds here; a server
+   *       integration may add missing descriptions to the config before it reaches this class.
    *   <li>The {@code namespaces} array follows OPC UA 10000-5 §12.31 (Table 283): "NamespaceIndex 0
    *       is reserved for the OPC UA namespace and it is not included in this array", and "the
    *       first entry in this array maps to NamespaceIndex 1". Per that clause the metadata-local
@@ -120,11 +149,14 @@ public final class DataSetMetaDataMapper {
         new MetaDataNamespaces(
             namespaceTable, "publishedDataSet '%s'".formatted(dataSet.getName()));
 
+    var builtInTypes = new FieldBuiltInTypes(dataSet);
+
     FieldMetaData[] fieldMetaData;
     if (dataSet.getSource() instanceof PublishedEventsConfig events) {
-      fieldMetaData = eventFieldMetaData(events.getFields(), namespaces);
+      fieldMetaData = eventFieldMetaData(events.getFields(), builtInTypes, namespaces);
     } else {
-      fieldMetaData = dataItemsFieldMetaData(dataSet.getFields(), stripMiloSourceKey, namespaces);
+      fieldMetaData =
+          dataItemsFieldMetaData(dataSet.getFields(), stripMiloSourceKey, builtInTypes, namespaces);
     }
 
     StructureDescription[] structureDataTypes =
@@ -162,7 +194,10 @@ public final class DataSetMetaDataMapper {
   }
 
   private static FieldMetaData[] dataItemsFieldMetaData(
-      List<FieldDefinition> fields, boolean stripMiloSourceKey, MetaDataNamespaces namespaces) {
+      List<FieldDefinition> fields,
+      boolean stripMiloSourceKey,
+      FieldBuiltInTypes builtInTypes,
+      MetaDataNamespaces namespaces) {
 
     FieldMetaData[] fieldMetaData = new FieldMetaData[fields.size()];
 
@@ -185,7 +220,7 @@ public final class DataSetMetaDataMapper {
               field.isPromoted()
                   ? DataSetFieldFlags.of(DataSetFieldFlags.Field.PromotedField)
                   : DataSetFieldFlags.of(),
-              deriveBuiltInType(field.getDataType()),
+              builtInTypes.of(field.getDataType()),
               dataType,
               field.getValueRank(),
               field.getArrayDimensions(),
@@ -198,7 +233,9 @@ public final class DataSetMetaDataMapper {
   }
 
   private static FieldMetaData[] eventFieldMetaData(
-      List<EventFieldDefinition> fields, MetaDataNamespaces namespaces) {
+      List<EventFieldDefinition> fields,
+      FieldBuiltInTypes builtInTypes,
+      MetaDataNamespaces namespaces) {
 
     FieldMetaData[] fieldMetaData = new FieldMetaData[fields.size()];
 
@@ -217,7 +254,7 @@ public final class DataSetMetaDataMapper {
               field.isPromoted()
                   ? DataSetFieldFlags.of(DataSetFieldFlags.Field.PromotedField)
                   : DataSetFieldFlags.of(),
-              deriveBuiltInType(field.getDataType()),
+              builtInTypes.of(field.getDataType()),
               dataType,
               field.getValueRank(),
               field.getArrayDimensions(),
@@ -284,6 +321,55 @@ public final class DataSetMetaDataMapper {
         namespaces.remap(description.getName()),
         namespaces.remap(description.getBaseDataType()),
         description.getBuiltInType());
+  }
+
+  /**
+   * Resolves the {@link FieldMetaData} BuiltInType of a field DataType per OPC UA 10000-14
+   * §6.2.3.2.4 Table 7, from the DataType NodeId and the dataset's own type descriptions.
+   */
+  private static final class FieldBuiltInTypes {
+
+    private static final UByte VARIANT = ubyte(OpcUaDataType.Variant.getTypeId());
+    private static final UByte EXTENSION_OBJECT = ubyte(OpcUaDataType.ExtensionObject.getTypeId());
+
+    /** Abstract DataTypes that are not built-in: Table 7 rule 1, always Variant. */
+    private static final Set<NodeId> ABSTRACT_DATA_TYPES =
+        Set.of(NodeIds.Number, NodeIds.Integer, NodeIds.UInteger, NodeIds.Enumeration);
+
+    private final Map<NodeId, UByte> described = new HashMap<>();
+
+    private FieldBuiltInTypes(PublishedDataSetConfig dataSet) {
+      for (StructureDescription description : dataSet.getStructureDataTypes()) {
+        described.put(description.getDataTypeId(), EXTENSION_OBJECT);
+      }
+      for (EnumDescription description : dataSet.getEnumDataTypes()) {
+        described.put(
+            description.getDataTypeId(), builtInTypeOrVariant(description.getBuiltInType()));
+      }
+      for (SimpleTypeDescription description : dataSet.getSimpleDataTypes()) {
+        described.put(
+            description.getDataTypeId(), builtInTypeOrVariant(description.getBuiltInType()));
+      }
+    }
+
+    UByte of(NodeId dataTypeId) {
+      OpcUaDataType builtIn = OpcUaDataType.fromNodeId(dataTypeId);
+      if (builtIn != null) {
+        return ubyte(builtIn.getTypeId());
+      }
+      if (ABSTRACT_DATA_TYPES.contains(dataTypeId)) {
+        return VARIANT;
+      }
+      return described.getOrDefault(dataTypeId, VARIANT);
+    }
+
+    /** A description's BuiltInType, or Variant when it is absent or not a built-in type id. */
+    private static UByte builtInTypeOrVariant(@Nullable UByte builtInType) {
+      if (builtInType == null || OpcUaDataType.fromTypeId(builtInType.intValue()) == null) {
+        return VARIANT;
+      }
+      return builtInType;
+    }
   }
 
   /**

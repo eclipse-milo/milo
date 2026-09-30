@@ -41,12 +41,15 @@ import org.jspecify.annotations.Nullable;
  * event notifier Node). Published datasets are referenced by DataSetWriters via {@link
  * PublishedDataSetRef}. Corresponds to the Part 14 {@code PublishedDataSetDataType}.
  *
- * <p>A dataset whose fields carry custom DataTypes may additionally declare the type descriptions
- * those fields depend on ({@link Builder#structureDataType(StructureDescription)}, {@link
- * Builder#enumDataType(EnumDescription)}, {@link Builder#simpleDataType(SimpleTypeDescription)});
- * they populate the DataTypeSchemaHeader of the dataset's announced DataSetMetaData so a remote
- * subscriber can decode custom fields from the metadata alone. See {@link
- * #getStructureDataTypes()}.
+ * <p>A dataset whose fields carry DataTypes that are not built-in should declare the type
+ * descriptions those fields depend on ({@link Builder#structureDataType(StructureDescription)},
+ * {@link Builder#enumDataType(EnumDescription)}, {@link
+ * Builder#simpleDataType(SimpleTypeDescription)}); they populate the DataTypeSchemaHeader of the
+ * dataset's announced DataSetMetaData so a remote subscriber can decode such fields from the
+ * metadata alone, and they determine the BuiltInType announced for each field (a UtcTime field is
+ * announced as DateTime only when a {@link SimpleTypeDescription} for UtcTime is present; without a
+ * description the field is announced as Variant). See {@link #getStructureDataTypes()}. A {@code
+ * ServerPubSub} attachment adds missing descriptions from the server's DataType hierarchy.
  */
 public final class PublishedDataSetConfig {
 
@@ -355,7 +358,11 @@ public final class PublishedDataSetConfig {
      * DataSetMetaData, whose DataTypeSchemaHeader "shall be populated with ... all namespaces and
      * DataTypes that are potentially contained in the associated DataSetMessages" (OPC UA 10000-14
      * §6.2.3.2.2) — including nested Structures (OPC UA 10000-5 §12.31). Declaring the complete set
-     * is the application's responsibility; nothing is inferred from field DataType NodeIds.
+     * is the application's responsibility; a standalone publisher infers nothing from field
+     * DataType NodeIds (a {@code ServerPubSub} attachment fills in descriptions its server's
+     * DataType hierarchy knows). Fields whose DataType has a description are announced with the
+     * BuiltInType the description implies (ExtensionObject for a structure); fields whose DataType
+     * is neither built-in nor described are announced as Variant.
      *
      * <p>NodeIds and names inside the description are publisher-local (resolved against the
      * publisher's namespace table); metadata derivation remaps them to metadata-local namespace

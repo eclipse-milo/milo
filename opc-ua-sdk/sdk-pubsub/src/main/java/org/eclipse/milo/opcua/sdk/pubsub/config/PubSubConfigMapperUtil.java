@@ -125,8 +125,10 @@ final class PubSubConfigMapperUtil {
   }
 
   /**
-   * Derive the {@link FieldMetaData} builtInType for a DataType NodeId: the builtin type id for
-   * well-known builtin DataTypes, otherwise ExtensionObject (22).
+   * Derive the {@link FieldMetaData} builtInType of a subscribed dataset field from its DataType
+   * NodeId alone: the builtin type id for well-known builtin DataTypes, otherwise ExtensionObject
+   * (22). Published dataset fields do not use this; {@link DataSetMetaDataMapper} resolves them
+   * against the dataset's type descriptions.
    */
   static UByte deriveBuiltInType(NodeId dataTypeId) {
     OpcUaDataType dataType =

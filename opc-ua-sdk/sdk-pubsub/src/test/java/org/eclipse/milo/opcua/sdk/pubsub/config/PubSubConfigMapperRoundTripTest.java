@@ -959,8 +959,9 @@ class PubSubConfigMapperRoundTripTest {
     assertEquals(ubyte(12), fields[2].getBuiltInType()); // String
     assertEquals(NodeIds.String, fields[2].getDataType());
 
-    // Range is not a builtin type: builtInType falls back to ExtensionObject (22).
-    assertEquals(ubyte(22), fields[3].getBuiltInType());
+    // Range is not a builtin type and pds1 describes no types: builtInType falls back to Variant
+    // (24), the announcement a subscriber can always decode.
+    assertEquals(ubyte(24), fields[3].getBuiltInType());
     assertEquals(NodeIds.Range, fields[3].getDataType());
     assertEquals(1, fields[3].getValueRank());
     assertEquals(uint(3), fields[3].getArrayDimensions()[0]);

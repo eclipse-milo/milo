@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.UUID;
+import java.util.stream.Stream;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
@@ -31,6 +32,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.ServerState;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.StructureType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ConfigurationVersionDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetMetaDataType;
@@ -48,6 +50,9 @@ import org.eclipse.milo.opcua.stack.core.types.structured.StructureDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.StructureField;
 import org.eclipse.milo.opcua.stack.core.types.structured.XVType;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Tests for {@code DataSetMetaDataMapper}, the published dataset metadata derivation seam used by
@@ -56,7 +61,8 @@ import org.junit.jupiter.api.Test;
  * property, configuration version passthrough, empty-fields handling, source-address derivation
  * that never resolves field source URIs, event dataset field derivation, and the
  * DataTypeSchemaHeader content (namespaces array building, metadata-local namespace remapping, and
- * authored type descriptions).
+ * authored type descriptions), and the Part 14 Table 7 field BuiltInType derivation from the
+ * dataset's type descriptions.
  */
 class DataSetMetaDataMapperTest {
 
@@ -499,9 +505,9 @@ class DataSetMetaDataMapperTest {
     FieldMetaData envelope = fields[1];
     assertEquals("envelope", envelope.getName());
     assertFalse(envelope.getFieldFlags().getPromotedField());
-    // Range is not a builtin type: builtInType falls back to ExtensionObject (22), and the raw
-    // config DataType NodeId is carried alongside.
-    assertEquals(ubyte(22), envelope.getBuiltInType());
+    // Range is not a builtin type and the dataset describes no types: builtInType falls back to
+    // Variant (24), and the raw config DataType NodeId is carried alongside.
+    assertEquals(ubyte(24), envelope.getBuiltInType());
     assertEquals(NodeIds.Range, envelope.getDataType());
     assertEquals(1, envelope.getValueRank());
     assertArrayEquals(new UInteger[] {uint(4)}, envelope.getArrayDimensions());
@@ -686,7 +692,7 @@ class DataSetMetaDataMapperTest {
       assertArrayEquals(new String[] {URI_2}, metaData.getNamespaces());
       FieldMetaData field = metaData.getFields()[0];
       assertEquals(new NodeId(1, 3001), field.getDataType());
-      assertEquals(ubyte(22), field.getBuiltInType()); // non-builtin: ExtensionObject
+      assertEquals(ubyte(24), field.getBuiltInType()); // non-builtin, undescribed: Variant
     }
   }
 
@@ -907,6 +913,217 @@ class DataSetMetaDataMapperTest {
                     ubyte(11)));
 
     assertThrows(PubSubConfigValidationException.class, builder::build);
+  }
+
+  // endregion
+
+  // region Field BuiltInType (OPC UA 10000-14 §6.2.3.2.4 Table 7)
+
+  private static final UUID FIELD_TYPES_ID_BASE = new UUID(0xE8L, 0L);
+
+  /**
+   * One field per DataType of the #2052 table. With {@code describe = true} the dataset carries the
+   * descriptions §6.2.3.2.2 requires for the DataTypes that are neither built-in nor one of the
+   * abstract Number/Integer/UInteger/Enumeration.
+   */
+  private static PublishedDataSetConfig tableSevenDataSet(boolean describe) {
+    PublishedDataSetConfig.Builder builder = PublishedDataSetConfig.builder("types-ds");
+
+    NodeId[] dataTypes = {
+      NodeIds.Double,
+      NodeIds.UtcTime,
+      NodeIds.Duration,
+      NodeIds.LocaleId,
+      NodeIds.ServerState,
+      NodeIds.AccessLevelExType,
+      NodeIds.Number,
+      NodeIds.Enumeration,
+      NodeIds.BaseDataType
+    };
+    String[] names = {
+      "Double",
+      "UtcTime",
+      "Duration",
+      "LocaleId",
+      "ServerState",
+      "AccessLevelExType",
+      "Number",
+      "Enumeration",
+      "BaseDataType"
+    };
+    for (int i = 0; i < dataTypes.length; i++) {
+      builder.field(
+          FieldDefinition.builder(names[i])
+              .dataType(dataTypes[i])
+              .dataSetFieldId(new UUID(FIELD_TYPES_ID_BASE.getMostSignificantBits(), i + 1))
+              .build());
+    }
+
+    if (describe) {
+      builder
+          .simpleDataType(
+              new SimpleTypeDescription(
+                  NodeIds.UtcTime, new QualifiedName(0, "UtcTime"), NodeIds.DateTime, ubyte(13)))
+          .simpleDataType(
+              new SimpleTypeDescription(
+                  NodeIds.Duration, new QualifiedName(0, "Duration"), NodeIds.Double, ubyte(11)))
+          .simpleDataType(
+              new SimpleTypeDescription(
+                  NodeIds.LocaleId, new QualifiedName(0, "LocaleId"), NodeIds.String, ubyte(12)))
+          .enumDataType(
+              new EnumDescription(
+                  NodeIds.ServerState,
+                  new QualifiedName(0, "ServerState"),
+                  ServerState.definition(),
+                  ubyte(6)))
+          .enumDataType(
+              new EnumDescription(
+                  NodeIds.AccessLevelExType,
+                  new QualifiedName(0, "AccessLevelExType"),
+                  new EnumDefinition(
+                      new EnumField[] {
+                        new EnumField(
+                            0L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "CurrentRead")
+                      }),
+                  ubyte(7)));
+    }
+
+    return builder.build();
+  }
+
+  private static FieldMetaData fieldNamed(DataSetMetaDataType metaData, String name) {
+    for (FieldMetaData field : metaData.getFields()) {
+      if (name.equals(field.getName())) {
+        return field;
+      }
+    }
+    return fail("no field named " + name);
+  }
+
+  static Stream<Arguments> tableSevenBuiltInTypes() {
+    return Stream.of(
+        Arguments.of("Double", 11, "built-in: its own type id"),
+        Arguments.of("UtcTime", 13, "rule 4: the BuiltInType of its SimpleTypeDescription"),
+        Arguments.of("Duration", 11, "rule 4: the BuiltInType of its SimpleTypeDescription"),
+        Arguments.of("LocaleId", 12, "rule 4: the BuiltInType of its SimpleTypeDescription"),
+        Arguments.of("ServerState", 6, "rule 2: Enumerations are encoded as Int32"),
+        Arguments.of("AccessLevelExType", 7, "rule 5: an OptionSet of a UInteger type"),
+        Arguments.of("Number", 24, "rule 1: abstract types are Variant"),
+        Arguments.of("Enumeration", 24, "rule 1: abstract types are Variant"),
+        Arguments.of("BaseDataType", 24, "built-in Variant"));
+  }
+
+  /**
+   * The BuiltInType announced for a field follows Table 7 once the dataset describes the field's
+   * DataType: before this a UtcTime field was announced as ExtensionObject (22), which a subscriber
+   * cannot decode a JSON string against (#2052).
+   */
+  @ParameterizedTest(name = "{0} -> {1} ({2})")
+  @MethodSource("tableSevenBuiltInTypes")
+  void fieldBuiltInTypeFollowsTableSevenWhenDescribed(String field, int builtInType, String rule) {
+    DataSetMetaDataType metaData =
+        DataSetMetaDataMapper.toDataSetMetaDataType(tableSevenDataSet(true), false, table());
+
+    assertEquals(ubyte(builtInType), fieldNamed(metaData, field).getBuiltInType(), rule);
+  }
+
+  /**
+   * Without a description the mapper cannot know the transfer type of a DataType that is not
+   * built-in, so it announces Variant: the JSON encoder then adds the {@code UaType} wrapper, which
+   * every subscriber can decode, instead of announcing an ExtensionObject the payload does not
+   * hold.
+   */
+  @Test
+  void undescribedNonBuiltInDataTypesAreAnnouncedAsVariant() {
+    DataSetMetaDataType metaData =
+        DataSetMetaDataMapper.toDataSetMetaDataType(tableSevenDataSet(false), false, table());
+
+    for (String field :
+        new String[] {"UtcTime", "Duration", "LocaleId", "ServerState", "AccessLevelExType"}) {
+      assertEquals(ubyte(24), fieldNamed(metaData, field).getBuiltInType(), field);
+    }
+
+    // built-in and abstract DataTypes need no description
+    assertEquals(ubyte(11), fieldNamed(metaData, "Double").getBuiltInType());
+    assertEquals(ubyte(24), fieldNamed(metaData, "Number").getBuiltInType());
+    assertEquals(ubyte(24), fieldNamed(metaData, "Enumeration").getBuiltInType());
+    assertEquals(ubyte(24), fieldNamed(metaData, "BaseDataType").getBuiltInType());
+  }
+
+  /** A description that names no valid BuiltInType cannot direct the announcement: Variant. */
+  @Test
+  void descriptionWithoutUsableBuiltInTypeAnnouncesVariant() {
+    PublishedDataSetConfig dataSet =
+        PublishedDataSetConfig.builder("bad-desc-ds")
+            .field(
+                FieldDefinition.builder("time")
+                    .dataType(NodeIds.UtcTime)
+                    .dataSetFieldId(new UUID(0xE9L, 1L))
+                    .build())
+            .field(
+                FieldDefinition.builder("locale")
+                    .dataType(NodeIds.LocaleId)
+                    .dataSetFieldId(new UUID(0xE9L, 2L))
+                    .build())
+            .simpleDataType(
+                new SimpleTypeDescription(
+                    NodeIds.UtcTime, new QualifiedName(0, "UtcTime"), NodeIds.DateTime, null))
+            .simpleDataType(
+                new SimpleTypeDescription(
+                    NodeIds.LocaleId, new QualifiedName(0, "LocaleId"), NodeIds.String, ubyte(99)))
+            .build();
+
+    DataSetMetaDataType metaData =
+        DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, false, table());
+
+    assertEquals(ubyte(24), fieldNamed(metaData, "time").getBuiltInType(), "null BuiltInType");
+    assertEquals(ubyte(24), fieldNamed(metaData, "locale").getBuiltInType(), "not a built-in id");
+  }
+
+  /** Event fields resolve through the same descriptions; most event datasets carry a UtcTime. */
+  @Test
+  void eventFieldBuiltInTypeFollowsDescriptions() {
+    PublishedEventsConfig events =
+        PublishedEventsConfig.builder(ExpandedNodeId.of(URI_1, "Boiler.Notifier"))
+            .field(
+                EventFieldDefinition.builder("Time")
+                    .selectedField(select("Time"))
+                    .dataType(NodeIds.UtcTime)
+                    .dataSetFieldId(new UUID(0xEAL, 1L))
+                    .build())
+            .build();
+
+    PublishedDataSetConfig undescribed =
+        PublishedDataSetConfig.builder("event-types-ds").source(events).build();
+    PublishedDataSetConfig described =
+        undescribed.toBuilder()
+            .simpleDataType(
+                new SimpleTypeDescription(
+                    NodeIds.UtcTime, new QualifiedName(0, "UtcTime"), NodeIds.DateTime, ubyte(13)))
+            .build();
+
+    assertEquals(
+        ubyte(24),
+        DataSetMetaDataMapper.toDataSetMetaDataType(undescribed, false, table())
+            .getFields()[0]
+            .getBuiltInType(),
+        "undescribed UtcTime event field is Variant");
+    assertEquals(
+        ubyte(13),
+        DataSetMetaDataMapper.toDataSetMetaDataType(described, false, table())
+            .getFields()[0]
+            .getBuiltInType(),
+        "described UtcTime event field is DateTime");
+  }
+
+  /** The whole-config mapper announces the same BuiltInTypes as the seam. */
+  @Test
+  void seamMatchesWholeConfigMetadataForDescribedTypes() {
+    PublishedDataSetConfig dataSet = tableSevenDataSet(true);
+
+    assertEquals(
+        wholeConfigMetaData(dataSet),
+        DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, false, table()));
   }
 
   // endregion
