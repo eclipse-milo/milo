@@ -61,12 +61,20 @@ import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConfiguration2Da
  *   <li>Transport profile URIs are derived, not stored: UDP connections map to {@code
  *       .../pubsub-udp-uadp}; MQTT connections map to {@code .../pubsub-mqtt-json} if any of their
  *       groups, writers, or readers use JSON message settings, else {@code .../pubsub-mqtt-uadp}.
- *   <li>{@code FieldMetaData.builtInType} is derived from the field's DataType NodeId (builtin
- *       types map to their builtin type id, everything else to ExtensionObject/22), except that a
- *       {@link DataSetMetaDataConfig.Field} with an explicit {@link
- *       DataSetMetaDataConfig.Field#builtInType() builtInType} emits it. {@code fromDataType} keeps
- *       a subscribed dataset field's builtInType only when it differs from the derived value, and
- *       ignores it for published dataset fields.
+ *   <li>{@code FieldMetaData.builtInType} of a published dataset field is derived per OPC UA
+ *       10000-14 §6.2.3.2.4 Table 7 from the field's DataType NodeId and the dataset's authored
+ *       type descriptions ({@link DataSetMetaDataMapper}): builtin types map to their builtin type
+ *       id; Number, Integer, UInteger, and Enumeration map to Variant (24); a DataType found in the
+ *       dataset's simple or enum descriptions maps to that description's BuiltInType; one found in
+ *       its structure descriptions maps to ExtensionObject (22); any other DataType maps to Variant
+ *       (24). {@code fromDataType} ignores the wire builtInType of published dataset fields: the
+ *       value is re-derived from the imported descriptions on export.
+ *   <li>{@code FieldMetaData.builtInType} of a subscribed dataset field is derived from the
+ *       DataType NodeId alone (builtin types map to their builtin type id, everything else to
+ *       ExtensionObject/22), except that a {@link DataSetMetaDataConfig.Field} with an explicit
+ *       {@link DataSetMetaDataConfig.Field#builtInType() builtInType} emits it. {@code
+ *       fromDataType} keeps a subscribed dataset field's builtInType only when it differs from the
+ *       derived value.
  *   <li>NodeIds and QualifiedNames inside the emitted {@code dataSetMetaData} — {@code
  *       FieldMetaData.dataType} and property keys, and the authored DataTypeSchemaHeader type
  *       descriptions ({@link PublishedDataSetConfig#getStructureDataTypes()} et al.) — use

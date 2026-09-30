@@ -78,6 +78,18 @@ import org.slf4j.LoggerFactory;
  *       StandaloneSubscribedDataSetRef} do <em>not</em> get automatic TargetVariables writes in
  *       this version, even when the referenced standalone dataset carries TargetVariables (a
  *       warning is logged at attach); their targets and index ranges are still validated.
+ *   <li>The DataTypeSchemaHeader of every published dataset is completed from the server's {@link
+ *       org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree}: a field DataType that is neither
+ *       built-in nor abstract and has no authored description gets one (a {@code
+ *       SimpleTypeDescription} for a subtype of a built-in type such as UtcTime, an {@code
+ *       EnumDescription} for an enumeration or OptionSet, a {@code StructureDescription} for a
+ *       structure), so the announced field BuiltInType follows Part 14 §6.2.3.2.4 Table 7 (UtcTime
+ *       as DateTime, an enumeration as Int32) instead of falling back to Variant. Authored
+ *       descriptions win; DataTypes the tree does not know are left alone. The completed
+ *       configuration is the effective configuration: the runtime, the exposed information model,
+ *       and the persisted snapshot all observe it, and the same completion is applied to every
+ *       configuration applied later through {@link #runtime()}. DataTypes must be in the address
+ *       space when the server's DataTypeTree is built.
  *   <li>Every {@link NodeFieldAddress} in the configuration (published dataset sources and
  *       TargetVariables targets) is eagerly resolved against the server's {@link NamespaceTable};
  *       an unresolvable namespace URI fails attach with {@link PubSubConfigValidationException}.
@@ -321,6 +333,7 @@ public final class ServerPubSub implements AutoCloseable {
         new ManagedPubSubService(
             service,
             server.getNamespaceTable(),
+            newConfig -> DataTypeSchemaHeaders.populate(newConfig, server.getDataTypeTree()),
             hooks,
             initialConfigurationVersion,
             userBoundSources::add);
@@ -385,6 +398,8 @@ public final class ServerPubSub implements AutoCloseable {
         storedVersion = stored.getConfigurationVersion();
       }
     }
+
+    effectiveConfig = DataTypeSchemaHeaders.populate(effectiveConfig, server.getDataTypeTree());
 
     validateNodeFieldAddresses(effectiveConfig, namespaceTable);
 
@@ -588,7 +603,8 @@ public final class ServerPubSub implements AutoCloseable {
    * Get the managed {@link PubSubService} runtime; the full standalone API remains available.
    *
    * <p>The returned service delegates to the underlying runtime and intercepts {@link
-   * PubSubService#reconfigure} and {@link PubSubService#update}: the new configuration is
+   * PubSubService#reconfigure} and {@link PubSubService#update}: the new configuration first gets
+   * the same DataTypeSchemaHeader completion as the attach-time configuration, and is then
    * additionally validated against the attach-time rules — every {@link NodeFieldAddress} must
    * resolve against the server's {@link NamespaceTable}, every TargetVariables index range must
    * parse, and the configuration must map to its wire form — throwing {@link

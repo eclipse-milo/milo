@@ -13,8 +13,15 @@
  * PubSubService} runtime to an {@code OpcUaServer}, automatically binding address-space-backed
  * sources for published datasets addressed by {@code NodeFieldAddress}, automatically writing
  * received dataset fields to address-space variables for DataSetReaders configured with {@code
- * TargetVariablesConfig}, and optionally persisting configuration via a {@code
- * PubSubConfigurationStore} and exposing the read-only PublishSubscribe information model.
+ * TargetVariablesConfig}, completing the DataTypeSchemaHeader of published datasets from the
+ * server's DataType hierarchy ({@code DataTypeSchemaHeaders}), and optionally persisting
+ * configuration via a {@code PubSubConfigurationStore} and exposing the read-only PublishSubscribe
+ * information model.
+ *
+ * <p>The configuration the runtime, the information model, and the store observe is the effective
+ * configuration: the attach-time (or store-loaded) configuration after server-side completion.
+ * Every later apply through {@code ServerPubSub.runtime()} passes through the same completion in
+ * {@code ManagedPubSubService} before validation, so all surfaces stay in agreement.
  */
 @NullMarked
 package org.eclipse.milo.opcua.sdk.pubsub.server;

@@ -297,7 +297,12 @@ class ManagedPubSubServiceTest {
 
     var managed =
         new ManagedPubSubService(
-            delegate, new NamespaceTable(), List.of(), SEED_VERSION, observed::add);
+            delegate,
+            new NamespaceTable(),
+            UnaryOperator.identity(),
+            List.of(),
+            SEED_VERSION,
+            observed::add);
 
     var ref = new PublishedDataSetRef("ds");
     managed.bindSource(
@@ -316,7 +321,8 @@ class ManagedPubSubServiceTest {
   private static ManagedPubSubService managed(
       FakePubSubService delegate, List<ManagedPubSubService.ReconfigureHook> hooks) {
 
-    return new ManagedPubSubService(delegate, new NamespaceTable(), hooks, SEED_VERSION, ref -> {});
+    return new ManagedPubSubService(
+        delegate, new NamespaceTable(), UnaryOperator.identity(), hooks, SEED_VERSION, ref -> {});
   }
 
   /** A config whose published dataset field source namespace URI cannot be resolved. */

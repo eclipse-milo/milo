@@ -18,6 +18,7 @@ import static org.eclipse.milo.opcua.sdk.pubsub.json.JsonTestFixtures.group;
 import static org.eclipse.milo.opcua.sdk.pubsub.json.JsonTestFixtures.keyFrame;
 import static org.eclipse.milo.opcua.sdk.pubsub.json.JsonTestFixtures.metaData;
 import static org.eclipse.milo.opcua.sdk.pubsub.json.JsonTestFixtures.writer;
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -29,28 +30,41 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
+import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetMetaDataMapper;
+import org.eclipse.milo.opcua.sdk.pubsub.config.FieldDefinition;
+import org.eclipse.milo.opcua.sdk.pubsub.config.PublishedDataSetConfig;
+import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Matrix;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.ServerState;
+import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelExType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ConfigurationVersionDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetFieldContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetMetaDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.EnumDefinition;
+import org.eclipse.milo.opcua.stack.core.types.structured.EnumDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.EnumField;
 import org.eclipse.milo.opcua.stack.core.types.structured.FieldMetaData;
 import org.eclipse.milo.opcua.stack.core.types.structured.JsonDataSetMessageContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.JsonNetworkMessageContentMask;
+import org.eclipse.milo.opcua.stack.core.types.structured.SimpleTypeDescription;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -976,4 +990,208 @@ class JsonFieldEncodingTest {
       return decoded.messages().get(0).fields().get(index).value().value().value();
     }
   }
+
+  // region metadata derived from the publisher configuration (Table 7 and §7.2.5.4.3)
+
+  private static final Instant UTC_TIME = Instant.parse("2026-09-30T08:40:51.656Z");
+
+  /**
+   * A dataset mirroring the #2052 table. With {@code describe = true} it carries the descriptions
+   * that let the mapper announce Table 7 BuiltInTypes; without them every DataType that is not
+   * built-in is announced as Variant.
+   */
+  private static PublishedDataSetConfig derivedTypesDataSet(boolean describe) {
+    PublishedDataSetConfig.Builder builder =
+        PublishedDataSetConfig.builder("Commands")
+            .field(FieldDefinition.builder("UtcTime").dataType(NodeIds.UtcTime).build())
+            .field(FieldDefinition.builder("Duration").dataType(NodeIds.Duration).build())
+            .field(FieldDefinition.builder("State").dataType(NodeIds.ServerState).build())
+            .field(
+                FieldDefinition.builder("AccessLevelEx")
+                    .dataType(NodeIds.AccessLevelExType)
+                    .build())
+            .field(FieldDefinition.builder("Number").dataType(NodeIds.Number).build())
+            .field(FieldDefinition.builder("Enumeration").dataType(NodeIds.Enumeration).build())
+            .field(FieldDefinition.builder("Double").dataType(NodeIds.Double).build());
+
+    if (describe) {
+      builder
+          .simpleDataType(
+              new SimpleTypeDescription(
+                  NodeIds.UtcTime, new QualifiedName(0, "UtcTime"), NodeIds.DateTime, ubyte(13)))
+          .simpleDataType(
+              new SimpleTypeDescription(
+                  NodeIds.Duration, new QualifiedName(0, "Duration"), NodeIds.Double, ubyte(11)))
+          .enumDataType(
+              new EnumDescription(
+                  NodeIds.ServerState,
+                  new QualifiedName(0, "ServerState"),
+                  ServerState.definition(),
+                  ubyte(6)))
+          .enumDataType(
+              new EnumDescription(
+                  NodeIds.AccessLevelExType,
+                  new QualifiedName(0, "AccessLevelExType"),
+                  new EnumDefinition(
+                      new EnumField[] {
+                        new EnumField(
+                            0L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "CurrentRead")
+                      }),
+                  ubyte(7)));
+    }
+    return builder.build();
+  }
+
+  /** Encode one Verbose key frame of {@code dataSet} against its mapper-derived metadata. */
+  private static JsonObject encodeDerivedTypesPayload(
+      PublishedDataSetConfig dataSet, DataSetFieldContentMask fieldMask) throws Exception {
+
+    return encodePayload(
+        dataSet,
+        fieldMask,
+        good(new DateTime(UTC_TIME)),
+        good(1500.0),
+        good(ServerState.Running),
+        good(uint(3)),
+        good(3.5),
+        good(ServerState.Suspended),
+        good(2.5));
+  }
+
+  /** Encode one Verbose key frame of {@code values} against {@code dataSet}'s derived metadata. */
+  private static JsonObject encodePayload(
+      PublishedDataSetConfig dataSet, DataSetFieldContentMask fieldMask, DataValue... values)
+      throws Exception {
+
+    DataSetMetaDataType meta =
+        DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, true, new NamespaceTable());
+
+    return firstMessage(
+            encodeSingle(
+                group(JsonNetworkMessageContentMask.of()),
+                List.of(keyFrame(writer("w", 3, VERBOSE_MASK, fieldMask), 7, meta, values))))
+        .get("Payload")
+        .getAsJsonObject();
+  }
+
+  private static void assertUaTypeWrapper(JsonElement element, int uaType, JsonElement value) {
+    assertTrue(element.isJsonObject(), "expected a UaType wrapper: " + element);
+    JsonObject wrapper = element.getAsJsonObject();
+    assertEquals(uaType, wrapper.get("UaType").getAsInt());
+    assertEquals(value, wrapper.get("Value"));
+    assertEquals(2, wrapper.size(), "only UaType and Value");
+  }
+
+  /**
+   * Table 7 metadata and §7.2.5.4.3: fields of an abstract DataType (Number, Enumeration) are
+   * announced as Variant and need the {@code UaType} wrapper to be decodable, while fields whose
+   * concrete transfer type the metadata names (UtcTime as DateTime, an enumeration as Int32, an
+   * OptionSet as UInt32) collapse to the bare value. Before #2052 the abstract fields were
+   * announced as ExtensionObject and lost the wrapper.
+   */
+  @Test
+  void abstractFieldsCarryUaTypeAndConcreteDerivedFieldsCollapse() throws Exception {
+    JsonObject payload =
+        encodeDerivedTypesPayload(derivedTypesDataSet(true), DataSetFieldContentMask.of());
+
+    assertUaTypeWrapper(payload.get("Number"), 11, new JsonPrimitive(3.5));
+    assertUaTypeWrapper(payload.get("Enumeration"), 6, new JsonPrimitive(3));
+
+    assertEquals(UTC_TIME, Instant.parse(payload.get("UtcTime").getAsString()));
+    assertEquals(1500.0, payload.get("Duration").getAsDouble());
+    assertEquals("Running_0", payload.get("State").getAsString());
+    assertEquals(3, payload.get("AccessLevelEx").getAsInt());
+    assertEquals(2.5, payload.get("Double").getAsDouble());
+  }
+
+  /** With RawData set the wrapper keeps its Value member and drops UaType (Table 186). */
+  @Test
+  void rawDataDropsUaTypeButKeepsValueMemberForAbstractFields() throws Exception {
+    JsonObject payload =
+        encodeDerivedTypesPayload(
+            derivedTypesDataSet(true),
+            DataSetFieldContentMask.of(DataSetFieldContentMask.Field.RawData));
+
+    JsonObject number = payload.get("Number").getAsJsonObject();
+    assertEquals(3.5, number.get("Value").getAsDouble());
+    assertFalse(number.has("UaType"));
+
+    JsonObject enumeration = payload.get("Enumeration").getAsJsonObject();
+    assertEquals(3, enumeration.get("Value").getAsInt());
+    assertFalse(enumeration.has("UaType"));
+
+    assertEquals("Running_0", payload.get("State").getAsString());
+  }
+
+  /**
+   * A publisher that ships no descriptions announces its derived, enumeration, and OptionSet fields
+   * as Variant, so those values are written with the {@code UaType} wrapper naming the actual
+   * built-in type: still decodable, unlike the ExtensionObject announcement made before #2052.
+   */
+  @Test
+  void undescribedDerivedFieldsFallBackToUaTypeWrapper() throws Exception {
+    JsonObject payload =
+        encodeDerivedTypesPayload(derivedTypesDataSet(false), DataSetFieldContentMask.of());
+
+    JsonObject utcTime = payload.get("UtcTime").getAsJsonObject();
+    assertEquals(13, utcTime.get("UaType").getAsInt());
+    assertEquals(UTC_TIME, Instant.parse(utcTime.get("Value").getAsString()));
+
+    assertUaTypeWrapper(payload.get("Duration"), 11, new JsonPrimitive(1500.0));
+    assertUaTypeWrapper(payload.get("State"), 6, new JsonPrimitive(0));
+    assertUaTypeWrapper(payload.get("AccessLevelEx"), 7, new JsonPrimitive(3));
+
+    // abstract and built-in fields are unaffected by the missing descriptions
+    assertUaTypeWrapper(payload.get("Number"), 11, new JsonPrimitive(3.5));
+    assertEquals(2.5, payload.get("Double").getAsDouble());
+  }
+
+  /**
+   * An OptionSet value published as its typed object rather than its bare UInteger: announced as
+   * Variant (no description) the encoder must resolve the wrapper's UaType from the OptionSet
+   * class; announced as UInt32 (described) it collapses to the number. The Variant path threw
+   * before the OptionSet classes were recognized.
+   */
+  @Test
+  void optionSetObjectValueEncodesUnderBothAnnouncements() throws Exception {
+    PublishedDataSetConfig undescribed =
+        PublishedDataSetConfig.builder("Commands")
+            .field(
+                FieldDefinition.builder("AccessLevelEx")
+                    .dataType(NodeIds.AccessLevelExType)
+                    .build())
+            .field(
+                FieldDefinition.builder("AccessLevelExArray")
+                    .dataType(NodeIds.AccessLevelExType)
+                    .valueRank(1)
+                    .build())
+            .build();
+    PublishedDataSetConfig described =
+        undescribed.toBuilder()
+            .enumDataType(
+                new EnumDescription(
+                    NodeIds.AccessLevelExType,
+                    new QualifiedName(0, "AccessLevelExType"),
+                    new EnumDefinition(null),
+                    ubyte(7)))
+            .build();
+
+    DataValue[] values = {
+      good(new AccessLevelExType(uint(3))),
+      good(new AccessLevelExType[] {new AccessLevelExType(uint(1)), new AccessLevelExType(uint(2))})
+    };
+
+    JsonObject variantPayload = encodePayload(undescribed, DataSetFieldContentMask.of(), values);
+    assertUaTypeWrapper(variantPayload.get("AccessLevelEx"), 7, new JsonPrimitive(3));
+    JsonObject array = variantPayload.get("AccessLevelExArray").getAsJsonObject();
+    assertEquals(7, array.get("UaType").getAsInt());
+    assertEquals(2, array.get("Value").getAsJsonArray().size());
+    assertEquals(1, array.get("Value").getAsJsonArray().get(0).getAsInt());
+
+    JsonObject collapsedPayload = encodePayload(described, DataSetFieldContentMask.of(), values);
+    assertEquals(3, collapsedPayload.get("AccessLevelEx").getAsInt());
+    assertEquals(2, collapsedPayload.get("AccessLevelExArray").getAsJsonArray().get(1).getAsInt());
+  }
+
+  // endregion
 }

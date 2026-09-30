@@ -49,9 +49,13 @@ import org.slf4j.LoggerFactory;
  * #reconfigure} and {@link #update} to
  *
  * <ul>
- *   <li>pre-validate the new configuration against the attach-time rules before the engine applies
- *       anything ({@link ServerPubSub#validateNodeFieldAddresses} plus a dry-run wire mapping),
- *       throwing {@link PubSubConfigValidationException} with nothing applied and no hooks run;
+ *   <li>complete the new configuration with the server-derived additions {@link ServerPubSub}
+ *       applies at attach (the DataTypeSchemaHeader descriptions of published datasets), so the
+ *       engine, the hooks, and the persisted snapshot all observe the same effective configuration;
+ *   <li>pre-validate the completed configuration against the attach-time rules before the engine
+ *       applies anything ({@link ServerPubSub#validateNodeFieldAddresses} plus a dry-run wire
+ *       mapping), throwing {@link PubSubConfigValidationException} with nothing applied and no
+ *       hooks run;
  *   <li>advance the mediator-owned ConfigurationVersion exactly once per successful apply — the
  *       single source read by the ns0 {@code ConfigurationVersion} property, persisted
  *       configuration snapshots, and the file-model {@code Size}/{@code LastModifiedTime} values,
@@ -78,6 +82,7 @@ final class ManagedPubSubService implements PubSubService {
 
   private final PubSubService delegate;
   private final NamespaceTable namespaceTable;
+  private final UnaryOperator<PubSubConfig> completeConfig;
   private final List<ReconfigureHook> hooks;
   private final Consumer<PublishedDataSetRef> bindSourceObserver;
 
@@ -94,6 +99,9 @@ final class ManagedPubSubService implements PubSubService {
    * @param delegate the raw engine service; retained by {@link ServerPubSub} for internal use and
    *     never handed to API callers.
    * @param namespaceTable the server's {@link NamespaceTable}, used by pre-validation.
+   * @param completeConfig applied to every new configuration before pre-validation and before the
+   *     engine sees it; the same completion {@link ServerPubSub} applies to the attach-time
+   *     configuration. Must be idempotent and must not throw for a configuration that is valid.
    * @param hooks the post-apply hooks in registration order; fixed at construction (registered in
    *     {@link ServerPubSub}'s constructor).
    * @param initialConfigurationVersion the seed version: the store-loaded non-zero version, else
@@ -106,12 +114,14 @@ final class ManagedPubSubService implements PubSubService {
   ManagedPubSubService(
       PubSubService delegate,
       NamespaceTable namespaceTable,
+      UnaryOperator<PubSubConfig> completeConfig,
       List<ReconfigureHook> hooks,
       UInteger initialConfigurationVersion,
       Consumer<PublishedDataSetRef> bindSourceObserver) {
 
     this.delegate = delegate;
     this.namespaceTable = namespaceTable;
+    this.completeConfig = completeConfig;
     this.hooks = List.copyOf(hooks);
     this.configurationVersion = initialConfigurationVersion;
     this.bindSourceObserver = bindSourceObserver;
@@ -137,12 +147,13 @@ final class ManagedPubSubService implements PubSubService {
   @Override
   public ReconfigureResult reconfigure(PubSubConfig newConfig, ReconfigureMode mode) {
     synchronized (reconfigureLock) {
-      preValidate(newConfig);
+      PubSubConfig completed = completeConfig.apply(newConfig);
+      preValidate(completed);
 
-      ReconfigureResult result = delegate.reconfigure(newConfig, mode);
+      ReconfigureResult result = delegate.reconfigure(completed, mode);
 
       bumpConfigurationVersion();
-      runHooks(newConfig, result);
+      runHooks(completed, result);
 
       return result;
     }
@@ -159,7 +170,7 @@ final class ManagedPubSubService implements PubSubService {
       ReconfigureResult result =
           delegate.update(
               current -> {
-                PubSubConfig next = transform.apply(current);
+                PubSubConfig next = completeConfig.apply(transform.apply(current));
                 preValidate(next);
                 captured.set(next);
                 return next;
