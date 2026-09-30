@@ -30,6 +30,7 @@ import java.util.UUID;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
@@ -966,6 +967,62 @@ class PubSubConfigMapperRoundTripTest {
 
     assertEquals(uint(2), pds1.getDataSetMetaData().getConfigurationVersion().getMajorVersion());
     assertEquals(uint(7), pds1.getDataSetMetaData().getConfigurationVersion().getMinorVersion());
+  }
+
+  /**
+   * Part 14 §6.2.3.2.4: a DataType that is not itself built-in is transferred as a built-in type
+   * the NodeId alone does not name (UtcTime as DateTime, an Enumeration as Int32). An explicit
+   * field builtInType is emitted and read back; a derived one reads back as unset.
+   */
+  @Test
+  void explicitFieldBuiltInTypeRoundTrips() {
+    NamespaceTable table = namespaceTable();
+    PubSubConfig config =
+        PubSubConfig.builder()
+            .standaloneSubscribedDataSet(
+                StandaloneSubscribedDataSetConfig.builder("sds-types")
+                    .metaData(
+                        DataSetMetaDataConfig.builder("md-types")
+                            .field(
+                                new DataSetMetaDataConfig.Field(
+                                    "time",
+                                    NodeIds.UtcTime,
+                                    new UUID(0xD1L, 1L),
+                                    -1,
+                                    null,
+                                    OpcUaDataType.DateTime))
+                            .field(
+                                new DataSetMetaDataConfig.Field(
+                                    "state",
+                                    NodeIds.ServerState,
+                                    new UUID(0xD1L, 2L),
+                                    -1,
+                                    null,
+                                    OpcUaDataType.Int32))
+                            .field("range", NodeIds.Range, new UUID(0xD1L, 3L))
+                            .build())
+                    .subscribedDataSet(TargetVariablesConfig.builder().build())
+                    .build())
+            .build();
+
+    PubSubConfiguration2DataType dataType = config.toDataType(table);
+
+    FieldMetaData[] fields = dataType.getSubscribedDataSets()[0].getDataSetMetaData().getFields();
+    assertNotNull(fields);
+    assertEquals(ubyte(13), fields[0].getBuiltInType()); // DateTime
+    assertEquals(ubyte(6), fields[1].getBuiltInType()); // Int32
+    assertEquals(ubyte(22), fields[2].getBuiltInType()); // derived ExtensionObject
+
+    PubSubConfig roundTripped = PubSubConfig.fromDataType(dataType, table);
+    assertEquals(config, roundTripped);
+    assertNull(
+        roundTripped
+            .standaloneSubscribedDataSets()
+            .get(0)
+            .getMetaData()
+            .fields()
+            .get(2)
+            .builtInType());
   }
 
   @Test

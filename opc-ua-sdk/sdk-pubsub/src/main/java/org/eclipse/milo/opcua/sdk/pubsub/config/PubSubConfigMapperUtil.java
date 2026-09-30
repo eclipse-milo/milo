@@ -137,6 +137,33 @@ final class PubSubConfigMapperUtil {
   }
 
   /**
+   * The {@link FieldMetaData} builtInType for a config field: its explicit built-in type when set,
+   * otherwise {@link #deriveBuiltInType(NodeId) derived} from its DataType NodeId.
+   */
+  static UByte builtInType(DataSetMetaDataConfig.Field field) {
+    OpcUaDataType builtInType = field.builtInType();
+
+    return builtInType != null
+        ? ubyte(builtInType.getTypeId())
+        : deriveBuiltInType(field.dataTypeId());
+  }
+
+  /**
+   * The config-field built-in type for a {@link FieldMetaData} builtInType: {@code null} when it is
+   * absent, not a built-in type id, or the value {@link #deriveBuiltInType(NodeId)} would produce
+   * for {@code dataTypeId}, so the config model and Part 14 metadata map to each other as fixed
+   * points.
+   */
+  static @Nullable OpcUaDataType explicitBuiltInType(
+      @Nullable UByte builtInType, NodeId dataTypeId) {
+
+    if (builtInType == null || builtInType.equals(deriveBuiltInType(dataTypeId))) {
+      return null;
+    }
+    return OpcUaDataType.fromTypeId(builtInType.intValue());
+  }
+
+  /**
    * Decode a raw settings escape hatch ExtensionObject into the structure type required by the Part
    * 14 slot it is destined for.
    *

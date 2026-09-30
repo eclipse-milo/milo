@@ -416,8 +416,9 @@ final class JsonNetworkMessageDecoder {
   /**
    * The declared built-in type of each metadata field, by name: the field's DataType NodeId when it
    * is a built-in type (the ns=0 identifiers 1..25, with Structure ≙ ExtensionObject and
-   * BaseDataType ≙ Variant). Fields with non-built-in DataTypes (enumerations, abstract numerics)
-   * are absent and fall back to shape-based decoding.
+   * BaseDataType ≙ Variant), else the field's metadata BuiltInType (Part 14 §6.2.3.2.4: derived
+   * types such as UtcTime have their base built-in type, Enumerations have Int32). Fields with
+   * neither are absent and fall back to shape-based decoding.
    */
   private static Map<String, OpcUaDataType> declaredTypes(
       @Nullable DataSetMetaDataConfig metaData) {
@@ -428,6 +429,9 @@ final class JsonNetworkMessageDecoder {
     var declaredTypes = new HashMap<String, OpcUaDataType>();
     for (DataSetMetaDataConfig.Field field : metaData.fields()) {
       OpcUaDataType declaredType = OpcUaDataType.fromNodeId(field.dataTypeId());
+      if (declaredType == null) {
+        declaredType = field.builtInType();
+      }
       if (declaredType != null) {
         // duplicate field names are degenerate metadata; keep the first, like index-based naming
         declaredTypes.putIfAbsent(field.name(), declaredType);

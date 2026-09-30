@@ -62,8 +62,11 @@ import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConfiguration2Da
  *       .../pubsub-udp-uadp}; MQTT connections map to {@code .../pubsub-mqtt-json} if any of their
  *       groups, writers, or readers use JSON message settings, else {@code .../pubsub-mqtt-uadp}.
  *   <li>{@code FieldMetaData.builtInType} is derived from the field's DataType NodeId (builtin
- *       types map to their builtin type id, everything else to ExtensionObject/22) and is not
- *       consumed by {@code fromDataType}.
+ *       types map to their builtin type id, everything else to ExtensionObject/22), except that a
+ *       {@link DataSetMetaDataConfig.Field} with an explicit {@link
+ *       DataSetMetaDataConfig.Field#builtInType() builtInType} emits it. {@code fromDataType} keeps
+ *       a subscribed dataset field's builtInType only when it differs from the derived value, and
+ *       ignores it for published dataset fields.
  *   <li>NodeIds and QualifiedNames inside the emitted {@code dataSetMetaData} — {@code
  *       FieldMetaData.dataType} and property keys, and the authored DataTypeSchemaHeader type
  *       descriptions ({@link PublishedDataSetConfig#getStructureDataTypes()} et al.) — use

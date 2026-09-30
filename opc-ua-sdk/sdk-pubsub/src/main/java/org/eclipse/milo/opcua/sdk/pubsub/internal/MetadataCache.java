@@ -15,6 +15,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.eclipse.milo.opcua.sdk.pubsub.PubSubHandle;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetMetaDataConfig;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.structured.ConfigurationVersionDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetMetaDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.FieldMetaData;
@@ -45,8 +47,9 @@ final class MetadataCache {
   }
 
   /**
-   * Convert wire metadata to the config-model representation used for field naming and version
-   * checks.
+   * Convert wire metadata to the config-model representation used for field naming, version checks,
+   * and metadata-directed field decoding. Each field keeps its announced BuiltInType, which is how
+   * a subscriber learns the transfer type of a DataType that is not itself built-in.
    *
    * @throws org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfigValidationException if the
    *     announced metadata is structurally invalid, e.g. duplicate field names or ids.
@@ -67,7 +70,8 @@ final class MetadataCache {
                 field.getDataType(),
                 field.getDataSetFieldId(),
                 field.getValueRank(),
-                field.getArrayDimensions()));
+                field.getArrayDimensions(),
+                builtInType(field.getBuiltInType())));
         index++;
       }
     }
@@ -85,5 +89,9 @@ final class MetadataCache {
     }
 
     return builder.build();
+  }
+
+  private static @Nullable OpcUaDataType builtInType(@Nullable UByte builtInType) {
+    return builtInType != null ? OpcUaDataType.fromTypeId(builtInType.intValue()) : null;
   }
 }
