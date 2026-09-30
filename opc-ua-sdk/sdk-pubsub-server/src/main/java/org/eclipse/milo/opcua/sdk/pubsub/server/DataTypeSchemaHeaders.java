@@ -12,7 +12,9 @@ package org.eclipse.milo.opcua.sdk.pubsub.server;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -33,6 +35,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.EnumDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.SimpleTypeDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.StructureDefinition;
 import org.eclipse.milo.opcua.stack.core.types.structured.StructureDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.StructureField;
 import org.eclipse.milo.opcua.stack.core.util.Tree;
 import org.jspecify.annotations.Nullable;
 
@@ -50,8 +53,10 @@ import org.jspecify.annotations.Nullable;
  * ExtensionObject without the application authoring the descriptions itself.
  *
  * <p>Both methods are pure functions of their arguments and idempotent. Authored descriptions win;
- * a description is added only for a field DataType the dataset does not already describe, and only
- * when the tree knows the DataType and carries what the description needs:
+ * a description is added only for a DataType the dataset does not already describe, and only when
+ * the tree knows the DataType and carries what the description needs. The DataTypes considered are
+ * the field DataTypes plus, transitively, the member DataTypes of every structure description in
+ * the header, authored or added, since §6.2.3.2.2 covers nested structures too:
  *
  * <ul>
  *   <li>a subtype of a built-in DataType gets a {@link SimpleTypeDescription} whose base DataType
@@ -129,9 +134,18 @@ final class DataTypeSchemaHeaders {
       }
     }
 
+    // field DataTypes first, then the members of authored structures; members of added
+    // structures are appended as they are described
+    Deque<NodeId> pending = new ArrayDeque<>(fieldDataTypes(dataSet));
+    for (StructureDescription structure : dataSet.getStructureDataTypes()) {
+      pending.addAll(memberDataTypes(structure));
+    }
+
     PublishedDataSetConfig.Builder builder = null;
 
-    for (NodeId dataTypeId : fieldDataTypes(dataSet)) {
+    while (!pending.isEmpty()) {
+      NodeId dataTypeId = pending.removeFirst();
+
       if (OpcUaDataType.isBuiltin(dataTypeId)
           || isAbstractNonBuiltin(dataTypeId)
           || described.contains(dataTypeId)) {
@@ -148,6 +162,7 @@ final class DataTypeSchemaHeaders {
       }
       if (description instanceof StructureDescription structure) {
         builder.structureDataType(structure);
+        pending.addAll(memberDataTypes(structure));
       } else if (description instanceof EnumDescription enumeration) {
         builder.enumDataType(enumeration);
       } else if (description instanceof SimpleTypeDescription simple) {
@@ -169,6 +184,21 @@ final class DataTypeSchemaHeaders {
     } else {
       for (FieldDefinition field : dataSet.getFields()) {
         dataTypes.add(field.getDataType());
+      }
+    }
+    return dataTypes;
+  }
+
+  /** The member DataType NodeIds of a structure description, in definition order. */
+  private static List<NodeId> memberDataTypes(StructureDescription structure) {
+    var dataTypes = new ArrayList<NodeId>();
+    StructureDefinition definition = structure.getStructureDefinition();
+    StructureField[] fields = definition != null ? definition.getFields() : null;
+    if (fields != null) {
+      for (StructureField field : fields) {
+        if (field != null && field.getDataType() != null) {
+          dataTypes.add(field.getDataType());
+        }
       }
     }
     return dataTypes;

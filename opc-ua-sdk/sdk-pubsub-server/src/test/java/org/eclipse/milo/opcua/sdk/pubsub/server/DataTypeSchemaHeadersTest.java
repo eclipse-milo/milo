@@ -11,6 +11,7 @@
 package org.eclipse.milo.opcua.sdk.pubsub.server;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -29,14 +30,19 @@ import org.eclipse.milo.opcua.sdk.pubsub.config.PublishedEventsConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.UdpDatagramAddress;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ServerState;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.StructureType;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetMetaDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.EnumDefinition;
 import org.eclipse.milo.opcua.stack.core.types.structured.EnumDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.EnumField;
 import org.eclipse.milo.opcua.stack.core.types.structured.SimpleAttributeOperand;
 import org.eclipse.milo.opcua.stack.core.types.structured.SimpleTypeDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.StructureDefinition;
 import org.eclipse.milo.opcua.stack.core.types.structured.StructureDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.StructureField;
 import org.junit.jupiter.api.AfterAll;
@@ -223,6 +229,76 @@ class DataTypeSchemaHeadersTest {
     PublishedDataSetConfig populated = DataTypeSchemaHeaders.populate(dataSet, tree);
 
     assertEquals(NodeIds.UtcTime, populated.getSimpleDataTypes().get(0).getDataTypeId());
+  }
+
+  /**
+   * §6.2.3.2.2 covers DataTypes nested inside a field's structure: the members of a described
+   * structure (a custom enumeration, another custom structure, and that structure's UtcTime member)
+   * are described too, transitively, so a subscriber can interpret the whole value from the header.
+   */
+  @Test
+  void structureMemberTypesAreDescribedTransitively() {
+    NodeId modeId =
+        testServer.addDataType(
+            "SH_Mode",
+            NodeIds.Enumeration,
+            new EnumDefinition(
+                new EnumField[] {
+                  new EnumField(0L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "Auto")
+                }));
+    NodeId innerId =
+        testServer.addDataType(
+            "SH_Inner",
+            NodeIds.Structure,
+            structureDefinition(field("x", NodeIds.Double), field("when", NodeIds.UtcTime)));
+    NodeId outerId =
+        testServer.addDataType(
+            "SH_Outer",
+            NodeIds.Structure,
+            structureDefinition(field("mode", modeId), field("inner", innerId)));
+    DataTypeTree currentTree = testServer.getServer().getDataTypeTree();
+
+    PublishedDataSetConfig populated =
+        DataTypeSchemaHeaders.populate(dataSet("nested", outerId), currentTree);
+
+    assertEquals(
+        List.of(outerId, innerId),
+        populated.getStructureDataTypes().stream()
+            .map(StructureDescription::getDataTypeId)
+            .toList());
+    assertEquals(
+        List.of(modeId),
+        populated.getEnumDataTypes().stream().map(EnumDescription::getDataTypeId).toList());
+    assertEquals(
+        List.of(NodeIds.UtcTime),
+        populated.getSimpleDataTypes().stream().map(SimpleTypeDescription::getDataTypeId).toList());
+
+    // an authored outer description is kept, and its members are still completed from the tree
+    PublishedDataSetConfig authored =
+        dataSet("nested-authored", outerId).toBuilder()
+            .structureDataType(
+                outerId,
+                new QualifiedName(testServer.getNamespaceIndex(), "SH_Outer"),
+                structureDefinition(field("mode", modeId), field("inner", innerId)))
+            .build();
+
+    PublishedDataSetConfig populatedAuthored =
+        DataTypeSchemaHeaders.populate(authored, currentTree);
+
+    assertSame(
+        authored.getStructureDataTypes().get(0), populatedAuthored.getStructureDataTypes().get(0));
+    assertEquals(innerId, populatedAuthored.getStructureDataTypes().get(1).getDataTypeId());
+    assertEquals(modeId, populatedAuthored.getEnumDataTypes().get(0).getDataTypeId());
+    assertEquals(NodeIds.UtcTime, populatedAuthored.getSimpleDataTypes().get(0).getDataTypeId());
+  }
+
+  private static StructureDefinition structureDefinition(StructureField... fields) {
+    return new StructureDefinition(
+        NodeId.NULL_VALUE, NodeIds.Structure, StructureType.Structure, fields);
+  }
+
+  private static StructureField field(String name, NodeId dataType) {
+    return new StructureField(name, LocalizedText.NULL_VALUE, dataType, -1, null, uint(0), false);
   }
 
   /** Populating an already populated dataset changes nothing. */

@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.milo.opcua.sdk.core.NumericRange;
+import org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree;
 import org.eclipse.milo.opcua.sdk.pubsub.ComponentType;
 import org.eclipse.milo.opcua.sdk.pubsub.DataSetReaderRef;
 import org.eclipse.milo.opcua.sdk.pubsub.PubSubBindings;
@@ -79,8 +80,8 @@ import org.slf4j.LoggerFactory;
  *       this version, even when the referenced standalone dataset carries TargetVariables (a
  *       warning is logged at attach); their targets and index ranges are still validated.
  *   <li>The DataTypeSchemaHeader of every published dataset is completed from the server's {@link
- *       org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree}: a field DataType that is neither
- *       built-in nor abstract and has no authored description gets one (a {@code
+ *       DataTypeTree}: a field DataType (or a member DataType of a described structure) that is
+ *       neither built-in nor abstract and has no authored description gets one (a {@code
  *       SimpleTypeDescription} for a subtype of a built-in type such as UtcTime, an {@code
  *       EnumDescription} for an enumeration or OptionSet, a {@code StructureDescription} for a
  *       structure), so the announced field BuiltInType follows Part 14 §6.2.3.2.4 Table 7 (UtcTime
