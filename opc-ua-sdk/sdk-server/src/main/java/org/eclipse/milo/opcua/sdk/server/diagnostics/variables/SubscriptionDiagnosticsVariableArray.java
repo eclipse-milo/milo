@@ -15,8 +15,10 @@ import static org.eclipse.milo.opcua.sdk.server.diagnostics.variables.Util.diagn
 import com.google.common.eventbus.Subscribe;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.milo.opcua.sdk.core.AccessLevel;
@@ -60,6 +62,13 @@ public abstract class SubscriptionDiagnosticsVariableArray extends AbstractLifec
 
   private final List<SubscriptionDiagnosticsVariable> subscriptionDiagnosticsVariables =
       Collections.synchronizedList(new ArrayList<>());
+
+  /**
+   * Subscriptions whose element is being created right now. Guarded by the monitor of {@link
+   * #subscriptionDiagnosticsVariables}; a reservation keeps a second creator from publishing an
+   * element for the same Subscription, and withdrawing it tells the creator not to publish.
+   */
+  private final Set<UInteger> pendingSubscriptionIds = new HashSet<>();
 
   private final OpcUaServer server;
   private final NodeManager<UaNode> diagnosticsNodeManager;
@@ -111,8 +120,7 @@ public abstract class SubscriptionDiagnosticsVariableArray extends AbstractLifec
                   eventSubscriber = null;
                 }
 
-                subscriptionDiagnosticsVariables.forEach(AbstractLifecycle::shutdown);
-                subscriptionDiagnosticsVariables.clear();
+                removeAllSubscriptionDiagnosticsNodes();
               }
             }
           }
@@ -160,8 +168,7 @@ public abstract class SubscriptionDiagnosticsVariableArray extends AbstractLifec
       eventSubscriber = null;
     }
 
-    subscriptionDiagnosticsVariables.forEach(AbstractLifecycle::shutdown);
-    subscriptionDiagnosticsVariables.clear();
+    removeAllSubscriptionDiagnosticsNodes();
 
     node.delete();
   }
@@ -190,11 +197,23 @@ public abstract class SubscriptionDiagnosticsVariableArray extends AbstractLifec
     }
   }
 
-  /** Create an element for {@code subscription} unless it already has one. */
+  /**
+   * Create an element for {@code subscription} unless it already has one or another thread is
+   * creating one. The catch-up and a concurrent creation event can both arrive here for the same
+   * Subscription; the reservation lets only the first instantiate, so the address space never holds
+   * two elements for one Subscription.
+   */
   private void createSubscriptionDiagnosticsNode(Subscription subscription) {
-    if (hasSubscriptionDiagnosticsNode(subscription.getId())) {
-      return;
+    UInteger subscriptionId = subscription.getId();
+
+    synchronized (subscriptionDiagnosticsVariables) {
+      if (hasSubscriptionDiagnosticsNode(subscriptionId)
+          || !pendingSubscriptionIds.add(subscriptionId)) {
+        return;
+      }
     }
+
+    SubscriptionDiagnosticsVariable diagnosticsVariable = null;
 
     try {
       long index = nextElementId.getAndIncrement();
@@ -223,29 +242,61 @@ public abstract class SubscriptionDiagnosticsVariableArray extends AbstractLifec
       SubscriptionDiagnosticsTypeNode elementNode =
           server.getNodeInstantiator().instantiate(request).root();
 
-      SubscriptionDiagnosticsVariable diagnosticsVariable =
-          new SubscriptionDiagnosticsVariable(elementNode, subscription);
+      diagnosticsVariable = new SubscriptionDiagnosticsVariable(elementNode, subscription);
       diagnosticsVariable.startup();
-
-      // The catch-up and a concurrent creation event may both reach this point for the same
-      // Subscription; only the first one publishes its element.
-      boolean added;
-      synchronized (subscriptionDiagnosticsVariables) {
-        added = !hasSubscriptionDiagnosticsNode(subscription.getId());
-        if (added) {
-          subscriptionDiagnosticsVariables.add(diagnosticsVariable);
-        }
-      }
-
-      if (!added) {
-        diagnosticsVariable.shutdown();
-      }
     } catch (UaException e) {
       logger.error(
           "Failed to create SubscriptionDiagnosticsTypeNode for subscription id={}",
-          subscription.getId(),
+          subscriptionId,
           e);
     }
+
+    // A deleted event or a disable in the meantime withdraws the reservation; the element is then
+    // torn down instead of published.
+    boolean published = false;
+    synchronized (subscriptionDiagnosticsVariables) {
+      boolean reserved = pendingSubscriptionIds.remove(subscriptionId);
+      if (reserved && diagnosticsVariable != null) {
+        subscriptionDiagnosticsVariables.add(diagnosticsVariable);
+        published = true;
+      }
+    }
+
+    if (diagnosticsVariable != null && !published) {
+      diagnosticsVariable.shutdown();
+    }
+  }
+
+  private void removeSubscriptionDiagnosticsNode(UInteger subscriptionId) {
+    SubscriptionDiagnosticsVariable removed = null;
+
+    synchronized (subscriptionDiagnosticsVariables) {
+      pendingSubscriptionIds.remove(subscriptionId);
+
+      for (int i = 0; i < subscriptionDiagnosticsVariables.size(); i++) {
+        Subscription subscription = subscriptionDiagnosticsVariables.get(i).getSubscription();
+        if (subscription.getId().equals(subscriptionId)) {
+          removed = subscriptionDiagnosticsVariables.remove(i);
+          break;
+        }
+      }
+    }
+
+    if (removed != null) {
+      removed.shutdown();
+    }
+  }
+
+  private void removeAllSubscriptionDiagnosticsNodes() {
+    List<SubscriptionDiagnosticsVariable> removed;
+
+    synchronized (subscriptionDiagnosticsVariables) {
+      pendingSubscriptionIds.clear();
+      removed = new ArrayList<>(subscriptionDiagnosticsVariables);
+      subscriptionDiagnosticsVariables.clear();
+    }
+
+    removed.forEach(AbstractLifecycle::shutdown);
   }
 
   private class EventSubscriber {
@@ -260,15 +311,7 @@ public abstract class SubscriptionDiagnosticsVariableArray extends AbstractLifec
 
     @Subscribe
     public synchronized void onSubscriptionDeleted(SubscriptionDeletedEvent event) {
-      for (int i = 0; i < subscriptionDiagnosticsVariables.size(); i++) {
-        Subscription subscription = subscriptionDiagnosticsVariables.get(i).getSubscription();
-        if (event.getSubscription().getId().equals(subscription.getId())) {
-          SubscriptionDiagnosticsVariable diagnosticsVariable =
-              subscriptionDiagnosticsVariables.remove(i);
-          diagnosticsVariable.shutdown();
-          break;
-        }
-      }
+      removeSubscriptionDiagnosticsNode(event.getSubscription().getId());
     }
   }
 }
