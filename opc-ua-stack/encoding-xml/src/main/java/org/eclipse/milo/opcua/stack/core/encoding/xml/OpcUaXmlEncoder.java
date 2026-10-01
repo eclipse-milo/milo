@@ -1946,7 +1946,8 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
 
   @Override
   public void encodeEnumMatrix(String field, Matrix value) throws UaSerializationException {
-    if (beginField(field, value == null, true, true)) {
+    boolean isNull = value == null || value.isNull();
+    if (beginField(field, isNull, true, true)) {
       try {
         namespaceStack.push(Namespaces.OPC_UA_XSD);
 
@@ -1957,7 +1958,7 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
                   + context.getEncodingLimits().getMaxRecursionDepth());
         }
 
-        if (value != null && value.getElements() instanceof UaEnumeratedType[] elements) {
+        if (value.getElements() instanceof UaEnumeratedType[] elements) {
           Integer[] dimensions = new Integer[value.getDimensions().length];
           for (int i = 0; i < dimensions.length; i++) {
             dimensions[i] = value.getDimensions()[i];
@@ -1992,6 +1993,12 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
   public void encodeStructMatrix(String field, Matrix value, ExpandedNodeId dataTypeId)
       throws UaSerializationException {
 
+    // A null Matrix needs no type metadata, so don't fail on an unregistered namespace.
+    if (value == null || value.isNull()) {
+      encodeMatrix(field, null);
+      return;
+    }
+
     NodeId localDateTypeId =
         dataTypeId
             .toNodeId(context.getNamespaceTable())
@@ -2007,6 +2014,11 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
   @Override
   public void encodeStructMatrix(String field, Matrix value, NodeId dataTypeId)
       throws UaSerializationException {
+
+    if (value == null || value.isNull()) {
+      encodeMatrix(field, null);
+      return;
+    }
 
     Matrix transformed =
         value.transform(
