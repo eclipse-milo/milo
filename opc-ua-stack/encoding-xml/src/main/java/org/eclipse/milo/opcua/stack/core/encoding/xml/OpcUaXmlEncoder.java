@@ -1993,12 +1993,6 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
   public void encodeStructMatrix(String field, Matrix value, ExpandedNodeId dataTypeId)
       throws UaSerializationException {
 
-    // A null Matrix needs no type metadata, so don't fail on an unregistered namespace.
-    if (value == null || value.isNull()) {
-      encodeMatrix(field, null);
-      return;
-    }
-
     NodeId localDateTypeId =
         dataTypeId
             .toNodeId(context.getNamespaceTable())
