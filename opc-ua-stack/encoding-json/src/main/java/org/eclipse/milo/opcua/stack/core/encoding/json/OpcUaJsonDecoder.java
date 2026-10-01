@@ -1713,9 +1713,9 @@ public class OpcUaJsonDecoder implements UaDecoder {
         if (field != null) {
           String nextName = nextName(field);
           if (!field.equals(nextName)) {
-            throw new UaSerializationException(
-                StatusCodes.Bad_DecodingError,
-                String.format("readStruct: %s != %s", field, nextName));
+            // Part 6 §5.4.6 permits omitted null structure members in COMPACT encoding.
+            this.peekedNextName = nextName;
+            return Matrix.ofNull();
           }
         }
 
