@@ -42,6 +42,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.SubscriptionDiagnosticsDataType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -90,7 +91,7 @@ public abstract class SubscriptionDiagnosticsVariableArray extends AbstractLifec
     diagnosticsEnabled.set(diagnosticsNode.getEnabledFlag());
 
     if (diagnosticsEnabled.get()) {
-      server.getInternalEventBus().register(eventSubscriber = new EventSubscriber());
+      startTrackingSubscriptions();
     }
 
     attributeObserver =
@@ -103,11 +104,7 @@ public abstract class SubscriptionDiagnosticsVariableArray extends AbstractLifec
               boolean previous = diagnosticsEnabled.getAndSet(current);
 
               if (!previous && current) {
-                getSubscriptions().forEach(this::createSubscriptionDiagnosticsNode);
-
-                if (eventSubscriber == null) {
-                  server.getInternalEventBus().register(eventSubscriber = new EventSubscriber());
-                }
+                startTrackingSubscriptions();
               } else if (previous && !current) {
                 if (eventSubscriber != null) {
                   server.getInternalEventBus().unregister(eventSubscriber);
@@ -169,7 +166,36 @@ public abstract class SubscriptionDiagnosticsVariableArray extends AbstractLifec
     node.delete();
   }
 
+  /**
+   * Register for Subscription events, then add an element for each Subscription that already exists
+   * and has none.
+   *
+   * <p>Registering first means a Subscription created during the catch-up raises an event instead
+   * of being missed. An array started while diagnostics are already enabled, such as one beneath a
+   * Session Object created when the EnabledFlag turned on, picks up the Session's existing
+   * Subscriptions here.
+   */
+  private void startTrackingSubscriptions() {
+    if (eventSubscriber == null) {
+      server.getInternalEventBus().register(eventSubscriber = new EventSubscriber());
+    }
+
+    getSubscriptions().forEach(this::createSubscriptionDiagnosticsNode);
+  }
+
+  private boolean hasSubscriptionDiagnosticsNode(UInteger subscriptionId) {
+    synchronized (subscriptionDiagnosticsVariables) {
+      return subscriptionDiagnosticsVariables.stream()
+          .anyMatch(v -> v.getSubscription().getId().equals(subscriptionId));
+    }
+  }
+
+  /** Create an element for {@code subscription} unless it already has one. */
   private void createSubscriptionDiagnosticsNode(Subscription subscription) {
+    if (hasSubscriptionDiagnosticsNode(subscription.getId())) {
+      return;
+    }
+
     try {
       long index = nextElementId.getAndIncrement();
       String id = Util.buildBrowseNamePath(node) + "[" + index + "]";
@@ -201,7 +227,19 @@ public abstract class SubscriptionDiagnosticsVariableArray extends AbstractLifec
           new SubscriptionDiagnosticsVariable(elementNode, subscription);
       diagnosticsVariable.startup();
 
-      subscriptionDiagnosticsVariables.add(diagnosticsVariable);
+      // The catch-up and a concurrent creation event may both reach this point for the same
+      // Subscription; only the first one publishes its element.
+      boolean added;
+      synchronized (subscriptionDiagnosticsVariables) {
+        added = !hasSubscriptionDiagnosticsNode(subscription.getId());
+        if (added) {
+          subscriptionDiagnosticsVariables.add(diagnosticsVariable);
+        }
+      }
+
+      if (!added) {
+        diagnosticsVariable.shutdown();
+      }
     } catch (UaException e) {
       logger.error(
           "Failed to create SubscriptionDiagnosticsTypeNode for subscription id={}",
