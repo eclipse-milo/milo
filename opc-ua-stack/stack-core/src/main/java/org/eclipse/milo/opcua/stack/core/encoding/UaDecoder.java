@@ -188,12 +188,42 @@ public interface UaDecoder {
   UaStructuredType @Nullable [] decodeStructArray(String field, ExpandedNodeId dataTypeId)
       throws UaSerializationException;
 
+  /**
+   * Decodes a Matrix of built-in values with the given {@code dataType}.
+   *
+   * <p>A null Matrix decodes to {@link Matrix#ofNull()}. None of the Matrix methods return {@code
+   * null}, so callers may invoke {@link Matrix#transform} on the result without a null check.
+   *
+   * @param field the field name, or {@code null} when the encoding has no field names.
+   * @param dataType the built-in type of the Matrix elements.
+   * @return the decoded Matrix; {@link Matrix#ofNull()} for a null Matrix.
+   */
   Matrix decodeMatrix(String field, OpcUaDataType dataType) throws UaSerializationException;
 
+  /**
+   * Decodes a Matrix of enumeration values as their {@link Integer} wire values.
+   *
+   * @param field the field name, or {@code null} when the encoding has no field names.
+   * @return the decoded Matrix; {@link Matrix#ofNull()} for a null Matrix, never {@code null}.
+   */
   Matrix decodeEnumMatrix(String field) throws UaSerializationException;
 
+  /**
+   * Decodes a Matrix of structures using the codec registered for {@code dataTypeId}.
+   *
+   * @param field the field name, or {@code null} when the encoding has no field names.
+   * @param dataTypeId the DataType of the Matrix elements.
+   * @return the decoded Matrix; {@link Matrix#ofNull()} for a null Matrix, never {@code null}.
+   */
   Matrix decodeStructMatrix(String field, NodeId dataTypeId) throws UaSerializationException;
 
+  /**
+   * Decodes a Matrix of structures using the codec registered for {@code dataTypeId}.
+   *
+   * @param field the field name, or {@code null} when the encoding has no field names.
+   * @param dataTypeId the DataType of the Matrix elements.
+   * @return the decoded Matrix; {@link Matrix#ofNull()} for a null Matrix, never {@code null}.
+   */
   Matrix decodeStructMatrix(String field, ExpandedNodeId dataTypeId)
       throws UaSerializationException;
 }
