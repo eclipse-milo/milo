@@ -817,8 +817,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
             break;
           default:
             throw new UaSerializationException(
-                StatusCodes.Bad_DecodingError,
-                String.format("readLocalizedText: unexpected field: " + nextName));
+                StatusCodes.Bad_DecodingError, "readLocalizedText: unexpected field: " + nextName);
         }
       }
 
@@ -1568,7 +1567,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
                 () ->
                     new UaSerializationException(
                         StatusCodes.Bad_DecodingError,
-                        "readStructArray: no codec registered: " + dataTypeId));
+                        "readStructArray: namespace not registered: " + dataTypeId));
 
     return decodeStructArray(field, localDataTypeId);
   }
@@ -1633,66 +1632,63 @@ public class OpcUaJsonDecoder implements UaDecoder {
 
       if (jsonReader.peek() != JsonToken.BEGIN_OBJECT) {
         throw new UaSerializationException(
-            StatusCodes.Bad_DecodingError,
-            String.format("readMatrix: unexpected token: %s", jsonReader.peek()));
+            StatusCodes.Bad_DecodingError, "readMatrix: unexpected token: " + jsonReader.peek());
       }
 
       jsonReader.beginObject();
-      try {
-        int[] dimensions = null;
-        Object flatArray = null;
 
-        while (jsonReader.peek() == JsonToken.NAME) {
-          String nextName = nextName();
-          if (nextName == null) continue;
+      int[] dimensions = null;
+      Object flatArray = null;
 
-          switch (nextName) {
-            case "Array":
-              {
-                var elements = new ArrayList<>();
-                jsonReader.beginArray();
-                while (jsonReader.peek() != JsonToken.END_ARRAY) {
-                  elements.add(elementDecoder.apply(null));
-                }
-                jsonReader.endArray();
+      while (jsonReader.peek() == JsonToken.NAME) {
+        String nextName = nextName();
+        if (nextName == null) continue;
 
-                flatArray =
-                    Array.newInstance(
-                        OpcUaDataType.getPrimitiveBackingClass(dataType.getTypeId()),
-                        elements.size());
-
-                for (int i = 0; i < elements.size(); i++) {
-                  Array.set(flatArray, i, elements.get(i));
-                }
+        switch (nextName) {
+          case "Array":
+            {
+              var elements = new ArrayList<>();
+              jsonReader.beginArray();
+              while (jsonReader.peek() != JsonToken.END_ARRAY) {
+                elements.add(elementDecoder.apply(null));
               }
-              break;
-            case "Dimensions":
-              {
-                var dims = new ArrayList<Integer>();
-                jsonReader.beginArray();
-                while (jsonReader.peek() == JsonToken.NUMBER) {
-                  dims.add(jsonReader.nextInt());
-                }
-                jsonReader.endArray();
-                dimensions = new int[dims.size()];
-                for (int i = 0; i < dims.size(); i++) {
-                  dimensions[i] = dims.get(i);
-                }
+              jsonReader.endArray();
+
+              flatArray =
+                  Array.newInstance(
+                      OpcUaDataType.getPrimitiveBackingClass(dataType.getTypeId()),
+                      elements.size());
+
+              for (int i = 0; i < elements.size(); i++) {
+                Array.set(flatArray, i, elements.get(i));
               }
-              break;
-            default:
-              throw new UaSerializationException(
-                  StatusCodes.Bad_DecodingError,
-                  String.format("readLocalizedText: unexpected field: " + nextName));
-          }
+            }
+            break;
+          case "Dimensions":
+            {
+              var dims = new ArrayList<Integer>();
+              jsonReader.beginArray();
+              while (jsonReader.peek() == JsonToken.NUMBER) {
+                dims.add(jsonReader.nextInt());
+              }
+              jsonReader.endArray();
+              dimensions = new int[dims.size()];
+              for (int i = 0; i < dims.size(); i++) {
+                dimensions[i] = dims.get(i);
+              }
+            }
+            break;
+          default:
+            throw new UaSerializationException(
+                StatusCodes.Bad_DecodingError, "readMatrix: unexpected field: " + nextName);
         }
-
-        validateMatrixDimensions(flatArray, dimensions);
-
-        return new Matrix(flatArray, dimensions, dataType);
-      } finally {
-        jsonReader.endObject();
       }
+
+      jsonReader.endObject();
+
+      validateMatrixDimensions(flatArray, dimensions);
+
+      return new Matrix(flatArray, dimensions, dataType);
     } catch (IOException | IllegalStateException | IllegalArgumentException e) {
       throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
     }
@@ -1727,63 +1723,62 @@ public class OpcUaJsonDecoder implements UaDecoder {
         if (jsonReader.peek() != JsonToken.BEGIN_OBJECT) {
           throw new UaSerializationException(
               StatusCodes.Bad_DecodingError,
-              String.format("readMatrix: unexpected token: %s", jsonReader.peek()));
+              "decodeStructMatrix: unexpected token: " + jsonReader.peek());
         }
 
         jsonReader.beginObject();
-        try {
-          int[] dimensions = null;
-          Object flatArray = null;
 
-          while (jsonReader.peek() == JsonToken.NAME) {
-            String nextName = nextName();
-            if (nextName == null) continue;
+        int[] dimensions = null;
+        Object flatArray = null;
 
-            switch (nextName) {
-              case "Array":
-                {
-                  var elements = new ArrayList<>();
-                  jsonReader.beginArray();
-                  while (jsonReader.peek() != JsonToken.END_ARRAY) {
-                    elements.add(decodeStruct(null, codec));
-                  }
-                  jsonReader.endArray();
+        while (jsonReader.peek() == JsonToken.NAME) {
+          String nextName = nextName();
+          if (nextName == null) continue;
 
-                  flatArray = Array.newInstance(codec.getType(), elements.size());
-
-                  for (int i = 0; i < elements.size(); i++) {
-                    Array.set(flatArray, i, elements.get(i));
-                  }
+          switch (nextName) {
+            case "Array":
+              {
+                var elements = new ArrayList<>();
+                jsonReader.beginArray();
+                while (jsonReader.peek() != JsonToken.END_ARRAY) {
+                  elements.add(decodeStruct(null, codec));
                 }
-                break;
-              case "Dimensions":
-                {
-                  var dims = new ArrayList<Integer>();
-                  jsonReader.beginArray();
-                  while (jsonReader.peek() == JsonToken.NUMBER) {
-                    dims.add(jsonReader.nextInt());
-                  }
-                  jsonReader.endArray();
-                  dimensions = new int[dims.size()];
-                  for (int i = 0; i < dims.size(); i++) {
-                    dimensions[i] = dims.get(i);
-                  }
+                jsonReader.endArray();
+
+                flatArray = Array.newInstance(codec.getType(), elements.size());
+
+                for (int i = 0; i < elements.size(); i++) {
+                  Array.set(flatArray, i, elements.get(i));
                 }
-                break;
-              default:
-                throw new UaSerializationException(
-                    StatusCodes.Bad_DecodingError,
-                    String.format("readLocalizedText: unexpected field: " + nextName));
-            }
+              }
+              break;
+            case "Dimensions":
+              {
+                var dims = new ArrayList<Integer>();
+                jsonReader.beginArray();
+                while (jsonReader.peek() == JsonToken.NUMBER) {
+                  dims.add(jsonReader.nextInt());
+                }
+                jsonReader.endArray();
+                dimensions = new int[dims.size()];
+                for (int i = 0; i < dims.size(); i++) {
+                  dimensions[i] = dims.get(i);
+                }
+              }
+              break;
+            default:
+              throw new UaSerializationException(
+                  StatusCodes.Bad_DecodingError,
+                  "decodeStructMatrix: unexpected field: " + nextName);
           }
-
-          validateMatrixDimensions(flatArray, dimensions);
-
-          return new Matrix(
-              flatArray, dimensions, OpcUaDataType.ExtensionObject, dataTypeId.expanded());
-        } finally {
-          jsonReader.endObject();
         }
+
+        jsonReader.endObject();
+
+        validateMatrixDimensions(flatArray, dimensions);
+
+        return new Matrix(
+            flatArray, dimensions, OpcUaDataType.ExtensionObject, dataTypeId.expanded());
       } catch (IOException | IllegalStateException | IllegalArgumentException e) {
         throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
       }
