@@ -702,8 +702,26 @@ public class OpcUaXmlDecoder implements UaDecoder, AutoCloseable {
         } catch (IllegalArgumentException e) {
           throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
         }
-        currentNode = node;
-        return decodeMatrix("Matrix", dataType);
+
+        int[] dimensions = decodeMatrixDimensions(dimensionsNode);
+
+        if (dimensions.length == 0) {
+          throw new UaSerializationException(
+              StatusCodes.Bad_DecodingError, "Matrix has no dimensions");
+        }
+
+        Object elements = decodeMatrixElements(elementsNode, dataType);
+
+        checkMatrixElementCount(dimensions, Array.getLength(elements));
+
+        currentNode = nextElementSibling(node);
+
+        if (dimensions.length == 1) {
+          // One dimension describes a one-dimensional array, as in OpcUaBinaryDecoder.
+          return elements;
+        } else {
+          return new Matrix(elements, dimensions, dataType);
+        }
       } else {
         return readBuiltinType(nodeName, nodeName);
       }
@@ -1183,42 +1201,11 @@ public class OpcUaXmlDecoder implements UaDecoder, AutoCloseable {
         }
 
         int[] dimensions = decodeMatrixDimensions(dimensionsNode);
+        checkMatrixDimensionCount(dimensions);
 
-        List<Object> elements = new ArrayList<>();
-        Node elementsNode = nextElementSibling(dimensionsNode);
+        Object array = decodeMatrixElements(nextElementSibling(dimensionsNode), dataType);
 
-        if (elementsNode != null) {
-          NodeList children = elementsNode.getChildNodes();
-
-          for (int i = 0; i < children.getLength(); i++) {
-            currentNode = children.item(i);
-
-            if (currentNode.getNodeType() == Node.ELEMENT_NODE) {
-              String elementName = currentNode.getLocalName();
-
-              // OPC 10000-6 5.3.4: the element name shall be the type name. The caller asked for a
-              // dataType Matrix, so every element under <Elements> must carry that type's name.
-              if (!dataType.name().equals(elementName)) {
-                throw new UaSerializationException(
-                    StatusCodes.Bad_DecodingError,
-                    "expected Matrix element <"
-                        + dataType.name()
-                        + "> but found <"
-                        + elementName
-                        + ">");
-              }
-
-              elements.add(readBuiltinType(elementName, dataType.name()));
-            }
-          }
-        }
-
-        checkMatrixElementCount(dimensions, elements.size());
-
-        Object array = Array.newInstance(builtinTypeClass(dataType.name()), elements.size());
-        for (int i = 0; i < elements.size(); i++) {
-          Array.set(array, i, elements.get(i));
-        }
+        checkMatrixElementCount(dimensions, Array.getLength(array));
 
         return new Matrix(array, dimensions, dataType);
       } finally {
@@ -1242,6 +1229,7 @@ public class OpcUaXmlDecoder implements UaDecoder, AutoCloseable {
         }
 
         int[] dimensions = decodeMatrixDimensions(dimensionsNode);
+        checkMatrixDimensionCount(dimensions);
 
         List<Integer> elements = new ArrayList<>();
         Node elementsNode = nextElementSibling(dimensionsNode);
@@ -1358,6 +1346,64 @@ public class OpcUaXmlDecoder implements UaDecoder, AutoCloseable {
       dims[i] = dimensions.get(i);
     }
     return dims;
+  }
+
+  /**
+   * Validate that {@code dimensions} can describe a {@link Matrix}, which requires at least two
+   * dimensions. One dimension describes an array and zero dimensions describe nothing.
+   *
+   * @throws UaSerializationException if there are fewer than two dimensions.
+   */
+  private static void checkMatrixDimensionCount(int[] dimensions) {
+    if (dimensions.length < 2) {
+      throw new UaSerializationException(
+          StatusCodes.Bad_DecodingError,
+          "Matrix must have at least 2 dimensions but found " + Arrays.toString(dimensions));
+    }
+  }
+
+  /**
+   * Decode the children of a Matrix {@code <Elements>} node into a flat array of {@code dataType}.
+   *
+   * @param elementsNode the {@code <Elements>} node, or {@code null} if the Matrix has none.
+   * @return a flat array whose component type is the backing class of {@code dataType}; empty if
+   *     {@code elementsNode} is {@code null}.
+   */
+  private Object decodeMatrixElements(@Nullable Node elementsNode, OpcUaDataType dataType) {
+    List<Object> elements = new ArrayList<>();
+
+    if (elementsNode != null) {
+      NodeList children = elementsNode.getChildNodes();
+
+      for (int i = 0; i < children.getLength(); i++) {
+        currentNode = children.item(i);
+
+        if (currentNode.getNodeType() == Node.ELEMENT_NODE) {
+          String elementName = currentNode.getLocalName();
+
+          // OPC 10000-6 5.3.4: the element name shall be the type name. The caller asked for a
+          // dataType Matrix, so every element under <Elements> must carry that type's name.
+          if (!dataType.name().equals(elementName)) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_DecodingError,
+                "expected Matrix element <"
+                    + dataType.name()
+                    + "> but found <"
+                    + elementName
+                    + ">");
+          }
+
+          elements.add(readBuiltinType(elementName, dataType.name()));
+        }
+      }
+    }
+
+    Object array = Array.newInstance(builtinTypeClass(dataType.name()), elements.size());
+    for (int i = 0; i < elements.size(); i++) {
+      Array.set(array, i, elements.get(i));
+    }
+
+    return array;
   }
 
   /**
