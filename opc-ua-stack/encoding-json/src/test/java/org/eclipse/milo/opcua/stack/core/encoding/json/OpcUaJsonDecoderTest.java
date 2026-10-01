@@ -1271,9 +1271,9 @@ class OpcUaJsonDecoderTest {
   }
 
   /**
-   * Issue 2057: the CompactEncoding omits a NULL Matrix member (OPC 10000-6 §5.4.6, Table 45).
-   * Every Matrix decoder must return a null Matrix and restore the peeked name so the following
-   * member still decodes.
+   * The CompactEncoding omits a NULL Matrix member (OPC 10000-6 §5.4.6, Table 45). Every Matrix
+   * decoder must return a null Matrix and restore the peeked name so the following member still
+   * decodes.
    */
   @ParameterizedTest(name = "{0}")
   @MethodSource("matrixDecoders")
@@ -1311,8 +1311,8 @@ class OpcUaJsonDecoderTest {
   }
 
   /**
-   * Issue 2057: Milo's CompactEncoding omits a NULL structure Matrix member (OPC 10000-6 §5.4.6,
-   * Table 45), so the decoder must read the structure Milo wrote back to the same value.
+   * Milo's CompactEncoding omits a NULL structure Matrix member (OPC 10000-6 §5.4.6, Table 45), so
+   * the decoder must read the structure Milo wrote back to the same value.
    */
   @Test
   void decodeStructMatrix_compactRoundTripOfNullMember() throws Exception {
