@@ -12,8 +12,10 @@ package org.eclipse.milo.opcua.sdk.pubsub.internal;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedChunk;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedNetworkMessage;
@@ -32,8 +34,10 @@ import org.slf4j.LoggerFactory;
  * <p>Sits AFTER the codec's verify/decrypt step: each chunk NetworkMessage is secured individually,
  * so the {@link DecodedChunk} pieces fed here are already verified plaintext (and already fresh
  * copies — they alias neither the datagram nor a decrypted buffer). The caller feeds only chunks
- * that at least one reader of the connection accepted; chunks no reader accepts never touch
- * reassembly state.
+ * that at least one reader of the connection accepted, naming those readers; chunks no reader
+ * accepts never touch reassembly state. A payload in progress keeps the readers that accepted every
+ * chunk that contributed bytes to it, and the {@link ReassembledMessage} names them so the caller
+ * delivers the payload to those readers only.
  *
  * <p>Streams are keyed by (PublisherId, WriterGroupId, DataSetWriterId) and by the received
  * security mode (None, Sign, or SignAndEncrypt), so a reassembled payload only ever contains bytes
@@ -90,10 +94,15 @@ final class ChunkReassembler {
    *
    * @param chunkMessage a decoded NetworkMessage whose {@link DecodedNetworkMessage#chunk()} is
    *     non-null and whose security, when present, is {@link SecurityOutcome#VERIFIED}.
+   * @param acceptedReaders the readers that accepted {@code chunkMessage}; non-empty.
    * @param nowNanos the current {@link System#nanoTime()} (injectable for tests).
-   * @return the reassembled payload when this chunk completes it, else {@code null}.
+   * @return the reassembled payload when this chunk completes it, else {@code null}. Its {@link
+   *     ReassembledMessage#readers()} may be empty when no single reader accepted every chunk.
    */
-  @Nullable ReassembledMessage accept(DecodedNetworkMessage chunkMessage, long nowNanos) {
+  @Nullable ReassembledMessage accept(
+      DecodedNetworkMessage chunkMessage,
+      Set<DataSetReaderRuntime> acceptedReaders,
+      long nowNanos) {
     evictStale(nowNanos);
 
     DecodedChunk chunk = chunkMessage.chunk();
@@ -188,8 +197,11 @@ final class ChunkReassembler {
     }
 
     if (payload == null) {
-      payload = new Payload(sequenceNumber, (int) totalSize);
+      payload = new Payload(sequenceNumber, (int) totalSize, acceptedReaders);
       state.payload = payload;
+    } else {
+      // the payload reaches only readers that accepted every contributing chunk
+      payload.readers.retainAll(acceptedReaders);
     }
 
     state.lastActivityNanos = nowNanos;
@@ -204,7 +216,8 @@ final class ChunkReassembler {
       state.payload = null;
       state.hasCompleted = true;
       state.completedSequenceNumber = sequenceNumber;
-      return new ReassembledMessage(chunkMessage, chunk.dataSetWriterId(), payload.buffer);
+      return new ReassembledMessage(
+          chunkMessage, chunk.dataSetWriterId(), payload.buffer, payload.readers);
     }
 
     return null;
@@ -313,9 +326,14 @@ final class ChunkReassembler {
    * @param dataSetWriterId the DataSetWriterId of the chunked stream, or {@code null} if the chunk
    *     NetworkMessages carried no PayloadHeader.
    * @param payload the reassembled payload bytes; owned by the receiver.
+   * @param readers the readers that accepted every chunk that contributed bytes to the payload; the
+   *     only readers the payload may be delivered to. Empty when no reader accepted them all.
    */
   record ReassembledMessage(
-      DecodedNetworkMessage header, @Nullable UShort dataSetWriterId, byte[] payload) {}
+      DecodedNetworkMessage header,
+      @Nullable UShort dataSetWriterId,
+      byte[] payload,
+      Set<DataSetReaderRuntime> readers) {}
 
   /**
    * The identity of one chunked stream: PublisherId (canonical form), WriterGroupId, and
@@ -352,10 +370,14 @@ final class ChunkReassembler {
     /** Merged, sorted, disjoint covered ranges as {@code [start, end)} pairs. */
     final List<int[]> coverage = new ArrayList<>();
 
-    Payload(int sequenceNumber, int totalSize) {
+    /** The readers that accepted every chunk that contributed bytes so far. */
+    final Set<DataSetReaderRuntime> readers;
+
+    Payload(int sequenceNumber, int totalSize, Set<DataSetReaderRuntime> readers) {
       this.sequenceNumber = sequenceNumber;
       this.totalSize = totalSize;
       this.buffer = new byte[totalSize];
+      this.readers = new HashSet<>(readers);
     }
 
     void addCoverage(int start, int end) {

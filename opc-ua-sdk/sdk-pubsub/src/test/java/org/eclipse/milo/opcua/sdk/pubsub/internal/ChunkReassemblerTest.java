@@ -18,11 +18,13 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublisherId;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodeContext;
@@ -56,6 +58,11 @@ class ChunkReassemblerTest {
 
   private static final PublisherId PUBLISHER_A = PublisherId.uint16(ushort(1));
   private static final PublisherId PUBLISHER_B = PublisherId.uint16(ushort(2));
+
+  /** Two readers, as acceptors of chunks; identity is all the reassembler uses. */
+  private static final DataSetReaderRuntime READER_A = mock(DataSetReaderRuntime.class);
+
+  private static final DataSetReaderRuntime READER_B = mock(DataSetReaderRuntime.class);
 
   private final ChunkReassembler reassembler = new ChunkReassembler();
 
@@ -242,6 +249,45 @@ class ChunkReassemblerTest {
 
     assertNotNull(reassembled);
     assertArrayEquals(bytes(1, 2, 3, 4, 5, 6), reassembled.payload());
+  }
+
+  // endregion
+
+  // region accepting readers
+
+  /**
+   * The reassembled message names only the readers that accepted every contributing chunk: a reader
+   * that accepted the first chunk but not the second is not among them, and a chunk no reader in
+   * the set accepted leaves nobody.
+   */
+  @Test
+  void reassembledMessageNamesTheReadersThatAcceptedEveryChunk() {
+    assertNull(accept(PUBLISHER_A, 1, 7, 0, 6, bytes(1, 2, 3, 4), null, READER_A, READER_B));
+    ChunkReassembler.ReassembledMessage reassembled =
+        accept(PUBLISHER_A, 1, 7, 4, 6, bytes(5, 6), null, READER_B);
+
+    assertNotNull(reassembled);
+    assertEquals(Set.of(READER_B), reassembled.readers());
+
+    assertNull(accept(PUBLISHER_B, 2, 3, 0, 4, bytes(1, 2), null, READER_A));
+    ChunkReassembler.ReassembledMessage nobody =
+        accept(PUBLISHER_B, 2, 3, 2, 4, bytes(3, 4), null, READER_B);
+
+    assertNotNull(nobody, "the payload still completes and records its sequence number");
+    assertTrue(nobody.readers().isEmpty(), "no reader accepted every chunk");
+    assertEquals(2, reassembler.recordCount(), "both streams keep their completed record");
+  }
+
+  /** The accepting readers restart with the first chunk of a newer payload. */
+  @Test
+  void acceptingReadersRestartWithANewerPayload() {
+    assertNull(accept(PUBLISHER_A, 1, 7, 0, 6, bytes(1, 2, 3, 4), null, READER_A));
+
+    ChunkReassembler.ReassembledMessage reassembled =
+        accept(PUBLISHER_A, 1, 8, 0, 2, bytes(5, 6), null, READER_B);
+
+    assertNotNull(reassembled);
+    assertEquals(Set.of(READER_B), reassembled.readers());
   }
 
   // endregion
@@ -469,8 +515,9 @@ class ChunkReassemblerTest {
     assertEquals(ushort(16), first.sequenceNumber());
     assertEquals(ushort(17), second.sequenceNumber());
 
-    assertNull(reassembler.accept(first, 0));
-    ChunkReassembler.ReassembledMessage reassembled = reassembler.accept(second, 0);
+    assertNull(reassembler.accept(first, Set.of(READER_A), 0));
+    ChunkReassembler.ReassembledMessage reassembled =
+        reassembler.accept(second, Set.of(READER_A), 0);
     assertNotNull(reassembled);
     assertArrayEquals(dataSetMessage, reassembled.payload());
     assertEquals(ushort(5), reassembled.dataSetWriterId());
@@ -535,8 +582,9 @@ class ChunkReassemblerTest {
       source2.release();
     }
 
-    assertNull(reassembler.accept(first, 0));
-    ChunkReassembler.ReassembledMessage reassembled = reassembler.accept(second, 0);
+    assertNull(reassembler.accept(first, Set.of(READER_A), 0));
+    ChunkReassembler.ReassembledMessage reassembled =
+        reassembler.accept(second, Set.of(READER_A), 0);
 
     assertNotNull(reassembled);
     assertArrayEquals(payloadBytes, reassembled.payload());
@@ -634,6 +682,27 @@ class ChunkReassemblerTest {
       byte[] chunkData,
       @Nullable ReceivedSecurity security) {
 
+    return accept(
+        publisherId,
+        dataSetWriterId,
+        messageSequenceNumber,
+        chunkOffset,
+        totalSize,
+        chunkData,
+        security,
+        READER_A);
+  }
+
+  private ChunkReassembler.@Nullable ReassembledMessage accept(
+      PublisherId publisherId,
+      int dataSetWriterId,
+      int messageSequenceNumber,
+      long chunkOffset,
+      long totalSize,
+      byte[] chunkData,
+      @Nullable ReceivedSecurity security,
+      DataSetReaderRuntime... acceptedReaders) {
+
     var chunk =
         new DecodedChunk(
             ushort(dataSetWriterId),
@@ -656,7 +725,7 @@ class ChunkReassemblerTest {
             security,
             chunk);
 
-    return reassembler.accept(message, nowNanos);
+    return reassembler.accept(message, Set.of(acceptedReaders), nowNanos);
   }
 
   private static byte[] bytes(int... values) {

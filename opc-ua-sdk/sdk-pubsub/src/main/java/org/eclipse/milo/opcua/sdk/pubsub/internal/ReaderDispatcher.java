@@ -122,17 +122,20 @@ import org.slf4j.LoggerFactory;
  * any content, so every sequence number observed here is post-verification — the recency window is
  * a genuine anti-replay control within a key's lifetime (no additional nonce monotonicity check is
  * applied). Chunk NetworkMessages observe the windows like any other NetworkMessage (each chunk
- * consumes a NetworkMessage sequence number). A chunk reaches the connection's {@link
- * ChunkReassembler} only when at least one reader accepted its NetworkMessage: the reader's group
- * passed the receive-mode gate, the reader matched it (including the chunk's PayloadHeader
- * DataSetWriterId against the reader's filter), and the NetworkMessage window verdict was NEW or
- * absent. Chunks no reader accepts, including those dropped at the receive-mode gate, never create,
- * change, or evict reassembly state. The reassembler keeps streams apart by received security mode
- * and remembers each stream's last completed MessageSequenceNumber, so a reassembled DataSetMessage
- * is delivered with a given received security only when every contributing chunk was received with
- * that same mode, and a repeated chunk set is delivered once even when the DataSetMessage carries
- * no sequence number. The reassembled payload re-enters decode with no NetworkMessage sequence
- * number and only its DataSetMessage sequence number drives the DataSetMessage window.
+ * consumes a NetworkMessage sequence number). A reader accepts a chunk NetworkMessage when its
+ * group passed the receive-mode gate, the reader matched it (including the chunk's PayloadHeader
+ * DataSetWriterId against the reader's filter), and its NetworkMessage window verdict was NEW or
+ * absent. A chunk reaches the connection's {@link ChunkReassembler} only when at least one reader
+ * accepted it, and the reassembled DataSetMessage is delivered only to the readers that accepted
+ * every chunk that contributed bytes to it: a reader whose own window rejected one of the chunks
+ * does not receive the payload even when a sibling reader accepted that chunk. Chunks no reader
+ * accepts, including those dropped at the receive-mode gate, never create, change, or evict
+ * reassembly state. The reassembler keeps streams apart by received security mode and remembers
+ * each stream's last completed MessageSequenceNumber, so a reassembled DataSetMessage is delivered
+ * with a given received security only when every contributing chunk was received with that same
+ * mode, and a repeated chunk set is delivered once even when the DataSetMessage carries no sequence
+ * number. The reassembled payload re-enters decode with no NetworkMessage sequence number and only
+ * its DataSetMessage sequence number drives the DataSetMessage window.
  *
  * <p>The dispatcher supplies the codec's {@code SecurityContextResolver} (keys are resolved by
  * plaintext wire identity, BEFORE group matching, because decode runs once per (connection,
@@ -262,9 +265,15 @@ final class ReaderDispatcher {
       }
 
       if (decoded instanceof DecodedNetworkMessage networkMessage) {
-        boolean accepted =
+        Set<DataSetReaderRuntime> acceptedReaders =
             handleDecoded(
-                connection, mappingName, topic, networkMessage, oversizeGroups, securityGroup);
+                connection,
+                mappingName,
+                topic,
+                networkMessage,
+                oversizeGroups,
+                securityGroup,
+                null);
 
         // Chunk NetworkMessages: the normal handleDecoded pass above lets the per-reader
         // NetworkMessage windows observe the chunk NM (its empty messages list delivers
@@ -274,14 +283,16 @@ final class ReaderDispatcher {
         // state. Only the built-in UADP mapping decodes and reassembles chunks. When a chunk
         // completes its payload, the reassembled DataSetMessage re-enters decode with
         // sequenceNumber == null (the chunk NMs already consumed theirs) and routes through
-        // handleDecoded again.
-        if (accepted
+        // handleDecoded again, restricted to the readers that accepted every contributing chunk.
+        if (!acceptedReaders.isEmpty()
             && networkMessage.chunk() != null
             && provider instanceof UadpMessageMapping uadpMapping) {
           ChunkReassembler.ReassembledMessage reassembled =
-              connection.chunkReassembler().accept(networkMessage, System.nanoTime());
+              connection
+                  .chunkReassembler()
+                  .accept(networkMessage, acceptedReaders, System.nanoTime());
 
-          if (reassembled != null) {
+          if (reassembled != null && !reassembled.readers().isEmpty()) {
             ByteBuf payload = Unpooled.wrappedBuffer(reassembled.payload());
             try {
               DecodedNetworkMessage decodedReassembled =
@@ -306,7 +317,13 @@ final class ReaderDispatcher {
 
               // the reassembled message inherits the (VERIFIED) chunk security; no re-resolution
               handleDecoded(
-                  connection, mappingName, null, decodedReassembled, oversizeGroups, null);
+                  connection,
+                  mappingName,
+                  null,
+                  decodedReassembled,
+                  oversizeGroups,
+                  null,
+                  reassembled.readers());
             } finally {
               payload.release();
             }
@@ -417,19 +434,23 @@ final class ReaderDispatcher {
   /**
    * Route one decoded NetworkMessage to the connection's readers.
    *
-   * @return whether at least one reader accepted the NetworkMessage: its group passed the
-   *     receive-mode gate, the reader matched the NetworkMessage (for a chunk, including its
-   *     PayloadHeader DataSetWriterId against the reader's filter), and the NetworkMessage window
-   *     verdict was NEW or absent. The caller uses this to decide whether a chunk NetworkMessage
-   *     may enter reassembly; it says nothing about DataSetMessage delivery.
+   * @param allowedReaders when non-null, the only readers the message may reach; every other reader
+   *     skips it entirely. Used for a reassembled chunk payload, which reaches only the readers
+   *     that accepted every contributing chunk.
+   * @return the readers that accepted the NetworkMessage: their group passed the receive-mode gate,
+   *     the reader matched the NetworkMessage (for a chunk, including its PayloadHeader
+   *     DataSetWriterId against the reader's filter), and its NetworkMessage window verdict was NEW
+   *     or absent. The caller uses this to decide whether, and for whom, a chunk NetworkMessage
+   *     enters reassembly; it says nothing about DataSetMessage delivery. Empty when none did.
    */
-  private boolean handleDecoded(
+  private Set<DataSetReaderRuntime> handleDecoded(
       ConnectionRuntime connection,
       String mappingName,
       @Nullable String topic,
       DecodedNetworkMessage decoded,
       Set<ReaderGroupRuntime> oversizeGroups,
-      @Nullable ReaderGroupRuntime securityResolvedGroup) {
+      @Nullable ReaderGroupRuntime securityResolvedGroup,
+      @Nullable Set<DataSetReaderRuntime> allowedReaders) {
 
     ReceivedSecurity security = decoded.security();
     if (security != null && security.outcome() != SecurityOutcome.VERIFIED) {
@@ -443,16 +464,16 @@ final class ReaderDispatcher {
         // can never reach the receive-mode gate below — count its receive-mode drops here instead
         countUnroutedSecuritySkip(connection, mappingName, decoded, oversizeGroups, security);
       }
-      return false;
+      return Set.of();
     }
 
     DecodedStatusMessage status = decoded.status();
     if (status != null) {
       handleStatus(connection, mappingName, topic, status);
-      return false;
+      return Set.of();
     }
 
-    boolean accepted = false;
+    Set<DataSetReaderRuntime> acceptedReaders = Set.of();
 
     // the received mode input to the §7.2.4.3 receive-mode gate: null security IS received None
     MessageSecurityMode receivedMode =
@@ -487,6 +508,9 @@ final class ReaderDispatcher {
         if (isNotReceiving(reader.state())) {
           continue;
         }
+        if (allowedReaders != null && !allowedReaders.contains(reader)) {
+          continue;
+        }
 
         // metadata announcements match on (PublisherId, DataSetWriterId) only
         for (DecodedMetaData metaData : decoded.metaData()) {
@@ -515,7 +539,10 @@ final class ReaderDispatcher {
                   || networkMessageClassification == SequenceNumberWindow.Classification.NEW)
               && (chunk == null
                   || dataSetWriterIdMatches(reader.config(), chunk.dataSetWriterId()))) {
-            accepted = true;
+            if (acceptedReaders.isEmpty()) {
+              acceptedReaders = new HashSet<>(4);
+            }
+            acceptedReaders.add(reader);
           }
 
           for (DecodedDataSetMessage message : decoded.messages()) {
@@ -539,7 +566,7 @@ final class ReaderDispatcher {
       }
     }
 
-    return accepted;
+    return acceptedReaders;
   }
 
   private void handleStatus(
