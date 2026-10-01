@@ -29,6 +29,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Matrix;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.XmlElement;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ThreeDVector;
 import org.eclipse.milo.opcua.stack.core.types.structured.XVType;
 import org.junit.jupiter.api.Test;
@@ -214,6 +215,43 @@ public class OpcUaXmlDecoderMatrixTest {
     }
 
     assertEquals(original, decoded);
+  }
+
+  // Matrix accepts an Object[] flat array, which generic codecs such as JsonStructCodec build.
+  // Every element must make the trip, not an empty Elements or a null Matrix.
+  @Test
+  void objectArrayInt32MatrixValueRoundTrips() throws Exception {
+    Matrix original = new Matrix(new Object[] {1, 2}, new int[] {1, 2}, OpcUaDataType.Int32);
+
+    String encoded = encode(e -> e.encodeMatrix("Test", original));
+
+    Matrix decoded;
+    try (var decoder = new OpcUaXmlDecoder(context)) {
+      decoder.setInput(new StringReader(encoded));
+      decoded = decoder.decodeMatrix("Test", OpcUaDataType.Int32);
+    }
+
+    assertEquals(new Matrix(new Integer[] {1, 2}, new int[] {1, 2}, OpcUaDataType.Int32), decoded);
+  }
+
+  @Test
+  void objectArrayEnumMatrixValueRoundTrips() throws Exception {
+    Matrix original =
+        new Matrix(
+            new Object[] {ApplicationType.Server, ApplicationType.Client},
+            new int[] {1, 2},
+            OpcUaDataType.Int32);
+
+    String encoded = encode(e -> e.encodeEnumMatrix("Test", original));
+
+    Matrix decoded;
+    try (var decoder = new OpcUaXmlDecoder(context)) {
+      decoder.setInput(new StringReader(encoded));
+      decoded = decoder.decodeEnumMatrix("Test");
+    }
+
+    // Enumerations reduce to their Int32 values: Server is 0 and Client is 1.
+    assertEquals(new Matrix(new Integer[] {0, 1}, new int[] {1, 2}, OpcUaDataType.Int32), decoded);
   }
 
   @Test

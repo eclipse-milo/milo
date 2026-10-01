@@ -63,5 +63,9 @@
  * structure codec. Decoding retains these positions as null-valued ExtensionObjects. Matrices
  * passed to the Variant encoder need explicit data type metadata when their first element cannot
  * identify the structure type.
+ *
+ * <p>Matrix elements are written by the Matrix's built-in type, whether its flat array is
+ * primitive, typed, or {@code Object[]} as generic codecs build it. An element of another class is
+ * an encoding error, as is an enumeration Matrix element that is not a {@code UaEnumeratedType}.
  */
 package org.eclipse.milo.opcua.stack.core.encoding.xml;

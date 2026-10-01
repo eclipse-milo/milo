@@ -11,17 +11,26 @@
 package org.eclipse.milo.opcua.stack.core.encoding.xml;
 
 import static org.eclipse.milo.opcua.stack.core.encoding.xml.OpcUaXmlEncoderTest.maybePrintXml;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.StringReader;
+import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
+import org.eclipse.milo.opcua.stack.core.encoding.xml.args.MatrixArguments;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Matrix;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
 import org.eclipse.milo.opcua.stack.core.types.structured.XVType;
+import org.eclipse.milo.opcua.stack.core.util.ArrayUtil;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -165,6 +174,164 @@ public class OpcUaXmlEncoderMatrixTest {
       String name, MatrixEncoding encoding, MatrixDecoding decoding) {
 
     return Arguments.of(Named.of(name, encoding), decoding);
+  }
+
+  /**
+   * {@link Matrix} accepts any flat array for its data type, and generic codecs such as
+   * JsonStructCodec build Object[] ones. Every element must be written by the Matrix's built-in
+   * type, so the XML doesn't depend on the flat array's Java class. The fixtures use primitive flat
+   * arrays where a type has one; this adds Object[] for every type and the boxed array for those.
+   */
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("matrixOfBuiltinTypeWithOtherFlatArrays")
+  void encodeMatrixWritesEveryElementWhateverTheFlatArrayClass(Matrix matrix, String expected)
+      throws Exception {
+
+    String actual;
+    try (var encoder = new OpcUaXmlEncoder(context)) {
+      encoder.encodeMatrix("Test", matrix);
+
+      actual = encoder.getOutputString();
+    }
+
+    Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
+
+    maybePrintXml(diff, expected, actual);
+
+    assertFalse(diff.hasDifferences(), diff.toString());
+  }
+
+  /**
+   * JsonStructCodec builds an enum Matrix as an Object[] of enumeration values with data type
+   * Int32. It must encode like the typed fixture, not as an element with no Dimensions.
+   */
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("matrixOfEnumeratedTypeWithObjectFlatArray")
+  void encodeEnumMatrixWritesEveryElementOfAnObjectFlatArray(Matrix matrix, String expected)
+      throws Exception {
+
+    String actual;
+    try (var encoder = new OpcUaXmlEncoder(context)) {
+      encoder.encodeEnumMatrix("Test", matrix);
+
+      actual = encoder.getOutputString();
+    }
+
+    Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
+
+    maybePrintXml(diff, expected, actual);
+
+    assertFalse(diff.hasDifferences(), diff.toString());
+  }
+
+  /**
+   * An element whose class doesn't match the Matrix's data type can't be written as that type. The
+   * encoder must fail instead of writing fewer elements than the dimensions describe, which Part 6
+   * §5.3.1.17 requires a decoder to reject.
+   */
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("matricesWithMismatchedElements")
+  void encodeMatrixRejectsElementOfAnotherType(Matrix matrix) throws Exception {
+    try (var encoder = new OpcUaXmlEncoder(context)) {
+      UaSerializationException e =
+          assertThrows(UaSerializationException.class, () -> encoder.encodeMatrix("Test", matrix));
+
+      assertEquals(StatusCodes.Bad_EncodingError, e.getStatusCode().getValue());
+    }
+  }
+
+  /**
+   * An enumeration element is written as its symbolic name and value, which only a {@code
+   * UaEnumeratedType} carries. Any other element, including the Integer values {@code
+   * decodeEnumMatrix} returns, must fail instead of turning the Matrix into a null one.
+   */
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("enumMatricesWithNonEnumElements")
+  void encodeEnumMatrixRejectsNonEnumElement(Matrix matrix) throws Exception {
+    try (var encoder = new OpcUaXmlEncoder(context)) {
+      UaSerializationException e =
+          assertThrows(
+              UaSerializationException.class, () -> encoder.encodeEnumMatrix("Test", matrix));
+
+      assertEquals(StatusCodes.Bad_EncodingError, e.getStatusCode().getValue());
+    }
+  }
+
+  static Stream<Arguments> matrixOfBuiltinTypeWithOtherFlatArrays() {
+    return MatrixArguments.matrixOfBuiltinTypeArguments()
+        .flatMap(
+            arguments -> {
+              Matrix matrix = (Matrix) arguments.get()[0];
+              Object expected = arguments.get()[1];
+              Object elements = matrix.getElements();
+
+              Stream.Builder<Arguments> variants = Stream.builder();
+              variants.add(withFlatArray(matrix, Object.class, expected));
+              if (elements.getClass().getComponentType().isPrimitive()) {
+                variants.add(withFlatArray(matrix, ArrayUtil.getBoxedType(elements), expected));
+              }
+              return variants.build();
+            });
+  }
+
+  static Stream<Arguments> matrixOfEnumeratedTypeWithObjectFlatArray() {
+    return MatrixArguments.matrixOfEnumeratedTypeArguments()
+        .map(
+            arguments ->
+                withFlatArray((Matrix) arguments.get()[0], Object.class, arguments.get()[1]));
+  }
+
+  static Stream<Arguments> matricesWithMismatchedElements() {
+    return Stream.of(
+        Arguments.of(
+            Named.of(
+                "String in an Int32 Matrix",
+                new Matrix(new Object[] {1, "2"}, new int[] {1, 2}, OpcUaDataType.Int32))),
+        Arguments.of(
+            Named.of(
+                "byte[] in a Byte Matrix",
+                new Matrix(new byte[] {1, 2}, new int[] {1, 2}, OpcUaDataType.Byte))));
+  }
+
+  static Stream<Arguments> enumMatricesWithNonEnumElements() {
+    return Stream.of(
+        Arguments.of(
+            Named.of(
+                "Integer[]",
+                new Matrix(new Integer[] {0, 1}, new int[] {1, 2}, OpcUaDataType.Int32))),
+        Arguments.of(
+            Named.of(
+                "Object[] with an Integer",
+                new Matrix(
+                    new Object[] {ApplicationType.Server, 1},
+                    new int[] {1, 2},
+                    OpcUaDataType.Int32))),
+        Arguments.of(
+            Named.of(
+                "Object[] with a null",
+                new Matrix(
+                    new Object[] {ApplicationType.Server, null},
+                    new int[] {1, 2},
+                    OpcUaDataType.Int32))));
+  }
+
+  /** Copy {@code matrix} into a Matrix whose flat array has {@code componentType} elements. */
+  private static Arguments withFlatArray(Matrix matrix, Class<?> componentType, Object expected) {
+    Object elements = matrix.getElements();
+    int length = Array.getLength(elements);
+    Object flatArray = Array.newInstance(componentType, length);
+    for (int i = 0; i < length; i++) {
+      Array.set(flatArray, i, Array.get(elements, i));
+    }
+
+    OpcUaDataType dataType = matrix.getDataType().orElseThrow();
+    String name =
+        "%s%s %s[]"
+            .formatted(
+                dataType, Arrays.toString(matrix.getDimensions()), componentType.getSimpleName());
+
+    return Arguments.of(
+        Named.of(name, new Matrix(flatArray, matrix.getDimensions(), dataType)), expected);
   }
 
   interface MatrixEncoding {
