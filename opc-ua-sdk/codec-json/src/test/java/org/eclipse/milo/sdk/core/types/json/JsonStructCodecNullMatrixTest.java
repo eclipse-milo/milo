@@ -45,6 +45,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
@@ -312,9 +313,9 @@ class JsonStructCodecNullMatrixTest {
 
   /** Part 6 §5.3.1.2 allows a null XML field to be omitted or written with xsi:nil="true". */
   private static void assertNullValuesElement(String xml) throws Exception {
-    var factory = DocumentBuilderFactory.newInstance();
+    DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
     factory.setNamespaceAware(true);
-    var document = factory.newDocumentBuilder().parse(new InputSource(new StringReader(xml)));
+    Document document = factory.newDocumentBuilder().parse(new InputSource(new StringReader(xml)));
 
     NodeList values = document.getElementsByTagNameNS("*", "Values");
     if (values.getLength() == 1) {
