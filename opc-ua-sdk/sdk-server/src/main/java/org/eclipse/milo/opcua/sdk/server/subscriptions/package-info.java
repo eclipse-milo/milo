@@ -38,15 +38,16 @@
  * quotas, monitoring mode, filters and deadbands, queue overflow, sequence numbers, keep-alives,
  * and lifetime.
  *
- * <p>Read access control for data items is also owned here, so an AddressSpace does not need to
- * check it. CreateMonitoredItems fails an item only for denials that are not about read access,
- * such as an AccessRestriction the channel does not satisfy. Part 4 §5.13.2.1 requires an item the
- * Session may not read to be created anyway and to report {@code Bad_UserAccessDenied} or {@code
- * Bad_NotReadable} in the Publish response, including when access rights change later. A
- * MonitoredDataItem therefore carries the result of the most recent read access check and replaces
- * the values it is given with the denial status while access is denied. The check is seeded at
- * create time and refreshed by the Subscription on every publishing interval, outside the
- * subscription lock. The cost is one {@code AccessController.checkReadAccess} call per Subscription
- * per publishing interval.
+ * <p>Read access control for data items is split. CreateMonitoredItems fails an item only for
+ * denials that are not about read access, such as an AccessRestriction the channel does not
+ * satisfy. Part 4 §5.13.2.1 requires an item the Session may not read to be created anyway and to
+ * report {@code Bad_UserAccessDenied} or {@code Bad_NotReadable} in the Publish response, including
+ * when access rights change later. A MonitoredDataItem therefore carries the result of the most
+ * recent read access check and replaces the values it is given with the denial status while access
+ * is denied; this package seeds that result at create time. Refreshing it belongs to whatever
+ * samples the item, because only the sampler knows when a value is about to be produced and for
+ * which Session: {@link org.eclipse.milo.opcua.sdk.server.util.SubscriptionModel} checks on every
+ * sampling cycle, and an AddressSpace that samples on its own calls {@link
+ * org.eclipse.milo.opcua.sdk.server.items.DataItem#setReadAccessResult} itself.
  */
 package org.eclipse.milo.opcua.sdk.server.subscriptions;

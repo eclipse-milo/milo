@@ -36,8 +36,6 @@ import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfigLimits;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.diagnostics.SubscriptionDiagnostics;
 import org.eclipse.milo.opcua.sdk.server.items.BaseMonitoredItem;
-import org.eclipse.milo.opcua.sdk.server.items.MonitoredDataItem;
-import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController.AccessResult;
 import org.eclipse.milo.opcua.sdk.server.subscriptions.PublishQueue.PendingPublish;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
@@ -56,11 +54,9 @@ import org.eclipse.milo.opcua.stack.core.types.structured.MonitoredItemNotificat
 import org.eclipse.milo.opcua.stack.core.types.structured.NotificationMessage;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishResponse;
-import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 import org.eclipse.milo.opcua.stack.core.types.structured.ResponseHeader;
 import org.eclipse.milo.opcua.stack.core.types.structured.SetPublishingModeRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.StatusChangeNotification;
-import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,11 +87,6 @@ public class Subscription {
   private final TimerHandler timerHandler = new TimerHandler();
 
   private volatile ScheduledFuture<?> publishingTimer;
-
-  // Both are accessed while synchronized on 'this'. They order overlapping read access checks so
-  // an older result can never overwrite a newer one.
-  private long readAccessCheckSequence = 0;
-  private long readAccessAppliedSequence = 0;
 
   private volatile boolean messageSent = false;
   private volatile boolean moreNotifications = false;
@@ -725,99 +716,7 @@ public class Subscription {
   }
 
   /** The publishing timer has elapsed. */
-  void onPublishingTimer() {
-    long startNanos = System.nanoTime();
-
-    refreshReadAccess();
-    handlePublishingTimer(startNanos);
-  }
-
-  /**
-   * Re-check the current Session's read access to every data item in this Subscription and update
-   * the items with the result.
-   *
-   * <p>Part 4 §5.13.2.1 requires a change in access rights after CreateMonitoredItems to reach the
-   * client in a Publish response, and data to resume once access is allowed again. The publishing
-   * timer calls this once per publishing interval, which covers every item whatever samples it.
-   * TransferSubscriptions calls it as soon as the items belong to the new Session.
-   *
-   * <p>The attribute reads behind the check run outside the subscription lock, so they do not block
-   * Publish or ModifyMonitoredItems. The result is applied under the lock, only if the Subscription
-   * still belongs to the Session it was checked for, and only if no check that started later has
-   * already been applied.
-   */
-  public void refreshReadAccess() {
-    refreshReadAccess(null);
-  }
-
-  /**
-   * Check {@code session}'s read access to every data item in this Subscription and update the
-   * items with the result, ahead of a transfer to that Session.
-   *
-   * <p>Call this while synchronized on this Subscription, before the items are moved to {@code
-   * session}, so a value sampled after the move can never pass with the previous Session's result.
-   *
-   * @param session the Session this Subscription is being transferred to.
-   */
-  public void refreshReadAccessForTransfer(Session session) {
-    refreshReadAccess(session);
-  }
-
-  private void refreshReadAccess(@Nullable Session transferTo) {
-    State s = state.get();
-    if (s == State.Closing || s == State.Closed) return;
-
-    List<MonitoredDataItem> dataItems =
-        itemsById.values().stream()
-            .filter(MonitoredDataItem.class::isInstance)
-            .map(MonitoredDataItem.class::cast)
-            .toList();
-
-    if (dataItems.isEmpty()) return;
-
-    List<ReadValueId> readValueIds =
-        dataItems.stream().map(MonitoredDataItem::getReadValueId).toList();
-
-    Session session;
-    long sequence;
-
-    synchronized (this) {
-      session = transferTo != null ? transferTo : getSession();
-      sequence = ++readAccessCheckSequence;
-    }
-
-    Map<ReadValueId, AccessResult> accessResults;
-    try {
-      accessResults =
-          session.getServer().getAccessController().checkReadAccess(session, readValueIds);
-    } catch (Exception e) {
-      logger.warn("[id={}] read access check failed: {}", subscriptionId, e.getMessage(), e);
-      return;
-    }
-
-    synchronized (this) {
-      if (transferTo == null && getSession() != session) {
-        // Transferred while the check ran; the transfer refreshed for the new Session.
-        return;
-      }
-      if (sequence < readAccessAppliedSequence) {
-        // A check that started later, such as the one TransferSubscriptions runs, has already
-        // been applied; this result is older than what the items hold.
-        return;
-      }
-      readAccessAppliedSequence = sequence;
-
-      for (MonitoredDataItem item : dataItems) {
-        AccessResult accessResult = accessResults.get(item.getReadValueId());
-
-        if (accessResult != null) {
-          item.setReadAccessResult(accessResult);
-        }
-      }
-    }
-  }
-
-  private synchronized void handlePublishingTimer(long startNanos) {
+  synchronized void onPublishingTimer() {
     State state = this.state.get();
 
     if (logger.isTraceEnabled()) {
@@ -831,6 +730,8 @@ public class Subscription {
 
     // lifetimeCounter is always accessed while synchronized on 'this'.
     lifetimeCounter = lifetimeCounter - 1;
+
+    long startNanos = System.nanoTime();
 
     if (state == State.Normal) {
       timerHandler.whenNormal();

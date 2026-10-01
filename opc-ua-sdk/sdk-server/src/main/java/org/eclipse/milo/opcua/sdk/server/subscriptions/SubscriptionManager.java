@@ -466,7 +466,7 @@ public class SubscriptionManager {
 
         if (monitoredItem instanceof MonitoredDataItem dataItem) {
           // Seed the item with the create-time check so a denial is queued before anything
-          // samples it. Subscription re-checks on every publishing interval from here on.
+          // samples it. Whatever samples it re-checks on every sampling cycle from here on.
           dataItem.setReadAccessResult(readAccessResult);
         }
 

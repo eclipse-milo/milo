@@ -222,9 +222,13 @@ public interface AddressSpace {
    * <p>If sampling is enabled for this item, it is expected that a best-effort will be made to
    * update the item's value at the sampling rate.
    *
-   * <p>The Session's read access is enforced by the SDK, not by the implementation. An item the
-   * Session may not read is still created and delivered here; the SDK replaces the values set on it
-   * with the denial status until access is allowed.
+   * <p>An item the Session may not read is still created and delivered here, with the denial
+   * already queued (Part 4 §5.13.2.1). The item replaces any value set on it with the denial status
+   * until {@link DataItem#setReadAccessResult} is called with an allowed result. Whatever samples
+   * the item is expected to call that method on every sampling cycle, with the result of {@code
+   * AccessController.checkReadAccess} for the item's current Session, so that access rights that
+   * change later reach the client. {@link org.eclipse.milo.opcua.sdk.server.util.SubscriptionModel}
+   * does this; an implementation that samples on its own must do the same.
    *
    * @param dataItems the {@link DataItem}s that were created.
    */

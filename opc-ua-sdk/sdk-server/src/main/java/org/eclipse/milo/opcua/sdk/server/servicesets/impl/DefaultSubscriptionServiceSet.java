@@ -249,11 +249,6 @@ public class DefaultSubscriptionServiceSet implements SubscriptionServiceSet {
                     subscription, new StatusCode(StatusCodes.Good_SubscriptionTransferred));
             otherSession.getSubscriptionManager().removeSubscription(subscriptionId);
 
-            // The new Session may not have the same read access as the old one. Apply its
-            // access to the items before they move, so a value sampled after the move can
-            // never pass with the old Session's result.
-            subscription.refreshReadAccessForTransfer(session);
-
             subscription.setSubscriptionManager(session.getSubscriptionManager());
             session.getSubscriptionManager().addSubscription(subscription);
 

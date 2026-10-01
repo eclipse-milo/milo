@@ -117,25 +117,23 @@ public class MonitoredDataItem extends BaseMonitoredItem<DataValue> implements D
   }
 
   /**
-   * Update this item with the result of the most recent check of its Session's read access.
+   * {@inheritDoc}
    *
-   * <p>While access is denied, every value passed to {@link #setValue(DataValue)} is replaced by a
-   * {@link DataValue} carrying the denial status, so the client receives the denial in a Publish
-   * response rather than a value it may not read. A transition to denied queues the denial right
-   * away, unless the item is {@link MonitoringMode#Disabled}, in which case nothing is queued until
-   * monitoring resumes. Once access is allowed again, the next value passed to {@link
-   * #setValue(DataValue)} is always reported, and the denial is no longer the last value for {@link
-   * #maybeSendLastValue()}.
-   *
-   * @param accessResult the result of the read access check.
+   * <p>A denial is also queued by the first call after monitoring resumes from {@link
+   * MonitoringMode#Disabled}, since nothing has been reported since. Once access is allowed again,
+   * the denial is no longer the last value for {@link #maybeSendLastValue()}.
    */
+  @Override
   public synchronized void setReadAccessResult(AccessResult accessResult) {
     if (accessResult instanceof AccessResult.Denied denied) {
       StatusCode previous = readAccessDenied;
       readAccessDenied = denied.statusCode();
 
-      // Part 4 §7.23: a Disabled item generates and queues no Notifications.
-      if (!denied.statusCode().equals(previous) && getMonitoringMode() != MonitoringMode.Disabled) {
+      // Queue the denial when it is new, or when nothing has been reported since the item was
+      // created or monitoring resumed. Part 4 §7.23: a Disabled item queues no Notifications.
+      boolean unreported = lastValue == null;
+      if ((!denied.statusCode().equals(previous) || unreported)
+          && getMonitoringMode() != MonitoringMode.Disabled) {
         setValue(new DataValue(denied.statusCode()));
       }
     } else if (readAccessDenied != null) {
@@ -213,21 +211,13 @@ public class MonitoredDataItem extends BaseMonitoredItem<DataValue> implements D
 
   @Override
   public synchronized void setMonitoringMode(MonitoringMode monitoringMode) {
-    MonitoringMode previous = getMonitoringMode();
-
     if (monitoringMode == MonitoringMode.Disabled) {
+      // Nothing has been reported since; the first refresh after resuming reports the current
+      // denial, if there is one, rather than a result cached while Disabled.
       lastValue = null;
     }
 
     super.setMonitoringMode(monitoringMode);
-
-    StatusCode denied = readAccessDenied;
-    if (previous == MonitoringMode.Disabled
-        && monitoringMode != MonitoringMode.Disabled
-        && denied != null) {
-      // Report a denial that arrived while Disabled now that monitoring has resumed.
-      setValue(new DataValue(denied));
-    }
   }
 
   public synchronized void maybeSendLastValue() {

@@ -129,20 +129,38 @@ class MonitoredDataItemTest {
     assertTrue(drain().isEmpty(), "nothing may be queued for an access change while Disabled");
   }
 
-  // A denial that arrived while Disabled is reported once monitoring resumes, even if nothing
-  // samples the item in between.
+  // A denial that arrived while Disabled is reported by the first refresh after monitoring
+  // resumes, even though the refresh carries the same result as before.
   @Test
-  void denialThatArrivedWhileDisabledIsReportedWhenMonitoringResumes() {
+  void denialThatArrivedWhileDisabledIsReportedByTheFirstRefreshAfterResume() {
     item.setMonitoringMode(MonitoringMode.Disabled);
     item.setReadAccessResult(AccessResult.DENIED_USER_ACCESS);
-
-    assertTrue(drain().isEmpty(), "nothing may be queued while Disabled");
-
     item.setMonitoringMode(MonitoringMode.Reporting);
+
+    assertTrue(drain().isEmpty(), "resuming must not queue a result cached while Disabled");
+
+    item.setReadAccessResult(AccessResult.DENIED_USER_ACCESS);
 
     List<DataValue> queued = drain();
     assertEquals(1, queued.size());
     assertEquals(StatusCodes.Bad_UserAccessDenied, queued.get(0).statusCode().getValue());
+  }
+
+  // Access granted while Disabled must not surface the denial cached before it on resume.
+  @Test
+  void accessGrantedWhileDisabledQueuesNoStaleDenialOnResume() {
+    item.setReadAccessResult(AccessResult.DENIED_USER_ACCESS);
+    drain();
+    item.setMonitoringMode(MonitoringMode.Disabled);
+    item.setMonitoringMode(MonitoringMode.Reporting);
+
+    item.setReadAccessResult(AccessResult.ALLOWED);
+    item.setValue(new DataValue(new Variant(7)));
+
+    List<DataValue> queued = drain();
+    assertEquals(1, queued.size(), "only the value may be queued, not the stale denial");
+    assertEquals(StatusCode.GOOD, queued.get(0).statusCode());
+    assertEquals(7, queued.get(0).value().value());
   }
 
   @Test
