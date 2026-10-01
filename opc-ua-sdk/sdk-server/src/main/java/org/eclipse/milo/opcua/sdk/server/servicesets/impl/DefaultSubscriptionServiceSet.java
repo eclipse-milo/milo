@@ -254,6 +254,9 @@ public class DefaultSubscriptionServiceSet implements SubscriptionServiceSet {
 
             subscription.getMonitoredItems().values().forEach(item -> item.setSession(session));
 
+            // The new Session may not have the same read access as the old one.
+            subscription.refreshReadAccess();
+
             availableSequenceNumbers = subscription.getAvailableSequenceNumbers();
 
             if (request.getSendInitialValues()) {

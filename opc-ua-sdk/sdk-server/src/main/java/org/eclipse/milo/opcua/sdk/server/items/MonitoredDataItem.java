@@ -123,7 +123,7 @@ public class MonitoredDataItem extends BaseMonitoredItem<DataValue> implements D
    * {@link DataValue} carrying the denial status, so the client receives the denial in a Publish
    * response rather than a value it may not read. A transition to denied queues the denial right
    * away. Once access is allowed again, the next value passed to {@link #setValue(DataValue)} is
-   * reported as usual.
+   * always reported, and the denial is no longer the last value for {@link #maybeSendLastValue()}.
    *
    * @param accessResult the result of the read access check.
    */
@@ -135,8 +135,9 @@ public class MonitoredDataItem extends BaseMonitoredItem<DataValue> implements D
       if (!denied.statusCode().equals(previous)) {
         setValue(new DataValue(denied.statusCode()));
       }
-    } else {
+    } else if (readAccessDenied != null) {
       readAccessDenied = null;
+      lastValue = null;
     }
   }
 

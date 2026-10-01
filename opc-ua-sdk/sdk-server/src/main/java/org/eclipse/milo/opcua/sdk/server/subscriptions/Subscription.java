@@ -720,20 +720,26 @@ public class Subscription {
 
   /** The publishing timer has elapsed. */
   void onPublishingTimer() {
+    long startNanos = System.nanoTime();
+
     refreshReadAccess();
-    handlePublishingTimer();
+    handlePublishingTimer(startNanos);
   }
 
   /**
-   * Re-check the Session's read access to every data item.
+   * Re-check the current Session's read access to every data item in this Subscription and update
+   * the items with the result.
    *
    * <p>Part 4 §5.13.2.1 requires a change in access rights after CreateMonitoredItems to reach the
-   * client in a Publish response, and data to resume once access is allowed again. Doing it here,
-   * once per publishing interval, covers every item whatever samples it, and outside the
-   * subscription lock so the attribute reads behind the check do not block Publish or
-   * ModifyMonitoredItems.
+   * client in a Publish response, and data to resume once access is allowed again. The publishing
+   * timer calls this once per publishing interval, which covers every item whatever samples it.
+   * TransferSubscriptions calls it as soon as the items belong to the new Session.
+   *
+   * <p>The attribute reads behind the check run outside the subscription lock, so they do not block
+   * Publish or ModifyMonitoredItems. The result is applied under the lock, and only if the
+   * Subscription still belongs to the Session it was checked for.
    */
-  private void refreshReadAccess() {
+  public void refreshReadAccess() {
     State s = state.get();
     if (s == State.Closing || s == State.Closed) return;
 
@@ -748,28 +754,34 @@ public class Subscription {
     List<ReadValueId> readValueIds =
         dataItems.stream().map(MonitoredDataItem::getReadValueId).toList();
 
+    Session session = getSession();
+
     Map<ReadValueId, AccessResult> accessResults;
     try {
       accessResults =
-          subscriptionManager
-              .getServer()
-              .getAccessController()
-              .checkReadAccess(getSession(), readValueIds);
+          session.getServer().getAccessController().checkReadAccess(session, readValueIds);
     } catch (Exception e) {
       logger.warn("[id={}] read access check failed: {}", subscriptionId, e.getMessage(), e);
       return;
     }
 
-    for (MonitoredDataItem item : dataItems) {
-      AccessResult accessResult = accessResults.get(item.getReadValueId());
+    synchronized (this) {
+      if (getSession() != session) {
+        // Transferred while the check ran; the transfer refreshed for the new Session.
+        return;
+      }
 
-      if (accessResult != null) {
-        item.setReadAccessResult(accessResult);
+      for (MonitoredDataItem item : dataItems) {
+        AccessResult accessResult = accessResults.get(item.getReadValueId());
+
+        if (accessResult != null) {
+          item.setReadAccessResult(accessResult);
+        }
       }
     }
   }
 
-  private synchronized void handlePublishingTimer() {
+  private synchronized void handlePublishingTimer(long startNanos) {
     State state = this.state.get();
 
     if (logger.isTraceEnabled()) {
@@ -783,8 +795,6 @@ public class Subscription {
 
     // lifetimeCounter is always accessed while synchronized on 'this'.
     lifetimeCounter = lifetimeCounter - 1;
-
-    long startNanos = System.nanoTime();
 
     if (state == State.Normal) {
       timerHandler.whenNormal();

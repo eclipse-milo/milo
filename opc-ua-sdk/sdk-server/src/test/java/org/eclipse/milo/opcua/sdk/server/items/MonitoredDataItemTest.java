@@ -102,6 +102,20 @@ class MonitoredDataItemTest {
     assertEquals(2, queued.get(0).value().value());
   }
 
+  // After a transfer with sendInitialValues, the last value is re-sent. Once access is allowed
+  // again the denial must not be what gets re-sent.
+  @Test
+  void denialIsNotTheLastValueOnceAccessIsAllowedAgain() {
+    item.setValue(new DataValue(new Variant(1)));
+    item.setReadAccessResult(AccessResult.DENIED_USER_ACCESS);
+    drain();
+
+    item.setReadAccessResult(AccessResult.ALLOWED);
+    item.maybeSendLastValue();
+
+    assertTrue(drain().isEmpty(), "the denial must not be re-sent as the last value");
+  }
+
   @Test
   void changedDenialReasonIsReported() {
     item.setReadAccessResult(AccessResult.DENIED_USER_ACCESS);
