@@ -1749,11 +1749,17 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
   /**
    * Write one Matrix element as {@code dataType}.
    *
-   * @throws UaSerializationException if {@code element} is not null and not an instance of the
-   *     class that backs {@code dataType}.
+   * <p>A null element keeps its position, so the element count still matches the dimensions.
+   *
+   * @throws UaSerializationException if {@code element} is null and {@code dataType} has no null
+   *     value, or {@code element} is not an instance of the class that backs {@code dataType}.
    */
   private void encodeMatrixElement(OpcUaDataType dataType, @Nullable Object element) {
-    if (element != null && !dataType.getBackingClass().isInstance(element)) {
+    if (element == null) {
+      encodeNullMatrixElement(dataType);
+    } else if (dataType.getBackingClass().isInstance(element)) {
+      encodeBuiltinTypeValue(element, dataType);
+    } else {
       throw new UaSerializationException(
           StatusCodes.Bad_EncodingError,
           "%s Matrix element is a %s, not a %s"
@@ -1762,12 +1768,26 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
                   element.getClass().getName(),
                   dataType.getBackingClass().getName()));
     }
+  }
 
-    if (dataType == OpcUaDataType.ExtensionObject) {
-      // A null ExtensionObject keeps its position as a nil element.
-      encodeExtensionObjectValue("ExtensionObject", (ExtensionObject) element, true);
-    } else {
-      encodeBuiltinTypeValue(element, dataType);
+  private void encodeNullMatrixElement(OpcUaDataType dataType) {
+    switch (dataType) {
+      // Part 6 Table 1: these types have no null value.
+      case Boolean, SByte, Byte, Int16, UInt16, Int32, UInt32, Int64, UInt64, Float, Double ->
+          throw new UaSerializationException(
+              StatusCodes.Bad_EncodingError,
+              "%s Matrix element is null, but %s has no null value"
+                  .formatted(dataType.name(), dataType.name()));
+      // Opc.Ua.Types.xsd doesn't make these list elements nillable. Part 6 Table 1 defines a null
+      // value for each.
+      case DateTime -> encodeDateTime("DateTime", DateTime.NULL_VALUE);
+      case Guid -> encodeGuid("Guid", new UUID(0L, 0L));
+      case Variant -> encodeVariant("Variant", Variant.NULL_VALUE);
+      // Not nillable and, per Part 6 Table 1, not nullable. OpcUaBinaryEncoder writes Good for a
+      // null StatusCode, and OpcUaXmlDecoder reads an omitted one as Good.
+      case StatusCode -> encodeStatusCode("StatusCode", StatusCode.GOOD);
+      // <Type xsi:nil="true"/>, which OpcUaXmlDecoder reads back as the type's null value.
+      default -> beginField(dataType.name(), true, true, true);
     }
   }
 

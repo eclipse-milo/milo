@@ -35,6 +35,7 @@ import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.xmlunit.builder.DiffBuilder;
 import org.xmlunit.diff.Diff;
@@ -255,6 +256,100 @@ public class OpcUaXmlEncoderMatrixTest {
 
       assertEquals(StatusCodes.Bad_EncodingError, e.getStatusCode().getValue());
     }
+  }
+
+  /**
+   * Part 6 §5.3.1.17 requires the element count to match Dimensions, and §5.3.4 makes array
+   * elements nillable because XML encoders would otherwise drop empty ones. A null element is
+   * written in place: as xsi:nil, or for DateTime, Guid, Variant and StatusCode, whose list
+   * elements the schema doesn't make nillable, as their null or default values from Part 6 Table 1.
+   */
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("nullMatrixElementForms")
+  void encodeMatrixWritesNullElementInPlace(OpcUaDataType dataType, String expectedElement)
+      throws Exception {
+
+    Object elements = Array.newInstance(dataType.getBackingClass(), 1);
+    Matrix matrix = new Matrix(elements, new int[] {1, 1}, dataType);
+
+    String actual;
+    try (var encoder = new OpcUaXmlEncoder(context)) {
+      encoder.encodeMatrix("Test", matrix);
+
+      actual = encoder.getOutputString();
+    }
+
+    String expected =
+        """
+        <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+          <uax:Dimensions>
+            <uax:Int32>1</uax:Int32>
+            <uax:Int32>1</uax:Int32>
+          </uax:Dimensions>
+          <uax:Elements>%s</uax:Elements>
+        </Test>
+        """
+            .formatted(expectedElement);
+
+    Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
+
+    maybePrintXml(diff, expected, actual);
+
+    assertFalse(diff.hasDifferences(), diff.toString());
+  }
+
+  /**
+   * Part 6 Table 1 gives Boolean and the numeric types no null value, so a null element of these
+   * types can't be written. The encoder must fail instead of throwing NullPointerException.
+   */
+  @ParameterizedTest
+  @EnumSource(
+      value = OpcUaDataType.class,
+      names = {
+        "Boolean", "SByte", "Byte", "Int16", "UInt16", "Int32", "UInt32", "Int64", "UInt64",
+        "Float", "Double"
+      })
+  void encodeMatrixRejectsNullElementOfNonNullableType(OpcUaDataType dataType) throws Exception {
+    Object elements = Array.newInstance(dataType.getBackingClass(), 2);
+    Matrix matrix = new Matrix(elements, new int[] {1, 2}, dataType);
+
+    try (var encoder = new OpcUaXmlEncoder(context)) {
+      UaSerializationException e =
+          assertThrows(UaSerializationException.class, () -> encoder.encodeMatrix("Test", matrix));
+
+      assertEquals(StatusCodes.Bad_EncodingError, e.getStatusCode().getValue());
+    }
+  }
+
+  static Stream<Arguments> nullMatrixElementForms() {
+    Stream<Arguments> nil =
+        Stream.of(
+                OpcUaDataType.String,
+                OpcUaDataType.ByteString,
+                OpcUaDataType.XmlElement,
+                OpcUaDataType.NodeId,
+                OpcUaDataType.ExpandedNodeId,
+                OpcUaDataType.QualifiedName,
+                OpcUaDataType.LocalizedText,
+                OpcUaDataType.ExtensionObject,
+                OpcUaDataType.DataValue,
+                OpcUaDataType.DiagnosticInfo)
+            .map(t -> Arguments.of(t, "<uax:%s xsi:nil=\"true\"/>".formatted(t.name())));
+
+    Stream<Arguments> nullValue =
+        Stream.of(
+            Arguments.of(
+                OpcUaDataType.DateTime, "<uax:DateTime>1601-01-01T00:00:00Z</uax:DateTime>"),
+            Arguments.of(
+                OpcUaDataType.Guid, "<uax:Guid>00000000-0000-0000-0000-000000000000</uax:Guid>"),
+            Arguments.of(
+                OpcUaDataType.Variant, "<uax:Variant><uax:Value xsi:nil=\"true\"/></uax:Variant>"),
+            Arguments.of(
+                OpcUaDataType.StatusCode,
+                "<uax:StatusCode><uax:Code>0</uax:Code></uax:StatusCode>"));
+
+    return Stream.concat(nil, nullValue);
   }
 
   static Stream<Arguments> matrixOfBuiltinTypeWithOtherFlatArrays() {
