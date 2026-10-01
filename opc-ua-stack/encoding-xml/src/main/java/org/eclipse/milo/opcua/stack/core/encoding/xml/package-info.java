@@ -63,5 +63,14 @@
  * structure codec. Decoding retains these positions as null-valued ExtensionObjects. Matrices
  * passed to the Variant encoder need explicit data type metadata when their first element cannot
  * identify the structure type.
+ *
+ * <p>Matrix elements are written by the Matrix's built-in type, whether its flat array is
+ * primitive, typed, or {@code Object[]} as generic codecs build it. An element of another class is
+ * an encoding error, as is an enumeration Matrix element that is not a {@code UaEnumeratedType}. A
+ * null element keeps its position so the element count matches the dimensions. It is written as an
+ * {@code xsi:nil} element, except where the schema does not make the element nillable: DateTime and
+ * Guid are written as their null values, a Variant as an empty Variant, and a StatusCode as Good,
+ * which is also how a null StatusCode is written in binary. Boolean and numeric types have no null
+ * value, so a null element of one of them is an encoding error.
  */
 package org.eclipse.milo.opcua.stack.core.encoding.xml;
