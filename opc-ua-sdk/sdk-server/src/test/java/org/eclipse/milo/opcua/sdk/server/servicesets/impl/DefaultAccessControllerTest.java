@@ -67,7 +67,8 @@ class DefaultAccessControllerTest {
 
     UByte userAccessLevel = AccessLevel.toValue(AccessLevel.READ_ONLY);
 
-    var attributes = new AccessControlAttributes(null, null, null, userAccessLevel, null, null);
+    var attributes =
+        new AccessControlAttributes(null, null, null, null, userAccessLevel, null, null);
     attributesMap.put(nodeId, attributes);
 
     AccessResult result =
@@ -83,7 +84,65 @@ class DefaultAccessControllerTest {
 
     UByte userAccessLevel = AccessLevel.toValue(AccessLevel.NONE);
 
-    var attributes = new AccessControlAttributes(null, null, null, userAccessLevel, null, null);
+    var attributes =
+        new AccessControlAttributes(null, null, null, null, userAccessLevel, null, null);
+    attributesMap.put(nodeId, attributes);
+
+    AccessResult result =
+        DefaultAccessController.checkReadAccess(context, List.of(readValueId)).get(readValueId);
+
+    assertEquals(AccessResult.DENIED_USER_ACCESS, result);
+  }
+
+  // Part 4 §7.38.2: Bad_NotReadable means the AccessLevel itself does not allow reading, which is
+  // not a statement about the user, so it applies even when UserAccessLevel would allow the read.
+  @Test
+  void checkReadAccess_Value_NotReadable() {
+    var nodeId = new NodeId(1, "foo");
+    var readValueId = new ReadValueId(nodeId, AttributeId.Value.uid(), null, null);
+
+    UByte accessLevel = AccessLevel.toValue(AccessLevel.WRITE_ONLY);
+    UByte userAccessLevel = AccessLevel.toValue(AccessLevel.READ_ONLY);
+
+    var attributes =
+        new AccessControlAttributes(null, null, null, accessLevel, userAccessLevel, null, null);
+    attributesMap.put(nodeId, attributes);
+
+    AccessResult result =
+        DefaultAccessController.checkReadAccess(context, List.of(readValueId)).get(readValueId);
+
+    assertEquals(AccessResult.DENIED_NOT_READABLE, result);
+  }
+
+  // When both levels deny the read, the Node-level reason is reported.
+  @Test
+  void checkReadAccess_Value_NotReadableTakesPrecedenceOverUserAccessDenied() {
+    var nodeId = new NodeId(1, "foo");
+    var readValueId = new ReadValueId(nodeId, AttributeId.Value.uid(), null, null);
+
+    UByte accessLevel = AccessLevel.toValue(AccessLevel.NONE);
+    UByte userAccessLevel = AccessLevel.toValue(AccessLevel.NONE);
+
+    var attributes =
+        new AccessControlAttributes(null, null, null, accessLevel, userAccessLevel, null, null);
+    attributesMap.put(nodeId, attributes);
+
+    AccessResult result =
+        DefaultAccessController.checkReadAccess(context, List.of(readValueId)).get(readValueId);
+
+    assertEquals(AccessResult.DENIED_NOT_READABLE, result);
+  }
+
+  @Test
+  void checkReadAccess_Value_ReadableButUserAccessDenied() {
+    var nodeId = new NodeId(1, "foo");
+    var readValueId = new ReadValueId(nodeId, AttributeId.Value.uid(), null, null);
+
+    UByte accessLevel = AccessLevel.toValue(AccessLevel.READ_WRITE);
+    UByte userAccessLevel = AccessLevel.toValue(AccessLevel.WRITE_ONLY);
+
+    var attributes =
+        new AccessControlAttributes(null, null, null, accessLevel, userAccessLevel, null, null);
     attributesMap.put(nodeId, attributes);
 
     AccessResult result =
@@ -99,6 +158,7 @@ class DefaultAccessControllerTest {
 
     var attributes =
         new AccessControlAttributes(
+            null,
             null,
             null,
             null,
@@ -130,6 +190,7 @@ class DefaultAccessControllerTest {
             null,
             null,
             null,
+            null,
             new RolePermissionType[] {new RolePermissionType(ROLE_A, PermissionType.of())});
     attributesMap.put(nodeId, attributes);
 
@@ -147,7 +208,7 @@ class DefaultAccessControllerTest {
     var invalidAttributeId = UInteger.valueOf(9999);
     var readValueId = new ReadValueId(nodeId, invalidAttributeId, null, null);
 
-    var attributes = new AccessControlAttributes(null, null, null, null, null, null);
+    var attributes = new AccessControlAttributes(null, null, null, null, null, null, null);
     attributesMap.put(nodeId, attributes);
 
     AccessResult result =
@@ -165,7 +226,8 @@ class DefaultAccessControllerTest {
 
     UByte userAccessLevel = AccessLevel.toValue(AccessLevel.READ_WRITE);
 
-    var attributes = new AccessControlAttributes(null, null, null, userAccessLevel, null, null);
+    var attributes =
+        new AccessControlAttributes(null, null, null, null, userAccessLevel, null, null);
     attributesMap.put(nodeId, attributes);
 
     AccessResult result =
@@ -183,7 +245,8 @@ class DefaultAccessControllerTest {
 
     UByte userAccessLevel = AccessLevel.toValue(AccessLevel.READ_ONLY);
 
-    var attributes = new AccessControlAttributes(null, null, null, userAccessLevel, null, null);
+    var attributes =
+        new AccessControlAttributes(null, null, null, null, userAccessLevel, null, null);
     attributesMap.put(nodeId, attributes);
 
     AccessResult result =
@@ -199,7 +262,7 @@ class DefaultAccessControllerTest {
     var writeValue =
         new WriteValue(nodeId, invalidAttributeId, null, DataValue.valueOnly(Variant.NULL_VALUE));
 
-    var attributes = new AccessControlAttributes(null, null, null, null, null, null);
+    var attributes = new AccessControlAttributes(null, null, null, null, null, null, null);
     attributesMap.put(nodeId, attributes);
 
     AccessResult result =
@@ -226,7 +289,7 @@ class DefaultAccessControllerTest {
     attributesMap.put(
         nodeId,
         new AccessControlAttributes(
-            null, null, UInteger.MAX, null, null, new RolePermissionType[] {}));
+            null, null, UInteger.MAX, null, null, null, new RolePermissionType[] {}));
     Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of()));
 
     var results =
@@ -255,7 +318,7 @@ class DefaultAccessControllerTest {
     attributesMap.put(
         nodeId,
         new AccessControlAttributes(
-            null, null, UInteger.MIN, null, null, new RolePermissionType[] {}));
+            null, null, UInteger.MIN, null, null, null, new RolePermissionType[] {}));
     Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of()));
 
     var results =
@@ -282,6 +345,7 @@ class DefaultAccessControllerTest {
             null,
             null,
             UInteger.MIN,
+            null,
             null,
             null,
             new RolePermissionType[] {
@@ -311,6 +375,7 @@ class DefaultAccessControllerTest {
             UInteger.MIN,
             null,
             null,
+            null,
             new RolePermissionType[] {
               new RolePermissionType(
                   ROLE_A, PermissionType.of(PermissionType.Field.WriteHistorizing))
@@ -336,7 +401,7 @@ class DefaultAccessControllerTest {
     attributesMap.put(
         nodeId,
         new AccessControlAttributes(
-            null, null, UInteger.MAX, null, null, new RolePermissionType[] {}));
+            null, null, UInteger.MAX, null, null, null, new RolePermissionType[] {}));
     Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of()));
 
     AccessResult result =
@@ -361,6 +426,7 @@ class DefaultAccessControllerTest {
             null,
             null,
             UInteger.valueOf(WriteMask.RolePermissions.getValue()),
+            null,
             null,
             null,
             new RolePermissionType[] {
@@ -403,7 +469,7 @@ class DefaultAccessControllerTest {
     // The access check should return ALLOWED so the operation proceeds and fails
     // later with Bad_NodeIdUnknown rather than incorrectly returning Bad_UserAccessDenied.
     attributesMap.put(
-        nonExistentNodeId, new AccessControlAttributes(null, null, null, null, null, null));
+        nonExistentNodeId, new AccessControlAttributes(null, null, null, null, null, null, null));
     Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of()));
 
     var results =
@@ -434,6 +500,7 @@ class DefaultAccessControllerTest {
               null,
               null,
               null,
+              null,
               new RolePermissionType[] {new RolePermissionType(ROLE_A, PermissionType.of())}));
 
       Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_A)));
@@ -448,6 +515,7 @@ class DefaultAccessControllerTest {
       attributesMap.put(
           nodeId,
           new AccessControlAttributes(
+              null,
               null,
               null,
               null,
@@ -483,6 +551,7 @@ class DefaultAccessControllerTest {
               null,
               null,
               null,
+              null,
               new RolePermissionType[] {
                 new RolePermissionType(ROLE_A, PermissionType.of()),
               }));
@@ -499,6 +568,7 @@ class DefaultAccessControllerTest {
       attributesMap.put(
           nodeId,
           new AccessControlAttributes(
+              null,
               null,
               null,
               null,
@@ -531,6 +601,7 @@ class DefaultAccessControllerTest {
               null,
               null,
               null,
+              null,
               new RolePermissionType[] {new RolePermissionType(ROLE_A, PermissionType.of())}));
 
       Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_A)));
@@ -545,6 +616,7 @@ class DefaultAccessControllerTest {
       attributesMap.put(
           nodeId,
           new AccessControlAttributes(
+              null,
               null,
               null,
               null,
@@ -577,6 +649,7 @@ class DefaultAccessControllerTest {
               null,
               null,
               null,
+              null,
               new RolePermissionType[] {
                 new RolePermissionType(ROLE_A, PermissionType.of()),
               });
@@ -595,6 +668,7 @@ class DefaultAccessControllerTest {
     {
       var attributes =
           new AccessControlAttributes(
+              null,
               null,
               null,
               null,
@@ -623,11 +697,11 @@ class DefaultAccessControllerTest {
     var callMethodRequest = new CallMethodRequest(objectNodeId, methodNodeId, null);
 
     attributesMap.put(
-        objectNodeId, new AccessControlAttributes(null, null, null, null, null, null));
+        objectNodeId, new AccessControlAttributes(null, null, null, null, null, null, null));
 
     {
       attributesMap.put(
-          methodNodeId, new AccessControlAttributes(null, null, null, null, false, null));
+          methodNodeId, new AccessControlAttributes(null, null, null, null, null, false, null));
 
       Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of()));
 
@@ -640,7 +714,7 @@ class DefaultAccessControllerTest {
 
     {
       attributesMap.put(
-          methodNodeId, new AccessControlAttributes(null, null, null, null, true, null));
+          methodNodeId, new AccessControlAttributes(null, null, null, null, null, true, null));
 
       AccessResult result =
           DefaultAccessController.checkCallAccess(context, List.of(callMethodRequest))
@@ -660,10 +734,10 @@ class DefaultAccessControllerTest {
     var accessRestrictions = new AccessRestrictionType(UShort.valueOf(3));
 
     attributesMap.put(
-        objectNodeId, new AccessControlAttributes(null, null, null, null, null, null));
+        objectNodeId, new AccessControlAttributes(null, null, null, null, null, null, null));
     attributesMap.put(
         methodNodeId,
-        new AccessControlAttributes(null, accessRestrictions, null, null, null, null));
+        new AccessControlAttributes(null, accessRestrictions, null, null, null, null, null));
 
     {
       Mockito.when(context.getSecurityMode()).thenReturn(MessageSecurityMode.None);
@@ -707,9 +781,9 @@ class DefaultAccessControllerTest {
 
     attributesMap.put(
         objectNodeId,
-        new AccessControlAttributes(null, accessRestrictions, null, null, null, null));
+        new AccessControlAttributes(null, accessRestrictions, null, null, null, null, null));
     attributesMap.put(
-        methodNodeId, new AccessControlAttributes(null, null, null, null, null, null));
+        methodNodeId, new AccessControlAttributes(null, null, null, null, null, null, null));
 
     {
       Mockito.when(context.getSecurityMode()).thenReturn(MessageSecurityMode.None);
@@ -740,6 +814,7 @@ class DefaultAccessControllerTest {
 
     var attributes =
         new AccessControlAttributes(
+            null,
             null,
             null,
             null,
@@ -782,6 +857,7 @@ class DefaultAccessControllerTest {
               null,
               null,
               null,
+              null,
               new RolePermissionType[] {new RolePermissionType(ROLE_A, PermissionType.of())});
       attributesMap.put(sourceNodeId, attributes);
       attributesMap.put(targetNodeId, attributes);
@@ -798,6 +874,7 @@ class DefaultAccessControllerTest {
     {
       var attributes =
           new AccessControlAttributes(
+              null,
               null,
               null,
               null,
@@ -831,6 +908,7 @@ class DefaultAccessControllerTest {
               null,
               null,
               null,
+              null,
               new RolePermissionType[] {new RolePermissionType(ROLE_A, PermissionType.of())});
       attributesMap.put(deleteNodesItem.getNodeId(), attributes);
 
@@ -846,6 +924,7 @@ class DefaultAccessControllerTest {
     {
       var attributes =
           new AccessControlAttributes(
+              null,
               null,
               null,
               null,
@@ -882,6 +961,7 @@ class DefaultAccessControllerTest {
               null,
               null,
               null,
+              null,
               new RolePermissionType[] {new RolePermissionType(ROLE_A, PermissionType.of())});
       attributesMap.put(deleteReferencesItem.getSourceNodeId(), attributes);
 
@@ -898,6 +978,7 @@ class DefaultAccessControllerTest {
     {
       var attributes =
           new AccessControlAttributes(
+              null,
               null,
               null,
               null,
@@ -935,6 +1016,7 @@ class DefaultAccessControllerTest {
             null,
             null,
             null,
+            null,
             rolePermissions(PermissionType.Field.ReadRolePermissions)));
 
     assertEquals(
@@ -951,6 +1033,7 @@ class DefaultAccessControllerTest {
     attributesMap.put(
         writeRolePermissionsNodeId,
         new AccessControlAttributes(
+            null,
             null,
             null,
             null,
@@ -973,7 +1056,13 @@ class DefaultAccessControllerTest {
     attributesMap.put(
         writeHistorizingNodeId,
         new AccessControlAttributes(
-            null, null, null, null, null, rolePermissions(PermissionType.Field.WriteHistorizing)));
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            rolePermissions(PermissionType.Field.WriteHistorizing)));
 
     assertEquals(
         AccessResult.DENIED_USER_ACCESS,
@@ -984,7 +1073,7 @@ class DefaultAccessControllerTest {
     attributesMap.put(
         browseNodeId,
         new AccessControlAttributes(
-            null, null, null, null, null, rolePermissions(PermissionType.Field.Browse)));
+            null, null, null, null, null, null, rolePermissions(PermissionType.Field.Browse)));
 
     assertEquals(
         AccessResult.DENIED_USER_ACCESS,
@@ -997,11 +1086,11 @@ class DefaultAccessControllerTest {
     attributesMap.put(
         objectNodeId,
         new AccessControlAttributes(
-            null, null, null, null, null, rolePermissions(PermissionType.Field.Call)));
+            null, null, null, null, null, null, rolePermissions(PermissionType.Field.Call)));
     attributesMap.put(
         methodNodeId,
         new AccessControlAttributes(
-            null, null, null, null, null, rolePermissions(PermissionType.Field.Call)));
+            null, null, null, null, null, null, rolePermissions(PermissionType.Field.Call)));
 
     assertEquals(
         AccessResult.DENIED_USER_ACCESS,
@@ -1021,7 +1110,13 @@ class DefaultAccessControllerTest {
     attributesMap.put(
         addReferenceSourceNodeId,
         new AccessControlAttributes(
-            null, null, null, null, null, rolePermissions(PermissionType.Field.AddReference)));
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            rolePermissions(PermissionType.Field.AddReference)));
 
     assertEquals(
         AccessResult.DENIED_USER_ACCESS,
@@ -1032,7 +1127,7 @@ class DefaultAccessControllerTest {
     attributesMap.put(
         deleteNodesItem.getNodeId(),
         new AccessControlAttributes(
-            null, null, null, null, null, rolePermissions(PermissionType.Field.DeleteNode)));
+            null, null, null, null, null, null, rolePermissions(PermissionType.Field.DeleteNode)));
 
     assertEquals(
         AccessResult.DENIED_USER_ACCESS,
@@ -1051,7 +1146,13 @@ class DefaultAccessControllerTest {
     attributesMap.put(
         deleteReferenceSourceNodeId,
         new AccessControlAttributes(
-            null, null, null, null, null, rolePermissions(PermissionType.Field.RemoveReference)));
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            rolePermissions(PermissionType.Field.RemoveReference)));
 
     assertEquals(
         AccessResult.DENIED_USER_ACCESS,
@@ -1070,7 +1171,7 @@ class DefaultAccessControllerTest {
     attributesMap.put(
         nodeId,
         new AccessControlAttributes(
-            null, null, null, null, null, rolePermissions(PermissionType.Field.Browse)));
+            null, null, null, null, null, null, rolePermissions(PermissionType.Field.Browse)));
 
     Mockito.when(context.getRoleIds())
         .thenReturn(

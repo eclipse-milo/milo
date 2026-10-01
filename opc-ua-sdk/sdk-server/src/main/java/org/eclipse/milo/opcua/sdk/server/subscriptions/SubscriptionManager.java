@@ -347,13 +347,17 @@ public class SubscriptionManager {
                 session,
                 itemsToCreate.stream().map(MonitoredItemCreateRequest::getItemToMonitor).toList());
 
+    // Part 4 §5.13.2.1: an item the user is denied read access to is still created, and the
+    // denial is reported in the Publish response by whoever samples it. Other denials, such as
+    // an unmet AccessRestriction, fail the item here.
     List<MonitoredItemCreateResult> results =
         GroupMapCollate.groupMapCollate(
             itemsToCreate,
             createRequest -> accessResults.get(createRequest.getItemToMonitor()),
             accessResult ->
                 group -> {
-                  if (accessResult instanceof AccessResult.Denied denied) {
+                  if (accessResult instanceof AccessResult.Denied denied
+                      && !isReadAccessDenial(denied)) {
                     var result =
                         new MonitoredItemCreateResult(
                             denied.statusCode(), uint(0), 0.0, uint(0), null);
@@ -367,6 +371,16 @@ public class SubscriptionManager {
 
     return new CreateMonitoredItemsResponse(
         header, results.toArray(new MonitoredItemCreateResult[0]), new DiagnosticInfo[0]);
+  }
+
+  /**
+   * Whether {@code denied} is one of the read-access denials that Part 4 §5.13.2.1 says must be
+   * reported in the Publish response rather than fail CreateMonitoredItems.
+   */
+  private static boolean isReadAccessDenial(AccessResult.Denied denied) {
+    long code = denied.statusCode().getValue();
+
+    return code == StatusCodes.Bad_UserAccessDenied || code == StatusCodes.Bad_NotReadable;
   }
 
   private List<MonitoredItemCreateResult> createMonitoredItems(
