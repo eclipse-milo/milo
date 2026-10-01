@@ -1468,7 +1468,7 @@ public class OpcUaBinaryDecoder implements UaDecoder {
   @Override
   public Matrix decodeMatrix(String field, OpcUaDataType dataType) throws UaSerializationException {
     int[] dimensions = decodeMatrixDimensions();
-    if (dimensions == null) return null;
+    if (dimensions == null) return Matrix.ofNull();
 
     int length = calculateMatrixLength(dimensions);
 
@@ -1486,7 +1486,7 @@ public class OpcUaBinaryDecoder implements UaDecoder {
   public Matrix decodeStructMatrix(String field, NodeId dataTypeId)
       throws UaSerializationException {
     int[] dimensions = decodeMatrixDimensions();
-    if (dimensions == null) return null;
+    if (dimensions == null) return Matrix.ofNull();
 
     int length = calculateMatrixLength(dimensions);
 
