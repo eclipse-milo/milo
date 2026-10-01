@@ -51,8 +51,12 @@
  * <p>Variants identify their contained builtin type from the XML element name. Matrix decoding
  * validates dimensions, element types, and element counts for both Variants and directly decoded
  * matrices. Java null and {@link org.eclipse.milo.opcua.stack.core.types.builtin.Matrix#ofNull()}
- * both encode as a null matrix without requiring type metadata. Structured values are delegated to
- * the codecs registered in the context.
+ * both encode as a null matrix without requiring type metadata. Part 6 requires every Matrix
+ * dimension to be greater than zero, so an empty Matrix, one with a zero or negative dimension, has
+ * no XML Matrix form. A Variant writes it as an empty one-dimensional array of its element type and
+ * a structure field writes it as a null matrix; these decode as an empty array and a null matrix,
+ * not as the original Matrix. Such a Matrix that still has elements is an encoding error.
+ * Structured values are delegated to the codecs registered in the context.
  *
  * <p>ExtensionObject decoding preserves the encoding identified by the Body payload. A ByteString
  * element in the OPC UA Types.xsd namespace carries binary bytes; other payload elements remain XML

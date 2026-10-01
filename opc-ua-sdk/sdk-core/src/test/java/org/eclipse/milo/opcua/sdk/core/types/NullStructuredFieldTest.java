@@ -180,10 +180,17 @@ class NullStructuredFieldTest {
     Document document = factory.newDocumentBuilder().parse(new InputSource(new StringReader(xml)));
     NodeList dimensions = document.getElementsByTagNameNS("*", "Dimensions");
     NodeList elements = document.getElementsByTagNameNS("*", "ExtensionObject");
-    // Binary Variants normalize a zero-length matrix to an empty array.
-    boolean emptyVariantArray = fieldType.equals(NodeIds.BaseDataType) && shape.equals("empty");
-    boolean hasDimensions = !shape.equals("null") && !emptyVariantArray;
+    // A zero-length matrix has no XML Matrix form (OPC 10000-6, 5.3.1.17). In a Variant it is an
+    // empty array, and a structure field writes it as a null Matrix (5.1.11).
+    boolean variant = fieldType.equals(NodeIds.BaseDataType);
+    boolean emptyVariantArray = variant && shape.equals("empty");
+    boolean hasDimensions = !shape.equals("null") && !shape.equals("empty");
     assertEquals(hasDimensions ? 1 : 0, dimensions.getLength(), xml);
+    Element item = (Element) document.getElementsByTagNameNS("*", "Item").item(0);
+    assertEquals(
+        !variant && !hasDimensions,
+        "true".equals(item.getAttributeNS("http://www.w3.org/2001/XMLSchema-instance", "nil")),
+        xml);
     assertEquals(
         emptyVariantArray ? 1 : 0,
         document.getElementsByTagNameNS("*", "ListOfExtensionObject").getLength(),
