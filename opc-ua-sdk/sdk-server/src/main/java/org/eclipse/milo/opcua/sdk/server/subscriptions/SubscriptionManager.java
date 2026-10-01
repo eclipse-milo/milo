@@ -347,17 +347,23 @@ public class SubscriptionManager {
                 session,
                 itemsToCreate.stream().map(MonitoredItemCreateRequest::getItemToMonitor).toList());
 
-    // Part 4 §5.13.2.1: an item the user is denied read access to is still created, and the
+    // Part 4 §5.13.2.1: a data item the user is denied read access to is still created, and the
     // denial is reported in the Publish response instead. Other denials, such as an unmet
-    // AccessRestriction, fail the item here.
+    // AccessRestriction, fail the item here, and so does any denial of an event item, which has
+    // no sampled value to carry the denial.
     List<MonitoredItemCreateResult> results =
         GroupMapCollate.groupMapCollate(
             itemsToCreate,
-            createRequest -> accessResults.get(createRequest.getItemToMonitor()),
-            accessResult ->
+            createRequest ->
+                new CreateGroup(
+                    accessResults.get(createRequest.getItemToMonitor()),
+                    isEventItemRequest(createRequest)),
+            createGroup ->
                 group -> {
+                  AccessResult accessResult = createGroup.accessResult();
+
                   if (accessResult instanceof AccessResult.Denied denied
-                      && !isReadAccessDenial(denied)) {
+                      && (createGroup.eventItem() || !isReadAccessDenial(denied))) {
                     var result =
                         new MonitoredItemCreateResult(
                             denied.statusCode(), uint(0), 0.0, uint(0), null);
@@ -371,6 +377,13 @@ public class SubscriptionManager {
 
     return new CreateMonitoredItemsResponse(
         header, results.toArray(new MonitoredItemCreateResult[0]), new DiagnosticInfo[0]);
+  }
+
+  /** How a group of create requests is handled: by its access result and by item kind. */
+  private record CreateGroup(AccessResult accessResult, boolean eventItem) {}
+
+  private static boolean isEventItemRequest(MonitoredItemCreateRequest request) {
+    return AttributeId.EventNotifier.uid().equals(request.getItemToMonitor().getAttributeId());
   }
 
   /**

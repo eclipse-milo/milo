@@ -167,6 +167,36 @@ class SubscriptionManagerReadAccessTest {
     assertTrue(ownedMonitoredItems.isEmpty());
   }
 
+  // An event item has no sampled value to carry a denial, so a read-access denial from the
+  // AccessController still fails it in CreateMonitoredItems.
+  @Test
+  void readAccessDenialStillFailsAnEventItem() throws Exception {
+    var eventItemToMonitor =
+        new ReadValueId(
+            new NodeId(2, "object"),
+            AttributeId.EventNotifier.uid(),
+            null,
+            QualifiedName.NULL_VALUE);
+
+    when(accessController.checkReadAccess(eq(session), anyList()))
+        .thenReturn(Map.of(eventItemToMonitor, AccessResult.DENIED_USER_ACCESS));
+
+    var request =
+        new MonitoredItemCreateRequest(
+            eventItemToMonitor,
+            MonitoringMode.Reporting,
+            new MonitoringParameters(uint(1), 0.0, null, uint(1), true));
+
+    CreateMonitoredItemsResponse response =
+        manager.createMonitoredItems(context, createRequest(request));
+
+    MonitoredItemCreateResult[] results = response.getResults();
+    assertEquals(1, results.length);
+    assertEquals(new StatusCode(StatusCodes.Bad_UserAccessDenied), results[0].getStatusCode());
+
+    assertTrue(ownedMonitoredItems.isEmpty());
+  }
+
   private static List<DataValue> drain(MonitoredDataItem item) {
     var notifications = new ArrayList<UaStructuredType>();
     item.getNotifications(notifications, Integer.MAX_VALUE);

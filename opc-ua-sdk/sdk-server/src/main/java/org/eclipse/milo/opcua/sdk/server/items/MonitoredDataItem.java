@@ -122,8 +122,10 @@ public class MonitoredDataItem extends BaseMonitoredItem<DataValue> implements D
    * <p>While access is denied, every value passed to {@link #setValue(DataValue)} is replaced by a
    * {@link DataValue} carrying the denial status, so the client receives the denial in a Publish
    * response rather than a value it may not read. A transition to denied queues the denial right
-   * away. Once access is allowed again, the next value passed to {@link #setValue(DataValue)} is
-   * always reported, and the denial is no longer the last value for {@link #maybeSendLastValue()}.
+   * away, unless the item is {@link MonitoringMode#Disabled}, in which case nothing is queued until
+   * monitoring resumes. Once access is allowed again, the next value passed to {@link
+   * #setValue(DataValue)} is always reported, and the denial is no longer the last value for {@link
+   * #maybeSendLastValue()}.
    *
    * @param accessResult the result of the read access check.
    */
@@ -132,7 +134,8 @@ public class MonitoredDataItem extends BaseMonitoredItem<DataValue> implements D
       StatusCode previous = readAccessDenied;
       readAccessDenied = denied.statusCode();
 
-      if (!denied.statusCode().equals(previous)) {
+      // Part 4 §7.23: a Disabled item generates and queues no Notifications.
+      if (!denied.statusCode().equals(previous) && getMonitoringMode() != MonitoringMode.Disabled) {
         setValue(new DataValue(denied.statusCode()));
       }
     } else if (readAccessDenied != null) {
@@ -210,11 +213,21 @@ public class MonitoredDataItem extends BaseMonitoredItem<DataValue> implements D
 
   @Override
   public synchronized void setMonitoringMode(MonitoringMode monitoringMode) {
+    MonitoringMode previous = getMonitoringMode();
+
     if (monitoringMode == MonitoringMode.Disabled) {
       lastValue = null;
     }
 
     super.setMonitoringMode(monitoringMode);
+
+    StatusCode denied = readAccessDenied;
+    if (previous == MonitoringMode.Disabled
+        && monitoringMode != MonitoringMode.Disabled
+        && denied != null) {
+      // Report a denial that arrived while Disabled now that monitoring has resumed.
+      setValue(new DataValue(denied));
+    }
   }
 
   public synchronized void maybeSendLastValue() {

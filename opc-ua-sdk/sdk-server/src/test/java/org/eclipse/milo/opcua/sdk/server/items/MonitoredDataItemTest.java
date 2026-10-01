@@ -116,6 +116,35 @@ class MonitoredDataItemTest {
     assertTrue(drain().isEmpty(), "the denial must not be re-sent as the last value");
   }
 
+  // Part 4 §7.23: a Disabled item generates and queues no Notifications, so an access change
+  // that arrives while Disabled must not leave a stale denial behind for when monitoring resumes.
+  @Test
+  void accessChangesWhileDisabledQueueNothing() {
+    item.setMonitoringMode(MonitoringMode.Disabled);
+
+    item.setReadAccessResult(AccessResult.DENIED_USER_ACCESS);
+    item.setReadAccessResult(AccessResult.ALLOWED);
+    item.setMonitoringMode(MonitoringMode.Reporting);
+
+    assertTrue(drain().isEmpty(), "nothing may be queued for an access change while Disabled");
+  }
+
+  // A denial that arrived while Disabled is reported once monitoring resumes, even if nothing
+  // samples the item in between.
+  @Test
+  void denialThatArrivedWhileDisabledIsReportedWhenMonitoringResumes() {
+    item.setMonitoringMode(MonitoringMode.Disabled);
+    item.setReadAccessResult(AccessResult.DENIED_USER_ACCESS);
+
+    assertTrue(drain().isEmpty(), "nothing may be queued while Disabled");
+
+    item.setMonitoringMode(MonitoringMode.Reporting);
+
+    List<DataValue> queued = drain();
+    assertEquals(1, queued.size());
+    assertEquals(StatusCodes.Bad_UserAccessDenied, queued.get(0).statusCode().getValue());
+  }
+
   @Test
   void changedDenialReasonIsReported() {
     item.setReadAccessResult(AccessResult.DENIED_USER_ACCESS);

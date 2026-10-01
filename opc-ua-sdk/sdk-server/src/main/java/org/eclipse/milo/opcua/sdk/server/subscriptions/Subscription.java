@@ -60,6 +60,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 import org.eclipse.milo.opcua.stack.core.types.structured.ResponseHeader;
 import org.eclipse.milo.opcua.stack.core.types.structured.SetPublishingModeRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.StatusChangeNotification;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -746,6 +747,23 @@ public class Subscription {
    * already been applied.
    */
   public void refreshReadAccess() {
+    refreshReadAccess(null);
+  }
+
+  /**
+   * Check {@code session}'s read access to every data item in this Subscription and update the
+   * items with the result, ahead of a transfer to that Session.
+   *
+   * <p>Call this while synchronized on this Subscription, before the items are moved to {@code
+   * session}, so a value sampled after the move can never pass with the previous Session's result.
+   *
+   * @param session the Session this Subscription is being transferred to.
+   */
+  public void refreshReadAccessForTransfer(Session session) {
+    refreshReadAccess(session);
+  }
+
+  private void refreshReadAccess(@Nullable Session transferTo) {
     State s = state.get();
     if (s == State.Closing || s == State.Closed) return;
 
@@ -764,7 +782,7 @@ public class Subscription {
     long sequence;
 
     synchronized (this) {
-      session = getSession();
+      session = transferTo != null ? transferTo : getSession();
       sequence = ++readAccessCheckSequence;
     }
 
@@ -778,7 +796,7 @@ public class Subscription {
     }
 
     synchronized (this) {
-      if (getSession() != session) {
+      if (transferTo == null && getSession() != session) {
         // Transferred while the check ran; the transfer refreshed for the new Session.
         return;
       }
