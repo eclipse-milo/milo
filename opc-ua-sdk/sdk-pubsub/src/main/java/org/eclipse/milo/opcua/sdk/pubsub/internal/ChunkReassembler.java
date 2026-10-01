@@ -56,9 +56,10 @@ import org.slf4j.LoggerFactory;
  * dropped, at most {@link #MAX_STREAMS} (64) streams are tracked concurrently, in progress or
  * completed, and streams idle longer than {@link #IDLE_EVICTION_NANOS} (10 s) are evicted by a
  * sweep run from {@link #accept(DecodedNetworkMessage, long)}. When the cap is reached, a new
- * stream evicts the least recently active stream whose received security mode is the same as or
- * lower than its own; a chunk that finds no such stream is dropped, so chunks received with mode
- * None never evict a signed stream. Dropped chunks do not count as activity.
+ * stream evicts a stream whose received security mode is the same as or lower than its own,
+ * preferring the least recently active completed record over any payload in progress; a chunk that
+ * finds no such stream is dropped, so chunks received with mode None never evict a signed stream.
+ * Dropped chunks do not count as activity.
  *
  * <p>Not thread safe: confined to the connection's dispatch queue, like all subscriber dispatch
  * state.
@@ -261,8 +262,9 @@ final class ChunkReassembler {
   }
 
   /**
-   * Evict the least recently active stream whose received security mode is the same as or lower
-   * than {@code securityMode}.
+   * Evict one stream whose received security mode is the same as or lower than {@code
+   * securityMode}: the least recently active completed record if there is one, else the least
+   * recently active payload in progress.
    *
    * @return whether a stream was evicted.
    */
@@ -270,21 +272,26 @@ final class ChunkReassembler {
     int rank = modeRank(securityMode);
     StreamKey oldestKey = null;
     long oldestNanos = Long.MAX_VALUE;
+    boolean oldestIsRecord = false;
 
     for (Map.Entry<StreamKey, StreamState> entry : streams.entrySet()) {
       if (modeRank(entry.getKey().securityMode()) > rank) {
         continue;
       }
-      if (oldestKey == null || entry.getValue().lastActivityNanos - oldestNanos < 0) {
+      boolean isRecord = entry.getValue().payload == null;
+      if (oldestKey == null
+          || (isRecord && !oldestIsRecord)
+          || (isRecord == oldestIsRecord && entry.getValue().lastActivityNanos - oldestNanos < 0)) {
         oldestKey = entry.getKey();
         oldestNanos = entry.getValue().lastActivityNanos;
+        oldestIsRecord = isRecord;
       }
     }
 
     if (oldestKey == null) {
       return false;
     }
-    LOGGER.debug("evicting least recently active chunk stream: {}", oldestKey);
+    LOGGER.debug("evicting chunk stream at the stream cap: {}", oldestKey);
     streams.remove(oldestKey);
     return true;
   }

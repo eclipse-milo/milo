@@ -345,6 +345,26 @@ class ChunkReassemblerTest {
     assertArrayEquals(bytes(1, 2), reassembled.payload());
   }
 
+  /**
+   * At the stream cap, completed records are evicted before any payload in progress, so a run of
+   * other writers completing payloads cannot displace the oldest in-progress payload.
+   */
+  @Test
+  void completedRecordsAreEvictedBeforeInProgressPayloadsAtTheCap() {
+    assertNull(accept(PUBLISHER_A, 1, 7, 0, 6, bytes(1, 2, 3, 4)));
+
+    for (int i = 0; i < ChunkReassembler.MAX_STREAMS; i++) {
+      nowNanos += 1;
+      assertNotNull(accept(PublisherId.uint16(ushort(1000 + i)), 1, 7, 0, 2, bytes(1, 2)));
+    }
+    assertEquals(ChunkReassembler.MAX_STREAMS, reassembler.recordCount());
+    assertEquals(1, reassembler.streamCount(), "the in-progress payload survived");
+
+    ChunkReassembler.ReassembledMessage reassembled = accept(PUBLISHER_A, 1, 7, 4, 6, bytes(5, 6));
+    assertNotNull(reassembled);
+    assertArrayEquals(bytes(1, 2, 3, 4, 5, 6), reassembled.payload());
+  }
+
   /** Completed records count toward the stream cap and are evicted by it like any other stream. */
   @Test
   void completedRecordsCountTowardTheStreamCap() {
