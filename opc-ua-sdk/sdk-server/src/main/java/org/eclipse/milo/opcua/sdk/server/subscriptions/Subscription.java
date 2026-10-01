@@ -91,6 +91,11 @@ public class Subscription {
 
   private volatile ScheduledFuture<?> publishingTimer;
 
+  // Both are accessed while synchronized on 'this'. They order overlapping read access checks so
+  // an older result can never overwrite a newer one.
+  private long readAccessCheckSequence = 0;
+  private long readAccessAppliedSequence = 0;
+
   private volatile boolean messageSent = false;
   private volatile boolean moreNotifications = false;
   private volatile long keepAliveCounter;
@@ -736,8 +741,9 @@ public class Subscription {
    * TransferSubscriptions calls it as soon as the items belong to the new Session.
    *
    * <p>The attribute reads behind the check run outside the subscription lock, so they do not block
-   * Publish or ModifyMonitoredItems. The result is applied under the lock, and only if the
-   * Subscription still belongs to the Session it was checked for.
+   * Publish or ModifyMonitoredItems. The result is applied under the lock, only if the Subscription
+   * still belongs to the Session it was checked for, and only if no check that started later has
+   * already been applied.
    */
   public void refreshReadAccess() {
     State s = state.get();
@@ -754,7 +760,13 @@ public class Subscription {
     List<ReadValueId> readValueIds =
         dataItems.stream().map(MonitoredDataItem::getReadValueId).toList();
 
-    Session session = getSession();
+    Session session;
+    long sequence;
+
+    synchronized (this) {
+      session = getSession();
+      sequence = ++readAccessCheckSequence;
+    }
 
     Map<ReadValueId, AccessResult> accessResults;
     try {
@@ -770,6 +782,12 @@ public class Subscription {
         // Transferred while the check ran; the transfer refreshed for the new Session.
         return;
       }
+      if (sequence < readAccessAppliedSequence) {
+        // A check that started later, such as the one TransferSubscriptions runs, has already
+        // been applied; this result is older than what the items hold.
+        return;
+      }
+      readAccessAppliedSequence = sequence;
 
       for (MonitoredDataItem item : dataItems) {
         AccessResult accessResult = accessResults.get(item.getReadValueId());
