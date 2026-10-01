@@ -26,13 +26,17 @@ import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.Random;
 import java.util.UUID;
+import java.util.function.BiFunction;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaSerializationException;
+import org.eclipse.milo.opcua.stack.core.encoding.DataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
+import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
+import org.eclipse.milo.opcua.stack.core.encoding.UaEncoder;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.*;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId.NamespaceReference;
@@ -1264,6 +1268,110 @@ class OpcUaJsonDecoderTest {
 
     assertEquals("Demo", decoded.getName());
     assertNull(decoded.getConfigurationVersion());
+  }
+
+  /**
+   * The CompactEncoding omits a NULL Matrix member (OPC 10000-6 §5.4.6, Table 45). Every Matrix
+   * decoder must return a null Matrix and restore the peeked name so the following member still
+   * decodes.
+   */
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("matrixDecoders")
+  void decodeMatrix_omittedMember_restoresNameAndReturnsNullMatrix(
+      String name, BiFunction<OpcUaJsonDecoder, String, Matrix> decodeMatrix) throws IOException {
+
+    var decoder = new OpcUaJsonDecoder(context, new StringReader("{\"Other\":42}"));
+    decoder.jsonReader.beginObject();
+
+    // "Values" is absent; the next member is "Other".
+    assertEquals(Matrix.ofNull(), decodeMatrix.apply(decoder, "Values"));
+    // The peeked name was restored, so the following member still decodes.
+    assertEquals(42, decoder.decodeInt32("Other"));
+    decoder.jsonReader.endObject();
+  }
+
+  static Stream<Arguments> matrixDecoders() {
+    BiFunction<OpcUaJsonDecoder, String, Matrix> decodeMatrix =
+        (d, f) -> d.decodeMatrix(f, OpcUaDataType.Int32);
+    BiFunction<OpcUaJsonDecoder, String, Matrix> decodeEnumMatrix =
+        OpcUaJsonDecoder::decodeEnumMatrix;
+    BiFunction<OpcUaJsonDecoder, String, Matrix> decodeStructMatrixNodeId =
+        (d, f) ->
+            d.decodeStructMatrix(
+                f,
+                XVType.TYPE_ID.toNodeId(d.getEncodingContext().getNamespaceTable()).orElseThrow());
+    BiFunction<OpcUaJsonDecoder, String, Matrix> decodeStructMatrixExpandedNodeId =
+        (d, f) -> d.decodeStructMatrix(f, XVType.TYPE_ID);
+
+    return Stream.of(
+        Arguments.of("decodeMatrix", decodeMatrix),
+        Arguments.of("decodeEnumMatrix", decodeEnumMatrix),
+        Arguments.of("decodeStructMatrix(NodeId)", decodeStructMatrixNodeId),
+        Arguments.of("decodeStructMatrix(ExpandedNodeId)", decodeStructMatrixExpandedNodeId));
+  }
+
+  /**
+   * Milo's CompactEncoding omits a NULL structure Matrix member (OPC 10000-6 §5.4.6, Table 45), so
+   * the decoder must read the structure Milo wrote back to the same value.
+   */
+  @Test
+  void decodeStructMatrix_compactRoundTripOfNullMember() throws Exception {
+    var value = new StructMatrixHolder(Matrix.ofNull(), 42);
+
+    String json;
+    try (var encoder = new OpcUaJsonEncoder(context)) {
+      encoder.encodeStruct(null, value, StructMatrixHolder.CODEC);
+      json = encoder.getOutputString();
+    }
+
+    assertEquals("{\"Other\":42}", json);
+    assertEquals(
+        value, new OpcUaJsonDecoder(context, json).decodeStruct(null, StructMatrixHolder.CODEC));
+  }
+
+  /** A structure with a structure Matrix member followed by a scalar member. */
+  private record StructMatrixHolder(Matrix points, int other) implements UaStructuredType {
+
+    static final DataTypeCodec CODEC =
+        new DataTypeCodec() {
+          @Override
+          public Class<?> getType() {
+            return StructMatrixHolder.class;
+          }
+
+          @Override
+          public UaStructuredType decode(EncodingContext context, UaDecoder decoder) {
+            return new StructMatrixHolder(
+                decoder.decodeStructMatrix("Points", XVType.TYPE_ID), decoder.decodeInt32("Other"));
+          }
+
+          @Override
+          public void encode(EncodingContext context, UaEncoder encoder, UaStructuredType value) {
+            var holder = (StructMatrixHolder) value;
+            encoder.encodeStructMatrix("Points", holder.points(), XVType.TYPE_ID);
+            encoder.encodeInt32("Other", holder.other());
+          }
+        };
+
+    @Override
+    public ExpandedNodeId getTypeId() {
+      return ExpandedNodeId.NULL_VALUE;
+    }
+
+    @Override
+    public ExpandedNodeId getBinaryEncodingId() {
+      return ExpandedNodeId.NULL_VALUE;
+    }
+
+    @Override
+    public ExpandedNodeId getXmlEncodingId() {
+      return ExpandedNodeId.NULL_VALUE;
+    }
+
+    @Override
+    public ExpandedNodeId getJsonEncodingId() {
+      return ExpandedNodeId.NULL_VALUE;
+    }
   }
 
   private static byte[] randomBytes16() {
