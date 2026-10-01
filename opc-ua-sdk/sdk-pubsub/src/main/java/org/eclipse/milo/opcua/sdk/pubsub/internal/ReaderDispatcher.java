@@ -43,6 +43,7 @@ import org.eclipse.milo.opcua.sdk.pubsub.security.SecurityKeyMaterial;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DataSetMessageKind;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DataSetMetaDataResolver;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodeContext;
+import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedChunk;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedDataSetMessage;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedField;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedMetaData;
@@ -121,9 +122,17 @@ import org.slf4j.LoggerFactory;
  * any content, so every sequence number observed here is post-verification — the recency window is
  * a genuine anti-replay control within a key's lifetime (no additional nonce monotonicity check is
  * applied). Chunk NetworkMessages observe the windows like any other NetworkMessage (each chunk
- * consumes a NetworkMessage sequence number); their reassembled payload re-enters decode with no
- * NetworkMessage sequence number and only its DataSetMessage sequence number drives the
- * DataSetMessage window.
+ * consumes a NetworkMessage sequence number). A chunk reaches the connection's {@link
+ * ChunkReassembler} only when at least one reader accepted its NetworkMessage: the reader's group
+ * passed the receive-mode gate, the reader matched it (including the chunk's PayloadHeader
+ * DataSetWriterId against the reader's filter), and the NetworkMessage window verdict was NEW or
+ * absent. Chunks no reader accepts, including those dropped at the receive-mode gate, never create,
+ * change, or evict reassembly state. The reassembler keeps streams apart by received security mode
+ * and remembers each stream's last completed MessageSequenceNumber, so a reassembled DataSetMessage
+ * is delivered with a given received security only when every contributing chunk was received with
+ * that same mode, and a repeated chunk set is delivered once even when the DataSetMessage carries
+ * no sequence number. The reassembled payload re-enters decode with no NetworkMessage sequence
+ * number and only its DataSetMessage sequence number drives the DataSetMessage window.
  *
  * <p>The dispatcher supplies the codec's {@code SecurityContextResolver} (keys are resolved by
  * plaintext wire identity, BEFORE group matching, because decode runs once per (connection,
@@ -253,16 +262,22 @@ final class ReaderDispatcher {
       }
 
       if (decoded instanceof DecodedNetworkMessage networkMessage) {
-        handleDecoded(
-            connection, mappingName, topic, networkMessage, oversizeGroups, securityGroup);
+        boolean accepted =
+            handleDecoded(
+                connection, mappingName, topic, networkMessage, oversizeGroups, securityGroup);
 
         // Chunk NetworkMessages: the normal handleDecoded pass above lets the per-reader
         // NetworkMessage windows observe the chunk NM (its empty messages list delivers
-        // nothing); reassembly is connection-level and runs ONCE, not per reader. Only the
-        // built-in UADP mapping produces and reassembles chunks. When a chunk completes its
-        // payload, the reassembled DataSetMessage re-enters decode with sequenceNumber == null
-        // (the chunk NMs already consumed theirs) and routes through handleDecoded again.
-        if (networkMessage.chunk() != null && provider instanceof UadpMessageMapping uadpMapping) {
+        // nothing); reassembly is connection-level and runs ONCE, not per reader, and only for
+        // a chunk NM some reader accepted (receive-mode gate, matching, and a NEW or absent
+        // NetworkMessage window verdict): a chunk no reader accepts must not touch reassembly
+        // state. Only the built-in UADP mapping decodes and reassembles chunks. When a chunk
+        // completes its payload, the reassembled DataSetMessage re-enters decode with
+        // sequenceNumber == null (the chunk NMs already consumed theirs) and routes through
+        // handleDecoded again.
+        if (accepted
+            && networkMessage.chunk() != null
+            && provider instanceof UadpMessageMapping uadpMapping) {
           ChunkReassembler.ReassembledMessage reassembled =
               connection.chunkReassembler().accept(networkMessage, System.nanoTime());
 
@@ -399,7 +414,16 @@ final class ReaderDispatcher {
     return oversizeGroups;
   }
 
-  private void handleDecoded(
+  /**
+   * Route one decoded NetworkMessage to the connection's readers.
+   *
+   * @return whether at least one reader accepted the NetworkMessage: its group passed the
+   *     receive-mode gate, the reader matched the NetworkMessage (for a chunk, including its
+   *     PayloadHeader DataSetWriterId against the reader's filter), and the NetworkMessage window
+   *     verdict was NEW or absent. The caller uses this to decide whether a chunk NetworkMessage
+   *     may enter reassembly; it says nothing about DataSetMessage delivery.
+   */
+  private boolean handleDecoded(
       ConnectionRuntime connection,
       String mappingName,
       @Nullable String topic,
@@ -419,14 +443,16 @@ final class ReaderDispatcher {
         // can never reach the receive-mode gate below — count its receive-mode drops here instead
         countUnroutedSecuritySkip(connection, mappingName, decoded, oversizeGroups, security);
       }
-      return;
+      return false;
     }
 
     DecodedStatusMessage status = decoded.status();
     if (status != null) {
       handleStatus(connection, mappingName, topic, status);
-      return;
+      return false;
     }
+
+    boolean accepted = false;
 
     // the received mode input to the §7.2.4.3 receive-mode gate: null security IS received None
     MessageSecurityMode receivedMode =
@@ -481,6 +507,17 @@ final class ReaderDispatcher {
           SequenceNumberWindow.Classification networkMessageClassification =
               observeNetworkMessage(reader.sequenceTracker(), decoded, nowNanos);
 
+          // a chunk NetworkMessage names its DataSetWriterId in the PayloadHeader (Table 158),
+          // so the reader's dataSetWriterId filter applies to it here, where there is no
+          // DataSetMessage to apply it to
+          DecodedChunk chunk = decoded.chunk();
+          if ((networkMessageClassification == null
+                  || networkMessageClassification == SequenceNumberWindow.Classification.NEW)
+              && (chunk == null
+                  || dataSetWriterIdMatches(reader.config(), chunk.dataSetWriterId()))) {
+            accepted = true;
+          }
+
           for (DecodedDataSetMessage message : decoded.messages()) {
             if (dataSetWriterIdMatches(reader.config(), message.dataSetWriterId())) {
               groupMatched = true;
@@ -501,6 +538,8 @@ final class ReaderDispatcher {
         service.getDiagnostics().networkMessageReceived(group.path());
       }
     }
+
+    return accepted;
   }
 
   private void handleStatus(

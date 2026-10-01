@@ -30,22 +30,27 @@ import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedChunk;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedDataSetMessage;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedField;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedNetworkMessage;
+import org.eclipse.milo.opcua.sdk.pubsub.uadp.ReceivedSecurity;
+import org.eclipse.milo.opcua.sdk.pubsub.uadp.SecurityOutcome;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.UadpDecodedMessage;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.UadpMessageMapping;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 /**
  * Unit tests for {@link ChunkReassembler}: out-of-order assembly, duplicate ranges, stream
- * interleaving and identity, the newer-MessageSequenceNumber discard rule (§7.2.4.4.4), and the DoS
- * caps (TotalSize, stream count, idle eviction) with a deterministic injected clock — plus the
- * decode → reassemble → {@link UadpMessageMapping#decodeReassembled} re-entry pipeline: the
- * reassembled result carries {@code sequenceNumber == null} (every chunk NetworkMessage already
- * consumed its own), and chunk bytes are copies that survive the source datagram's release.
+ * interleaving and identity (including the received security mode), the newer-MessageSequenceNumber
+ * discard rule (§7.2.4.4.4), the completed-payload record that keeps a repeated or older chunk set
+ * from reassembling again, and the resource caps (TotalSize, stream count, idle eviction) with a
+ * deterministic injected clock — plus the decode → reassemble → {@link
+ * UadpMessageMapping#decodeReassembled} re-entry pipeline: the reassembled result carries {@code
+ * sequenceNumber == null} (every chunk NetworkMessage already consumed its own), and chunk bytes
+ * are copies that survive the source datagram's release.
  */
 class ChunkReassemblerTest {
 
@@ -124,8 +129,9 @@ class ChunkReassemblerTest {
     assertNotNull(reassembled);
     assertArrayEquals(bytes(5, 6), reassembled.payload());
 
-    // the seq-7 completing chunk now starts over instead of completing
+    // the seq-7 completing chunk is now older than the completed seq 8 and is dropped
     assertNull(accept(PUBLISHER_A, 1, 7, 4, 6, bytes(5, 6)));
+    assertEquals(0, reassembler.streamCount());
   }
 
   /** An OLDER MessageSequenceNumber chunk is dropped; the in-progress payload survives. */
@@ -194,6 +200,210 @@ class ChunkReassemblerTest {
     // the evicted stream's completing chunk no longer completes
     assertNull(accept(PublisherId.uint16(ushort(1000)), 1, 7, 4, 6, bytes(5, 6)));
   }
+
+  // region received security mode
+
+  private static final ReceivedSecurity SIGNED =
+      new ReceivedSecurity(MessageSecurityMode.Sign, uint(7), SecurityOutcome.VERIFIED);
+
+  /**
+   * Chunks received with different security modes belong to different streams: a payload
+   * reassembled from signed chunks must contain only bytes that were received signed, even when an
+   * unsecured chunk with the same wire identity, MessageSequenceNumber, and TotalSize arrived first
+   * and covered the remaining range.
+   */
+  @Test
+  void streamsAreKeyedByReceivedSecurityMode() {
+    assertNull(accept(PUBLISHER_A, 1, 7, 4, 6, bytes(9, 9), null));
+    assertNull(accept(PUBLISHER_A, 1, 7, 0, 6, bytes(1, 2, 3, 4), SIGNED));
+    assertEquals(2, reassembler.streamCount(), "one stream per received security mode");
+
+    ChunkReassembler.ReassembledMessage reassembled =
+        accept(PUBLISHER_A, 1, 7, 4, 6, bytes(5, 6), SIGNED);
+
+    assertNotNull(reassembled);
+    assertArrayEquals(bytes(1, 2, 3, 4, 5, 6), reassembled.payload());
+    assertEquals(SIGNED, reassembled.header().security());
+  }
+
+  /**
+   * An unsecured chunk cannot restart (same MessageSequenceNumber, other TotalSize) or discard
+   * (newer MessageSequenceNumber) the in-progress signed payload, which still completes.
+   */
+  @Test
+  void unsecuredChunksDoNotResetOrBlockASignedPayload() {
+    assertNull(accept(PUBLISHER_A, 1, 7, 0, 6, bytes(1, 2, 3, 4), SIGNED));
+
+    assertNull(accept(PUBLISHER_A, 1, 7, 0, 20, bytes(9, 9), null));
+    assertNull(accept(PUBLISHER_A, 1, 8, 0, 6, bytes(9, 9), null));
+
+    ChunkReassembler.ReassembledMessage reassembled =
+        accept(PUBLISHER_A, 1, 7, 4, 6, bytes(5, 6), SIGNED);
+
+    assertNotNull(reassembled);
+    assertArrayEquals(bytes(1, 2, 3, 4, 5, 6), reassembled.payload());
+  }
+
+  // endregion
+
+  // region completed payload record
+
+  /**
+   * A second copy of an already completed chunk set is not reassembled again (Table 159: the
+   * MessageSequenceNumber is always present, so the reassembler can reject the copy itself).
+   */
+  @Test
+  void repeatedChunkSetOfACompletedPayloadIsDropped() {
+    assertNull(accept(PUBLISHER_A, 1, 7, 0, 6, bytes(1, 2, 3, 4)));
+    assertNotNull(accept(PUBLISHER_A, 1, 7, 4, 6, bytes(5, 6)));
+    assertEquals(0, reassembler.streamCount());
+    assertEquals(1, reassembler.recordCount(), "the completed record is kept");
+
+    assertNull(accept(PUBLISHER_A, 1, 7, 0, 6, bytes(1, 2, 3, 4)));
+    assertNull(accept(PUBLISHER_A, 1, 7, 4, 6, bytes(5, 6)), "the repeated set must not complete");
+    assertEquals(0, reassembler.streamCount());
+
+    // the next payload still reassembles
+    ChunkReassembler.ReassembledMessage next = accept(PUBLISHER_A, 1, 8, 0, 2, bytes(5, 6));
+    assertNotNull(next);
+    assertArrayEquals(bytes(5, 6), next.payload());
+  }
+
+  /** Chunks of an older payload that arrive after a newer one completed are dropped. */
+  @Test
+  void olderPayloadAfterACompletedOneIsDropped() {
+    assertNotNull(accept(PUBLISHER_A, 1, 8, 0, 2, bytes(5, 6)));
+
+    assertNull(accept(PUBLISHER_A, 1, 7, 0, 6, bytes(1, 2, 3, 4)));
+    assertNull(accept(PUBLISHER_A, 1, 7, 4, 6, bytes(5, 6)));
+    assertEquals(0, reassembler.streamCount());
+  }
+
+  /**
+   * Neither a chunk that repeats the completed MessageSequenceNumber with another TotalSize nor a
+   * chunk with an unusable range reopens a completed payload; the record survives both.
+   */
+  @Test
+  void completedRecordSurvivesMismatchedAndMalformedChunks() {
+    assertNull(accept(PUBLISHER_A, 1, 7, 4, 6, bytes(5, 6)));
+    assertNotNull(accept(PUBLISHER_A, 1, 7, 0, 6, bytes(1, 2, 3, 4)));
+
+    assertNull(accept(PUBLISHER_A, 1, 7, 0, 2, bytes(9, 9)));
+    assertNull(accept(PUBLISHER_A, 1, 7, 4, 6, bytes(1, 2, 3, 4)));
+    assertEquals(0, reassembler.streamCount());
+    assertEquals(1, reassembler.recordCount());
+
+    assertNull(accept(PUBLISHER_A, 1, 7, 0, 6, bytes(1, 2, 3, 4)));
+    assertNull(accept(PUBLISHER_A, 1, 7, 4, 6, bytes(5, 6)), "the repeated set must not complete");
+  }
+
+  /**
+   * The completed record is independent of the payload in progress: starting a newer payload and
+   * then abandoning it (here through a chunk whose range exceeds its TotalSize) keeps the record,
+   * so a repeated copy of the completed set is still dropped and the newer payload can start over.
+   */
+  @Test
+  void completedRecordSurvivesAbandoningANewerPayload() {
+    assertNotNull(accept(PUBLISHER_A, 1, 7, 0, 2, bytes(1, 2)));
+
+    assertNull(accept(PUBLISHER_A, 1, 8, 0, 6, bytes(1, 2, 3, 4)));
+    assertEquals(1, reassembler.streamCount());
+
+    assertNull(accept(PUBLISHER_A, 1, 8, 4, 6, bytes(5, 6, 7)), "range beyond TotalSize");
+    assertEquals(0, reassembler.streamCount(), "the newer payload is abandoned");
+    assertEquals(1, reassembler.recordCount(), "the completed record is kept");
+
+    assertNull(accept(PUBLISHER_A, 1, 7, 0, 2, bytes(1, 2)), "the repeated set must not complete");
+
+    assertNull(accept(PUBLISHER_A, 1, 8, 0, 6, bytes(1, 2, 3, 4)));
+    ChunkReassembler.ReassembledMessage reassembled = accept(PUBLISHER_A, 1, 8, 4, 6, bytes(5, 6));
+    assertNotNull(reassembled);
+    assertArrayEquals(bytes(1, 2, 3, 4, 5, 6), reassembled.payload());
+  }
+
+  /**
+   * A completed record is idle-evicted like an in-progress payload, and dropped chunks do not count
+   * as activity: a publisher that restarted its numbering recovers after the idle period.
+   */
+  @Test
+  void completedRecordIsEvictedWhenIdle() {
+    assertNotNull(accept(PUBLISHER_A, 1, 7, 0, 2, bytes(1, 2)));
+
+    // a dropped repeat 6 seconds later does not refresh the record
+    nowNanos += TimeUnit.SECONDS.toNanos(6);
+    assertNull(accept(PUBLISHER_A, 1, 7, 0, 2, bytes(1, 2)));
+    assertEquals(1, reassembler.recordCount());
+
+    // 11 seconds after completion another stream's chunk sweeps the record
+    nowNanos += TimeUnit.SECONDS.toNanos(5);
+    assertNull(accept(PUBLISHER_B, 2, 3, 0, 6, bytes(1, 2, 3, 4)));
+    assertEquals(1, reassembler.recordCount());
+
+    // the same MessageSequenceNumber reassembles again once the record is gone
+    ChunkReassembler.ReassembledMessage reassembled = accept(PUBLISHER_A, 1, 7, 0, 2, bytes(1, 2));
+    assertNotNull(reassembled);
+    assertArrayEquals(bytes(1, 2), reassembled.payload());
+  }
+
+  /** Completed records count toward the stream cap and are evicted by it like any other stream. */
+  @Test
+  void completedRecordsCountTowardTheStreamCap() {
+    assertNotNull(accept(PUBLISHER_A, 1, 7, 0, 2, bytes(1, 2)));
+    assertEquals(1, reassembler.recordCount());
+
+    for (int i = 0; i < ChunkReassembler.MAX_STREAMS; i++) {
+      nowNanos += 1;
+      assertNull(accept(PublisherId.uint16(ushort(1000 + i)), 1, 7, 0, 6, bytes(1, 2, 3, 4)));
+    }
+    assertEquals(ChunkReassembler.MAX_STREAMS, reassembler.recordCount());
+    assertEquals(ChunkReassembler.MAX_STREAMS, reassembler.streamCount());
+
+    // the least recently active entry was the completed record: its payload reassembles again
+    nowNanos += 1;
+    assertNotNull(accept(PUBLISHER_A, 1, 7, 0, 2, bytes(1, 2)));
+  }
+
+  /**
+   * At the stream cap, a chunk evicts only streams of the same or a lower received security mode:
+   * streams of unsecured chunks cannot evict a signed payload in progress, however many of them a
+   * mode-None reader on the same connection accepts.
+   */
+  @Test
+  void unsecuredStreamsDoNotEvictASignedStreamAtTheCap() {
+    assertNull(accept(PUBLISHER_A, 1, 7, 0, 6, bytes(1, 2, 3, 4), SIGNED));
+
+    for (int i = 0; i < ChunkReassembler.MAX_STREAMS; i++) {
+      nowNanos += 1;
+      assertNull(accept(PublisherId.uint16(ushort(1000 + i)), 1, 7, 0, 6, bytes(1, 2, 3, 4)));
+    }
+    assertEquals(ChunkReassembler.MAX_STREAMS, reassembler.recordCount());
+
+    // the signed stream was the least recently active, yet it is the one that survived
+    ChunkReassembler.ReassembledMessage reassembled =
+        accept(PUBLISHER_A, 1, 7, 4, 6, bytes(5, 6), SIGNED);
+    assertNotNull(reassembled);
+    assertArrayEquals(bytes(1, 2, 3, 4, 5, 6), reassembled.payload());
+  }
+
+  /** When every tracked stream is signed, an unsecured chunk at the cap is dropped. */
+  @Test
+  void unsecuredChunkIsDroppedAtTheCapWhenOnlySignedStreamsRemain() {
+    for (int i = 0; i < ChunkReassembler.MAX_STREAMS; i++) {
+      nowNanos += 1;
+      assertNull(
+          accept(PublisherId.uint16(ushort(1000 + i)), 1, 7, 0, 6, bytes(1, 2, 3, 4), SIGNED));
+    }
+
+    nowNanos += 1;
+    assertNull(accept(PUBLISHER_B, 2, 3, 0, 2, bytes(1, 2)));
+    assertEquals(
+        ChunkReassembler.MAX_STREAMS, reassembler.streamCount(), "no signed stream evicted");
+
+    // the oldest signed stream still completes; the dropped chunk left no state behind
+    assertNotNull(accept(PublisherId.uint16(ushort(1000)), 1, 7, 4, 6, bytes(5, 6), SIGNED));
+  }
+
+  // endregion
 
   /** The payload of the reassembled message is the assembly buffer, not an alias of any chunk. */
   @Test
@@ -385,6 +595,25 @@ class ChunkReassemblerTest {
       long totalSize,
       byte[] chunkData) {
 
+    return accept(
+        publisherId,
+        dataSetWriterId,
+        messageSequenceNumber,
+        chunkOffset,
+        totalSize,
+        chunkData,
+        null);
+  }
+
+  private ChunkReassembler.@Nullable ReassembledMessage accept(
+      PublisherId publisherId,
+      int dataSetWriterId,
+      int messageSequenceNumber,
+      long chunkOffset,
+      long totalSize,
+      byte[] chunkData,
+      @Nullable ReceivedSecurity security) {
+
     var chunk =
         new DecodedChunk(
             ushort(dataSetWriterId),
@@ -404,7 +633,7 @@ class ChunkReassemblerTest {
             List.of(),
             List.of(),
             null,
-            null,
+            security,
             chunk);
 
     return reassembler.accept(message, nowNanos);
