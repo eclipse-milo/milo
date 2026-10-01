@@ -12,12 +12,17 @@ package org.eclipse.milo.opcua.sdk.pubsub.internal;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedChunk;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedNetworkMessage;
+import org.eclipse.milo.opcua.sdk.pubsub.uadp.ReceivedSecurity;
+import org.eclipse.milo.opcua.sdk.pubsub.uadp.SecurityOutcome;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,17 +33,34 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Sits AFTER the codec's verify/decrypt step: each chunk NetworkMessage is secured individually,
  * so the {@link DecodedChunk} pieces fed here are already verified plaintext (and already fresh
- * copies — they alias neither the datagram nor a decrypted buffer). One payload is in progress per
- * stream, keyed by (PublisherId, WriterGroupId, DataSetWriterId): the spec blesses a single-payload
- * subscriber, and a chunk whose MessageSequenceNumber classifies NEWER (§7.2.3, N=16) discards the
- * incomplete predecessor, while OLDER/invalid chunks are dropped. Chunks of the same payload may
- * arrive out of order; duplicate ranges overwrite and are not double-counted.
+ * copies — they alias neither the datagram nor a decrypted buffer). The caller feeds only chunks
+ * that at least one reader of the connection accepted, and names those readers; chunks no reader
+ * accepts never touch reassembly state.
  *
- * <p>DoS caps (hard constants; TotalSize is attacker-controlled): a payload larger than {@link
- * #MAX_TOTAL_SIZE} (4 MiB) is dropped, at most {@link #MAX_STREAMS} (64) streams are reassembled
- * concurrently (the least recently active is evicted), and in-progress payloads idle longer than
- * {@link #IDLE_EVICTION_NANOS} (10 s) are evicted by a sweep run from {@link
- * #accept(DecodedNetworkMessage, long)}.
+ * <p>What a caller can rely on:
+ *
+ * <ul>
+ *   <li>A reassembled payload contains only bytes from chunks received with the same security mode
+ *       (None, Sign, or SignAndEncrypt) as the chunk that completed it; chunks received with
+ *       another mode cannot change, reset, or complete it.
+ *   <li>The {@link ReassembledMessage} names the readers that accepted every chunk whose bytes are
+ *       in the delivered payload (a range a later accepted chunk overwrote counts for that later
+ *       chunk's readers), so the caller can deliver the payload to those readers only.
+ *   <li>One payload is in progress per (PublisherId, WriterGroupId, DataSetWriterId, security mode)
+ *       stream: a chunk whose MessageSequenceNumber classifies NEWER (§7.2.3, N=16) discards the
+ *       incomplete predecessor, while OLDER/invalid chunks are dropped. Chunks may arrive out of
+ *       order; duplicate ranges overwrite and are not double-counted.
+ *   <li>A second copy of an already completed chunk set, or an older payload whose chunks arrive
+ *       after a newer one completed, is not reassembled again; only a NEWER MessageSequenceNumber
+ *       starts the next payload. A stream idle for {@link #IDLE_EVICTION_NANOS} is forgotten, so a
+ *       publisher that restarts its numbering recovers after that period.
+ *   <li>Caps (hard constants): a payload larger than {@link #MAX_TOTAL_SIZE} (4 MiB) is dropped, a
+ *       payload in progress that accumulates more than {@link #MAX_RANGES} (1024) separately
+ *       attributed written ranges is dropped, at most {@link #MAX_STREAMS} (64) streams are
+ *       tracked, and streams idle longer than {@link #IDLE_EVICTION_NANOS} (10 s) are evicted. At
+ *       the stream cap, chunks received with mode None never evict a signed stream, and a completed
+ *       stream is evicted before one in progress.
+ * </ul>
  *
  * <p>Not thread safe: confined to the connection's dispatch queue, like all subscriber dispatch
  * state.
@@ -50,10 +72,17 @@ final class ChunkReassembler {
   /** The maximum reassembled payload size (Table 159 TotalSize) accepted, in bytes: 4 MiB. */
   static final int MAX_TOTAL_SIZE = 4 * 1024 * 1024;
 
-  /** The maximum number of concurrently reassembling streams. */
+  /** The maximum number of concurrently tracked streams, in progress or completed. */
   static final int MAX_STREAMS = 64;
 
-  /** In-progress payloads idle longer than this are evicted: 10 seconds. */
+  /**
+   * The maximum number of separately attributed written ranges a payload in progress may hold.
+   * Ranges written by chunks the same readers accepted merge when adjacent, so the count grows only
+   * with gaps and with changes in which readers accept consecutive chunks.
+   */
+  static final int MAX_RANGES = 1024;
+
+  /** Streams idle longer than this are evicted, in progress or completed: 10 seconds. */
   static final long IDLE_EVICTION_NANOS = TimeUnit.SECONDS.toNanos(10);
 
   /** Idle eviction sweeps are rate-limited to one per interval. */
@@ -65,14 +94,19 @@ final class ChunkReassembler {
   private long lastSweepNanos;
 
   /**
-   * Accept one decoded chunk NetworkMessage.
+   * Accept one decoded chunk NetworkMessage that at least one reader of the connection accepted.
    *
    * @param chunkMessage a decoded NetworkMessage whose {@link DecodedNetworkMessage#chunk()} is
-   *     non-null.
+   *     non-null and whose security, when present, is {@link SecurityOutcome#VERIFIED}.
+   * @param acceptedReaders the readers that accepted {@code chunkMessage}; non-empty.
    * @param nowNanos the current {@link System#nanoTime()} (injectable for tests).
-   * @return the reassembled payload when this chunk completes it, else {@code null}.
+   * @return the reassembled payload when this chunk completes it, else {@code null}. Its {@link
+   *     ReassembledMessage#readers()} may be empty when no single reader accepted every chunk.
    */
-  @Nullable ReassembledMessage accept(DecodedNetworkMessage chunkMessage, long nowNanos) {
+  @Nullable ReassembledMessage accept(
+      DecodedNetworkMessage chunkMessage,
+      Set<DataSetReaderRuntime> acceptedReaders,
+      long nowNanos) {
     evictStale(nowNanos);
 
     DecodedChunk chunk = chunkMessage.chunk();
@@ -80,24 +114,34 @@ final class ChunkReassembler {
       return null;
     }
 
+    ReceivedSecurity security = chunkMessage.security();
+    if (security != null && security.outcome() != SecurityOutcome.VERIFIED) {
+      // the decoder surfaces no chunk for a non-VERIFIED outcome; never let one reach a stream
+      return null;
+    }
+    MessageSecurityMode securityMode =
+        security != null ? security.mode() : MessageSecurityMode.None;
+
     var key =
         new StreamKey(
             chunkMessage.publisherId() != null
                 ? chunkMessage.publisherId().toCanonicalString()
                 : null,
             chunkMessage.writerGroupId(),
-            chunk.dataSetWriterId());
+            chunk.dataSetWriterId(),
+            securityMode);
 
     long totalSize = chunk.totalSize().longValue();
     long offset = chunk.chunkOffset().longValue();
     int length = chunk.chunkData().length;
 
     if (totalSize > MAX_TOTAL_SIZE) {
-      // the cap also protects the in-progress payload of the stream: a poisoned TotalSize
-      // abandons it rather than letting a mixed stream complete with stale bytes
+      // the cap also protects the in-progress payload of the stream: an unusable TotalSize
+      // abandons it rather than letting a mixed stream complete with stale bytes. The stream's
+      // completed record is kept, so the chunk cannot reopen a completed payload either.
       LOGGER.debug(
           "chunk TotalSize {} exceeds the {} byte cap; dropping", totalSize, MAX_TOTAL_SIZE);
-      streams.remove(key);
+      abandonInProgress(key);
       return null;
     }
     if (offset + length > totalSize) {
@@ -106,7 +150,7 @@ final class ChunkReassembler {
           offset,
           offset + length,
           totalSize);
-      streams.remove(key);
+      abandonInProgress(key);
       return null;
     }
 
@@ -115,49 +159,84 @@ final class ChunkReassembler {
     StreamState state = streams.get(key);
 
     if (state != null
-        && (state.sequenceNumber != sequenceNumber || state.totalSize != (int) totalSize)) {
-      if (state.sequenceNumber != sequenceNumber
-          && SequenceNumberWindow.classify(state.sequenceNumber, sequenceNumber, 16)
-              != SequenceNumberWindow.Classification.NEW) {
+        && state.hasCompleted
+        && !isNewer(state.completedSequenceNumber, sequenceNumber)) {
+      // a second copy of the completed payload, or an older one: drop it without activity
+      LOGGER.debug(
+          "chunk MessageSequenceNumber {} is not newer than completed {}; dropping",
+          sequenceNumber,
+          state.completedSequenceNumber);
+      return null;
+    }
+
+    Payload payload = state != null ? state.payload : null;
+
+    if (payload != null
+        && (payload.sequenceNumber != sequenceNumber || payload.totalSize != (int) totalSize)) {
+      if (payload.sequenceNumber != sequenceNumber
+          && !isNewer(payload.sequenceNumber, sequenceNumber)) {
         // a chunk of an older (or unprovably newer) payload: drop it, keep the in-progress one
         LOGGER.debug(
             "chunk MessageSequenceNumber {} is not newer than in-progress {}; dropping",
             sequenceNumber,
-            state.sequenceNumber);
+            payload.sequenceNumber);
         return null;
       }
       // a NEWER payload started (§7.2.4.4.4: a single-payload subscriber may skip an incomplete
       // payload when a chunk for a newer MessageSequenceNumber arrives) — or the same payload
       // changed its declared TotalSize, which can never complete consistently. Start over.
-      streams.remove(key);
-      state = null;
+      payload = null;
     }
 
     if (state == null) {
-      if (streams.size() >= MAX_STREAMS) {
-        evictLeastRecentlyActive();
+      if (streams.size() >= MAX_STREAMS && !evictLeastRecentlyActive(securityMode)) {
+        LOGGER.debug(
+            "stream cap of {} reached and no stream of mode {} or lower to evict; dropping",
+            MAX_STREAMS,
+            securityMode);
+        return null;
       }
-      state = new StreamState(sequenceNumber, (int) totalSize);
+      state = new StreamState();
       streams.put(key, state);
     }
 
+    if (payload == null) {
+      payload = new Payload(sequenceNumber, (int) totalSize);
+      state.payload = payload;
+    }
+
+    // duplicate ranges overwrite, and the overwritten range is attributed to the readers that
+    // accepted the overwriting chunk; ranges are merged, so they are not double-counted
+    System.arraycopy(chunk.chunkData(), 0, payload.buffer, (int) offset, length);
+    if (!payload.addRange((int) offset, (int) offset + length, acceptedReaders)) {
+      LOGGER.debug(
+          "payload of stream {} exceeds {} attributed ranges; dropping it", key, MAX_RANGES);
+      abandonInProgress(key);
+      return null;
+    }
+
+    // only a chunk that was kept counts as activity
     state.lastActivityNanos = nowNanos;
 
-    // duplicate ranges overwrite; coverage intervals are merged, so they are not double-counted
-    System.arraycopy(chunk.chunkData(), 0, state.payload, (int) offset, length);
-    state.addCoverage((int) offset, (int) offset + length);
-
-    if (state.isComplete()) {
-      streams.remove(key);
-      return new ReassembledMessage(chunkMessage, chunk.dataSetWriterId(), state.payload);
+    if (payload.isComplete()) {
+      // keep the stream as a record of the completed MessageSequenceNumber, without the buffer,
+      // so a repeated or older chunk set is not reassembled again
+      state.payload = null;
+      state.hasCompleted = true;
+      state.completedSequenceNumber = sequenceNumber;
+      // a zero-size payload has no written range to attribute: it belongs to the readers that
+      // accepted the chunk completing it, so its (empty) decode is still reported for them
+      Set<DataSetReaderRuntime> readers =
+          payload.totalSize == 0 ? Set.copyOf(acceptedReaders) : payload.readers();
+      return new ReassembledMessage(chunkMessage, chunk.dataSetWriterId(), payload.buffer, readers);
     }
 
     return null;
   }
 
   /**
-   * Evict in-progress payloads idle longer than {@link #IDLE_EVICTION_NANOS}. Called from {@link
-   * #accept(DecodedNetworkMessage, long)}; sweeps are rate-limited to one per second.
+   * Evict streams idle longer than {@link #IDLE_EVICTION_NANOS}, in progress or completed. Called
+   * from {@link #accept(DecodedNetworkMessage, long)}; sweeps are rate-limited to one per second.
    */
   void evictStale(long nowNanos) {
     if (sweepArmed && nowNanos - lastSweepNanos < SWEEP_INTERVAL_NANOS) {
@@ -171,95 +250,213 @@ final class ChunkReassembler {
 
   /** The number of streams with an in-progress payload; test surface. */
   int streamCount() {
+    int count = 0;
+    for (StreamState state : streams.values()) {
+      if (state.payload != null) {
+        count++;
+      }
+    }
+    return count;
+  }
+
+  /** The number of tracked streams, in progress or completed; test surface. */
+  int recordCount() {
     return streams.size();
   }
 
-  private void evictLeastRecentlyActive() {
+  /** Whether {@code candidate} classifies NEW against {@code reference} in the §7.2.3 window. */
+  private static boolean isNewer(int reference, int candidate) {
+    return SequenceNumberWindow.classify(reference, candidate, 16)
+        == SequenceNumberWindow.Classification.NEW;
+  }
+
+  /**
+   * Drop the in-progress payload of {@code key}, if any. The stream's completed record, if it has
+   * one, stays; a stream with neither is forgotten.
+   */
+  private void abandonInProgress(StreamKey key) {
+    StreamState state = streams.get(key);
+    if (state == null) {
+      return;
+    }
+    state.payload = null;
+    if (!state.hasCompleted) {
+      streams.remove(key);
+    }
+  }
+
+  /**
+   * Evict one stream whose received security mode is the same as or lower than {@code
+   * securityMode}: the least recently active completed record if there is one, else the least
+   * recently active payload in progress.
+   *
+   * @return whether a stream was evicted.
+   */
+  private boolean evictLeastRecentlyActive(MessageSecurityMode securityMode) {
+    int rank = modeRank(securityMode);
     StreamKey oldestKey = null;
     long oldestNanos = Long.MAX_VALUE;
+    boolean oldestIsRecord = false;
 
     for (Map.Entry<StreamKey, StreamState> entry : streams.entrySet()) {
-      if (oldestKey == null || entry.getValue().lastActivityNanos - oldestNanos < 0) {
+      if (modeRank(entry.getKey().securityMode()) > rank) {
+        continue;
+      }
+      boolean isRecord = entry.getValue().payload == null;
+      if (oldestKey == null
+          || (isRecord && !oldestIsRecord)
+          || (isRecord == oldestIsRecord && entry.getValue().lastActivityNanos - oldestNanos < 0)) {
         oldestKey = entry.getKey();
         oldestNanos = entry.getValue().lastActivityNanos;
+        oldestIsRecord = isRecord;
       }
     }
 
-    if (oldestKey != null) {
-      LOGGER.debug("evicting least recently active chunk stream: {}", oldestKey);
-      streams.remove(oldestKey);
+    if (oldestKey == null) {
+      return false;
     }
+    LOGGER.debug("evicting chunk stream at the stream cap: {}", oldestKey);
+    streams.remove(oldestKey);
+    return true;
+  }
+
+  /** The §7.2.4.3 numeric mode order; Invalid ranks like None. */
+  private static int modeRank(MessageSecurityMode mode) {
+    return switch (mode) {
+      case Invalid, None -> 1;
+      case Sign -> 2;
+      case SignAndEncrypt -> 3;
+    };
   }
 
   /**
    * A reassembled chunk payload: one complete DataSetMessage (header and body).
    *
    * @param header the completing chunk's NetworkMessage, for the header values the dispatcher
-   *     routes on.
+   *     routes on; its security is the security every contributing chunk was received with.
    * @param dataSetWriterId the DataSetWriterId of the chunked stream, or {@code null} if the chunk
    *     NetworkMessages carried no PayloadHeader.
    * @param payload the reassembled payload bytes; owned by the receiver.
+   * @param readers the readers that accepted every chunk whose bytes are in the payload; the only
+   *     readers the payload may be delivered to. Empty when no reader accepted them all.
    */
   record ReassembledMessage(
-      DecodedNetworkMessage header, @Nullable UShort dataSetWriterId, byte[] payload) {}
+      DecodedNetworkMessage header,
+      @Nullable UShort dataSetWriterId,
+      byte[] payload,
+      Set<DataSetReaderRuntime> readers) {}
 
   /**
    * The identity of one chunked stream: PublisherId (canonical form), WriterGroupId, and
-   * DataSetWriterId, each {@code null} when absent from the wire.
+   * DataSetWriterId, each {@code null} when absent from the wire, plus the received security mode
+   * ({@link MessageSecurityMode#None} for an unsecured chunk).
    */
   private record StreamKey(
       @Nullable String publisherId,
       @Nullable UShort writerGroupId,
-      @Nullable UShort dataSetWriterId) {}
+      @Nullable UShort dataSetWriterId,
+      MessageSecurityMode securityMode) {}
+
+  /**
+   * One stream: the payload in progress, if any, and the record of the last completed
+   * MessageSequenceNumber, if any. At least one of the two is present while the stream is tracked.
+   */
+  private static final class StreamState {
+
+    @Nullable Payload payload;
+
+    boolean hasCompleted = false;
+    int completedSequenceNumber;
+
+    long lastActivityNanos;
+  }
 
   /** The in-progress payload of one stream. */
-  private static final class StreamState {
+  private static final class Payload {
 
     final int sequenceNumber;
     final int totalSize;
-    final byte[] payload;
+    final byte[] buffer;
 
-    /** Merged, sorted, disjoint covered ranges as {@code [start, end)} pairs. */
-    final List<int[]> coverage = new ArrayList<>();
+    /**
+     * Sorted, disjoint written ranges, each with the readers that accepted the chunk that last
+     * wrote it. Adjacent ranges with the same readers are merged, so the list grows only when
+     * acceptance changes between chunks, not with the number of chunks.
+     */
+    final List<Range> ranges = new ArrayList<>();
 
-    long lastActivityNanos;
-
-    StreamState(int sequenceNumber, int totalSize) {
+    Payload(int sequenceNumber, int totalSize) {
       this.sequenceNumber = sequenceNumber;
       this.totalSize = totalSize;
-      this.payload = new byte[totalSize];
+      this.buffer = new byte[totalSize];
     }
 
-    void addCoverage(int start, int end) {
+    /**
+     * Record that {@code [start, end)} was written by a chunk {@code readers} accepted.
+     *
+     * @return whether the payload still holds at most {@link #MAX_RANGES} ranges afterwards.
+     */
+    boolean addRange(int start, int end, Set<DataSetReaderRuntime> readers) {
       if (start == end) {
-        return;
+        return true;
       }
 
-      var merged = new ArrayList<int[]>(coverage.size() + 1);
-      int newStart = start;
-      int newEnd = end;
-
-      for (int[] range : coverage) {
-        if (range[1] < newStart || range[0] > newEnd) {
-          merged.add(range);
-        } else {
-          newStart = Math.min(newStart, range[0]);
-          newEnd = Math.max(newEnd, range[1]);
+      var cut = new ArrayList<Range>(ranges.size() + 2);
+      for (Range range : ranges) {
+        if (range.end <= start || range.start >= end) {
+          cut.add(range);
+          continue;
+        }
+        // the new chunk overwrites the overlap: keep only the parts outside it
+        if (range.start < start) {
+          cut.add(new Range(range.start, start, range.readers));
+        }
+        if (range.end > end) {
+          cut.add(new Range(end, range.end, range.readers));
         }
       }
+      cut.add(new Range(start, end, Set.copyOf(readers)));
+      cut.sort((a, b) -> Integer.compare(a.start, b.start));
 
-      merged.add(new int[] {newStart, newEnd});
-      merged.sort((a, b) -> Integer.compare(a[0], b[0]));
-
-      coverage.clear();
-      coverage.addAll(merged);
+      ranges.clear();
+      for (Range range : cut) {
+        Range last = ranges.isEmpty() ? null : ranges.get(ranges.size() - 1);
+        if (last != null && last.end == range.start && last.readers.equals(range.readers)) {
+          ranges.set(ranges.size() - 1, new Range(last.start, range.end, last.readers));
+        } else {
+          ranges.add(range);
+        }
+      }
+      return ranges.size() <= MAX_RANGES;
     }
 
     boolean isComplete() {
       if (totalSize == 0) {
         return true;
       }
-      return coverage.size() == 1 && coverage.get(0)[0] == 0 && coverage.get(0)[1] == totalSize;
+      int covered = 0;
+      for (Range range : ranges) {
+        if (range.start != covered) {
+          return false;
+        }
+        covered = range.end;
+      }
+      return covered == totalSize;
     }
+
+    /** The readers that accepted every chunk whose bytes are in the buffer. */
+    Set<DataSetReaderRuntime> readers() {
+      if (ranges.isEmpty()) {
+        return Set.of();
+      }
+      var readers = new HashSet<>(ranges.get(0).readers);
+      for (int i = 1; i < ranges.size(); i++) {
+        readers.retainAll(ranges.get(i).readers);
+      }
+      return readers;
+    }
+
+    /** A written range {@code [start, end)} and the readers that accepted its last writer. */
+    private record Range(int start, int end, Set<DataSetReaderRuntime> readers) {}
   }
 }

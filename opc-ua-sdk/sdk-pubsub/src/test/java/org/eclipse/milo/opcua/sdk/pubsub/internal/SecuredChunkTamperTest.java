@@ -17,11 +17,13 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import javax.crypto.Cipher;
 import javax.crypto.Mac;
 import javax.crypto.spec.IvParameterSpec;
@@ -70,6 +72,9 @@ class SecuredChunkTamperTest {
 
   private final ChunkReassembler reassembler = new ChunkReassembler();
 
+  /** The one reader that accepts every chunk here; identity is all the reassembler uses. */
+  private final Set<DataSetReaderRuntime> readers = Set.of(mock(DataSetReaderRuntime.class));
+
   @Test
   void tamperedMiddleChunkDiscardsOnlyItsSetAndACleanSetStillReassembles() throws Exception {
     byte[] payload = dataSetMessage(42);
@@ -87,7 +92,7 @@ class SecuredChunkTamperTest {
     DecodedNetworkMessage first = decode(chunk1);
     assertEquals(SecurityOutcome.VERIFIED, security(first));
     assertNotNull(first.chunk());
-    assertNull(reassembler.accept(first, 0));
+    assertNull(reassembler.accept(first, readers, 0));
     assertEquals(1, reassembler.streamCount());
 
     // the tampered middle chunk fails verification: header-only, NO chunk surfaced — the
@@ -102,7 +107,7 @@ class SecuredChunkTamperTest {
     // reassembly completion for the tampered stream
     DecodedNetworkMessage last = decode(chunk3);
     assertEquals(SecurityOutcome.VERIFIED, security(last));
-    assertNull(reassembler.accept(last, 0));
+    assertNull(reassembler.accept(last, readers, 0));
     assertEquals(1, reassembler.streamCount());
 
     // a subsequent CLEAN set (newer MessageSequenceNumber 8) discards the incomplete
@@ -115,11 +120,11 @@ class SecuredChunkTamperTest {
     byte[] clean3 =
         securedChunk(6, 8, 5, cleanPayload.length, Arrays.copyOfRange(cleanPayload, 5, 8), 6);
 
-    assertNull(reassembler.accept(decode(clean1), 0));
-    assertNull(reassembler.accept(decode(clean2), 0));
+    assertNull(reassembler.accept(decode(clean1), readers, 0));
+    assertNull(reassembler.accept(decode(clean2), readers, 0));
 
     DecodedNetworkMessage completing = decode(clean3);
-    ChunkReassembler.ReassembledMessage reassembled = reassembler.accept(completing, 0);
+    ChunkReassembler.ReassembledMessage reassembled = reassembler.accept(completing, readers, 0);
 
     assertNotNull(reassembled);
     assertEquals(0, reassembler.streamCount());
