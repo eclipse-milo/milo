@@ -34,36 +34,33 @@ import org.slf4j.LoggerFactory;
  * <p>Sits AFTER the codec's verify/decrypt step: each chunk NetworkMessage is secured individually,
  * so the {@link DecodedChunk} pieces fed here are already verified plaintext (and already fresh
  * copies — they alias neither the datagram nor a decrypted buffer). The caller feeds only chunks
- * that at least one reader of the connection accepted, naming those readers; chunks no reader
- * accepts never touch reassembly state. A payload in progress keeps the readers that accepted every
- * chunk that contributed bytes to it, and the {@link ReassembledMessage} names them so the caller
- * delivers the payload to those readers only.
+ * that at least one reader of the connection accepted, and names those readers; chunks no reader
+ * accepts never touch reassembly state.
  *
- * <p>Streams are keyed by (PublisherId, WriterGroupId, DataSetWriterId) and by the received
- * security mode (None, Sign, or SignAndEncrypt), so a reassembled payload only ever contains bytes
- * from chunks received with the same security mode as the chunk that completed it, and chunks
- * received with another mode cannot change, reset, or complete it. One payload is in progress per
- * stream: the spec blesses a single-payload subscriber, and a chunk whose MessageSequenceNumber
- * classifies NEWER (§7.2.3, N=16) discards the incomplete predecessor, while OLDER/invalid chunks
- * are dropped. Chunks of the same payload may arrive out of order; duplicate ranges overwrite and
- * are not double-counted.
+ * <p>What a caller can rely on:
  *
- * <p>Each stream also remembers the MessageSequenceNumber of its last completed payload,
- * independently of any payload in progress, so a second copy of an already completed chunk set, or
- * an older payload whose chunks arrive after a newer one completed, is dropped instead of
- * reassembled again. Only a chunk whose MessageSequenceNumber classifies NEWER than the completed
- * one can start or continue the next payload. A stream whose record is idle for {@link
- * #IDLE_EVICTION_NANOS} is forgotten, so a publisher that restarts its numbering recovers after
- * that period of its chunks being dropped.
- *
- * <p>Resource caps (hard constants): a payload larger than {@link #MAX_TOTAL_SIZE} (4 MiB) is
- * dropped, at most {@link #MAX_STREAMS} (64) streams are tracked concurrently, in progress or
- * completed, and streams idle longer than {@link #IDLE_EVICTION_NANOS} (10 s) are evicted by a
- * sweep run from {@link #accept(DecodedNetworkMessage, long)}. When the cap is reached, a new
- * stream evicts a stream whose received security mode is the same as or lower than its own,
- * preferring the least recently active completed record over any payload in progress; a chunk that
- * finds no such stream is dropped, so chunks received with mode None never evict a signed stream.
- * Dropped chunks do not count as activity.
+ * <ul>
+ *   <li>A reassembled payload contains only bytes from chunks received with the same security mode
+ *       (None, Sign, or SignAndEncrypt) as the chunk that completed it; chunks received with
+ *       another mode cannot change, reset, or complete it.
+ *   <li>The {@link ReassembledMessage} names the readers that accepted every chunk whose bytes are
+ *       in the delivered payload (a range a later accepted chunk overwrote counts for that later
+ *       chunk's readers), so the caller can deliver the payload to those readers only.
+ *   <li>One payload is in progress per (PublisherId, WriterGroupId, DataSetWriterId, security mode)
+ *       stream: a chunk whose MessageSequenceNumber classifies NEWER (§7.2.3, N=16) discards the
+ *       incomplete predecessor, while OLDER/invalid chunks are dropped. Chunks may arrive out of
+ *       order; duplicate ranges overwrite and are not double-counted.
+ *   <li>A second copy of an already completed chunk set, or an older payload whose chunks arrive
+ *       after a newer one completed, is not reassembled again; only a NEWER MessageSequenceNumber
+ *       starts the next payload. A stream idle for {@link #IDLE_EVICTION_NANOS} is forgotten, so a
+ *       publisher that restarts its numbering recovers after that period.
+ *   <li>Caps (hard constants): a payload larger than {@link #MAX_TOTAL_SIZE} (4 MiB) is dropped, a
+ *       payload in progress that accumulates more than {@link #MAX_RANGES} (1024) separately
+ *       attributed written ranges is dropped, at most {@link #MAX_STREAMS} (64) streams are
+ *       tracked, and streams idle longer than {@link #IDLE_EVICTION_NANOS} (10 s) are evicted. At
+ *       the stream cap, chunks received with mode None never evict a signed stream, and a completed
+ *       stream is evicted before one in progress.
+ * </ul>
  *
  * <p>Not thread safe: confined to the connection's dispatch queue, like all subscriber dispatch
  * state.
@@ -77,6 +74,13 @@ final class ChunkReassembler {
 
   /** The maximum number of concurrently tracked streams, in progress or completed. */
   static final int MAX_STREAMS = 64;
+
+  /**
+   * The maximum number of separately attributed written ranges a payload in progress may hold.
+   * Ranges written by chunks the same readers accepted merge when adjacent, so the count grows only
+   * with gaps and with changes in which readers accept consecutive chunks.
+   */
+  static final int MAX_RANGES = 1024;
 
   /** Streams idle longer than this are evicted, in progress or completed: 10 seconds. */
   static final long IDLE_EVICTION_NANOS = TimeUnit.SECONDS.toNanos(10);
@@ -197,18 +201,22 @@ final class ChunkReassembler {
     }
 
     if (payload == null) {
-      payload = new Payload(sequenceNumber, (int) totalSize, acceptedReaders);
+      payload = new Payload(sequenceNumber, (int) totalSize);
       state.payload = payload;
-    } else {
-      // the payload reaches only readers that accepted every contributing chunk
-      payload.readers.retainAll(acceptedReaders);
     }
 
-    state.lastActivityNanos = nowNanos;
-
-    // duplicate ranges overwrite; coverage intervals are merged, so they are not double-counted
+    // duplicate ranges overwrite, and the overwritten range is attributed to the readers that
+    // accepted the overwriting chunk; ranges are merged, so they are not double-counted
     System.arraycopy(chunk.chunkData(), 0, payload.buffer, (int) offset, length);
-    payload.addCoverage((int) offset, (int) offset + length);
+    if (!payload.addRange((int) offset, (int) offset + length, acceptedReaders)) {
+      LOGGER.debug(
+          "payload of stream {} exceeds {} attributed ranges; dropping it", key, MAX_RANGES);
+      abandonInProgress(key);
+      return null;
+    }
+
+    // only a chunk that was kept counts as activity
+    state.lastActivityNanos = nowNanos;
 
     if (payload.isComplete()) {
       // keep the stream as a record of the completed MessageSequenceNumber, without the buffer,
@@ -216,8 +224,11 @@ final class ChunkReassembler {
       state.payload = null;
       state.hasCompleted = true;
       state.completedSequenceNumber = sequenceNumber;
-      return new ReassembledMessage(
-          chunkMessage, chunk.dataSetWriterId(), payload.buffer, payload.readers);
+      // a zero-size payload has no written range to attribute: it belongs to the readers that
+      // accepted the chunk completing it, so its (empty) decode is still reported for them
+      Set<DataSetReaderRuntime> readers =
+          payload.totalSize == 0 ? Set.copyOf(acceptedReaders) : payload.readers();
+      return new ReassembledMessage(chunkMessage, chunk.dataSetWriterId(), payload.buffer, readers);
     }
 
     return null;
@@ -326,8 +337,8 @@ final class ChunkReassembler {
    * @param dataSetWriterId the DataSetWriterId of the chunked stream, or {@code null} if the chunk
    *     NetworkMessages carried no PayloadHeader.
    * @param payload the reassembled payload bytes; owned by the receiver.
-   * @param readers the readers that accepted every chunk that contributed bytes to the payload; the
-   *     only readers the payload may be delivered to. Empty when no reader accepted them all.
+   * @param readers the readers that accepted every chunk whose bytes are in the payload; the only
+   *     readers the payload may be delivered to. Empty when no reader accepted them all.
    */
   record ReassembledMessage(
       DecodedNetworkMessage header,
@@ -367,49 +378,85 @@ final class ChunkReassembler {
     final int totalSize;
     final byte[] buffer;
 
-    /** Merged, sorted, disjoint covered ranges as {@code [start, end)} pairs. */
-    final List<int[]> coverage = new ArrayList<>();
+    /**
+     * Sorted, disjoint written ranges, each with the readers that accepted the chunk that last
+     * wrote it. Adjacent ranges with the same readers are merged, so the list grows only when
+     * acceptance changes between chunks, not with the number of chunks.
+     */
+    final List<Range> ranges = new ArrayList<>();
 
-    /** The readers that accepted every chunk that contributed bytes so far. */
-    final Set<DataSetReaderRuntime> readers;
-
-    Payload(int sequenceNumber, int totalSize, Set<DataSetReaderRuntime> readers) {
+    Payload(int sequenceNumber, int totalSize) {
       this.sequenceNumber = sequenceNumber;
       this.totalSize = totalSize;
       this.buffer = new byte[totalSize];
-      this.readers = new HashSet<>(readers);
     }
 
-    void addCoverage(int start, int end) {
+    /**
+     * Record that {@code [start, end)} was written by a chunk {@code readers} accepted.
+     *
+     * @return whether the payload still holds at most {@link #MAX_RANGES} ranges afterwards.
+     */
+    boolean addRange(int start, int end, Set<DataSetReaderRuntime> readers) {
       if (start == end) {
-        return;
+        return true;
       }
 
-      var merged = new ArrayList<int[]>(coverage.size() + 1);
-      int newStart = start;
-      int newEnd = end;
-
-      for (int[] range : coverage) {
-        if (range[1] < newStart || range[0] > newEnd) {
-          merged.add(range);
-        } else {
-          newStart = Math.min(newStart, range[0]);
-          newEnd = Math.max(newEnd, range[1]);
+      var cut = new ArrayList<Range>(ranges.size() + 2);
+      for (Range range : ranges) {
+        if (range.end <= start || range.start >= end) {
+          cut.add(range);
+          continue;
+        }
+        // the new chunk overwrites the overlap: keep only the parts outside it
+        if (range.start < start) {
+          cut.add(new Range(range.start, start, range.readers));
+        }
+        if (range.end > end) {
+          cut.add(new Range(end, range.end, range.readers));
         }
       }
+      cut.add(new Range(start, end, Set.copyOf(readers)));
+      cut.sort((a, b) -> Integer.compare(a.start, b.start));
 
-      merged.add(new int[] {newStart, newEnd});
-      merged.sort((a, b) -> Integer.compare(a[0], b[0]));
-
-      coverage.clear();
-      coverage.addAll(merged);
+      ranges.clear();
+      for (Range range : cut) {
+        Range last = ranges.isEmpty() ? null : ranges.get(ranges.size() - 1);
+        if (last != null && last.end == range.start && last.readers.equals(range.readers)) {
+          ranges.set(ranges.size() - 1, new Range(last.start, range.end, last.readers));
+        } else {
+          ranges.add(range);
+        }
+      }
+      return ranges.size() <= MAX_RANGES;
     }
 
     boolean isComplete() {
       if (totalSize == 0) {
         return true;
       }
-      return coverage.size() == 1 && coverage.get(0)[0] == 0 && coverage.get(0)[1] == totalSize;
+      int covered = 0;
+      for (Range range : ranges) {
+        if (range.start != covered) {
+          return false;
+        }
+        covered = range.end;
+      }
+      return covered == totalSize;
     }
+
+    /** The readers that accepted every chunk whose bytes are in the buffer. */
+    Set<DataSetReaderRuntime> readers() {
+      if (ranges.isEmpty()) {
+        return Set.of();
+      }
+      var readers = new HashSet<>(ranges.get(0).readers);
+      for (int i = 1; i < ranges.size(); i++) {
+        readers.retainAll(ranges.get(i).readers);
+      }
+      return readers;
+    }
+
+    /** A written range {@code [start, end)} and the readers that accepted its last writer. */
+    private record Range(int start, int end, Set<DataSetReaderRuntime> readers) {}
   }
 }

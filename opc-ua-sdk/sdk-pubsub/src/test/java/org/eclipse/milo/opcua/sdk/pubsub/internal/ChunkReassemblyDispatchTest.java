@@ -285,6 +285,52 @@ class ChunkReassemblyDispatchTest {
     assertEquals(Variant.ofInt32(44), takeValue("R2"));
   }
 
+  /**
+   * A retransmitted range counts for the readers that accepted the retransmission: R2 misses the
+   * first chunk (disabled), then accepts a retransmission of it that R1's window rejects, and both
+   * accept the last chunk. R2 accepted every chunk whose bytes are in the payload, so the payload
+   * is delivered to R2 and not to R1.
+   */
+  @Test
+  void retransmittedRangeIsDeliveredToReadersThatAcceptedTheRetransmission() throws Exception {
+    startService(MessageSecurityMode.None, "R1", "R2");
+
+    PubSubHandle r2 = service.components().dataSetReader("conn", "RG", "R2").orElseThrow();
+    service.disable(r2);
+    awaitReaderState("R2", PubSubState.Disabled);
+
+    byte[] payload = dataSetMessage(42);
+    byte[] head =
+        unsecuredChunk(WRITER_ID, 10, 7, 0, payload.length, Arrays.copyOfRange(payload, 0, 4));
+    injectAndFlush(head);
+
+    service.enable(r2);
+    awaitReaderState("R2", PubSubState.PreOperational, PubSubState.Operational);
+
+    // the retransmission reuses NetworkMessage SequenceNumber 10: stale for R1, NEW for R2
+    injectAndFlush(head);
+    injectAndFlush(
+        unsecuredChunk(WRITER_ID, 11, 7, 4, payload.length, Arrays.copyOfRange(payload, 4, 8)));
+
+    assertEquals(0, eventCount("R1"), "R1's window rejected the chunk that wrote [0, 4)");
+    assertEquals(Variant.ofInt32(42), takeValue("R2"));
+  }
+
+  /**
+   * A chunk with TotalSize 0 completes an empty payload for the readers that accepted it, so the
+   * empty DataSetMessage still fails decode and ticks decodeErrors at the connection, as any other
+   * undecodable reassembled payload does.
+   */
+  @Test
+  void zeroSizeChunkCompletesAnEmptyPayloadThatFailsDecode() throws Exception {
+    startService(MessageSecurityMode.None, "R1");
+
+    injectAndFlush(unsecuredChunk(WRITER_ID, null, 7, 0, 0, bytes()));
+
+    assertEquals(0, eventCount("R1"));
+    assertEquals(1, diagnostics("conn").decodeErrors());
+  }
+
   // region fixture
 
   private static final class StubTransport implements TransportProvider {

@@ -290,6 +290,89 @@ class ChunkReassemblerTest {
     assertEquals(Set.of(READER_B), reassembled.readers());
   }
 
+  /**
+   * Acceptance follows the bytes that remain: a retransmitted range accepted by a reader that
+   * missed the original counts for that reader, and the reader that accepted only the original no
+   * longer has bytes in the payload.
+   */
+  @Test
+  void overwrittenRangeIsAttributedToTheReadersThatAcceptedTheOverwritingChunk() {
+    assertNull(accept(PUBLISHER_A, 1, 7, 0, 6, bytes(1, 2, 3, 4), null, READER_A));
+    assertNull(accept(PUBLISHER_A, 1, 7, 0, 6, bytes(1, 2, 3, 4), null, READER_B));
+
+    ChunkReassembler.ReassembledMessage reassembled =
+        accept(PUBLISHER_A, 1, 7, 4, 6, bytes(5, 6), null, READER_A, READER_B);
+
+    assertNotNull(reassembled);
+    assertArrayEquals(bytes(1, 2, 3, 4, 5, 6), reassembled.payload());
+    assertEquals(Set.of(READER_B), reassembled.readers());
+  }
+
+  /**
+   * A payload whose consecutive chunks keep alternating between readers cannot merge their ranges,
+   * so its attribution would grow with every chunk; past {@link ChunkReassembler#MAX_RANGES} the
+   * payload is dropped instead, and its stream is forgotten.
+   */
+  @Test
+  void payloadExceedingTheRangeBudgetIsDropped() {
+    int total = ChunkReassembler.MAX_RANGES + 2;
+    for (int i = 0; i < ChunkReassembler.MAX_RANGES; i++) {
+      DataSetReaderRuntime reader = i % 2 == 0 ? READER_A : READER_B;
+      assertNull(accept(PUBLISHER_A, 1, 7, i, total, bytes(1), null, reader));
+    }
+    assertEquals(1, reassembler.streamCount(), "within the budget the payload is kept");
+
+    // one more unmergeable range exceeds the budget
+    assertNull(
+        accept(PUBLISHER_A, 1, 7, ChunkReassembler.MAX_RANGES, total, bytes(1), null, READER_A));
+    assertEquals(0, reassembler.streamCount());
+    assertEquals(0, reassembler.recordCount());
+  }
+
+  /**
+   * A chunk dropped by the range budget is not activity: it must not extend the idle life of the
+   * stream's completed record, or a publisher that restarts its numbering would stay blocked past
+   * the idle period.
+   */
+  @Test
+  void chunkDroppedByTheRangeBudgetDoesNotRefreshActivity() {
+    assertNotNull(accept(PUBLISHER_A, 1, 7, 0, 2, bytes(1, 2)));
+
+    nowNanos = TimeUnit.SECONDS.toNanos(1);
+    int total = ChunkReassembler.MAX_RANGES + 2;
+    for (int i = 0; i < ChunkReassembler.MAX_RANGES; i++) {
+      DataSetReaderRuntime reader = i % 2 == 0 ? READER_A : READER_B;
+      assertNull(accept(PUBLISHER_A, 1, 8, i, total, bytes(1), null, reader));
+    }
+
+    // the overflow chunk 8 seconds later is dropped and abandons payload 8; the record stays
+    nowNanos = TimeUnit.SECONDS.toNanos(9);
+    assertNull(
+        accept(PUBLISHER_A, 1, 8, ChunkReassembler.MAX_RANGES, total, bytes(1), null, READER_A));
+    assertEquals(0, reassembler.streamCount());
+    assertEquals(1, reassembler.recordCount());
+
+    // 11 seconds after the last kept chunk, another stream's chunk sweeps the record
+    nowNanos = TimeUnit.SECONDS.toNanos(12);
+    assertNull(accept(PUBLISHER_B, 2, 3, 0, 6, bytes(1, 2, 3, 4)));
+    assertEquals(1, reassembler.recordCount(), "only the other stream remains");
+
+    // so the restarted sequence 7 reassembles again
+    assertNotNull(accept(PUBLISHER_A, 1, 7, 0, 2, bytes(1, 2)));
+  }
+
+  /** A partial overwrite keeps the attribution of the bytes that survive from the first chunk. */
+  @Test
+  void partialOverwriteKeepsAttributionOfSurvivingBytes() {
+    assertNull(accept(PUBLISHER_A, 1, 7, 0, 6, bytes(1, 2, 3, 4), null, READER_A, READER_B));
+    ChunkReassembler.ReassembledMessage reassembled =
+        accept(PUBLISHER_A, 1, 7, 2, 6, bytes(9, 9, 5, 6), null, READER_B);
+
+    assertNotNull(reassembled);
+    assertArrayEquals(bytes(1, 2, 9, 9, 5, 6), reassembled.payload());
+    assertEquals(Set.of(READER_B), reassembled.readers(), "[0, 2) by both, [2, 6) by B only");
+  }
+
   // endregion
 
   // region completed payload record
