@@ -1355,13 +1355,12 @@ public class OpcUaBinaryEncoder implements UaEncoder {
 
   @Override
   public void encodeMatrix(String field, Matrix value) throws UaSerializationException {
-    Object elements = value.getElements();
-
-    if (elements == null) {
+    if (value == null || value.isNull()) {
       buffer.writeIntLE(-1);
       return;
     }
 
+    Object elements = value.getElements();
     int[] dimensions = value.getDimensions();
     assert dimensions.length > 1;
 
@@ -1398,13 +1397,12 @@ public class OpcUaBinaryEncoder implements UaEncoder {
 
   @Override
   public void encodeEnumMatrix(String field, Matrix value) throws UaSerializationException {
-    Object elements = value.getElements();
-
-    if (elements == null) {
+    if (value == null || value.isNull()) {
       buffer.writeIntLE(-1);
       return;
     }
 
+    Object elements = value.getElements();
     int[] dimensions = value.getDimensions();
     assert dimensions.length > 1;
 
@@ -1431,13 +1429,12 @@ public class OpcUaBinaryEncoder implements UaEncoder {
   public void encodeStructMatrix(String field, Matrix value, NodeId dataTypeId)
       throws UaSerializationException {
 
-    Object elements = value.getElements();
-
-    if (elements == null) {
+    if (value == null || value.isNull()) {
       buffer.writeIntLE(-1);
       return;
     }
 
+    Object elements = value.getElements();
     int[] dimensions = value.getDimensions();
     assert dimensions.length > 1;
 
