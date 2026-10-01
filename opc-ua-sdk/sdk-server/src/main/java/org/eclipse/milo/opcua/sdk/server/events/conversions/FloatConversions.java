@@ -129,43 +129,26 @@ final class FloatConversions {
 
   @Nullable
   static Object explicitConversion(@NonNull Float f, OpcUaDataType targetType) {
-    // @formatter:off
-    switch (targetType) {
-      case Boolean:
-        return floatToBoolean(f);
-      case Byte:
-        return floatToByte(f);
-      case Int16:
-        return floatToInt16(f);
-      case Int32:
-        return floatToInt32(f);
-      case Int64:
-        return floatToInt64(f);
-      case SByte:
-        return floatToSByte(f);
-      case String:
-        return floatToString(f);
-      case UInt16:
-        return floatToUInt16(f);
-      case UInt32:
-        return floatToUInt32(f);
-      case UInt64:
-        return floatToUInt64(f);
-      default:
-        return implicitConversion(f, targetType);
-    }
-    // @formatter:on
+    return switch (targetType) {
+      case Boolean -> floatToBoolean(f);
+      case Byte -> floatToByte(f);
+      case Int16 -> floatToInt16(f);
+      case Int32 -> floatToInt32(f);
+      case Int64 -> floatToInt64(f);
+      case SByte -> floatToSByte(f);
+      case String -> floatToString(f);
+      case UInt16 -> floatToUInt16(f);
+      case UInt32 -> floatToUInt32(f);
+      case UInt64 -> floatToUInt64(f);
+      default -> implicitConversion(f, targetType);
+    };
   }
 
   @Nullable
   static Object implicitConversion(@NonNull Float f, OpcUaDataType targetType) {
-    // @formatter:off
-    switch (targetType) {
-      case Double:
-        return floatToDouble(f);
-      default:
-        return null;
-    }
-    // @formatter:on
+    return switch (targetType) {
+      case Double -> floatToDouble(f);
+      default -> null;
+    };
   }
 }

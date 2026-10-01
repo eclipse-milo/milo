@@ -43,25 +43,17 @@ final class ExpandedNodeIdConversions {
 
   @Nullable
   static Object explicitConversion(@NonNull ExpandedNodeId eni, OpcUaDataType targetType) {
-    // @formatter:off
-    switch (targetType) {
-      case NodeId:
-        return expandedNodeIdToNodeId(eni);
-      default:
-        return implicitConversion(eni, targetType);
-    }
-    // @formatter:on
+    return switch (targetType) {
+      case NodeId -> expandedNodeIdToNodeId(eni);
+      default -> implicitConversion(eni, targetType);
+    };
   }
 
   @Nullable
   static Object implicitConversion(@NonNull ExpandedNodeId eni, OpcUaDataType targetType) {
-    // @formatter:off
-    switch (targetType) {
-      case String:
-        return expandedNodeIdToString(eni);
-      default:
-        return null;
-    }
-    // @formatter:on
+    return switch (targetType) {
+      case String -> expandedNodeIdToString(eni);
+      default -> null;
+    };
   }
 }

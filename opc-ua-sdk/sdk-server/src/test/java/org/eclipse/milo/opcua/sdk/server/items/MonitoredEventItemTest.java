@@ -15,31 +15,42 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.eclipse.milo.opcua.sdk.core.typetree.ReferenceTypeTree;
+import org.eclipse.milo.opcua.sdk.server.AddressSpaceManager;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.model.objects.BaseEventTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
+import org.eclipse.milo.opcua.sdk.server.nodes.UaObjectTypeNode;
+import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
+import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.FilterOperator;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MonitoringMode;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
 import org.eclipse.milo.opcua.stack.core.types.structured.ContentFilter;
 import org.eclipse.milo.opcua.stack.core.types.structured.ContentFilterElement;
 import org.eclipse.milo.opcua.stack.core.types.structured.ContentFilterElementResult;
 import org.eclipse.milo.opcua.stack.core.types.structured.ElementOperand;
+import org.eclipse.milo.opcua.stack.core.types.structured.EventFieldList;
 import org.eclipse.milo.opcua.stack.core.types.structured.EventFilter;
 import org.eclipse.milo.opcua.stack.core.types.structured.EventFilterResult;
 import org.eclipse.milo.opcua.stack.core.types.structured.FilterOperand;
@@ -54,6 +65,7 @@ class MonitoredEventItemTest {
 
   private final OpcUaServer server = mock(OpcUaServer.class);
   private final BaseEventTypeNode eventNode = mock(BaseEventTypeNode.class);
+  private final UaNodeContext nodeContext = mock(UaNodeContext.class);
 
   private MonitoredEventItem item;
 
@@ -62,7 +74,6 @@ class MonitoredEventItemTest {
     when(server.getStaticEncodingContext()).thenReturn(DefaultEncodingContext.INSTANCE);
     when(server.getReferenceTypeTree()).thenReturn(mock(ReferenceTypeTree.class));
 
-    UaNodeContext nodeContext = mock(UaNodeContext.class);
     when(nodeContext.getServer()).thenReturn(server);
     when(eventNode.getNodeContext()).thenReturn(nodeContext);
 
@@ -164,6 +175,79 @@ class MonitoredEventItemTest {
     }
   }
 
+  @Nested
+  class SelectClauseErrors {
+
+    private final NodeId customEventTypeId = new NodeId(1, "CustomEventType");
+
+    /**
+     * Two select clauses: "Message" on BaseEventType, which resolves on the event, and
+     * "DoesNotExist" on a custom event type, which validation reports as Bad_NodeIdUnknown because
+     * the type has no such component.
+     */
+    private final EventFilter filterWithUnresolvableSelectClause =
+        new EventFilter(
+            new SimpleAttributeOperand[] {
+              selectClause(NodeIds.BaseEventType, "Message"),
+              selectClause(customEventTypeId, "DoesNotExist")
+            },
+            where());
+
+    @BeforeEach
+    void setUp() throws Exception {
+      UaObjectTypeNode customEventType = mock(UaObjectTypeNode.class);
+      when(customEventType.getNodeId()).thenReturn(customEventTypeId);
+      when(customEventType.getNodeClass()).thenReturn(NodeClass.ObjectType);
+      when(customEventType.getNodeContext()).thenReturn(nodeContext);
+
+      AddressSpaceManager addressSpaceManager = mock(AddressSpaceManager.class);
+      when(addressSpaceManager.getManagedNode(customEventTypeId))
+          .thenReturn(Optional.of(customEventType));
+      when(server.getAddressSpaceManager()).thenReturn(addressSpaceManager);
+
+      UaVariableNode messageNode = mock(UaVariableNode.class);
+      when(messageNode.getNodeClass()).thenReturn(NodeClass.Variable);
+      when(messageNode.readAttribute(any(), eq(AttributeId.Value)))
+          .thenReturn(new DataValue(new Variant(LocalizedText.english("hello"))));
+
+      when(eventNode.getTypeDefinitionNode()).thenReturn(customEventType);
+      when(eventNode.findNode(eq(new QualifiedName(0, "Message")), any(), any()))
+          .thenReturn(Optional.of(messageNode));
+    }
+
+    /**
+     * Part 4 §7.22.3: a select clause that fails validation yields a null value in the
+     * corresponding event field. The error is reported in the EventFilterResult; it does not stop
+     * delivery of the event or of the fields that did resolve.
+     */
+    @Test
+    void eventIsDeliveredWithNullFieldForSelectClauseThatFailedValidation() throws Exception {
+      item.installFilter(filterWithUnresolvableSelectClause);
+
+      StatusCode[] selectClauseResults = decodeFilterResult().getSelectClauseResults();
+      assertEquals(StatusCode.GOOD, selectClauseResults[0]);
+      assertEquals(StatusCodes.Bad_NodeIdUnknown, selectClauseResults[1].value());
+
+      item.onEvent(eventNode);
+
+      List<UaStructuredType> notifications = drainNotifications();
+      assertEquals(1, notifications.size(), "event delivered");
+
+      Variant[] eventFields = ((EventFieldList) notifications.get(0)).getEventFields();
+      assertEquals(LocalizedText.english("hello"), eventFields[0].value(), "resolved field");
+      assertEquals(Variant.NULL_VALUE, eventFields[1], "unresolvable field");
+    }
+
+    @Test
+    void refreshMarkerIsDeliveredWhenASelectClauseFailedValidation() throws Exception {
+      item.installFilter(filterWithUnresolvableSelectClause);
+
+      item.onRefreshMarker(eventNode);
+
+      assertEquals(1, drainNotifications().size());
+    }
+  }
+
   private EventFilterResult decodeFilterResult() {
     return (EventFilterResult) item.getFilterResult().decode(DefaultEncodingContext.INSTANCE);
   }
@@ -175,14 +259,16 @@ class MonitoredEventItemTest {
   }
 
   private static EventFilter eventFilter(ContentFilter whereClause) {
-    SimpleAttributeOperand selectClause =
-        new SimpleAttributeOperand(
-            NodeIds.BaseEventType,
-            new QualifiedName[] {new QualifiedName(0, "Message")},
-            AttributeId.Value.uid(),
-            null);
+    return new EventFilter(
+        new SimpleAttributeOperand[] {selectClause(NodeIds.BaseEventType, "Message")}, whereClause);
+  }
 
-    return new EventFilter(new SimpleAttributeOperand[] {selectClause}, whereClause);
+  private static SimpleAttributeOperand selectClause(NodeId typeDefinitionId, String browseName) {
+    return new SimpleAttributeOperand(
+        typeDefinitionId,
+        new QualifiedName[] {new QualifiedName(0, browseName)},
+        AttributeId.Value.uid(),
+        null);
   }
 
   private static ContentFilter where(ContentFilterElement... elements) {

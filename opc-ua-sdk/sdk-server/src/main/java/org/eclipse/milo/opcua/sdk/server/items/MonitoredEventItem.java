@@ -60,7 +60,15 @@ public class MonitoredEventItem extends BaseMonitoredItem<Variant[]> implements 
 
   private volatile EventFilter filter;
   private volatile EventFilterResult filterResult;
-  private volatile boolean filterResultGood;
+
+  /**
+   * True when the installed filter's where clause validated without error and can be evaluated.
+   *
+   * <p>Select clause errors do not affect this flag. Part 4 §7.22.3 requires the event to be
+   * delivered with a null value in each field whose select clause failed validation; {@link
+   * EventContentFilter#select} produces that null.
+   */
+  private volatile boolean whereClauseGood;
 
   private final AtomicBoolean eventOverflow = new AtomicBoolean(false);
 
@@ -122,7 +130,7 @@ public class MonitoredEventItem extends BaseMonitoredItem<Variant[]> implements 
   @Override
   public void onEvent(BaseEventTypeNode eventNode) {
     try {
-      if (filterResultGood) {
+      if (whereClauseGood) {
         ContentFilter whereClause = filter.getWhereClause();
 
         boolean matches = EventContentFilter.evaluate(filterContext, whereClause, eventNode);
@@ -147,7 +155,7 @@ public class MonitoredEventItem extends BaseMonitoredItem<Variant[]> implements 
    * @param eventNode the marker event to deliver.
    */
   public synchronized void onRefreshMarker(BaseEventTypeNode eventNode) {
-    if (filterResultGood) {
+    if (whereClauseGood) {
       enqueueEvent(selectEventFields(eventNode), false);
     }
   }
@@ -298,17 +306,12 @@ public class MonitoredEventItem extends BaseMonitoredItem<Variant[]> implements 
 
       filterResult = EventContentFilter.validate(filterContext, this.filter);
 
-      StatusCode[] selectClauseResults =
-          requireNonNullElse(filterResult.getSelectClauseResults(), new StatusCode[0]);
-
-      boolean selectClauseGood = Stream.of(selectClauseResults).allMatch(StatusCode::isGood);
-
       ContentFilterElementResult[] elementResults =
           requireNonNullElse(
               filterResult.getWhereClauseResult().getElementResults(),
               new ContentFilterElementResult[0]);
 
-      boolean whereClauseGood =
+      whereClauseGood =
           Stream.of(elementResults)
               .allMatch(
                   elementResult ->
@@ -317,10 +320,8 @@ public class MonitoredEventItem extends BaseMonitoredItem<Variant[]> implements 
                                   requireNonNullElse(
                                       elementResult.getOperandStatusCodes(), new StatusCode[0]))
                               .allMatch(StatusCode::isGood));
-
-      filterResultGood = selectClauseGood && whereClauseGood;
     } else {
-      filterResultGood = false;
+      whereClauseGood = false;
 
       throw new UaException(StatusCodes.Bad_MonitoredItemFilterUnsupported);
     }

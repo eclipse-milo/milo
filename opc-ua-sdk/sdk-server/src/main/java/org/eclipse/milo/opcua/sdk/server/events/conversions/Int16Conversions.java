@@ -113,43 +113,26 @@ final class Int16Conversions {
 
   @Nullable
   static Object explicitConversion(@NonNull Short s, OpcUaDataType targetType) {
-    // @formatter:off
-    switch (targetType) {
-      case Boolean:
-        return int16ToBoolean(s);
-      case Byte:
-        return int16ToByte(s);
-      case SByte:
-        return int16ToSByte(s);
-      case String:
-        return int16ToString(s);
-      case UInt16:
-        return int16ToUInt16(s);
-      default:
-        return implicitConversion(s, targetType);
-    }
-    // @formatter:on
+    return switch (targetType) {
+      case Boolean -> int16ToBoolean(s);
+      case Byte -> int16ToByte(s);
+      case SByte -> int16ToSByte(s);
+      case String -> int16ToString(s);
+      case UInt16 -> int16ToUInt16(s);
+      default -> implicitConversion(s, targetType);
+    };
   }
 
   @Nullable
   static Object implicitConversion(@NonNull Short s, OpcUaDataType targetType) {
-    // @formatter:off
-    switch (targetType) {
-      case Double:
-        return int16ToDouble(s);
-      case Float:
-        return int16ToFloat(s);
-      case Int32:
-        return int16ToInt32(s);
-      case Int64:
-        return int16ToInt64(s);
-      case UInt32:
-        return int16ToUInt32(s);
-      case UInt64:
-        return int16ToUInt64(s);
-      default:
-        return null;
-    }
-    // @formatter:on
+    return switch (targetType) {
+      case Double -> int16ToDouble(s);
+      case Float -> int16ToFloat(s);
+      case Int32 -> int16ToInt32(s);
+      case Int64 -> int16ToInt64(s);
+      case UInt32 -> int16ToUInt32(s);
+      case UInt64 -> int16ToUInt64(s);
+      default -> null;
+    };
   }
 }

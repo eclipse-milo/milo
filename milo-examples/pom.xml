@@ -39,6 +39,11 @@
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <!-- Keep after maven-bundle-plugin: this writes the manifest that plugin generates. -->
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-deploy-plugin</artifactId>
         <version>${maven-deploy-plugin.version}</version>
         <configuration>
@@ -55,6 +60,8 @@
           <version>${maven-shade-plugin.version}</version>
           <executions>
             <execution>
+              <!-- Shade before maven-bundle-plugin generates the manifest in package. -->
+              <phase>prepare-package</phase>
               <goals>
                 <goal>shade</goal>
               </goals>
