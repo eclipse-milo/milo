@@ -15,7 +15,9 @@
  * org.eclipse.milo.opcua.stack.core.encoding.binary.OpcUaBinaryDecoder} read and write built-in
  * values and delegate structure fields to codecs registered in the {@link
  * org.eclipse.milo.opcua.stack.core.encoding.EncodingContext}. Callers set the buffer before use
- * and remain responsible for releasing it.
+ * and remain responsible for releasing it. Java null and {@link
+ * org.eclipse.milo.opcua.stack.core.types.builtin.Matrix#ofNull()} both encode as a null Matrix, an
+ * array length of -1, as do null arrays.
  *
  * <p>Variants carry structures as ExtensionObjects, including elements of typed structure arrays
  * and Matrices. Non-null structures use their registered binary encoding; null structure elements
