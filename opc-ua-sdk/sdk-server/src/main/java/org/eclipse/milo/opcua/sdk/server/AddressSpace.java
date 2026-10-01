@@ -222,6 +222,10 @@ public interface AddressSpace {
    * <p>If sampling is enabled for this item, it is expected that a best-effort will be made to
    * update the item's value at the sampling rate.
    *
+   * <p>The Session's read access is enforced by the SDK, not by the implementation. An item the
+   * Session may not read is still created and delivered here; the SDK replaces the values set on it
+   * with the denial status until access is allowed.
+   *
    * @param dataItems the {@link DataItem}s that were created.
    */
   void onDataItemsCreated(List<DataItem> dataItems);

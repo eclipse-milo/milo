@@ -14,6 +14,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
+import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController.AccessResult;
 import org.eclipse.milo.opcua.sdk.server.subscriptions.Subscription;
 import org.eclipse.milo.opcua.sdk.server.util.DataChangeMonitoringFilter;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
@@ -45,6 +46,7 @@ public class MonitoredDataItem extends BaseMonitoredItem<DataValue> implements D
   private volatile DataValue lastValue = null;
   private volatile DataChangeFilter filter = null;
   private volatile @Nullable Range euRange = null;
+  private volatile @Nullable StatusCode readAccessDenied = null;
 
   public MonitoredDataItem(
       OpcUaServer server,
@@ -114,8 +116,37 @@ public class MonitoredDataItem extends BaseMonitoredItem<DataValue> implements D
     this.euRange = euRange;
   }
 
+  /**
+   * Update this item with the result of the most recent check of its Session's read access.
+   *
+   * <p>While access is denied, every value passed to {@link #setValue(DataValue)} is replaced by a
+   * {@link DataValue} carrying the denial status, so the client receives the denial in a Publish
+   * response rather than a value it may not read. A transition to denied queues the denial right
+   * away. Once access is allowed again, the next value passed to {@link #setValue(DataValue)} is
+   * reported as usual.
+   *
+   * @param accessResult the result of the read access check.
+   */
+  public synchronized void setReadAccessResult(AccessResult accessResult) {
+    if (accessResult instanceof AccessResult.Denied denied) {
+      StatusCode previous = readAccessDenied;
+      readAccessDenied = denied.statusCode();
+
+      if (!denied.statusCode().equals(previous)) {
+        setValue(new DataValue(denied.statusCode()));
+      }
+    } else {
+      readAccessDenied = null;
+    }
+  }
+
   @Override
   public synchronized void setValue(DataValue value) {
+    StatusCode denied = readAccessDenied;
+    if (denied != null) {
+      value = new DataValue(denied);
+    }
+
     boolean valuePassesFilter =
         DataChangeMonitoringFilter.filter(lastValue, value, filter, euRange);
 

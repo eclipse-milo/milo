@@ -348,8 +348,8 @@ public class SubscriptionManager {
                 itemsToCreate.stream().map(MonitoredItemCreateRequest::getItemToMonitor).toList());
 
     // Part 4 §5.13.2.1: an item the user is denied read access to is still created, and the
-    // denial is reported in the Publish response by whoever samples it. Other denials, such as
-    // an unmet AccessRestriction, fail the item here.
+    // denial is reported in the Publish response instead. Other denials, such as an unmet
+    // AccessRestriction, fail the item here.
     List<MonitoredItemCreateResult> results =
         GroupMapCollate.groupMapCollate(
             itemsToCreate,
@@ -363,7 +363,7 @@ public class SubscriptionManager {
                             denied.statusCode(), uint(0), 0.0, uint(0), null);
                     return Collections.nCopies(group.size(), result);
                   } else {
-                    return createMonitoredItems(subscription, timestamps, group);
+                    return createMonitoredItems(subscription, timestamps, group, accessResult);
                   }
                 });
 
@@ -386,7 +386,8 @@ public class SubscriptionManager {
   private List<MonitoredItemCreateResult> createMonitoredItems(
       Subscription subscription,
       TimestampsToReturn timestamps,
-      List<MonitoredItemCreateRequest> requests) {
+      List<MonitoredItemCreateRequest> requests,
+      AccessResult readAccessResult) {
 
     // Split requests by filter type to enable targeted attribute reading.
     // Only Percent Deadband requests on Value attributes need the expensive TypeDefinition +
@@ -449,6 +450,12 @@ public class SubscriptionManager {
 
         BaseMonitoredItem<?> monitoredItem =
             createMonitoredItem(request, subscription, timestamps, attributesResponse);
+
+        if (monitoredItem instanceof MonitoredDataItem dataItem) {
+          // Seed the item with the create-time check so a denial is queued before anything
+          // samples it. Subscription re-checks on every publishing interval from here on.
+          dataItem.setReadAccessResult(readAccessResult);
+        }
 
         // getFilterResult() can throw while encoding the filter result, so it must be
         // called before the item is added to monitoredItems; otherwise a failure would

@@ -14,7 +14,6 @@ import static org.eclipse.milo.opcua.sdk.core.util.GroupMapCollate.groupMapColla
 
 import com.google.common.math.DoubleMath;
 import java.math.RoundingMode;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -29,10 +28,8 @@ import org.eclipse.milo.opcua.sdk.server.AbstractLifecycle;
 import org.eclipse.milo.opcua.sdk.server.AddressSpace;
 import org.eclipse.milo.opcua.sdk.server.AddressSpace.ReadContext;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
-import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.items.DataItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredItem;
-import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController.AccessResult;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
@@ -40,19 +37,6 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 import org.eclipse.milo.opcua.stack.core.util.ExecutionQueue;
 
-/**
- * Samples data MonitoredItems on behalf of an {@link AddressSpace} by reading them from it at each
- * item's sampling interval.
- *
- * <p>An {@link AddressSpace} that does not have its own sampling mechanism forwards its {@code
- * onDataItemsCreated}, {@code onDataItemsModified}, {@code onDataItemsDeleted}, and {@code
- * onMonitoringModeChanged} callbacks to an instance of this class and adds it to its lifecycle.
- *
- * <p>Each sample is subject to the server's {@link
- * org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController}. An item whose Session is
- * denied read access receives a {@link DataValue} carrying the denial status instead of a value,
- * and starts receiving values again once access is allowed.
- */
 public class SubscriptionModel extends AbstractLifecycle {
 
   private final Set<DataItem> itemSet = ConcurrentHashMap.newKeySet();
@@ -161,33 +145,6 @@ public class SubscriptionModel extends AbstractLifecycle {
     schedule.forEach(executor::execute);
   }
 
-  /**
-   * Read {@code readValueIds} on behalf of {@code session}, substituting a {@link DataValue} with
-   * the denial status for any item the session is denied read access to.
-   *
-   * <p>Part 4 §5.13.2.1 requires the denial to be reported in the Publish response, including when
-   * access rights change after the item was created, and requires data to resume once access is
-   * allowed again. Checking on every sample is what makes both transitions visible.
-   */
-  private List<DataValue> readWithAccessCheck(Session session, List<ReadValueId> readValueIds) {
-    Map<ReadValueId, AccessResult> accessResults =
-        server.getAccessController().checkReadAccess(session, readValueIds);
-
-    return groupMapCollate(
-        readValueIds,
-        accessResults::get,
-        accessResult ->
-            group -> {
-              if (accessResult instanceof AccessResult.Denied denied) {
-                return Collections.nCopies(group.size(), new DataValue(denied.statusCode()));
-              } else {
-                var context = new ReadContext(server, session);
-
-                return addressSpace.read(context, 0d, TimestampsToReturn.Both, group);
-              }
-            });
-  }
-
   static long nextDelayMillis(long samplingInterval, long elapsedMillis) {
     return Math.max(1, samplingInterval - elapsedMillis);
   }
@@ -225,7 +182,9 @@ public class SubscriptionModel extends AbstractLifecycle {
                             .map(MonitoredItem::getReadValueId)
                             .collect(Collectors.toList());
 
-                    return readWithAccessCheck(session, readValueIds);
+                    var context = new ReadContext(server, session);
+
+                    return addressSpace.read(context, 0d, TimestampsToReturn.Both, readValueIds);
                   });
 
       Iterator<DataItem> ii = items.iterator();

@@ -36,6 +36,8 @@ import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfigLimits;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.diagnostics.SubscriptionDiagnostics;
 import org.eclipse.milo.opcua.sdk.server.items.BaseMonitoredItem;
+import org.eclipse.milo.opcua.sdk.server.items.MonitoredDataItem;
+import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController.AccessResult;
 import org.eclipse.milo.opcua.sdk.server.subscriptions.PublishQueue.PendingPublish;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
@@ -54,6 +56,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.MonitoredItemNotificat
 import org.eclipse.milo.opcua.stack.core.types.structured.NotificationMessage;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishResponse;
+import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 import org.eclipse.milo.opcua.stack.core.types.structured.ResponseHeader;
 import org.eclipse.milo.opcua.stack.core.types.structured.SetPublishingModeRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.StatusChangeNotification;
@@ -716,7 +719,57 @@ public class Subscription {
   }
 
   /** The publishing timer has elapsed. */
-  synchronized void onPublishingTimer() {
+  void onPublishingTimer() {
+    refreshReadAccess();
+    handlePublishingTimer();
+  }
+
+  /**
+   * Re-check the Session's read access to every data item.
+   *
+   * <p>Part 4 §5.13.2.1 requires a change in access rights after CreateMonitoredItems to reach the
+   * client in a Publish response, and data to resume once access is allowed again. Doing it here,
+   * once per publishing interval, covers every item whatever samples it, and outside the
+   * subscription lock so the attribute reads behind the check do not block Publish or
+   * ModifyMonitoredItems.
+   */
+  private void refreshReadAccess() {
+    State s = state.get();
+    if (s == State.Closing || s == State.Closed) return;
+
+    List<MonitoredDataItem> dataItems =
+        itemsById.values().stream()
+            .filter(MonitoredDataItem.class::isInstance)
+            .map(MonitoredDataItem.class::cast)
+            .toList();
+
+    if (dataItems.isEmpty()) return;
+
+    List<ReadValueId> readValueIds =
+        dataItems.stream().map(MonitoredDataItem::getReadValueId).toList();
+
+    Map<ReadValueId, AccessResult> accessResults;
+    try {
+      accessResults =
+          subscriptionManager
+              .getServer()
+              .getAccessController()
+              .checkReadAccess(getSession(), readValueIds);
+    } catch (Exception e) {
+      logger.warn("[id={}] read access check failed: {}", subscriptionId, e.getMessage(), e);
+      return;
+    }
+
+    for (MonitoredDataItem item : dataItems) {
+      AccessResult accessResult = accessResults.get(item.getReadValueId());
+
+      if (accessResult != null) {
+        item.setReadAccessResult(accessResult);
+      }
+    }
+  }
+
+  private synchronized void handlePublishingTimer() {
     State state = this.state.get();
 
     if (logger.isTraceEnabled()) {
