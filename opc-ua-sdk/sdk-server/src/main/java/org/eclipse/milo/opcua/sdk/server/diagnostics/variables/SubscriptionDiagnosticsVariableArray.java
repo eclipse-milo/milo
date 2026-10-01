@@ -15,10 +15,8 @@ import static org.eclipse.milo.opcua.sdk.server.diagnostics.variables.Util.diagn
 import com.google.common.eventbus.Subscribe;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.milo.opcua.sdk.core.AccessLevel;
@@ -27,6 +25,7 @@ import org.eclipse.milo.opcua.sdk.server.AbstractLifecycle;
 import org.eclipse.milo.opcua.sdk.server.NodeManager;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ServerDiagnosticsTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.SubscriptionDiagnosticsArrayTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.SubscriptionDiagnosticsTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.AttributeObserver;
@@ -64,11 +63,13 @@ public abstract class SubscriptionDiagnosticsVariableArray extends AbstractLifec
       Collections.synchronizedList(new ArrayList<>());
 
   /**
-   * Subscriptions whose element is being created right now. Guarded by the monitor of {@link
-   * #subscriptionDiagnosticsVariables}; a reservation keeps a second creator from publishing an
-   * element for the same Subscription, and withdrawing it tells the creator not to publish.
+   * The ServerDiagnostics EnabledFlag node. The EnabledFlag observer runs while this node's monitor
+   * is held, so every other path that adds or removes an element takes the monitor first and holds
+   * it throughout. That keeps one lock order with the observer and serializes element changes with
+   * flag transitions, so the catch-up, a creation event, a deletion event, and a flag Write for the
+   * same Subscription never interleave.
    */
-  private final Set<UInteger> pendingSubscriptionIds = new HashSet<>();
+  private final PropertyTypeNode enabledFlagNode;
 
   private final OpcUaServer server;
   private final NodeManager<UaNode> diagnosticsNodeManager;
@@ -82,20 +83,23 @@ public abstract class SubscriptionDiagnosticsVariableArray extends AbstractLifec
     this.diagnosticsNodeManager = diagnosticsNodeManager;
 
     this.server = node.getNodeContext().getServer();
+    this.enabledFlagNode = getServerDiagnosticsNode().getEnabledFlagNode();
   }
 
   protected abstract List<Subscription> getSubscriptions();
 
+  private ServerDiagnosticsTypeNode getServerDiagnosticsNode() {
+    return (ServerDiagnosticsTypeNode)
+        server
+            .getAddressSpaceManager()
+            .getManagedNode(NodeIds.Server_ServerDiagnostics)
+            .orElseThrow(
+                () -> new NoSuchElementException("NodeId: " + NodeIds.Server_ServerDiagnostics));
+  }
+
   @Override
   protected void onStartup() {
-    ServerDiagnosticsTypeNode diagnosticsNode =
-        (ServerDiagnosticsTypeNode)
-            server
-                .getAddressSpaceManager()
-                .getManagedNode(NodeIds.Server_ServerDiagnostics)
-                .orElseThrow(
-                    () ->
-                        new NoSuchElementException("NodeId: " + NodeIds.Server_ServerDiagnostics));
+    ServerDiagnosticsTypeNode diagnosticsNode = getServerDiagnosticsNode();
 
     diagnosticsEnabled.set(diagnosticsNode.getEnabledFlag());
 
@@ -149,17 +153,7 @@ public abstract class SubscriptionDiagnosticsVariableArray extends AbstractLifec
   protected void onShutdown() {
     AttributeObserver observer = attributeObserver;
     if (observer != null) {
-      ServerDiagnosticsTypeNode diagnosticsNode =
-          (ServerDiagnosticsTypeNode)
-              server
-                  .getAddressSpaceManager()
-                  .getManagedNode(NodeIds.Server_ServerDiagnostics)
-                  .orElseThrow(
-                      () ->
-                          new NoSuchElementException(
-                              "NodeId: " + NodeIds.Server_ServerDiagnostics));
-
-      diagnosticsNode.getEnabledFlagNode().removeAttributeObserver(observer);
+      enabledFlagNode.removeAttributeObserver(observer);
       attributeObserver = null;
     }
 
@@ -183,11 +177,13 @@ public abstract class SubscriptionDiagnosticsVariableArray extends AbstractLifec
    * Subscriptions here.
    */
   private void startTrackingSubscriptions() {
-    if (eventSubscriber == null) {
-      server.getInternalEventBus().register(eventSubscriber = new EventSubscriber());
-    }
+    synchronized (enabledFlagNode) {
+      if (eventSubscriber == null) {
+        server.getInternalEventBus().register(eventSubscriber = new EventSubscriber());
+      }
 
-    getSubscriptions().forEach(this::createSubscriptionDiagnosticsNode);
+      getSubscriptions().forEach(this::createSubscriptionDiagnosticsNode);
+    }
   }
 
   private boolean hasSubscriptionDiagnosticsNode(UInteger subscriptionId) {
@@ -198,119 +194,94 @@ public abstract class SubscriptionDiagnosticsVariableArray extends AbstractLifec
   }
 
   /**
-   * Create an element for {@code subscription} unless it already has one or another thread is
-   * creating one. The catch-up and a concurrent creation event can both arrive here for the same
-   * Subscription; the reservation lets only the first instantiate, so the address space never holds
-   * two elements for one Subscription.
+   * Create an element for {@code subscription} unless it already has one. Runs under the
+   * EnabledFlag node's monitor, so the catch-up and a creation event for the same Subscription
+   * cannot both pass the check, and neither can run while a flag Write is removing or adding
+   * elements.
    */
   private void createSubscriptionDiagnosticsNode(Subscription subscription) {
-    UInteger subscriptionId = subscription.getId();
-
-    synchronized (subscriptionDiagnosticsVariables) {
-      if (hasSubscriptionDiagnosticsNode(subscriptionId)
-          || !pendingSubscriptionIds.add(subscriptionId)) {
+    synchronized (enabledFlagNode) {
+      if (hasSubscriptionDiagnosticsNode(subscription.getId())) {
         return;
       }
-    }
 
-    SubscriptionDiagnosticsVariable diagnosticsVariable = null;
+      try {
+        long index = nextElementId.getAndIncrement();
+        String id = Util.buildBrowseNamePath(node) + "[" + index + "]";
+        NodeId elementNodeId = new NodeId(1, id);
 
-    try {
-      long index = nextElementId.getAndIncrement();
-      String id = Util.buildBrowseNamePath(node) + "[" + index + "]";
-      NodeId elementNodeId = new NodeId(1, id);
+        InstantiationRequest<SubscriptionDiagnosticsTypeNode> request =
+            InstantiationRequest.of(
+                    SubscriptionDiagnosticsTypeNode.class, NodeIds.SubscriptionDiagnosticsType)
+                .nodeId(elementNodeId)
+                .browseName(new QualifiedName(1, subscription.getId().toString()))
+                .displayName(
+                    new LocalizedText(
+                        node.getDisplayName().locale(), subscription.getId().toString()))
+                .rootAttribute(AttributeId.ArrayDimensions, null)
+                .rootAttribute(AttributeId.ValueRank, ValueRank.Scalar.getValue())
+                .rootAttribute(AttributeId.DataType, NodeIds.SubscriptionDiagnosticsDataType)
+                .rootAttribute(AttributeId.AccessLevel, AccessLevel.toValue(AccessLevel.READ_ONLY))
+                .rootAttribute(
+                    AttributeId.UserAccessLevel, AccessLevel.toValue(AccessLevel.READ_ONLY))
+                .parent(node.getNodeId(), NodeIds.HasComponent)
+                .target(diagnosticsNodeManager)
+                .legacyPathStrings()
+                .build();
 
-      InstantiationRequest<SubscriptionDiagnosticsTypeNode> request =
-          InstantiationRequest.of(
-                  SubscriptionDiagnosticsTypeNode.class, NodeIds.SubscriptionDiagnosticsType)
-              .nodeId(elementNodeId)
-              .browseName(new QualifiedName(1, subscription.getId().toString()))
-              .displayName(
-                  new LocalizedText(
-                      node.getDisplayName().locale(), subscription.getId().toString()))
-              .rootAttribute(AttributeId.ArrayDimensions, null)
-              .rootAttribute(AttributeId.ValueRank, ValueRank.Scalar.getValue())
-              .rootAttribute(AttributeId.DataType, NodeIds.SubscriptionDiagnosticsDataType)
-              .rootAttribute(AttributeId.AccessLevel, AccessLevel.toValue(AccessLevel.READ_ONLY))
-              .rootAttribute(
-                  AttributeId.UserAccessLevel, AccessLevel.toValue(AccessLevel.READ_ONLY))
-              .parent(node.getNodeId(), NodeIds.HasComponent)
-              .target(diagnosticsNodeManager)
-              .legacyPathStrings()
-              .build();
+        SubscriptionDiagnosticsTypeNode elementNode =
+            server.getNodeInstantiator().instantiate(request).root();
 
-      SubscriptionDiagnosticsTypeNode elementNode =
-          server.getNodeInstantiator().instantiate(request).root();
+        SubscriptionDiagnosticsVariable diagnosticsVariable =
+            new SubscriptionDiagnosticsVariable(elementNode, subscription);
+        diagnosticsVariable.startup();
 
-      diagnosticsVariable = new SubscriptionDiagnosticsVariable(elementNode, subscription);
-      diagnosticsVariable.startup();
-    } catch (UaException e) {
-      logger.error(
-          "Failed to create SubscriptionDiagnosticsTypeNode for subscription id={}",
-          subscriptionId,
-          e);
-    }
-
-    // A deleted event or a disable in the meantime withdraws the reservation; the element is then
-    // torn down instead of published.
-    boolean published = false;
-    synchronized (subscriptionDiagnosticsVariables) {
-      boolean reserved = pendingSubscriptionIds.remove(subscriptionId);
-      if (reserved && diagnosticsVariable != null) {
         subscriptionDiagnosticsVariables.add(diagnosticsVariable);
-        published = true;
+      } catch (UaException e) {
+        logger.error(
+            "Failed to create SubscriptionDiagnosticsTypeNode for subscription id={}",
+            subscription.getId(),
+            e);
       }
-    }
-
-    if (diagnosticsVariable != null && !published) {
-      diagnosticsVariable.shutdown();
     }
   }
 
   private void removeSubscriptionDiagnosticsNode(UInteger subscriptionId) {
-    SubscriptionDiagnosticsVariable removed = null;
-
-    synchronized (subscriptionDiagnosticsVariables) {
-      pendingSubscriptionIds.remove(subscriptionId);
-
+    synchronized (enabledFlagNode) {
       for (int i = 0; i < subscriptionDiagnosticsVariables.size(); i++) {
         Subscription subscription = subscriptionDiagnosticsVariables.get(i).getSubscription();
         if (subscription.getId().equals(subscriptionId)) {
-          removed = subscriptionDiagnosticsVariables.remove(i);
+          subscriptionDiagnosticsVariables.remove(i).shutdown();
           break;
         }
       }
     }
-
-    if (removed != null) {
-      removed.shutdown();
-    }
   }
 
   private void removeAllSubscriptionDiagnosticsNodes() {
-    List<SubscriptionDiagnosticsVariable> removed;
-
-    synchronized (subscriptionDiagnosticsVariables) {
-      pendingSubscriptionIds.clear();
-      removed = new ArrayList<>(subscriptionDiagnosticsVariables);
+    synchronized (enabledFlagNode) {
+      subscriptionDiagnosticsVariables.forEach(AbstractLifecycle::shutdown);
       subscriptionDiagnosticsVariables.clear();
     }
-
-    removed.forEach(AbstractLifecycle::shutdown);
   }
 
   private class EventSubscriber {
 
     @Subscribe
-    public synchronized void onSubscriptionCreated(SubscriptionCreatedEvent event) {
-      if (getSubscriptions().stream()
-          .anyMatch(s -> s.getId().equals(event.getSubscription().getId()))) {
-        createSubscriptionDiagnosticsNode(event.getSubscription());
+    public void onSubscriptionCreated(SubscriptionCreatedEvent event) {
+      synchronized (enabledFlagNode) {
+        // Unregistration happens under this monitor too, so an event dispatched just before a
+        // disable must not add an element to the now-disabled array.
+        if (diagnosticsEnabled.get()
+            && getSubscriptions().stream()
+                .anyMatch(s -> s.getId().equals(event.getSubscription().getId()))) {
+          createSubscriptionDiagnosticsNode(event.getSubscription());
+        }
       }
     }
 
     @Subscribe
-    public synchronized void onSubscriptionDeleted(SubscriptionDeletedEvent event) {
+    public void onSubscriptionDeleted(SubscriptionDeletedEvent event) {
       removeSubscriptionDiagnosticsNode(event.getSubscription().getId());
     }
   }
