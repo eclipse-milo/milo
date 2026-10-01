@@ -27,6 +27,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Objects;
 import java.util.UUID;
@@ -1103,7 +1104,17 @@ public class OpcUaJsonDecoder implements UaDecoder {
           Array.set(flatArray, i, elements.get(i));
         }
 
-        validateMatrixDimensions(flatArray, dimensions);
+        if (dimensions.length == 0) {
+          throw new UaSerializationException(
+              StatusCodes.Bad_DecodingError, "Variant Dimensions is empty");
+        }
+
+        checkMatrixElementCount(flatArray, dimensions);
+
+        if (dimensions.length == 1) {
+          // One dimension describes a one-dimensional array, as in OpcUaBinaryDecoder.
+          return new Variant(flatArray);
+        }
 
         var matrix = new Matrix(flatArray, dimensions, OpcUaDataType.fromTypeId(typeId));
 
@@ -1114,6 +1125,12 @@ public class OpcUaJsonDecoder implements UaDecoder {
     }
   }
 
+  /**
+   * Validate the Array and Dimensions members of a structure field Matrix.
+   *
+   * <p>Both members must be present, Dimensions must have at least two entries (the minimum {@link
+   * Matrix} allows), and the product of Dimensions must equal the Array length.
+   */
   private void validateMatrixDimensions(Object flatArray, int[] dimensions)
       throws UaSerializationException {
     if (flatArray == null) {
@@ -1125,6 +1142,23 @@ public class OpcUaJsonDecoder implements UaDecoder {
           StatusCodes.Bad_DecodingError, "matrix Dimensions is missing");
     }
 
+    if (dimensions.length < 2) {
+      throw new UaSerializationException(
+          StatusCodes.Bad_DecodingError,
+          String.format(
+              "matrix must have at least 2 dimensions (dimensions=%s)",
+              Arrays.toString(dimensions)));
+    }
+
+    checkMatrixElementCount(flatArray, dimensions);
+  }
+
+  /**
+   * Validate that every dimension is non-negative, within the encoding limits, and that the product
+   * of {@code dimensions} equals the length of {@code flatArray}.
+   */
+  private void checkMatrixElementCount(Object flatArray, int[] dimensions)
+      throws UaSerializationException {
     int maxMessageSize = context.getEncodingLimits().getMaxMessageSize();
     int flatArrayLength = Array.getLength(flatArray);
     int expectedLength = 1;

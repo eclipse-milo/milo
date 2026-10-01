@@ -1531,6 +1531,14 @@ public class OpcUaBinaryDecoder implements UaDecoder {
     } else {
       checkArrayLength(length);
 
+      // Part 6 §5.2.5, Table 28: the number of dimensions shall be at least 2. Matrix requires the
+      // same, so reject the count here before any values are read.
+      if (length < 2) {
+        throw new UaSerializationException(
+            StatusCodes.Bad_DecodingError,
+            String.format("matrix must have at least 2 dimensions (dimensions=%s)", length));
+      }
+
       int[] dimensions = new int[length];
       for (int i = 0; i < length; i++) {
         dimensions[i] = buffer.readIntLE();
