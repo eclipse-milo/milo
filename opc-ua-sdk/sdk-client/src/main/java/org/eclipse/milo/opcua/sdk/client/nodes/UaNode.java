@@ -1094,60 +1094,23 @@ public abstract class UaNode implements Node {
 
   protected void setAttributeValue(AttributeId attributeId, DataValue value) {
     switch (attributeId) {
-      case NodeId:
-        {
-          setNodeId((NodeId) value.value().value());
-          break;
-        }
-      case NodeClass:
-        {
-          Integer i = (Integer) requireNonNullElse(value.value().value(), 0);
-          NodeClass nodeClass = NodeClass.from(i);
-          setNodeClass(nodeClass);
-          break;
-        }
-      case BrowseName:
-        {
-          setBrowseName((QualifiedName) value.value().value());
-          break;
-        }
-      case DisplayName:
-        {
-          setDisplayName((LocalizedText) value.value().value());
-          break;
-        }
-      case Description:
-        {
-          setDescription((LocalizedText) value.value().value());
-          break;
-        }
-      case WriteMask:
-        {
-          setWriteMask((UInteger) value.value().value());
-          break;
-        }
-      case UserWriteMask:
-        {
-          setUserWriteMask((UInteger) value.value().value());
-          break;
-        }
-      case RolePermissions:
-        {
-          setRolePermissions((RolePermissionType[]) value.value().value());
-          break;
-        }
-      case UserRolePermissions:
-        {
+      case NodeId -> setNodeId((NodeId) value.value().value());
+      case NodeClass -> {
+        Integer i = (Integer) requireNonNullElse(value.value().value(), 0);
+        NodeClass nodeClass = NodeClass.from(i);
+        setNodeClass(nodeClass);
+      }
+      case BrowseName -> setBrowseName((QualifiedName) value.value().value());
+      case DisplayName -> setDisplayName((LocalizedText) value.value().value());
+      case Description -> setDescription((LocalizedText) value.value().value());
+      case WriteMask -> setWriteMask((UInteger) value.value().value());
+      case UserWriteMask -> setUserWriteMask((UInteger) value.value().value());
+      case RolePermissions -> setRolePermissions((RolePermissionType[]) value.value().value());
+      case UserRolePermissions ->
           setUserRolePermissions((RolePermissionType[]) value.value().value());
-          break;
-        }
-      case AccessRestrictions:
-        {
+      case AccessRestrictions ->
           setAccessRestrictions(new AccessRestrictionType((UShort) value.value().value()));
-          break;
-        }
-      default:
-        throw new IllegalArgumentException("attributeId: " + attributeId);
+      default -> throw new IllegalArgumentException("attributeId: " + attributeId);
     }
   }
 
