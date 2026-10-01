@@ -26,7 +26,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-class NullMatrixSerializationTest {
+class NullMatrixEncodingTest {
 
   private static final String NULL_ARRAY_LENGTH = "ffffffff";
 
