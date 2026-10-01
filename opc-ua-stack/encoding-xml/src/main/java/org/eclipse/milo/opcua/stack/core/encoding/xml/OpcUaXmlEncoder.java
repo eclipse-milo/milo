@@ -14,6 +14,7 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.lang.reflect.Array;
 import java.util.ArrayDeque;
+import java.util.Arrays;
 import java.util.Deque;
 import java.util.Map;
 import java.util.UUID;
@@ -807,6 +808,10 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
             }
           }
         }
+      } else if (value instanceof Matrix matrix && isEmptyMatrix(matrix)) {
+        // An empty Matrix has no XML Matrix form, so write an empty one-dimensional array of the
+        // element type instead, as the binary encoding does.
+        encodeBuiltinTypeArrayValue(Array.newInstance(dataType.getBackingClass(), 0), dataType);
       } else if (value instanceof Matrix matrix) {
         switch (typeHint) {
           case BUILTIN -> encodeMatrix("Matrix", matrix);
@@ -849,6 +854,37 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
     } finally {
       namespaceStack.pop();
     }
+  }
+
+  /**
+   * OPC 10000-6, 5.3.1.17: all Matrix dimensions shall be greater than 0, so a Matrix with a zero
+   * or negative dimension has no XML Matrix form.
+   *
+   * @return {@code true} if {@code matrix} has a zero or negative dimension and no elements.
+   * @throws UaSerializationException if {@code matrix} has such a dimension and also has elements.
+   */
+  private static boolean isEmptyMatrix(Matrix matrix) {
+    Object elements = matrix.getElements();
+    if (elements == null || allDimensionsPositive(matrix.getDimensions())) {
+      return false;
+    }
+
+    int length = Array.getLength(elements);
+    if (length != 0) {
+      throw new UaSerializationException(
+          StatusCodes.Bad_EncodingError,
+          String.format(
+              "matrix has %s elements but invalid dimensions %s",
+              length, Arrays.toString(matrix.getDimensions())));
+    }
+    return true;
+  }
+
+  private static boolean allDimensionsPositive(int[] dimensions) {
+    for (int dimension : dimensions) {
+      if (dimension <= 0) return false;
+    }
+    return true;
   }
 
   private void encodeBuiltinTypeValue(Object value, OpcUaDataType dataType) {
@@ -1703,7 +1739,8 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
 
   @Override
   public void encodeMatrix(String field, Matrix value) throws UaSerializationException {
-    boolean isNull = value == null || value.isNull();
+    // An empty Matrix is written as null, which OPC 10000-6, 5.1.11 treats as equivalent.
+    boolean isNull = value == null || value.isNull() || isEmptyMatrix(value);
     if (beginField(field, isNull, true, true)) {
       try {
         namespaceStack.push(Namespaces.OPC_UA_XSD);
@@ -1793,7 +1830,8 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
 
   @Override
   public void encodeEnumMatrix(String field, Matrix value) throws UaSerializationException {
-    boolean isNull = value == null || value.isNull();
+    // An empty Matrix is written as null, which OPC 10000-6, 5.1.11 treats as equivalent.
+    boolean isNull = value == null || value.isNull() || isEmptyMatrix(value);
     if (beginField(field, isNull, true, true)) {
       try {
         namespaceStack.push(Namespaces.OPC_UA_XSD);
