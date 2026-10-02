@@ -27,6 +27,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import org.eclipse.milo.opcua.sdk.server.AddressSpaceManager;
 import org.eclipse.milo.opcua.sdk.server.DataItemListener;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
@@ -39,6 +41,7 @@ import org.eclipse.milo.opcua.sdk.server.items.BaseMonitoredItem;
 import org.eclipse.milo.opcua.sdk.server.items.DataItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredDataItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredEventItem;
+import org.eclipse.milo.opcua.sdk.server.sampling.ReadAccessScope;
 import org.eclipse.milo.opcua.sdk.server.subscriptions.Subscription;
 import org.eclipse.milo.opcua.sdk.server.subscriptions.SubscriptionManager;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
@@ -56,6 +59,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.TransferSubscriptionsR
 import org.eclipse.milo.opcua.stack.transport.server.ServiceRequestContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 
 /** How TransferSubscriptions reports transferred DataItems to the AddressSpace. */
@@ -157,6 +161,23 @@ class DefaultSubscriptionServiceSetTransferTest {
     inOrder.verify(addressSpaceManager).onDataItemsTransferred(List.of(dataItem));
   }
 
+  // The transferred items were checked for the old Session. The cache is keyed by Session, so
+  // nothing stale can be read for the new one, but a refresher listening for invalidations has
+  // to hear that these Nodes' answers under the new Session are open again.
+  @Test
+  void transferInvalidatesTheTransferredNodesForTheNewSession() throws Exception {
+    MonitoredDataItem dataItem = dataItem(uint(1));
+    monitoredItems.put(dataItem.getId(), dataItem);
+
+    serviceSet.onTransferSubscriptions(context, transferRequest());
+
+    ArgumentCaptor<ReadAccessScope> scope = ArgumentCaptor.forClass(ReadAccessScope.class);
+    verify(server).invalidateReadAccess(scope.capture());
+    assertEquals(Optional.of(newSession), scope.getValue().session());
+    assertEquals(
+        Optional.of(Set.of(dataItem.getReadValueId().getNodeId())), scope.getValue().nodeIds());
+  }
+
   // A transfer the server refuses moves nothing, so there is nothing to report.
   @Test
   void refusedTransferReportsNothing() throws Exception {
@@ -170,6 +191,7 @@ class DefaultSubscriptionServiceSetTransferTest {
         new StatusCode(StatusCodes.Bad_UserAccessDenied), response.getResults()[0].getStatusCode());
     verify(addressSpaceManager, never()).onDataItemsTransferred(anyList());
     verify(server, never()).getDataItemListener();
+    verify(server, never()).invalidateReadAccess(any(ReadAccessScope.class));
   }
 
   // Like the other data item callbacks, this one is never delivered with an empty list.

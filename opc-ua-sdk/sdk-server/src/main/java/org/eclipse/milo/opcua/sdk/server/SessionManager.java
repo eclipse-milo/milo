@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.server.identity.Identity;
 import org.eclipse.milo.opcua.sdk.server.identity.IdentityValidator;
+import org.eclipse.milo.opcua.sdk.server.sampling.ReadAccessScope;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
@@ -967,6 +968,10 @@ public class SessionManager {
                   results,
                   new DiagnosticInfo[0]);
 
+          // The user behind the Session changed, so its read access answers did too. Drop them
+          // before anyone hears about the change and asks again.
+          server.invalidateReadAccess(ReadAccessScope.session(session));
+
           fireSessionIdentityChanged(session);
 
           return response;
@@ -1040,6 +1045,10 @@ public class SessionManager {
 
               activated = true;
 
+              // The security mode and endpoint behind the Session changed, and both feed its read
+              // access answers.
+              server.invalidateReadAccess(ReadAccessScope.session(session));
+
               fireSessionEndpointChanged(session);
 
               return new ActivateSessionResponse(
@@ -1054,6 +1063,11 @@ public class SessionManager {
             if (!activated) {
               session.setEndpoint(previousEndpoint);
               session.setSecurityConfiguration(securityConfiguration);
+
+              // A read access check that ran while the candidate endpoint was visible answered
+              // for a channel the Session never moved to. Nothing is reported to listeners, since
+              // the Session is where it was, but the cached answers must go.
+              server.invalidateReadAccess(ReadAccessScope.session(session));
             }
           }
         }

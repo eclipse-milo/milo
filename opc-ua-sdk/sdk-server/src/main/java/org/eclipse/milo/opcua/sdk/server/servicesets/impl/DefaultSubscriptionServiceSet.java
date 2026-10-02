@@ -23,11 +23,13 @@ import org.eclipse.milo.opcua.sdk.server.identity.Identity;
 import org.eclipse.milo.opcua.sdk.server.identity.Identity.AnonymousIdentity;
 import org.eclipse.milo.opcua.sdk.server.items.DataItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredDataItem;
+import org.eclipse.milo.opcua.sdk.server.sampling.ReadAccessScope;
 import org.eclipse.milo.opcua.sdk.server.servicesets.SubscriptionServiceSet;
 import org.eclipse.milo.opcua.sdk.server.subscriptions.Subscription;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
@@ -280,6 +282,18 @@ public class DefaultSubscriptionServiceSet implements SubscriptionServiceSet {
           // the AddressSpace see the transfer complete. A failing callback must not fail a
           // transfer that has already happened.
           if (!transferredDataItems.isEmpty()) {
+            // The items now answer to another Session, so whatever was decided for their Nodes
+            // under this Session, if anything, is not what the transferred items were checked
+            // against. Say so before the listeners re-check them.
+            List<NodeId> transferredNodeIds =
+                transferredDataItems.stream()
+                    .map(item -> item.getReadValueId().getNodeId())
+                    .distinct()
+                    .toList();
+
+            server.invalidateReadAccess(
+                ReadAccessScope.nodes(transferredNodeIds).forSession(session));
+
             server
                 .getDataItemListener()
                 .onDataItemsTransferred(transferredDataItems, otherSession, session);
