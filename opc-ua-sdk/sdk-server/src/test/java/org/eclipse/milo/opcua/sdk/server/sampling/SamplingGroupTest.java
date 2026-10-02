@@ -10,8 +10,11 @@
 
 package org.eclipse.milo.opcua.sdk.server.sampling;
 
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
@@ -33,9 +36,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
+import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController.AccessResult;
 import org.eclipse.milo.opcua.sdk.server.items.DataItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredDataItem;
-import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController.AccessResult;
+import org.eclipse.milo.opcua.stack.core.AttributeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
+import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -466,6 +475,38 @@ class SamplingGroupTest {
     assertEquals(75, SamplingGroup.nextDelayMillis(100, 25));
     assertEquals(1, SamplingGroup.nextDelayMillis(100, 100));
     assertEquals(1, SamplingGroup.nextDelayMillis(100, 125));
+  }
+
+  /**
+   * Part 4 §7.40: a MonitoredItem's TimestampsToReturn decides which timestamps its Notifications
+   * carry, and only the Value attribute has a source timestamp. A sampler reads with both and the
+   * group keeps what the item asked for, so no protocol sampler has to know the rule.
+   */
+  @Test
+  void deliverKeepsOnlyTheTimestampsTheItemAskedFor() throws Exception {
+    MonitoredDataItem sourceOnly = SamplingTestItems.item(server, session, "s");
+    sourceOnly.modify(
+        TimestampsToReturn.Source,
+        uint(1),
+        100.0,
+        MonitoredDataItem.DEFAULT_FILTER,
+        uint(10),
+        true);
+    MonitoredDataItem nonValue =
+        SamplingTestItems.item(server, session, "d", AttributeId.DisplayName, 100.0);
+
+    var read = new DataValue(new Variant(1), StatusCode.GOOD, new DateTime(), new DateTime());
+
+    SamplingGroup.deliver(sourceOnly, read);
+    SamplingGroup.deliver(nonValue, read);
+
+    DataValue sourceOnlyDelivered = SamplingTestItems.drain(sourceOnly).get(0);
+    assertEquals(read.sourceTime(), sourceOnlyDelivered.sourceTime());
+    assertNull(sourceOnlyDelivered.serverTime(), "Server timestamps were not asked for");
+
+    DataValue nonValueDelivered = SamplingTestItems.drain(nonValue).get(0);
+    assertNull(nonValueDelivered.sourceTime(), "a non-Value attribute has no source timestamp");
+    assertNotNull(nonValueDelivered.serverTime(), "Both were asked for");
   }
 
   private void runCycle() {

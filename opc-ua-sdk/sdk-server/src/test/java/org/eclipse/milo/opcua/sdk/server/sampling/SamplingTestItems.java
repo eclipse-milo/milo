@@ -43,6 +43,16 @@ public final class SamplingTestItems {
   public static MonitoredDataItem item(
       OpcUaServer server, Session session, String name, double samplingInterval) {
 
+    return item(server, session, name, AttributeId.Value, samplingInterval);
+  }
+
+  public static MonitoredDataItem item(
+      OpcUaServer server,
+      Session session,
+      String name,
+      AttributeId attributeId,
+      double samplingInterval) {
+
     long id = IDS.getAndIncrement();
 
     var item =
@@ -51,7 +61,7 @@ public final class SamplingTestItems {
             session,
             uint(id),
             uint(1),
-            new ReadValueId(new NodeId(2, name), AttributeId.Value.uid(), null, null),
+            new ReadValueId(new NodeId(2, name), attributeId.uid(), null, null),
             MonitoringMode.Reporting,
             TimestampsToReturn.Both,
             uint(id),

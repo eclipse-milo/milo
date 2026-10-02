@@ -24,9 +24,7 @@ import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.items.DataItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredItem;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
-import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 import org.slf4j.Logger;
@@ -111,21 +109,7 @@ public class AddressSpaceSamplingGroup extends SamplingGroup {
     Iterator<DataValue> vi = values.iterator();
 
     while (ii.hasNext() && vi.hasNext()) {
-      DataItem item = ii.next();
-      DataValue value = vi.next();
-
-      TimestampsToReturn timestamps = item.getTimestampsToReturn();
-
-      if (timestamps != null) {
-        UInteger attributeId = item.getReadValueId().getAttributeId();
-
-        value =
-            AttributeId.Value.isEqual(attributeId)
-                ? DataValue.derivedValue(value, timestamps)
-                : DataValue.derivedNonValue(value, timestamps);
-      }
-
-      item.setValue(value);
+      deliver(ii.next(), vi.next());
     }
   }
 }

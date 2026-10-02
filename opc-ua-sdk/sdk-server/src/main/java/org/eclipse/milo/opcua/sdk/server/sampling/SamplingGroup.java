@@ -24,8 +24,11 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
-import org.eclipse.milo.opcua.sdk.server.items.DataItem;
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController.AccessResult;
+import org.eclipse.milo.opcua.sdk.server.items.DataItem;
+import org.eclipse.milo.opcua.stack.core.AttributeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,12 +36,13 @@ import org.slf4j.LoggerFactory;
 /**
  * The items sampled at one interval, and the cycle that samples them.
  *
- * <p>A subclass implements {@link #sample(List)}, the protocol read, and gets the rest: scheduling
- * on the server's executors, membership, a debounced initial sample for new items, and a read
- * access refresh before every sample. Each cycle, in order, tells the subclass about a changed item
- * set through {@link #onItemsChanged(List)}, refreshes the read access result of every item with
- * the group's {@link ReadAccessPolicy}, and calls {@code sample} with the items whose Session may
- * read them. An item whose Session may not is left out, and its denial is already on the item.
+ * <p>A subclass implements {@link #sample(List)}, the protocol read, delivers each value with
+ * {@link #deliver(DataItem, DataValue)}, and gets the rest: scheduling on the server's executors,
+ * membership, a debounced initial sample for new items, and a read access refresh before every
+ * sample. Each cycle, in order, tells the subclass about a changed item set through {@link
+ * #onItemsChanged(List)}, refreshes the read access result of every item with the group's {@link
+ * ReadAccessPolicy}, and calls {@code sample} with the items whose Session may read them. An item
+ * whose Session may not is left out, and its denial is already on the item.
  *
  * <p>{@link SamplingManager} creates groups through a {@link SamplingGroupFactory}, adds and
  * removes their items, and starts and stops them. {@link AddressSpaceSamplingGroup} is the group
@@ -122,8 +126,8 @@ public abstract class SamplingGroup {
   }
 
   /**
-   * Sample every one of {@code items} once and deliver each result with {@link DataItem#setValue},
-   * synchronously or asynchronously.
+   * Sample every one of {@code items} once and deliver each result with {@link #deliver(DataItem,
+   * DataValue)}, synchronously or asynchronously.
    *
    * <p>Called on the server's executor at each interval, and for the initial sample of new items.
    * The items' Sessions may read them; the group has already refreshed and applied their read
@@ -169,6 +173,31 @@ public abstract class SamplingGroup {
    */
   protected final void setRequestCount(int requestCount) {
     this.requestCount = requestCount;
+  }
+
+  /**
+   * Deliver {@code value} to {@code item} with the timestamps the item asked for.
+   *
+   * <p>A sampler reads with both timestamps and lets this method keep only the ones the item's
+   * {@link DataItem#getTimestampsToReturn()} asks for; a server timestamp, when asked for, is the
+   * time of delivery. A value for an attribute other than Value never carries a source timestamp.
+   * The value then goes through {@link DataItem#setValue}, where the item's read access result
+   * applies as for any other delivery.
+   *
+   * @param item the item to deliver to.
+   * @param value the value read for it, with whatever timestamps the read produced.
+   */
+  protected static void deliver(DataItem item, DataValue value) {
+    TimestampsToReturn timestamps = item.getTimestampsToReturn();
+
+    if (timestamps != null) {
+      value =
+          AttributeId.Value.isEqual(item.getReadValueId().getAttributeId())
+              ? DataValue.derivedValue(value, timestamps)
+              : DataValue.derivedNonValue(value, timestamps);
+    }
+
+    item.setValue(value);
   }
 
   /**
