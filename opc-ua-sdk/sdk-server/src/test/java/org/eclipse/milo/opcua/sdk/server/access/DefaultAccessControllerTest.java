@@ -22,10 +22,10 @@ import org.eclipse.milo.opcua.sdk.core.AccessLevel;
 import org.eclipse.milo.opcua.sdk.core.WriteMask;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig;
 import org.eclipse.milo.opcua.sdk.server.RoleMapper;
-import org.eclipse.milo.opcua.sdk.server.identity.Identity;
 import org.eclipse.milo.opcua.sdk.server.access.AccessController.AccessResult;
 import org.eclipse.milo.opcua.sdk.server.access.DefaultAccessController.AccessControlAttributes;
 import org.eclipse.milo.opcua.sdk.server.access.DefaultAccessController.AccessControlContext;
+import org.eclipse.milo.opcua.sdk.server.identity.Identity;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
@@ -291,6 +291,51 @@ class DefaultAccessControllerTest {
         DefaultAccessController.checkWriteAccess(context, List.of(writeValue)).get(writeValue);
 
     assertEquals(AccessResult.DENIED_USER_ACCESS, result);
+  }
+
+  /**
+   * Part 4 §5.10.4: a Write to a Variable whose AccessLevel lacks CurrentWrite is Bad_NotWritable,
+   * a property of the Node, so the controller decides it before looking at the Session's
+   * UserAccessLevel, the same way a Read decides Bad_NotReadable before Bad_UserAccessDenied.
+   */
+  @Test
+  void checkWriteAccess_Value_NotWritable() {
+    var nodeId = new NodeId(1, "foo");
+    var writeValue =
+        new WriteValue(
+            nodeId, AttributeId.Value.uid(), null, DataValue.valueOnly(Variant.NULL_VALUE));
+
+    UByte accessLevel = AccessLevel.toValue(AccessLevel.READ_ONLY);
+    UByte userAccessLevel = AccessLevel.toValue(AccessLevel.READ_WRITE);
+
+    var attributes =
+        new AccessControlAttributes(null, null, null, accessLevel, userAccessLevel, null, null);
+    attributesMap.put(nodeId, attributes);
+
+    AccessResult result =
+        DefaultAccessController.checkWriteAccess(context, List.of(writeValue)).get(writeValue);
+
+    assertEquals(AccessResult.DENIED_NOT_WRITABLE, result);
+  }
+
+  // When neither attribute allows writing the client learns that the Node is not writable at all,
+  // not that this user in particular may not write it.
+  @Test
+  void checkWriteAccess_Value_NotWritableTakesPrecedenceOverUserAccess() {
+    var nodeId = new NodeId(1, "foo");
+    var writeValue =
+        new WriteValue(
+            nodeId, AttributeId.Value.uid(), null, DataValue.valueOnly(Variant.NULL_VALUE));
+
+    UByte readOnly = AccessLevel.toValue(AccessLevel.READ_ONLY);
+
+    var attributes = new AccessControlAttributes(null, null, null, readOnly, readOnly, null, null);
+    attributesMap.put(nodeId, attributes);
+
+    AccessResult result =
+        DefaultAccessController.checkWriteAccess(context, List.of(writeValue)).get(writeValue);
+
+    assertEquals(AccessResult.DENIED_NOT_WRITABLE, result);
   }
 
   @Test

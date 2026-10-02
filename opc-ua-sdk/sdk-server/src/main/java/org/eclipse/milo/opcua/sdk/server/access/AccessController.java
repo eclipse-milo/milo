@@ -111,6 +111,9 @@ public interface AccessController {
     /** Access is denied because the Node's AccessLevel does not allow reading. */
     AccessResult DENIED_NOT_READABLE = new Denied(StatusCodes.Bad_NotReadable);
 
+    /** Access is denied because the Node's AccessLevel does not allow writing. */
+    AccessResult DENIED_NOT_WRITABLE = new Denied(StatusCodes.Bad_NotWritable);
+
     /** Access is denied due to insufficient user access rights. */
     AccessResult DENIED_USER_ACCESS = new Denied(StatusCodes.Bad_UserAccessDenied);
 

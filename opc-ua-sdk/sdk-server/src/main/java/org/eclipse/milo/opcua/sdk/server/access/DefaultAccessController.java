@@ -132,6 +132,14 @@ public class DefaultAccessController implements AccessController {
 
   // region Write
 
+  /**
+   * {@inheritDoc}
+   *
+   * <p>A Value write is checked the way a Value read is: the Node's {@code AccessLevel} first,
+   * which denies with {@code Bad_NotWritable} when it lacks CurrentWrite, and then the Session's
+   * {@code UserAccessLevel}, which denies with {@code Bad_UserAccessDenied}. Other attributes are
+   * checked against {@code UserWriteMask}.
+   */
   @Override
   public Map<WriteValue, AccessResult> checkWriteAccess(
       Session session, List<WriteValue> writeValues) {
@@ -166,13 +174,15 @@ public class DefaultAccessController implements AccessController {
       UInteger attributeId = p.value.getAttributeId();
 
       if (AttributeId.Value.uid().equals(attributeId)) {
+        UByte accessLevel = attributes.get(nodeId).accessLevel();
         UByte userAccessLevel = attributes.get(nodeId).userAccessLevel();
 
-        if (userAccessLevel != null) {
-          Set<AccessLevel> accessLevels = AccessLevel.fromValue(userAccessLevel);
-          if (!accessLevels.contains(AccessLevel.CurrentWrite)) {
-            p.result = AccessResult.DENIED_USER_ACCESS;
-          }
+        if (accessLevel != null
+            && !AccessLevel.fromValue(accessLevel).contains(AccessLevel.CurrentWrite)) {
+          p.result = AccessResult.DENIED_NOT_WRITABLE;
+        } else if (userAccessLevel != null
+            && !AccessLevel.fromValue(userAccessLevel).contains(AccessLevel.CurrentWrite)) {
+          p.result = AccessResult.DENIED_USER_ACCESS;
         }
       } else {
         UInteger userWriteMask = attributes.get(nodeId).userWriteMask();
