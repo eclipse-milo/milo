@@ -54,6 +54,13 @@ public class DefaultAccessController implements AccessController {
 
   // region Read
 
+  /**
+   * {@inheritDoc}
+   *
+   * <p>A Node the AddressSpace does not know is allowed rather than failed: every attribute this
+   * check reads answers {@code Bad_NodeIdUnknown}, so no restriction applies, and a caller that
+   * re-checks items whose Node may since have been removed can rely on that.
+   */
   @Override
   public Map<ReadValueId, AccessResult> checkReadAccess(
       Session session, List<ReadValueId> readValueIds) {
