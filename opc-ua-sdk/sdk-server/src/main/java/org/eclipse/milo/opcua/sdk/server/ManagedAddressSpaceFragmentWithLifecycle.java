@@ -20,7 +20,9 @@ package org.eclipse.milo.opcua.sdk.server;
  * obtained from {@link #getLifecycleManager()}.
  *
  * <p>Shutdown runs in reverse registration order, so subclass lifecycles are stopped before this
- * base class unregisters the fragment and its {@link UaNodeManager}.
+ * base class unregisters the fragment and its {@link UaNodeManager}. The {@link
+ * #getSamplingManager() SamplingManager} starts with the registration and stops before it is
+ * undone, so the default data item callbacks sample for as long as the fragment is registered.
  */
 public abstract class ManagedAddressSpaceFragmentWithLifecycle extends ManagedAddressSpaceFragment
     implements Lifecycle {
@@ -59,10 +61,12 @@ public abstract class ManagedAddressSpaceFragmentWithLifecycle extends ManagedAd
               public void startup() {
                 registerWithComposite(composite);
                 registerNodeManager(getNodeManager());
+                getSamplingManager().startup();
               }
 
               @Override
               public void shutdown() {
+                getSamplingManager().shutdown();
                 composite.unregister(ManagedAddressSpaceFragmentWithLifecycle.this);
                 unregisterNodeManager(getNodeManager());
               }
@@ -100,10 +104,12 @@ public abstract class ManagedAddressSpaceFragmentWithLifecycle extends ManagedAd
               public void startup() {
                 registerWithComposite(composite);
                 registerNodeManager(getNodeManager());
+                getSamplingManager().startup();
               }
 
               @Override
               public void shutdown() {
+                getSamplingManager().shutdown();
                 composite.unregister(ManagedAddressSpaceFragmentWithLifecycle.this);
                 unregisterNodeManager(getNodeManager());
               }
