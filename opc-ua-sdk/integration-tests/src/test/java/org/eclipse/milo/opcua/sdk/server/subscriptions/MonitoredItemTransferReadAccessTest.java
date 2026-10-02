@@ -10,10 +10,10 @@
 
 package org.eclipse.milo.opcua.sdk.server.subscriptions;
 
+import static java.util.Objects.requireNonNullElse;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,15 +37,18 @@ import org.eclipse.milo.opcua.stack.core.security.DefaultClientCertificateValida
 import org.eclipse.milo.opcua.stack.core.security.MemoryCertificateQuarantine;
 import org.eclipse.milo.opcua.stack.core.security.MemoryTrustListManager;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
-import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
+import org.eclipse.milo.opcua.stack.core.types.structured.DataChangeNotification;
 import org.eclipse.milo.opcua.stack.core.types.structured.MonitoredItemNotification;
+import org.eclipse.milo.opcua.stack.core.types.structured.NotificationMessage;
+import org.eclipse.milo.opcua.stack.core.types.structured.PublishResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.TransferSubscriptionsResponse;
 import org.junit.jupiter.api.Test;
 
@@ -82,7 +85,7 @@ public class MonitoredItemTransferReadAccessTest extends AbstractClientServerTes
    * for a denial in the Publish response when access rights change. The Variable requires an
    * encrypted channel, so the same user reading it over an unsecured channel is denied: the
    * transferred item, checked for its new Session on its next cycle, reports
-   * Bad_SecurityModeInsufficient instead of values.
+   * Bad_SecurityModeInsufficient in the new Session's Publish response instead of values.
    */
   @Test
   void anItemTransferredToASessionWithLessAccessReportsTheDenialOnItsNextCycle() throws Exception {
@@ -116,27 +119,30 @@ public class MonitoredItemTransferReadAccessTest extends AbstractClientServerTes
           plainClient.transferSubscriptions(List.of(subscriptionId), false);
       assertEquals(StatusCode.GOOD, response.getResults()[0].getStatusCode());
 
-      // The plain client has no client-side Subscription to publish for, so the item's queue is
-      // observed on the server: the denial is queued there once the next cycle has re-checked the
-      // item for its new Session.
-      MonitoredDataItem serverItem =
-          serverItem(subscriptionId, item.getMonitoredItemId().orElseThrow());
+      // The plain client has no client-side Subscription object, so it asks for the Publish
+      // response itself: each request returns when the server has a notification or a keep-alive,
+      // bounded by the request timeout, and the denial arrives once the next cycle has re-checked
+      // the item for its new Session.
+      MonitoredItemNotification denial = null;
+      for (int publishes = 0; publishes < 20 && denial == null; publishes++) {
+        PublishResponse publish = plainClient.publish(List.of());
+        assertEquals(subscriptionId, publish.getSubscriptionId());
 
-      long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
-      while (serverItem.getReadAccessResult() != AccessResult.DENIED_SECURITY_MODE
-          && System.nanoTime() < deadline) {
-        Thread.sleep(20);
+        denial =
+            notifications(plainClient, publish.getNotificationMessage()).stream()
+                .filter(
+                    n ->
+                        n.getValue().statusCode().getValue()
+                            == StatusCodes.Bad_SecurityModeInsufficient)
+                .findFirst()
+                .orElse(null);
       }
+
+      assertNotNull(denial, "the denial must arrive in a Publish response for the new Session");
       assertEquals(
           AccessResult.DENIED_SECURITY_MODE,
-          serverItem.getReadAccessResult(),
-          "the item is re-checked for the new Session on its next cycle");
-
-      List<DataValue> queued = drain(serverItem);
-      assertTrue(
-          queued.stream()
-              .anyMatch(v -> v.statusCode().getValue() == StatusCodes.Bad_SecurityModeInsufficient),
-          "the denial is queued for the new Session's Publish: " + queued);
+          serverItem(subscriptionId, item.getMonitoredItemId().orElseThrow()).getReadAccessResult(),
+          "the item was re-checked for the new Session");
     } finally {
       plainClient.disconnect();
       secureClient.disconnect();
@@ -153,11 +159,22 @@ public class MonitoredItemTransferReadAccessTest extends AbstractClientServerTes
     return (MonitoredDataItem) item;
   }
 
-  private static List<DataValue> drain(MonitoredDataItem item) {
-    var notifications = new ArrayList<UaStructuredType>();
-    item.getNotifications(notifications, Integer.MAX_VALUE);
+  private static List<MonitoredItemNotification> notifications(
+      OpcUaClient client, NotificationMessage message) {
 
-    return notifications.stream().map(n -> ((MonitoredItemNotification) n).getValue()).toList();
+    var notifications = new ArrayList<MonitoredItemNotification>();
+
+    for (ExtensionObject xo :
+        requireNonNullElse(message.getNotificationData(), new ExtensionObject[0])) {
+      Object data = xo.decode(client.getStaticEncodingContext());
+
+      if (data instanceof DataChangeNotification dataChange
+          && dataChange.getMonitoredItems() != null) {
+        notifications.addAll(List.of(dataChange.getMonitoredItems()));
+      }
+    }
+
+    return notifications;
   }
 
   private OpcUaClient createSecureClient() throws Exception {
