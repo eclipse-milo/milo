@@ -16,12 +16,11 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.milo.opcua.sdk.client.subscriptions.OpcUaMonitoredItem;
 import org.eclipse.milo.opcua.sdk.client.subscriptions.OpcUaSubscription;
 import org.eclipse.milo.opcua.sdk.core.AccessLevel;
@@ -85,7 +84,8 @@ public class SamplingFrameworkTest extends AbstractClientServerTest {
     subscription.delete();
 
     namespace.failReads = false;
-    namespace.readCounts.clear();
+    namespace.readNanos.clear();
+    namespace.readLatch = new CountDownLatch(0);
     namespace.variable.setUserAccessLevel(AccessLevel.toValue(AccessLevel.READ_WRITE));
     namespace.variable.setValue(new DataValue(new Variant(INITIAL_VALUE)));
     server.invalidateReadAccess(namespace.variable.getNodeId());
@@ -149,25 +149,24 @@ public class SamplingFrameworkTest extends AbstractClientServerTest {
   /**
    * A requested sampling interval of 0 asks for the fastest practical rate, which used to be a 1 ms
    * poll. The manager floors it at the configured minimum, and the client is told that interval
-   * (Part 4 §7.21), not the 0 it asked for.
+   * (Part 4 §7.21), not the 0 it asked for. Five reads of the Variable, the initial sample and four
+   * cycles, must then span at least four intervals.
    */
   @Test
   void aZeroRequestedIntervalIsRevisedToTheFloorAndSampledThere() throws Exception {
     var values = new LinkedBlockingQueue<DataValue>();
+    CountDownLatch fiveReads = namespace.expectReads(5);
+
     OpcUaMonitoredItem item = monitor(namespace.variable.getNodeId(), 0.0, values);
 
     assertEquals((double) FLOOR_MILLIS, item.getRevisedSamplingInterval().orElseThrow());
-    assertNotNull(values.poll(5, TimeUnit.SECONDS));
+    assertTrue(fiveReads.await(5, TimeUnit.SECONDS), "the item is sampled");
 
-    AtomicInteger reads = namespace.readCounts.get(namespace.variable.getNodeId());
-    int before = reads.get();
-    Thread.sleep(1_000);
-    int during = reads.get() - before;
-
-    assertTrue(during >= 2, "the item is sampled: " + during + " reads in a second");
+    List<Long> readNanos = namespace.readNanos;
+    long spanMillis = TimeUnit.NANOSECONDS.toMillis(readNanos.get(4) - readNanos.get(0));
     assertTrue(
-        during <= 2 * (1_000 / FLOOR_MILLIS),
-        "the item is sampled no faster than the floor allows: " + during + " reads in a second");
+        spanMillis >= 3 * FLOOR_MILLIS,
+        "five reads span at least four intervals, less scheduling slack: " + spanMillis + " ms");
   }
 
   // Part 4 §7.21: the server revises up to an interval it supports, never down. With 50 ms buckets
@@ -199,10 +198,18 @@ public class SamplingFrameworkTest extends AbstractClientServerTest {
   /** A namespace on the cached policy with a 200 ms floor, whose reads can be made to fail. */
   private static final class FrameworkNamespace extends ManagedNamespaceWithLifecycle {
 
-    private final Map<NodeId, AtomicInteger> readCounts = new ConcurrentHashMap<>();
+    /** When each Value read of the Variable happened, in the order the sampler made them. */
+    private final List<Long> readNanos = new CopyOnWriteArrayList<>();
 
+    private volatile CountDownLatch readLatch = new CountDownLatch(0);
     private volatile boolean failReads = false;
     private UaVariableNode variable;
+
+    /** A latch that opens once {@code count} more Value reads of the Variable have happened. */
+    CountDownLatch expectReads(int count) {
+      readLatch = new CountDownLatch(count);
+      return readLatch;
+    }
 
     FrameworkNamespace(OpcUaServer server) {
       super(server, "urn:eclipse:milo:test:sampling-framework");
@@ -247,14 +254,14 @@ public class SamplingFrameworkTest extends AbstractClientServerTest {
         throw new IllegalStateException("reads are failing");
       }
 
-      // The access check reads other attributes through here too; count only value samples.
-      readValueIds.stream()
-          .filter(id -> AttributeId.Value.uid().equals(id.getAttributeId()))
-          .forEach(
-              id ->
-                  readCounts
-                      .computeIfAbsent(id.getNodeId(), n -> new AtomicInteger())
-                      .incrementAndGet());
+      // The access check reads other attributes through here too; record only value samples.
+      for (ReadValueId id : readValueIds) {
+        if (AttributeId.Value.uid().equals(id.getAttributeId())
+            && id.getNodeId().equals(variable.getNodeId())) {
+          readNanos.add(System.nanoTime());
+          readLatch.countDown();
+        }
+      }
 
       return super.read(context, maxAge, timestamps, readValueIds);
     }
