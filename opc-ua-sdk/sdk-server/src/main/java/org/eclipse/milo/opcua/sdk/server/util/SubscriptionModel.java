@@ -260,7 +260,7 @@ public class SubscriptionModel extends AbstractLifecycle {
           if (accessResult != null) {
             item.setReadAccessResult(accessResult);
           }
-          if (accessResult == null || accessResult.isAllowed()) {
+          if (accessResult == null || !accessResult.isDenied()) {
             readableItems.add(item);
           }
         }

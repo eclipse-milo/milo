@@ -189,6 +189,30 @@ class MonitoredDataItemTest {
     assertTrue(drain().isEmpty(), "nothing may be queued while Disabled");
   }
 
+  // A Node the AddressSpace no longer knows is no decision about access. The item keeps the result
+  // it had, so a denial stays enforced and an allowed item keeps reporting what its sampler
+  // delivers, typically the AddressSpace's own Bad_NodeIdUnknown.
+  @Test
+  void unknownNodeResultLeavesTheLastResultInPlace() {
+    item.setReadAccessResult(AccessResult.DENIED_USER_ACCESS);
+    drain();
+
+    item.setReadAccessResult(AccessResult.NODE_UNKNOWN);
+    item.setValue(new DataValue(new Variant(1)));
+
+    assertEquals(AccessResult.DENIED_USER_ACCESS, item.getReadAccessResult());
+    assertTrue(drain().isEmpty(), "the denial stays enforced and is not queued again");
+
+    item.setReadAccessResult(AccessResult.ALLOWED);
+    item.setReadAccessResult(AccessResult.NODE_UNKNOWN);
+    item.setValue(new DataValue(new StatusCode(StatusCodes.Bad_NodeIdUnknown)));
+
+    assertEquals(AccessResult.ALLOWED, item.getReadAccessResult());
+    List<DataValue> queued = drain();
+    assertEquals(1, queued.size(), "an allowed item reports what its sampler delivers");
+    assertEquals(StatusCodes.Bad_NodeIdUnknown, queued.get(0).statusCode().getValue());
+  }
+
   @Test
   void changedDenialReasonIsReported() {
     item.setReadAccessResult(AccessResult.DENIED_USER_ACCESS);

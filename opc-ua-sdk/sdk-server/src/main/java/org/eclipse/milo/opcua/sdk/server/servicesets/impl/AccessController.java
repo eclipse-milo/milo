@@ -117,8 +117,24 @@ public interface AccessController {
     /** Access is denied due to insufficient security mode. */
     AccessResult DENIED_SECURITY_MODE = new Denied(StatusCodes.Bad_SecurityModeInsufficient);
 
+    /**
+     * No decision: the Node is not known to the AddressSpace, so there are no attributes to decide
+     * from. Neither {@link #isAllowed()} nor {@link #isDenied()} is true.
+     */
+    AccessResult NODE_UNKNOWN = new NodeUnknown();
+
     /** Access is allowed. */
     record Allowed() implements AccessResult {}
+
+    /**
+     * No decision could be made because the AddressSpace does not know the Node.
+     *
+     * <p>A service that goes on to ask the AddressSpace for the Node, such as Read, proceeds and
+     * lets the AddressSpace answer {@code Bad_NodeIdUnknown} as it would have anyway. A component
+     * that refreshes a previous decision, such as the read access result of a MonitoredItem, leaves
+     * that decision in place, the same as for a check that failed.
+     */
+    record NodeUnknown() implements AccessResult {}
 
     /**
      * Access is denied for the reason described by {@code statusCode}.
@@ -143,6 +159,14 @@ public interface AccessController {
      */
     default boolean isDenied() {
       return this instanceof Denied;
+    }
+
+    /**
+     * @return {@code true} if this result is a decision, allowed or denied, rather than {@link
+     *     #NODE_UNKNOWN}.
+     */
+    default boolean isDecision() {
+      return this instanceof Allowed || this instanceof Denied;
     }
   }
 }

@@ -26,6 +26,7 @@ import org.eclipse.milo.opcua.sdk.server.AddressSpace;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
@@ -57,9 +58,10 @@ public class DefaultAccessController implements AccessController {
   /**
    * {@inheritDoc}
    *
-   * <p>A Node the AddressSpace does not know is allowed rather than failed: every attribute this
-   * check reads answers {@code Bad_NodeIdUnknown}, so no restriction applies, and a caller that
-   * re-checks items whose Node may since have been removed can rely on that.
+   * <p>A Node the AddressSpace does not know gets {@link AccessResult#NODE_UNKNOWN}, which is no
+   * decision rather than a denial: Read proceeds and the AddressSpace answers {@code
+   * Bad_NodeIdUnknown} as before, and a caller that re-checks items whose Node may since have been
+   * removed leaves their last result in place. An invalid attribute id is still denied first.
    */
   @Override
   public Map<ReadValueId, AccessResult> checkReadAccess(
@@ -81,13 +83,15 @@ public class DefaultAccessController implements AccessController {
     for (PendingResult<ReadValueId> p : pending) {
       if (!AttributeId.isValid(p.value.getAttributeId())) {
         p.result = AccessResult.DENIED_ATTRIBUTE_ID_INVALID;
+      } else if (attributes.get(p.value.getNodeId()).nodeUnknown()) {
+        p.result = AccessResult.NODE_UNKNOWN;
       }
     }
 
     checkAccessRestrictions(context, pending, attributes, ReadValueId::getNodeId);
 
     for (PendingResult<ReadValueId> p : pending) {
-      if (p.result.isDenied()) {
+      if (!p.result.isAllowed()) {
         continue;
       }
 
@@ -583,6 +587,12 @@ public class DefaultAccessController implements AccessController {
     Map<NodeId, AccessControlAttributes> readAccessControlAttributes(List<NodeId> nodeIds);
   }
 
+  /**
+   * The attributes an access decision is made from, as the AddressSpace answered them.
+   *
+   * @param nodeUnknown {@code true} if the AddressSpace answered {@code Bad_NodeIdUnknown} for the
+   *     Node, so that none of the other attributes could be read.
+   */
   record AccessControlAttributes(
       @Nullable NodeClass nodeClass,
       @Nullable AccessRestrictionType accessRestrictions,
@@ -590,7 +600,30 @@ public class DefaultAccessController implements AccessController {
       @Nullable UByte accessLevel,
       @Nullable UByte userAccessLevel,
       @Nullable Boolean userExecutable,
-      RolePermissionType @Nullable [] userRolePermissions) {}
+      RolePermissionType @Nullable [] userRolePermissions,
+      boolean nodeUnknown) {
+
+    /** Attributes of a Node the AddressSpace knows. */
+    AccessControlAttributes(
+        @Nullable NodeClass nodeClass,
+        @Nullable AccessRestrictionType accessRestrictions,
+        @Nullable UInteger userWriteMask,
+        @Nullable UByte accessLevel,
+        @Nullable UByte userAccessLevel,
+        @Nullable Boolean userExecutable,
+        RolePermissionType @Nullable [] userRolePermissions) {
+
+      this(
+          nodeClass,
+          accessRestrictions,
+          userWriteMask,
+          accessLevel,
+          userAccessLevel,
+          userExecutable,
+          userRolePermissions,
+          false);
+    }
+  }
 
   static class DefaultAccessControlContext implements AccessControlContext {
 
@@ -685,6 +718,11 @@ public class DefaultAccessController implements AccessController {
           userRolePermissions = rpt;
         }
 
+        // NodeClass is mandatory on every Node, so Bad_NodeIdUnknown there means the AddressSpace
+        // does not know the Node at all.
+        boolean nodeUnknown =
+            values.get(i).statusCode().getValue() == StatusCodes.Bad_NodeIdUnknown;
+
         var attributes =
             new AccessControlAttributes(
                 nodeClass,
@@ -693,7 +731,8 @@ public class DefaultAccessController implements AccessController {
                 accessLevel,
                 userAccessLevel,
                 userExecutable,
-                userRolePermissions);
+                userRolePermissions,
+                nodeUnknown);
 
         attributesMap.put(nodeId, attributes);
       }

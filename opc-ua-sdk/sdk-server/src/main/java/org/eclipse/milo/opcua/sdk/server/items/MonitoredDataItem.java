@@ -125,6 +125,10 @@ public class MonitoredDataItem extends BaseMonitoredItem<DataValue> implements D
    */
   @Override
   public synchronized void setReadAccessResult(AccessResult accessResult) {
+    if (!accessResult.isDecision()) {
+      return;
+    }
+
     AccessResult previous = readAccessResult;
     readAccessResult = accessResult;
 

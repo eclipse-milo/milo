@@ -56,6 +56,10 @@ public interface DataItem extends MonitoredItem {
    * whose result is never refreshed is stale, not unsafe: it keeps enforcing the result it was
    * created with.
    *
+   * <p>A result that is not a decision, {@link AccessResult#NODE_UNKNOWN}, leaves the last result
+   * in place, the same as a check that failed: the item keeps reporting whatever its sampler
+   * delivers, typically the AddressSpace's own status for a Node it no longer knows.
+   *
    * <p>This method is safe to call from any thread, concurrently with {@link #setValue(DataValue)},
    * and is idempotent: repeating a call with the same result has no further effect. Results apply
    * in the order the calls arrive, and the item does not know which Session or which check a result
