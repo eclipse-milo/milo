@@ -15,6 +15,9 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController;
+import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultAccessController;
 import org.eclipse.milo.opcua.sdk.server.diagnostics.SessionSecurityDiagnosticsAccessMode;
 import org.eclipse.milo.opcua.sdk.server.identity.AnonymousIdentityValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.CompositeValidator;
@@ -133,6 +136,19 @@ public interface OpcUaServerConfig {
   Optional<RoleMapper> getRoleMapper();
 
   /**
+   * Get the factory that creates the server's {@link AccessController}, if one was configured.
+   *
+   * <p>{@link OpcUaServer} calls it once, during construction, with itself, and authorizes every
+   * service request with the controller it returns. Without one the server uses a {@link
+   * DefaultAccessController}.
+   *
+   * @return the factory, if one was configured.
+   */
+  default Optional<Function<OpcUaServer, AccessController>> getAccessControllerFactory() {
+    return Optional.empty();
+  }
+
+  /**
    * Get the authorization mode for Session security diagnostics and the diagnostics enabled flag.
    *
    * @return the configured access mode.
@@ -190,6 +206,7 @@ public interface OpcUaServerConfig {
     builder.setIdentityValidator(config.getIdentityValidator());
     builder.setCertificateManager(config.getCertificateManager());
     config.getRoleMapper().ifPresent(builder::setRoleMapper);
+    config.getAccessControllerFactory().ifPresent(builder::setAccessControllerFactory);
     builder.setSessionSecurityDiagnosticsAccessMode(
         config.getSessionSecurityDiagnosticsAccessMode());
     builder.setExecutor(config.getExecutor());

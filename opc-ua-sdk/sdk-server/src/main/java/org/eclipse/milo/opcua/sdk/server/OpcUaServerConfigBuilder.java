@@ -19,6 +19,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Function;
+import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController;
+import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultAccessController;
 import org.eclipse.milo.opcua.sdk.server.diagnostics.SessionSecurityDiagnosticsAccessMode;
 import org.eclipse.milo.opcua.sdk.server.identity.AnonymousIdentityValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.IdentityValidator;
@@ -55,6 +58,8 @@ public class OpcUaServerConfigBuilder {
   private CertificateManager certificateManager;
 
   private RoleMapper roleMapper;
+
+  private @Nullable Function<OpcUaServer, AccessController> accessControllerFactory;
 
   private SessionSecurityDiagnosticsAccessMode sessionSecurityDiagnosticsAccessMode =
       SessionSecurityDiagnosticsAccessMode.RESTRICTED;
@@ -155,6 +160,26 @@ public class OpcUaServerConfigBuilder {
   }
 
   /**
+   * Set the factory that creates the server's {@link AccessController}.
+   *
+   * <p>The server calls it once, during construction, with itself. A controller that adds rules to
+   * the defaults wraps the {@link DefaultAccessController} it can create from the same server:
+   *
+   * <pre>{@code
+   * builder.setAccessControllerFactory(
+   *     server -> new MyAccessController(server, new DefaultAccessController(server)));
+   * }</pre>
+   *
+   * @param accessControllerFactory the factory, or {@code null} for the default controller.
+   * @return this builder.
+   */
+  public OpcUaServerConfigBuilder setAccessControllerFactory(
+      @Nullable Function<OpcUaServer, AccessController> accessControllerFactory) {
+    this.accessControllerFactory = accessControllerFactory;
+    return this;
+  }
+
+  /**
    * Set the authorization mode for Session security diagnostics and the diagnostics enabled flag.
    *
    * @param accessMode the authorization mode.
@@ -203,6 +228,7 @@ public class OpcUaServerConfigBuilder {
         limits,
         certificateManager,
         roleMapper,
+        accessControllerFactory,
         sessionSecurityDiagnosticsAccessMode,
         securityKeysListener,
         executor,
@@ -222,6 +248,7 @@ public class OpcUaServerConfigBuilder {
     private final OpcUaServerConfigLimits limits;
     private final CertificateManager certificateManager;
     private final RoleMapper roleMapper;
+    private final @Nullable Function<OpcUaServer, AccessController> accessControllerFactory;
     private final SessionSecurityDiagnosticsAccessMode sessionSecurityDiagnosticsAccessMode;
     private final @Nullable SecurityKeysListener securityKeysListener;
     private final ExecutorService executor;
@@ -261,6 +288,12 @@ public class OpcUaServerConfigBuilder {
           scheduledExecutorService);
     }
 
+    /**
+     * Source-compatibility overload for callers that pre-date the configurable {@link
+     * AccessController}.
+     *
+     * <p>Equivalent to the canonical constructor with no {@code accessControllerFactory}.
+     */
     public OpcUaServerConfigImpl(
         Set<EndpointConfig> endpoints,
         Set<ReverseConnectTarget> reverseConnectTargets,
@@ -278,6 +311,43 @@ public class OpcUaServerConfigBuilder {
         ExecutorService executor,
         ScheduledExecutorService scheduledExecutorService) {
 
+      this(
+          endpoints,
+          reverseConnectTargets,
+          applicationName,
+          applicationUri,
+          productUri,
+          buildInfo,
+          identityValidator,
+          encodingLimits,
+          limits,
+          certificateManager,
+          roleMapper,
+          null,
+          sessionSecurityDiagnosticsAccessMode,
+          securityKeysListener,
+          executor,
+          scheduledExecutorService);
+    }
+
+    public OpcUaServerConfigImpl(
+        Set<EndpointConfig> endpoints,
+        Set<ReverseConnectTarget> reverseConnectTargets,
+        LocalizedText applicationName,
+        String applicationUri,
+        String productUri,
+        BuildInfo buildInfo,
+        IdentityValidator identityValidator,
+        EncodingLimits encodingLimits,
+        OpcUaServerConfigLimits limits,
+        CertificateManager certificateManager,
+        RoleMapper roleMapper,
+        @Nullable Function<OpcUaServer, AccessController> accessControllerFactory,
+        SessionSecurityDiagnosticsAccessMode sessionSecurityDiagnosticsAccessMode,
+        @Nullable SecurityKeysListener securityKeysListener,
+        ExecutorService executor,
+        ScheduledExecutorService scheduledExecutorService) {
+
       this.endpoints = endpoints;
       this.reverseConnectTargets = Set.copyOf(reverseConnectTargets);
       this.applicationName = applicationName;
@@ -289,6 +359,7 @@ public class OpcUaServerConfigBuilder {
       this.limits = limits;
       this.certificateManager = certificateManager;
       this.roleMapper = roleMapper;
+      this.accessControllerFactory = accessControllerFactory;
       this.sessionSecurityDiagnosticsAccessMode =
           requireNonNull(sessionSecurityDiagnosticsAccessMode);
       this.securityKeysListener = securityKeysListener;
@@ -428,6 +499,11 @@ public class OpcUaServerConfigBuilder {
     @Override
     public Optional<RoleMapper> getRoleMapper() {
       return Optional.ofNullable(roleMapper);
+    }
+
+    @Override
+    public Optional<Function<OpcUaServer, AccessController>> getAccessControllerFactory() {
+      return Optional.ofNullable(accessControllerFactory);
     }
 
     @Override

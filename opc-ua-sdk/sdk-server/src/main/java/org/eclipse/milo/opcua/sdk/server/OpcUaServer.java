@@ -390,7 +390,11 @@ public class OpcUaServer extends AbstractServiceHandler {
     serverNamespace = new ServerNamespace(this);
     serverNamespace.startup();
 
-    accessController = new DefaultAccessController(this);
+    accessController =
+        config
+            .getAccessControllerFactory()
+            .map(factory -> factory.apply(this))
+            .orElseGet(() -> new DefaultAccessController(this));
   }
 
   /**
@@ -802,6 +806,14 @@ public class OpcUaServer extends AbstractServiceHandler {
     return config;
   }
 
+  /**
+   * Get the {@link AccessController} the service implementations authorize requests with.
+   *
+   * <p>It is a {@link DefaultAccessController} unless the configuration supplied a factory through
+   * {@link OpcUaServerConfigBuilder#setAccessControllerFactory}.
+   *
+   * @return this server's {@link AccessController}.
+   */
   public AccessController getAccessController() {
     return accessController;
   }
