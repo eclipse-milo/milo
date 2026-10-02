@@ -24,11 +24,12 @@
  * <h2>EnabledFlag</h2>
  *
  * <p>The ServerDiagnostics EnabledFlag Property gates everything dynamic. Static diagnostics
- * Variables stay in the address space and answer reads with Bad_NotReadable while the flag is off.
- * Dynamic nodes, meaning per-Session Objects and array elements, exist only while the flag is on:
- * turning it on creates them for the Sessions and Subscriptions that exist at that moment, and
- * turning it off removes them. Each owner observes the flag node directly, so a Write to the flag
- * takes effect before the Write returns.
+ * Variables stay in the address space while the flag is off. Their access levels still allow
+ * reading, and a Value read answers Bad_OutOfService until the flag turns on. Dynamic nodes,
+ * meaning per-Session Objects and array elements, exist only while the flag is on: turning it on
+ * creates them for the Sessions and Subscriptions that exist at that moment, and turning it off
+ * removes them. Each owner observes the flag node directly, so a Write to the flag takes effect
+ * before the Write returns.
  *
  * <h2>Threads and locks</h2>
  *
