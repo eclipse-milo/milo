@@ -256,6 +256,21 @@ public interface AddressSpace {
   void onDataItemsDeleted(List<DataItem> dataItems);
 
   /**
+   * {@link DataItem}s for nodes belonging to this {@link AddressSpace} have been transferred to
+   * another Session by TransferSubscriptions (Part 4 §5.14.7).
+   *
+   * <p>Each item's {@link DataItem#getSession()} already returns the new Session when this is
+   * called. The read access result an item carries was checked for the previous Session, so a
+   * component that keeps results current on its own schedule can use this callback to check the
+   * items for their new Session without waiting for its next refresh. Sampling is unaffected.
+   *
+   * <p>The default implementation does nothing.
+   *
+   * @param dataItems the {@link DataItem}s that were transferred.
+   */
+  default void onDataItemsTransferred(List<DataItem> dataItems) {}
+
+  /**
    * {@link EventItem}s have been created for nodes belonging to this {@link AddressSpace}.
    *
    * <p>This callback is a lifecycle notification only. Registration of {@link EventItem}s with the
