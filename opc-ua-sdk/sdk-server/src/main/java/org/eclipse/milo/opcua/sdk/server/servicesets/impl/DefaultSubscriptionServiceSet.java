@@ -276,9 +276,14 @@ public class DefaultSubscriptionServiceSet implements SubscriptionServiceSet {
             }
           }
 
-          // Every item carries its new Session now, so the AddressSpace sees the transfer
-          // complete. A failing callback must not fail a transfer that has already happened.
+          // Every item carries its new Session now, so the server's DataItemListeners and then
+          // the AddressSpace see the transfer complete. A failing callback must not fail a
+          // transfer that has already happened.
           if (!transferredDataItems.isEmpty()) {
+            server
+                .getDataItemListener()
+                .onDataItemsTransferred(transferredDataItems, otherSession, session);
+
             try {
               server.getAddressSpaceManager().onDataItemsTransferred(transferredDataItems);
             } catch (Throwable t) {

@@ -12,38 +12,38 @@ package org.eclipse.milo.opcua.sdk.server.subscriptions;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.milo.opcua.sdk.server.AddressSpace.RevisedDataItemParameters;
 import org.eclipse.milo.opcua.sdk.server.AddressSpaceManager;
 import org.eclipse.milo.opcua.sdk.server.DataItemListener;
+import org.eclipse.milo.opcua.sdk.server.EventNotifier;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfigLimits;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.items.BaseMonitoredItem;
+import org.eclipse.milo.opcua.sdk.server.items.DataItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredDataItem;
+import org.eclipse.milo.opcua.sdk.server.items.MonitoredEventItem;
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController;
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController.AccessResult;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
-import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
@@ -56,28 +56,33 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
 import org.eclipse.milo.opcua.stack.core.types.structured.CreateMonitoredItemsRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.CreateMonitoredItemsResponse;
+import org.eclipse.milo.opcua.stack.core.types.structured.DeleteMonitoredItemsRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.MonitoredItemCreateRequest;
-import org.eclipse.milo.opcua.stack.core.types.structured.MonitoredItemCreateResult;
-import org.eclipse.milo.opcua.stack.core.types.structured.MonitoredItemNotification;
 import org.eclipse.milo.opcua.stack.core.types.structured.MonitoringParameters;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 import org.eclipse.milo.opcua.stack.core.types.structured.RequestHeader;
+import org.eclipse.milo.opcua.stack.core.types.structured.SetMonitoringModeRequest;
 import org.eclipse.milo.opcua.stack.transport.server.ServiceRequestContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
 
-/** How CreateMonitoredItems treats a data item the Session is denied read access to. */
-class SubscriptionManagerReadAccessTest {
+/**
+ * The server's {@link DataItemListener}s hear about every data item before the owning AddressSpace
+ * does, so a server-level component can track items without a hook on each AddressSpace.
+ */
+class SubscriptionManagerDataItemListenerTest {
 
   private static final UInteger SUBSCRIPTION_ID = uint(1);
 
   private final Map<UInteger, BaseMonitoredItem<?>> ownedMonitoredItems = new HashMap<>();
 
   private final OpcUaServer server = mock(OpcUaServer.class);
-  private final AccessController accessController = mock(AccessController.class);
   private final AddressSpaceManager addressSpaceManager = mock(AddressSpaceManager.class);
+  private final DataItemListener listener = mock(DataItemListener.class);
   private final Session session = mock(Session.class);
   private final ServiceRequestContext context = mock(ServiceRequestContext.class);
+  private final Subscription subscription = mock(Subscription.class);
 
   private final ReadValueId itemToMonitor =
       new ReadValueId(
@@ -91,16 +96,20 @@ class SubscriptionManagerReadAccessTest {
     when(config.getExecutor()).thenReturn(mock(ExecutorService.class));
     when(config.getLimits()).thenReturn(new OpcUaServerConfigLimits() {});
 
+    AccessController accessController = mock(AccessController.class);
+    when(accessController.checkReadAccess(eq(session), anyList()))
+        .thenReturn(Map.of(itemToMonitor, AccessResult.ALLOWED));
+
     when(server.getConfig()).thenReturn(config);
     when(server.getAccessController()).thenReturn(accessController);
     when(server.getAddressSpaceManager()).thenReturn(addressSpaceManager);
-    when(server.getDataItemListener()).thenReturn(new DataItemListener() {});
+    when(server.getDataItemListener()).thenReturn(listener);
+    when(server.getEventNotifier()).thenReturn(mock(EventNotifier.class));
     when(server.getStaticEncodingContext()).thenReturn(DefaultEncodingContext.INSTANCE);
     when(server.getMonitoredItemCount()).thenReturn(new AtomicLong());
 
     manager = new SubscriptionManager(session, server);
 
-    Subscription subscription = mock(Subscription.class);
     when(subscription.getId()).thenReturn(SUBSCRIPTION_ID);
     when(subscription.getMonitoredItems()).thenReturn(ownedMonitoredItems);
     when(subscription.nextItemId()).thenReturn(1L);
@@ -126,88 +135,91 @@ class SubscriptionManagerReadAccessTest {
         .thenReturn(new RevisedDataItemParameters(100.0, uint(1)));
   }
 
-  /**
-   * Part 4 §5.13.2.1: the create succeeds and the denial goes to the Publish response. The denial
-   * is queued on the item at create time, before the AddressSpace has sampled it.
-   */
   @Test
-  void readAccessDenialCreatesTheItemWithTheDenialQueued() throws Exception {
-    when(accessController.checkReadAccess(eq(session), anyList()))
-        .thenReturn(Map.of(itemToMonitor, AccessResult.DENIED_USER_ACCESS));
-
+  void createdItemsReachTheListenersBeforeTheAddressSpace() throws Exception {
     CreateMonitoredItemsResponse response =
         manager.createMonitoredItems(context, createRequest(createItem()));
 
-    MonitoredItemCreateResult[] results = response.getResults();
-    assertEquals(1, results.length);
-    assertEquals(StatusCode.GOOD, results[0].getStatusCode());
+    assertEquals(StatusCode.GOOD, response.getResults()[0].getStatusCode());
+    List<DataItem> created = List.of((DataItem) ownedMonitoredItems.values().iterator().next());
 
-    assertEquals(1, ownedMonitoredItems.size());
-    MonitoredDataItem item =
-        assertInstanceOf(MonitoredDataItem.class, ownedMonitoredItems.values().iterator().next());
-
-    List<DataValue> queued = drain(item);
-    assertEquals(1, queued.size());
-    assertEquals(StatusCodes.Bad_UserAccessDenied, queued.get(0).statusCode().getValue());
-    assertEquals(
-        AccessResult.DENIED_USER_ACCESS,
-        item.getReadAccessResult(),
-        "the create-time result is the result the item reports");
+    InOrder inOrder = inOrder(listener, addressSpaceManager);
+    inOrder.verify(listener).onDataItemsCreated(created);
+    inOrder.verify(addressSpaceManager).onDataItemsCreated(created);
   }
 
-  // Only read-access denials are deferred; an AccessRestriction the channel does not satisfy
-  // still fails the item in CreateMonitoredItems.
   @Test
-  void securityModeDenialStillFailsTheItem() throws Exception {
-    when(accessController.checkReadAccess(eq(session), anyList()))
-        .thenReturn(Map.of(itemToMonitor, AccessResult.DENIED_SECURITY_MODE));
+  void deletedItemsReachTheListenersBeforeTheAddressSpace() throws Exception {
+    MonitoredDataItem dataItem = dataItem(uint(1));
+    ownedMonitoredItems.put(dataItem.getId(), dataItem);
 
-    CreateMonitoredItemsResponse response =
-        manager.createMonitoredItems(context, createRequest(createItem()));
+    RequestHeader header = requestHeader();
+    manager
+        .deleteMonitoredItems(
+            context,
+            new DeleteMonitoredItemsRequest(
+                header, SUBSCRIPTION_ID, new UInteger[] {dataItem.getId()}))
+        .get(5, TimeUnit.SECONDS);
 
-    MonitoredItemCreateResult[] results = response.getResults();
-    assertEquals(1, results.length);
-    assertEquals(
-        new StatusCode(StatusCodes.Bad_SecurityModeInsufficient), results[0].getStatusCode());
-
-    assertTrue(ownedMonitoredItems.isEmpty());
+    InOrder inOrder = inOrder(listener, addressSpaceManager);
+    inOrder.verify(listener).onDataItemsDeleted(List.of(dataItem));
+    inOrder.verify(addressSpaceManager).onDataItemsDeleted(List.of(dataItem));
   }
 
-  // An event item has no sampled value to carry a denial, so a read-access denial from the
-  // AccessController still fails it in CreateMonitoredItems.
+  // The listener is about data items; event items in the same SetMonitoringMode are left out of
+  // its notification but still reach the AddressSpace.
   @Test
-  void readAccessDenialStillFailsAnEventItem() throws Exception {
-    var eventItemToMonitor =
-        new ReadValueId(
-            new NodeId(2, "object"),
-            AttributeId.EventNotifier.uid(),
-            null,
-            QualifiedName.NULL_VALUE);
+  void monitoringModeChangesReachTheListenersWithDataItemsOnly() throws Exception {
+    MonitoredDataItem dataItem = dataItem(uint(1));
+    MonitoredEventItem eventItem = eventItem(uint(2));
+    ownedMonitoredItems.put(dataItem.getId(), dataItem);
+    ownedMonitoredItems.put(eventItem.getId(), eventItem);
 
-    when(accessController.checkReadAccess(eq(session), anyList()))
-        .thenReturn(Map.of(eventItemToMonitor, AccessResult.DENIED_USER_ACCESS));
+    manager
+        .setMonitoringMode(
+            context,
+            new SetMonitoringModeRequest(
+                requestHeader(),
+                SUBSCRIPTION_ID,
+                MonitoringMode.Disabled,
+                new UInteger[] {dataItem.getId(), eventItem.getId()}))
+        .get(5, TimeUnit.SECONDS);
 
-    var request =
-        new MonitoredItemCreateRequest(
-            eventItemToMonitor,
-            MonitoringMode.Reporting,
-            new MonitoringParameters(uint(1), 0.0, null, uint(1), true));
+    assertEquals(MonitoringMode.Disabled, dataItem.getMonitoringMode());
 
-    CreateMonitoredItemsResponse response =
-        manager.createMonitoredItems(context, createRequest(request));
-
-    MonitoredItemCreateResult[] results = response.getResults();
-    assertEquals(1, results.length);
-    assertEquals(new StatusCode(StatusCodes.Bad_UserAccessDenied), results[0].getStatusCode());
-
-    assertTrue(ownedMonitoredItems.isEmpty());
+    InOrder inOrder = inOrder(listener, addressSpaceManager);
+    inOrder.verify(listener).onMonitoringModeChanged(List.of(dataItem));
+    inOrder.verify(addressSpaceManager).onMonitoringModeChanged(List.of(dataItem, eventItem));
   }
 
-  private static List<DataValue> drain(MonitoredDataItem item) {
-    var notifications = new ArrayList<UaStructuredType>();
-    item.getNotifications(notifications, Integer.MAX_VALUE);
+  private MonitoredDataItem dataItem(UInteger id) {
+    return new MonitoredDataItem(
+        server,
+        session,
+        id,
+        SUBSCRIPTION_ID,
+        itemToMonitor,
+        MonitoringMode.Reporting,
+        TimestampsToReturn.Both,
+        id,
+        100.0,
+        uint(1),
+        true);
+  }
 
-    return notifications.stream().map(n -> ((MonitoredItemNotification) n).getValue()).toList();
+  private MonitoredEventItem eventItem(UInteger id) {
+    return new MonitoredEventItem(
+        server,
+        session,
+        id,
+        SUBSCRIPTION_ID,
+        new ReadValueId(new NodeId(2, "object"), AttributeId.EventNotifier.uid(), null, null),
+        MonitoringMode.Reporting,
+        TimestampsToReturn.Both,
+        id,
+        0.0,
+        uint(1),
+        true);
   }
 
   private MonitoredItemCreateRequest createItem() {
@@ -220,11 +232,13 @@ class SubscriptionManagerReadAccessTest {
   private static CreateMonitoredItemsRequest createRequest(
       MonitoredItemCreateRequest... itemsToCreate) {
 
-    RequestHeader header =
-        new RequestHeader(NodeId.NULL_VALUE, DateTime.now(), uint(1), uint(0), null, uint(0), null);
-
     return new CreateMonitoredItemsRequest(
-        header, SUBSCRIPTION_ID, TimestampsToReturn.Both, itemsToCreate);
+        requestHeader(), SUBSCRIPTION_ID, TimestampsToReturn.Both, itemsToCreate);
+  }
+
+  private static RequestHeader requestHeader() {
+    return new RequestHeader(
+        NodeId.NULL_VALUE, DateTime.now(), uint(1), uint(0), null, uint(0), null);
   }
 
   @SuppressWarnings("unchecked")
