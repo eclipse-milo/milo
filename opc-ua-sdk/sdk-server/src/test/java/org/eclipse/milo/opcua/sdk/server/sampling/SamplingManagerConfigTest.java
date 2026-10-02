@@ -24,8 +24,10 @@ class SamplingManagerConfigTest {
 
   /**
    * Part 4 §7.21: the revised interval is equal to or higher than the requested one. Bucketing
-   * rounds up to the next supported interval and never down; the floor applies last, so a zero
-   * interval, which asks for the fastest practical rate, becomes the floor rather than a 1 ms poll.
+   * rounds up to the next supported interval and never down; the floor applies first, so a zero
+   * interval, which asks for the fastest practical rate, becomes the fastest supported interval
+   * rather than a 1 ms poll. Applying the function to its own result changes nothing, so the
+   * interval the client is told is the one the manager groups the item under.
    */
   @ParameterizedTest(name = "{0} ms with bucket {1} and floor {2} samples at {3} ms")
   @MethodSource("groupIntervals")
@@ -38,6 +40,7 @@ class SamplingManagerConfigTest {
             .withMinimumIntervalMillis(minimumIntervalMillis);
 
     assertEquals(expected, config.groupIntervalMillis(samplingInterval));
+    assertEquals(expected, config.groupIntervalMillis(expected), "idempotent");
   }
 
   private static Stream<Arguments> groupIntervals() {
@@ -47,11 +50,13 @@ class SamplingManagerConfigTest {
         Arguments.of(149.0, 50, 1, 150),
         Arguments.of(150.0, 50, 1, 150),
         Arguments.of(20.0, 50, 1, 50),
-        Arguments.of(0.0, 50, 1, 1),
-        Arguments.of(-1.0, 50, 1, 1),
+        Arguments.of(0.0, 50, 1, 50),
+        Arguments.of(-1.0, 50, 1, 50),
         Arguments.of(0.0, 50, 200, 200),
+        Arguments.of(0.0, 50, 120, 150),
         Arguments.of(100.4, 0, 1, 101),
-        Arguments.of(Double.NaN, 50, 1, 1));
+        Arguments.of(0.0, 0, 1, 1),
+        Arguments.of(Double.NaN, 50, 1, 50));
   }
 
   // What the client is told is what the framework samples at.

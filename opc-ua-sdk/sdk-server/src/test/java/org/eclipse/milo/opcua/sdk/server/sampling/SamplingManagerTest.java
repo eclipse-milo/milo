@@ -85,12 +85,12 @@ class SamplingManagerTest {
         manager.getGroups());
   }
 
-  // A revised interval of 0 asks for the fastest the server supports. With the default floor that
-  // is a 1 ms poll, as before; a configured floor turns it into something affordable.
+  // An interval of 0 asks for the fastest the server supports: the first bucket with the default
+  // configuration, or the configured floor.
   @Test
   void aZeroIntervalSamplesAtTheConfiguredFloor() {
     manager.onDataItemsCreated(List.of(item("a", 0.0)));
-    assertEquals(List.of(new SamplingGroupInfo(1, 1, 0)), manager.getGroups());
+    assertEquals(List.of(new SamplingGroupInfo(50, 1, 0)), manager.getGroups());
 
     SamplingManager floored =
         manager(SamplingManagerConfig.defaults().withMinimumIntervalMillis(200));

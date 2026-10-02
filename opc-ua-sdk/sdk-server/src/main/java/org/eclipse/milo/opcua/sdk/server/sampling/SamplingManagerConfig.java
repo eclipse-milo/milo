@@ -32,9 +32,10 @@ import java.math.RoundingMode;
  *     revised interval is equal to or higher than the requested one), so items asking for 100 ms
  *     and 120 ms sample at 100 ms and 150 ms, and nothing samples faster than the interval it was
  *     given. Zero disables bucketing, and intervals are revised up to whole milliseconds only.
- * @param minimumIntervalMillis the fastest interval the framework samples at, applied after
- *     bucketing. A requested interval of zero, which asks for the fastest practical rate, is
- *     revised to this rather than becoming a 1 ms poll.
+ * @param minimumIntervalMillis the fastest interval the framework samples at, applied before
+ *     bucketing, so the fastest interval it supports is the first multiple of the bucket at or
+ *     above this. A requested interval of zero, which asks for the fastest practical rate, is
+ *     revised to that interval rather than becoming a 1 ms poll.
  * @param initialSampleDelayMillis how long a new item waits for more new items before they are all
  *     sampled once, ahead of their group's next cycle.
  * @param initialSampleMaxWindowMillis the longest a steady stream of new items can postpone that
@@ -76,9 +77,9 @@ public record SamplingManagerConfig(
   }
 
   /**
-   * The defaults: 50 ms buckets, a 1 ms minimum interval, an initial sample 100 ms after the first
-   * new item and at most 500 ms after it, a warning after 3 overrun intervals, and {@link
-   * ReadAccessPolicy#perCycle()}.
+   * The defaults: 50 ms buckets and a 1 ms minimum interval, so the fastest interval supported is
+   * 50 ms; an initial sample 100 ms after the first new item and at most 500 ms after it; a warning
+   * after 3 overrun intervals; and {@link ReadAccessPolicy#perCycle()}.
    *
    * @return the default configuration.
    */
@@ -148,8 +149,9 @@ public record SamplingManagerConfig(
 
   /**
    * The interval a group samples an item at: the item's sampling interval rounded up to a whole
-   * millisecond, then up to the next multiple of {@link #bucketMillis()}, then floored at {@link
-   * #minimumIntervalMillis()}. Never faster than the interval given.
+   * millisecond, raised to {@link #minimumIntervalMillis()} if below it, then up to the next
+   * multiple of {@link #bucketMillis()}. Never faster than the interval given, and the result of
+   * applying it again is the same, so the interval reported to the client is the one sampled at.
    *
    * @param samplingIntervalMillis an item's sampling interval, as {@link
    *     org.eclipse.milo.opcua.sdk.server.items.DataItem#getSamplingInterval()} reports it.
@@ -161,11 +163,13 @@ public record SamplingManagerConfig(
             ? DoubleMath.roundToLong(samplingIntervalMillis, RoundingMode.UP)
             : 0;
 
+    millis = Math.max(minimumIntervalMillis, millis);
+
     if (bucketMillis > 0) {
       millis = LongMath.divide(millis, bucketMillis, RoundingMode.CEILING) * bucketMillis;
     }
 
-    return Math.max(minimumIntervalMillis, millis);
+    return millis;
   }
 
   /**
