@@ -28,6 +28,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController;
@@ -143,20 +144,26 @@ class ReadAccessCacheTest {
 
   /**
    * A check reads the Node's attributes before the answer is stored. If the attributes change and
-   * an invalidation arrives in between, storing the answer would keep the stale decision until the
-   * next invalidation, which may never come.
+   * an invalidation arrives in between, the answer describes the state before the change: storing
+   * it would keep the stale decision until the next invalidation, and returning it would authorize
+   * one more sample. The invalidation says so, and the cache asks again.
    */
   @Test
-  void aCheckOvertakenByAnInvalidationStoresNothing() throws Exception {
+  void aCheckOvertakenByAnInvalidationIsMadeAgain() throws Exception {
     var checkStarted = new CountDownLatch(1);
     var releaseCheck = new CountDownLatch(1);
+    var checks = new AtomicInteger();
 
     when(accessController.checkReadAccess(eq(session), anyList()))
         .thenAnswer(
             invocation -> {
-              checkStarted.countDown();
-              assertTrue(releaseCheck.await(5, TimeUnit.SECONDS));
-              return Map.of(a, AccessResult.ALLOWED);
+              if (checks.getAndIncrement() == 0) {
+                // The first check is overtaken: access is revoked while it is in flight.
+                checkStarted.countDown();
+                assertTrue(releaseCheck.await(5, TimeUnit.SECONDS));
+                return Map.of(a, AccessResult.ALLOWED);
+              }
+              return Map.of(a, AccessResult.DENIED_USER_ACCESS);
             });
 
     ExecutorService pool = Executors.newSingleThreadExecutor();
@@ -169,13 +176,32 @@ class ReadAccessCacheTest {
       releaseCheck.countDown();
 
       assertEquals(
-          Map.of(a, AccessResult.ALLOWED),
+          Map.of(a, AccessResult.DENIED_USER_ACCESS),
           check.get(5, TimeUnit.SECONDS),
-          "the caller still gets the answer the check produced");
-      assertEquals(Optional.empty(), cache.get(session, a), "but it is not cached");
+          "the caller gets the answer from after the invalidation");
+      assertEquals(2, checks.get(), "the overtaken check was made once more");
+      assertEquals(
+          Optional.of(AccessResult.DENIED_USER_ACCESS), cache.get(session, a), "and it is cached");
     } finally {
       pool.shutdownNow();
     }
+  }
+
+  // Invalidations that keep arriving must not keep the check going forever: after a few attempts
+  // the last answers are returned without being stored, no staler than a check one cycle earlier.
+  @Test
+  void aCheckOvertakenRepeatedlyGivesUpWithTheLastAnswersUnstored() {
+    when(accessController.checkReadAccess(eq(session), anyList()))
+        .thenAnswer(
+            invocation -> {
+              cache.invalidate(ReadAccessScope.node(a.getNodeId()));
+              return Map.of(a, AccessResult.ALLOWED);
+            });
+
+    assertEquals(Map.of(a, AccessResult.ALLOWED), cache.getOrCheck(session, List.of(a)));
+
+    verify(accessController, times(3)).checkReadAccess(eq(session), anyList());
+    assertEquals(Optional.empty(), cache.get(session, a), "nothing overtaken is cached");
   }
 
   private static Map<ReadValueId, AccessResult> allowAll(List<ReadValueId> readValueIds) {

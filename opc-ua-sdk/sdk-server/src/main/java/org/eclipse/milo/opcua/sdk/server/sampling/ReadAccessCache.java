@@ -48,11 +48,14 @@ public final class ReadAccessCache {
 
   private record Key(NodeId nodeId, UInteger attributeId) {}
 
+  /** How many times a check is made before answers overtaken by invalidations are given up on. */
+  private static final int MAX_CHECK_ATTEMPTS = 3;
+
   private final Map<Session, Map<Key, AccessResult>> entries = new ConcurrentHashMap<>();
 
   // An invalidation bumps the generation under the write lock; a fill stores its answers under the
   // read lock only if the generation it read before checking is still current, so a check that
-  // was in flight while its answers were invalidated cannot store them.
+  // was in flight while its answers were invalidated cannot store them and is made again.
   private final ReadWriteLock lock = new ReentrantReadWriteLock();
   private volatile long generation = 0;
 
@@ -86,10 +89,13 @@ public final class ReadAccessCache {
    * Get the decision for each of {@code readValueIds} under {@code session}, checking the misses
    * with the server's {@code AccessController} in one call and storing the decisions it returns.
    *
-   * <p>Nothing is stored for a Session that has closed, for an answer that is not a decision
-   * ({@link AccessResult#NODE_UNKNOWN}), or when an invalidation arrived while the check was in
-   * flight; those are answered again on the next call. If the check throws, nothing is stored and
-   * the exception propagates.
+   * <p>An invalidation that arrives while the check is in flight says its answers may already be
+   * wrong, so the misses are checked again, up to {@value #MAX_CHECK_ATTEMPTS} times in all; if
+   * invalidations keep arriving, the last answers are returned without being stored, which leaves
+   * them no staler than a check made one cycle earlier. Nothing is stored for a Session that has
+   * closed or for an answer that is not a decision ({@link AccessResult#NODE_UNKNOWN}); those are
+   * answered again on the next call. If the check throws, nothing is stored and the exception
+   * propagates.
    *
    * @param session the Session to decide for.
    * @param readValueIds the Nodes and Attributes to decide for.
@@ -116,33 +122,54 @@ public final class ReadAccessCache {
       return results;
     }
 
-    long generationBeforeCheck = generation;
+    Map<ReadValueId, AccessResult> checked = Map.of();
 
-    Map<ReadValueId, AccessResult> checked =
-        server.getAccessController().checkReadAccess(session, misses);
+    for (int attempt = 1; attempt <= MAX_CHECK_ATTEMPTS; attempt++) {
+      long generationBeforeCheck = generation;
+
+      checked = server.getAccessController().checkReadAccess(session, misses);
+
+      if (session.isClosed() || store(session, checked, generationBeforeCheck)) {
+        break;
+      }
+
+      // Overtaken by an invalidation: these answers may describe the state before it. Ask again.
+    }
 
     results.putAll(checked);
 
-    if (!session.isClosed()) {
-      lock.readLock().lock();
-      try {
-        if (generation == generationBeforeCheck) {
-          Map<Key, AccessResult> target =
-              entries.computeIfAbsent(session, s -> new ConcurrentHashMap<>());
-
-          checked.forEach(
-              (readValueId, result) -> {
-                if (result.isDecision()) {
-                  target.put(key(readValueId), result);
-                }
-              });
-        }
-      } finally {
-        lock.readLock().unlock();
-      }
-    }
-
     return results;
+  }
+
+  /**
+   * Store the decisions in {@code checked} for {@code session}, unless an invalidation has run
+   * since {@code generationBeforeCheck}, in which case nothing is stored.
+   *
+   * @return {@code true} if the answers were stored, {@code false} if they were overtaken.
+   */
+  private boolean store(
+      Session session, Map<ReadValueId, AccessResult> checked, long generationBeforeCheck) {
+
+    lock.readLock().lock();
+    try {
+      if (generation != generationBeforeCheck) {
+        return false;
+      }
+
+      Map<Key, AccessResult> target =
+          entries.computeIfAbsent(session, s -> new ConcurrentHashMap<>());
+
+      checked.forEach(
+          (readValueId, result) -> {
+            if (result.isDecision()) {
+              target.put(key(readValueId), result);
+            }
+          });
+
+      return true;
+    } finally {
+      lock.readLock().unlock();
+    }
   }
 
   /**
