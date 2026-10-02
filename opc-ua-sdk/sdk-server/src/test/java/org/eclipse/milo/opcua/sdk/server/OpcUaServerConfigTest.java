@@ -19,7 +19,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Function;
-import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController;
+import org.eclipse.milo.opcua.sdk.server.access.AccessController;
 import org.eclipse.milo.opcua.sdk.server.diagnostics.SessionSecurityDiagnosticsAccessMode;
 import org.eclipse.milo.opcua.sdk.server.identity.IdentityValidator;
 import org.eclipse.milo.opcua.sdk.server.reverse.ReverseConnectTarget;

@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 
-package org.eclipse.milo.opcua.sdk.server.sampling;
+package org.eclipse.milo.opcua.sdk.server.access;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -18,9 +18,8 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
-import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController.AccessResult;
+import org.eclipse.milo.opcua.sdk.server.access.AccessController.AccessResult;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
@@ -28,17 +27,18 @@ import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 /**
  * Server-wide cache of read access decisions, keyed by Session, Node, and Attribute.
  *
- * <p>The server owns one instance, available from {@link OpcUaServer#getReadAccessCache()}. A
- * sampler on the {@link ReadAccessPolicy#cached()} policy looks its items up here on every cycle
- * and pays a map lookup for a hit; a miss is answered by the server's {@code AccessController} and
- * stored. A component outside the sampling framework that refreshes read access results on its own
- * can share the same entries through {@link #getOrCheck}.
+ * <p>The server owns one instance, available from {@link
+ * AccessControlManager#getReadAccessCache()}. A sampler on the {@link ReadAccessPolicy#cached()}
+ * policy looks its items up here on every cycle and pays a map lookup for a hit; a miss is answered
+ * by the server's {@code AccessController} and stored. A component outside the sampling framework
+ * that refreshes read access results on its own can share the same entries through {@link
+ * #getOrCheck}.
  *
- * <p>Entries stay until something drops them: {@link OpcUaServer#invalidateReadAccess} for a change
- * the application or the SDK knows about, and the close of a Session for its entries. A cached
- * answer is as current as the last invalidation, so an application on the cached policy must call
- * {@code invalidateReadAccess} when its security configuration changes; an application that cannot
- * tell when that happens should stay on {@link ReadAccessPolicy#perCycle()}.
+ * <p>Entries stay until something drops them: {@link AccessControlManager#invalidateReadAccess} for
+ * a change the application or the SDK knows about, and the close of a Session for its entries. A
+ * cached answer is as current as the last invalidation, so an application on the cached policy must
+ * call {@code invalidateReadAccess} when its security configuration changes; an application that
+ * cannot tell when that happens should stay on {@link ReadAccessPolicy#perCycle()}.
  *
  * <p>The key holds the Session object, not the user it represents, so a Subscription transferred to
  * another Session, or a user who reconnects, starts from a miss. {@link AccessResult#NODE_UNKNOWN}
@@ -59,15 +59,15 @@ public final class ReadAccessCache {
   private final ReadWriteLock lock = new ReentrantReadWriteLock();
   private volatile long generation = 0;
 
-  private final OpcUaServer server;
+  private final AccessController accessController;
 
   /**
-   * Create a cache that answers misses with {@code server}'s {@code AccessController}.
+   * Create a cache that answers misses with {@code accessController}.
    *
-   * @param server the server whose AccessController answers misses.
+   * @param accessController the controller that answers misses.
    */
-  public ReadAccessCache(OpcUaServer server) {
-    this.server = server;
+  public ReadAccessCache(AccessController accessController) {
+    this.accessController = accessController;
   }
 
   /**
@@ -127,7 +127,7 @@ public final class ReadAccessCache {
     for (int attempt = 1; attempt <= MAX_CHECK_ATTEMPTS; attempt++) {
       long generationBeforeCheck = generation;
 
-      checked = server.getAccessController().checkReadAccess(session, misses);
+      checked = accessController.checkReadAccess(session, misses);
 
       if (session.isClosed() || store(session, checked, generationBeforeCheck)) {
         break;
@@ -175,8 +175,8 @@ public final class ReadAccessCache {
   /**
    * Drop every decision {@code scope} covers.
    *
-   * <p>Application code calls {@link OpcUaServer#invalidateReadAccess} instead, which also tells
-   * other components that the answers changed.
+   * <p>Application code calls {@link AccessControlManager#invalidateReadAccess} instead, which also
+   * tells other components that the answers changed.
    *
    * @param scope the Sessions and Nodes whose decisions to drop.
    */

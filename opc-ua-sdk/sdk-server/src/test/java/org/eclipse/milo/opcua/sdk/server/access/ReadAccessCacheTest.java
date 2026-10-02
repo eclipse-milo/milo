@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 
-package org.eclipse.milo.opcua.sdk.server.sampling;
+package org.eclipse.milo.opcua.sdk.server.access;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -29,10 +29,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
-import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController;
-import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController.AccessResult;
+import org.eclipse.milo.opcua.sdk.server.access.AccessController.AccessResult;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
@@ -42,7 +40,6 @@ import org.junit.jupiter.api.Test;
 /** What {@link ReadAccessCache} answers from memory, what it checks, and what drops its entries. */
 class ReadAccessCacheTest {
 
-  private final OpcUaServer server = mock(OpcUaServer.class);
   private final AccessController accessController = mock(AccessController.class);
   private final Session session = mock(Session.class);
   private final Session otherSession = mock(Session.class);
@@ -55,13 +52,12 @@ class ReadAccessCacheTest {
 
   @BeforeEach
   void setUp() {
-    when(server.getAccessController()).thenReturn(accessController);
     when(accessController.checkReadAccess(eq(session), anyList()))
         .thenAnswer(invocation -> allowAll(invocation.getArgument(1)));
     when(accessController.checkReadAccess(eq(otherSession), anyList()))
         .thenAnswer(invocation -> allowAll(invocation.getArgument(1)));
 
-    cache = new ReadAccessCache(server);
+    cache = new ReadAccessCache(accessController);
   }
 
   // The point of the cache: the second cycle pays a lookup, not a read of the Node's attributes.

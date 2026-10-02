@@ -8,13 +8,12 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 
-package org.eclipse.milo.opcua.sdk.server.sampling;
+package org.eclipse.milo.opcua.sdk.server.access;
 
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
-import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
@@ -25,17 +24,18 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>Build a scope with the static factories, narrow it to one Session with {@link
  * #forSession(Session)} if needed, and pass it to {@link
- * OpcUaServer#invalidateReadAccess(ReadAccessScope)}. A scope that names the Nodes explicitly, from
- * {@link #node(NodeId)} or {@link #nodes(Collection)}, lets the {@link ReadAccessCache} drop
- * exactly those entries; {@link #namespace(UShort)} and {@link #matching(Predicate)} cover a Node
- * set the caller cannot enumerate cheaply, such as every Node of a provider or device.
+ * AccessControlManager#invalidateReadAccess(ReadAccessScope)}. A scope that names the Nodes
+ * explicitly, from {@link #node(NodeId)} or {@link #nodes(Collection)}, lets the {@link
+ * ReadAccessCache} drop exactly those entries; {@link #namespace(UShort)} and {@link
+ * #matching(Predicate)} cover a Node set the caller cannot enumerate cheaply, such as every Node of
+ * a provider or device.
  *
  * <pre>{@code
  * // The user mapping behind every Session changed.
- * server.invalidateReadAccess(ReadAccessScope.all());
+ * server.getAccessControlManager().invalidateReadAccess(ReadAccessScope.all());
  *
  * // One device's Nodes changed their permissions.
- * server.invalidateReadAccess(ReadAccessScope.matching(nodeId -> isDeviceNode(nodeId)));
+ * server.getAccessControlManager().invalidateReadAccess(ReadAccessScope.matching(nodeId -> isDeviceNode(nodeId)));
  * }</pre>
  */
 public final class ReadAccessScope {

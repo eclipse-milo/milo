@@ -19,11 +19,11 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
+import org.eclipse.milo.opcua.sdk.server.access.ReadAccessScope;
 import org.eclipse.milo.opcua.sdk.server.identity.Identity;
 import org.eclipse.milo.opcua.sdk.server.identity.Identity.AnonymousIdentity;
 import org.eclipse.milo.opcua.sdk.server.items.DataItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredDataItem;
-import org.eclipse.milo.opcua.sdk.server.sampling.ReadAccessScope;
 import org.eclipse.milo.opcua.sdk.server.servicesets.SubscriptionServiceSet;
 import org.eclipse.milo.opcua.sdk.server.subscriptions.Subscription;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
@@ -291,8 +291,10 @@ public class DefaultSubscriptionServiceSet implements SubscriptionServiceSet {
                     .distinct()
                     .toList();
 
-            server.invalidateReadAccess(
-                ReadAccessScope.nodes(transferredNodeIds).forSession(session));
+            server
+                .getAccessControlManager()
+                .invalidateReadAccess(
+                    ReadAccessScope.nodes(transferredNodeIds).forSession(session));
 
             server
                 .getDataItemListener()

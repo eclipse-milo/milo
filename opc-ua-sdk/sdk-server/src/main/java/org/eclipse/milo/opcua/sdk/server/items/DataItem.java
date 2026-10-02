@@ -10,7 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.server.items;
 
-import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController.AccessResult;
+import org.eclipse.milo.opcua.sdk.server.access.AccessController.AccessResult;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 
@@ -54,9 +54,9 @@ public interface DataItem extends MonitoredItem {
    * every sample. A server may instead keep it current from a component of its own, for example on
    * configuration, identity, or transfer events, on any schedule that bounds how stale a result can
    * be, using the server's {@link org.eclipse.milo.opcua.sdk.server.DataItemListener} and {@link
-   * org.eclipse.milo.opcua.sdk.server.OpcUaServer#invalidateReadAccess} to learn when. An item
-   * whose result is never refreshed is stale, not unsafe: it keeps enforcing the result it was
-   * created with.
+   * org.eclipse.milo.opcua.sdk.server.access.AccessControlManager#invalidateReadAccess} to learn
+   * when. An item whose result is never refreshed is stale, not unsafe: it keeps enforcing the
+   * result it was created with.
    *
    * <p>A result that is not a decision, {@link AccessResult#NODE_UNKNOWN}, leaves the last result
    * in place, the same as a check that failed: the item keeps reporting whatever its sampler

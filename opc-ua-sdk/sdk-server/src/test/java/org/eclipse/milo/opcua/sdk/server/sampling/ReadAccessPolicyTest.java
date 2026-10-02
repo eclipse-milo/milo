@@ -24,10 +24,13 @@ import java.util.List;
 import java.util.Map;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
+import org.eclipse.milo.opcua.sdk.server.access.AccessControlManager;
+import org.eclipse.milo.opcua.sdk.server.access.AccessController;
+import org.eclipse.milo.opcua.sdk.server.access.AccessController.AccessResult;
+import org.eclipse.milo.opcua.sdk.server.access.ReadAccessCache;
+import org.eclipse.milo.opcua.sdk.server.access.ReadAccessScope;
 import org.eclipse.milo.opcua.sdk.server.items.DataItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredDataItem;
-import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController;
-import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController.AccessResult;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.junit.jupiter.api.BeforeEach;
@@ -133,7 +136,10 @@ class ReadAccessPolicyTest {
 
     @BeforeEach
     void setUp() {
-      when(server.getReadAccessCache()).thenReturn(new ReadAccessCache(server));
+      AccessControlManager accessControlManager = mock(AccessControlManager.class);
+      when(accessControlManager.getReadAccessCache())
+          .thenReturn(new ReadAccessCache(accessController));
+      when(server.getAccessControlManager()).thenReturn(accessControlManager);
     }
 
     @Test
@@ -173,7 +179,10 @@ class ReadAccessPolicyTest {
       assertEquals(AccessResult.ALLOWED, a.getReadAccessResult(), "stale until invalidated");
       assertTrue(SamplingTestItems.drain(a).isEmpty());
 
-      server.getReadAccessCache().invalidate(ReadAccessScope.node(a.getReadValueId().getNodeId()));
+      server
+          .getAccessControlManager()
+          .getReadAccessCache()
+          .invalidate(ReadAccessScope.node(a.getReadValueId().getNodeId()));
       refresh(policy, List.of(a));
 
       assertEquals(AccessResult.DENIED_USER_ACCESS, a.getReadAccessResult());

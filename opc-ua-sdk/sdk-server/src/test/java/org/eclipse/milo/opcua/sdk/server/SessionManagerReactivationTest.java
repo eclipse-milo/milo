@@ -16,7 +16,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.google.common.eventbus.Subscribe;
 import io.netty.channel.Channel;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -26,12 +25,13 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
+import org.eclipse.milo.opcua.sdk.server.access.ReadAccessListener;
+import org.eclipse.milo.opcua.sdk.server.access.ReadAccessScope;
 import org.eclipse.milo.opcua.sdk.server.identity.AnonymousIdentityValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.CompositeValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.Identity;
 import org.eclipse.milo.opcua.sdk.server.identity.Identity.UsernameIdentity;
 import org.eclipse.milo.opcua.sdk.server.identity.UsernameIdentityValidator;
-import org.eclipse.milo.opcua.sdk.server.sampling.ReadAccessChangedEvent;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.channel.SecureChannel;
@@ -133,7 +133,7 @@ class SessionManagerReactivationTest {
     server = new OpcUaServer(config, NO_OP_TRANSPORTS);
     sessions = server.getSessionManager();
     sessions.addSessionListener(listener);
-    server.getInternalEventBus().register(invalidations);
+    server.getAccessControlManager().addReadAccessListener(invalidations);
   }
 
   @AfterEach
@@ -220,8 +220,11 @@ class SessionManagerReactivationTest {
 
     sessions.activateSession(channel, activateAnonymous(token));
     Session session = sessions.getAllSessions().iterator().next();
-    server.getReadAccessCache().getOrCheck(session, List.of(SERVER_STATUS));
-    assertEquals(1, server.getReadAccessCache().size());
+    server
+        .getAccessControlManager()
+        .getReadAccessCache()
+        .getOrCheck(session, List.of(SERVER_STATUS));
+    assertEquals(1, server.getAccessControlManager().getReadAccessCache().size());
 
     UaException failure =
         assertThrows(
@@ -230,7 +233,10 @@ class SessionManagerReactivationTest {
                 sessions.activateSession(
                     replacementChannel, activateUsername(token, USERNAME_POLICY.getPolicyId())));
 
-    assertEquals(0, server.getReadAccessCache().size(), "answers from the candidate window go");
+    assertEquals(
+        0,
+        server.getAccessControlManager().getReadAccessCache().size(),
+        "answers from the candidate window go");
     assertEquals(List.of(session), invalidations.sessions(), "and other refreshers hear about it");
 
     closeSession();
@@ -329,18 +335,18 @@ class SessionManagerReactivationTest {
     }
   }
 
-  /** Records the Session each read access invalidation posted on the internal EventBus was for. */
-  private static final class RecordingInvalidations {
+  /** Records the Session each read access invalidation was for. */
+  private static final class RecordingInvalidations implements ReadAccessListener {
 
-    final List<ReadAccessChangedEvent> events = new CopyOnWriteArrayList<>();
+    final List<ReadAccessScope> scopes = new CopyOnWriteArrayList<>();
 
-    @Subscribe
-    public void onReadAccessChanged(ReadAccessChangedEvent event) {
-      events.add(event);
+    @Override
+    public void onReadAccessChanged(ReadAccessScope scope) {
+      scopes.add(scope);
     }
 
     List<Session> sessions() {
-      return events.stream().map(event -> event.scope().session().orElseThrow()).toList();
+      return scopes.stream().map(scope -> scope.session().orElseThrow()).toList();
     }
   }
 

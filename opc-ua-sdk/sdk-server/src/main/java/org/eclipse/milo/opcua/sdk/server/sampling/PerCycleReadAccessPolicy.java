@@ -13,8 +13,8 @@ package org.eclipse.milo.opcua.sdk.server.sampling;
 import java.util.List;
 import java.util.Map;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
+import org.eclipse.milo.opcua.sdk.server.access.AccessController.AccessResult;
 import org.eclipse.milo.opcua.sdk.server.items.DataItem;
-import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController.AccessResult;
 
 /** One {@code AccessController.checkReadAccess} per Session on every check. */
 final class PerCycleReadAccessPolicy implements ReadAccessPolicy {

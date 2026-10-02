@@ -13,8 +13,9 @@ package org.eclipse.milo.opcua.sdk.server.sampling;
 import java.util.List;
 import java.util.Map;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
+import org.eclipse.milo.opcua.sdk.server.access.AccessController.AccessResult;
+import org.eclipse.milo.opcua.sdk.server.access.ReadAccessCache;
 import org.eclipse.milo.opcua.sdk.server.items.DataItem;
-import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController.AccessResult;
 
 /**
  * Decides, before a group samples, which of its items the items' Sessions may read.
@@ -27,7 +28,8 @@ import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController.Acces
  * <p>{@link #perCycle()} asks the server's {@code AccessController} once per Session per check and
  * is correct without any help from the application. {@link #cached()} answers from the server's
  * {@link ReadAccessCache} and is only as current as the last {@link
- * OpcUaServer#invalidateReadAccess}; choose it for a namespace that knows when its answers change.
+ * org.eclipse.milo.opcua.sdk.server.access.AccessControlManager#invalidateReadAccess}; choose it
+ * for a namespace that knows when its answers change.
  */
 public interface ReadAccessPolicy {
 
@@ -66,11 +68,12 @@ public interface ReadAccessPolicy {
   /**
    * A policy that answers from the server's {@link ReadAccessCache}, checking only the misses.
    *
-   * <p>A hit costs a map lookup. The answers stay until {@link OpcUaServer#invalidateReadAccess}
-   * drops them, so a namespace on this policy must invalidate when its security configuration
-   * changes; the SDK invalidates for Session identity and endpoint changes and for transfers. A
-   * stale allowed entry exposes no more than the per-cycle policy did one cycle earlier, and a
-   * stale denied entry only withholds data.
+   * <p>A hit costs a map lookup. The answers stay until {@link
+   * org.eclipse.milo.opcua.sdk.server.access.AccessControlManager#invalidateReadAccess} drops them,
+   * so a namespace on this policy must invalidate when its security configuration changes; the SDK
+   * invalidates for Session identity and endpoint changes and for transfers. A stale allowed entry
+   * exposes no more than the per-cycle policy did one cycle earlier, and a stale denied entry only
+   * withholds data.
    *
    * @return the cached policy.
    */

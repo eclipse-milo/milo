@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 
-package org.eclipse.milo.opcua.sdk.server.servicesets.impl;
+package org.eclipse.milo.opcua.sdk.server.access;
 
 import java.util.List;
 import java.util.Map;

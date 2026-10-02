@@ -63,10 +63,9 @@
  * another Session, {@link
  * org.eclipse.milo.opcua.sdk.server.SessionListener#onSessionIdentityChanged} and {@link
  * org.eclipse.milo.opcua.sdk.server.SessionListener#onSessionEndpointChanged} when a Session's user
- * or security changes, the {@link
- * org.eclipse.milo.opcua.sdk.server.sampling.ReadAccessChangedEvent} posted by {@link
- * org.eclipse.milo.opcua.sdk.server.OpcUaServer#invalidateReadAccess}, and {@link
- * org.eclipse.milo.opcua.sdk.server.Session#isClosed} to skip a Session that has closed since it
- * was last seen.
+ * or security changes, a {@link org.eclipse.milo.opcua.sdk.server.access.ReadAccessListener} for
+ * every {@link org.eclipse.milo.opcua.sdk.server.access.AccessControlManager#invalidateReadAccess},
+ * and {@link org.eclipse.milo.opcua.sdk.server.Session#isClosed} to skip a Session that has closed
+ * since it was last seen.
  */
 package org.eclipse.milo.opcua.sdk.server.subscriptions;

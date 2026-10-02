@@ -13,8 +13,9 @@ package org.eclipse.milo.opcua.sdk.server.sampling;
 import java.util.List;
 import java.util.Map;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
+import org.eclipse.milo.opcua.sdk.server.access.AccessController.AccessResult;
+import org.eclipse.milo.opcua.sdk.server.access.ReadAccessCache;
 import org.eclipse.milo.opcua.sdk.server.items.DataItem;
-import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController.AccessResult;
 
 /** Answers from the server's {@link ReadAccessCache}, checking only the misses. */
 final class CachedReadAccessPolicy implements ReadAccessPolicy {
@@ -28,7 +29,11 @@ final class CachedReadAccessPolicy implements ReadAccessPolicy {
     return ReadAccessPolicies.check(
         server,
         items,
-        (session, readValueIds) -> server.getReadAccessCache().getOrCheck(session, readValueIds));
+        (session, readValueIds) ->
+            server
+                .getAccessControlManager()
+                .getReadAccessCache()
+                .getOrCheck(session, readValueIds));
   }
 
   @Override

@@ -34,6 +34,8 @@ import org.eclipse.milo.opcua.sdk.server.DataItemListener;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.SessionManager;
+import org.eclipse.milo.opcua.sdk.server.access.AccessControlManager;
+import org.eclipse.milo.opcua.sdk.server.access.ReadAccessScope;
 import org.eclipse.milo.opcua.sdk.server.diagnostics.SessionDiagnostics;
 import org.eclipse.milo.opcua.sdk.server.diagnostics.SubscriptionDiagnostics;
 import org.eclipse.milo.opcua.sdk.server.identity.DefaultUsernameIdentity;
@@ -41,7 +43,6 @@ import org.eclipse.milo.opcua.sdk.server.items.BaseMonitoredItem;
 import org.eclipse.milo.opcua.sdk.server.items.DataItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredDataItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredEventItem;
-import org.eclipse.milo.opcua.sdk.server.sampling.ReadAccessScope;
 import org.eclipse.milo.opcua.sdk.server.subscriptions.Subscription;
 import org.eclipse.milo.opcua.sdk.server.subscriptions.SubscriptionManager;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
@@ -70,6 +71,7 @@ class DefaultSubscriptionServiceSetTransferTest {
   private final Map<UInteger, BaseMonitoredItem<?>> monitoredItems = new LinkedHashMap<>();
 
   private final OpcUaServer server = mock(OpcUaServer.class);
+  private final AccessControlManager accessControlManager = mock(AccessControlManager.class);
   private final AddressSpaceManager addressSpaceManager = mock(AddressSpaceManager.class);
   private final Session newSession = mock(Session.class);
   private final Session oldSession = mock(Session.class);
@@ -80,6 +82,7 @@ class DefaultSubscriptionServiceSetTransferTest {
 
   @BeforeEach
   void setUp() throws Exception {
+    when(server.getAccessControlManager()).thenReturn(accessControlManager);
     SessionManager sessionManager = mock(SessionManager.class);
     when(sessionManager.getSession(eq(context), any())).thenReturn(newSession);
 
@@ -172,7 +175,7 @@ class DefaultSubscriptionServiceSetTransferTest {
     serviceSet.onTransferSubscriptions(context, transferRequest());
 
     ArgumentCaptor<ReadAccessScope> scope = ArgumentCaptor.forClass(ReadAccessScope.class);
-    verify(server).invalidateReadAccess(scope.capture());
+    verify(accessControlManager).invalidateReadAccess(scope.capture());
     assertEquals(Optional.of(newSession), scope.getValue().session());
     assertEquals(
         Optional.of(Set.of(dataItem.getReadValueId().getNodeId())), scope.getValue().nodeIds());
@@ -191,7 +194,7 @@ class DefaultSubscriptionServiceSetTransferTest {
         new StatusCode(StatusCodes.Bad_UserAccessDenied), response.getResults()[0].getStatusCode());
     verify(addressSpaceManager, never()).onDataItemsTransferred(anyList());
     verify(server, never()).getDataItemListener();
-    verify(server, never()).invalidateReadAccess(any(ReadAccessScope.class));
+    verify(accessControlManager, never()).invalidateReadAccess(any(ReadAccessScope.class));
   }
 
   // Like the other data item callbacks, this one is never delivered with an empty list.

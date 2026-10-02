@@ -88,7 +88,7 @@ public class SamplingFrameworkTest extends AbstractClientServerTest {
     namespace.readLatch = new CountDownLatch(0);
     namespace.variable.setUserAccessLevel(AccessLevel.toValue(AccessLevel.READ_WRITE));
     namespace.variable.setValue(new DataValue(new Variant(INITIAL_VALUE)));
-    server.invalidateReadAccess(namespace.variable.getNodeId());
+    server.getAccessControlManager().invalidateReadAccess(namespace.variable.getNodeId());
   }
 
   /**
@@ -111,7 +111,7 @@ public class SamplingFrameworkTest extends AbstractClientServerTest {
         values.poll(1, TimeUnit.SECONDS),
         "the cached allowed result stays in force until an invalidation");
 
-    server.invalidateReadAccess(namespace.variable.getNodeId());
+    server.getAccessControlManager().invalidateReadAccess(namespace.variable.getNodeId());
 
     DataValue denied = values.poll(5, TimeUnit.SECONDS);
     assertNotNull(denied, "the invalidation must bring the denial");
@@ -119,7 +119,7 @@ public class SamplingFrameworkTest extends AbstractClientServerTest {
 
     namespace.variable.setUserAccessLevel(AccessLevel.toValue(AccessLevel.READ_WRITE));
     namespace.variable.setValue(new DataValue(new Variant(INITIAL_VALUE + 1)));
-    server.invalidateReadAccess(namespace.variable.getNodeId());
+    server.getAccessControlManager().invalidateReadAccess(namespace.variable.getNodeId());
 
     DataValue restored = values.poll(5, TimeUnit.SECONDS);
     assertNotNull(restored, "the invalidation must bring the restored data");

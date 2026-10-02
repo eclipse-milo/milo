@@ -37,6 +37,8 @@ import org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree;
 import org.eclipse.milo.opcua.sdk.core.typetree.ObjectTypeTree;
 import org.eclipse.milo.opcua.sdk.core.typetree.ReferenceTypeTree;
 import org.eclipse.milo.opcua.sdk.core.typetree.VariableTypeTree;
+import org.eclipse.milo.opcua.sdk.server.access.AccessControlManager;
+import org.eclipse.milo.opcua.sdk.server.access.AccessController;
 import org.eclipse.milo.opcua.sdk.server.conditions.ConditionManager;
 import org.eclipse.milo.opcua.sdk.server.conditions.DefaultConditionManager;
 import org.eclipse.milo.opcua.sdk.server.diagnostics.ServerDiagnosticsSummary;
@@ -59,9 +61,6 @@ import org.eclipse.milo.opcua.sdk.server.reverse.ReverseConnectTargetHandle;
 import org.eclipse.milo.opcua.sdk.server.reverse.ReverseConnectTargetListener;
 import org.eclipse.milo.opcua.sdk.server.reverse.ReverseConnectTargetManager;
 import org.eclipse.milo.opcua.sdk.server.reverse.ReverseConnectTargetSnapshot;
-import org.eclipse.milo.opcua.sdk.server.sampling.ReadAccessCache;
-import org.eclipse.milo.opcua.sdk.server.sampling.ReadAccessChangedEvent;
-import org.eclipse.milo.opcua.sdk.server.sampling.ReadAccessScope;
 import org.eclipse.milo.opcua.sdk.server.servicesets.AttributeServiceSet;
 import org.eclipse.milo.opcua.sdk.server.servicesets.DiscoveryServiceSet;
 import org.eclipse.milo.opcua.sdk.server.servicesets.MethodServiceSet;
@@ -72,8 +71,6 @@ import org.eclipse.milo.opcua.sdk.server.servicesets.Service;
 import org.eclipse.milo.opcua.sdk.server.servicesets.SessionServiceSet;
 import org.eclipse.milo.opcua.sdk.server.servicesets.SubscriptionServiceSet;
 import org.eclipse.milo.opcua.sdk.server.servicesets.ViewServiceSet;
-import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController;
-import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultAccessController;
 import org.eclipse.milo.opcua.sdk.server.subscriptions.Subscription;
 import org.eclipse.milo.opcua.sdk.server.typetree.DataTypeTreeBuilder;
 import org.eclipse.milo.opcua.sdk.server.typetree.ObjectTypeTreeBuilder;
@@ -166,8 +163,6 @@ public class OpcUaServer extends AbstractServiceHandler {
   private final List<DataItemListener> dataItemListeners = new CopyOnWriteArrayList<>();
   private final DataItemListener dataItemListener = new DataItemListenerDispatcher();
 
-  private final ReadAccessCache readAccessCache = new ReadAccessCache(this);
-
   private final EncodingManager encodingManager = DefaultEncodingManager.createAndInitialize();
 
   private final ObjectTypeManager objectTypeManager = new ObjectTypeManager();
@@ -237,7 +232,7 @@ public class OpcUaServer extends AbstractServiceHandler {
   private final OpcUaNamespace opcUaNamespace;
   private final ServerNamespace serverNamespace;
 
-  private final AccessController accessController;
+  private final AccessControlManager accessControlManager;
 
   private final OpcUaServerConfig config;
   private final OpcServerTransportFactory transportFactory;
@@ -375,26 +370,13 @@ public class OpcUaServer extends AbstractServiceHandler {
 
     sessionManager = new SessionManager(this, config.getExecutor());
 
-    // A closed Session's read access decisions can never be asked for again.
-    sessionManager.addSessionListener(
-        new SessionListener() {
-          @Override
-          public void onSessionClosed(Session session) {
-            readAccessCache.invalidate(ReadAccessScope.session(session));
-          }
-        });
+    accessControlManager = new AccessControlManager(this);
 
     opcUaNamespace = new OpcUaNamespace(this);
     opcUaNamespace.startup();
 
     serverNamespace = new ServerNamespace(this);
     serverNamespace.startup();
-
-    accessController =
-        config
-            .getAccessControllerFactory()
-            .map(factory -> factory.apply(this))
-            .orElseGet(() -> new DefaultAccessController(this));
   }
 
   /**
@@ -809,13 +791,22 @@ public class OpcUaServer extends AbstractServiceHandler {
   /**
    * Get the {@link AccessController} the service implementations authorize requests with.
    *
-   * <p>It is a {@link DefaultAccessController} unless the configuration supplied a factory through
-   * {@link OpcUaServerConfigBuilder#setAccessControllerFactory}.
+   * <p>A shortcut for {@code getAccessControlManager().getAccessController()}.
    *
    * @return this server's {@link AccessController}.
    */
   public AccessController getAccessController() {
-    return accessController;
+    return accessControlManager.getAccessController();
+  }
+
+  /**
+   * Get the {@link AccessControlManager}: the controller, the read access cache, and read access
+   * invalidation.
+   *
+   * @return this server's {@link AccessControlManager}.
+   */
+  public AccessControlManager getAccessControlManager() {
+    return accessControlManager;
   }
 
   public ServerApplicationContext getApplicationContext() {
@@ -860,72 +851,6 @@ public class OpcUaServer extends AbstractServiceHandler {
    */
   public DataItemListener getDataItemListener() {
     return dataItemListener;
-  }
-
-  /**
-   * Get the server-wide cache of read access decisions.
-   *
-   * <p>Samplers on the {@link org.eclipse.milo.opcua.sdk.server.sampling.ReadAccessPolicy#cached()}
-   * policy and components that refresh read access results on their own share it. Drop entries
-   * through {@link #invalidateReadAccess(ReadAccessScope)}.
-   *
-   * @return the server-wide {@link ReadAccessCache}.
-   */
-  public ReadAccessCache getReadAccessCache() {
-    return readAccessCache;
-  }
-
-  /**
-   * Say that the read access answers in {@code scope} may have changed.
-   *
-   * <p>Drops the cached decisions the scope covers from {@link #getReadAccessCache()} and then
-   * posts a {@link ReadAccessChangedEvent} on {@link #getInternalEventBus()}, so a component that
-   * refreshes read access results on its own can re-check the items the scope covers and see
-   * current answers. The SDK calls this when a Session's identity or endpoint changes and when a
-   * Subscription is transferred. An application calls it when something it knows about changes an
-   * answer, for example a role mapping, a per-Session attribute filter, or a Node that was removed
-   * and re-added. This is the sanctioned entry point; do not post the event yourself.
-   *
-   * <pre>{@code
-   * // Permissions on one device's Nodes changed for every user.
-   * server.invalidateReadAccess(ReadAccessScope.matching(nodeId -> isDeviceNode(nodeId)));
-   * }</pre>
-   *
-   * @param scope the Sessions and Nodes whose answers may have changed.
-   */
-  public void invalidateReadAccess(ReadAccessScope scope) {
-    readAccessCache.invalidate(scope);
-
-    eventBus.post(new ReadAccessChangedEvent(scope));
-  }
-
-  /**
-   * Say that every read access answer for every Session may have changed.
-   *
-   * @see #invalidateReadAccess(ReadAccessScope)
-   */
-  public void invalidateReadAccess() {
-    invalidateReadAccess(ReadAccessScope.all());
-  }
-
-  /**
-   * Say that every read access answer for {@code session} may have changed.
-   *
-   * @param session the Session whose answers may have changed.
-   * @see #invalidateReadAccess(ReadAccessScope)
-   */
-  public void invalidateReadAccess(Session session) {
-    invalidateReadAccess(ReadAccessScope.session(session));
-  }
-
-  /**
-   * Say that every Session's read access answer for {@code nodeId} may have changed.
-   *
-   * @param nodeId the Node whose answers may have changed.
-   * @see #invalidateReadAccess(ReadAccessScope)
-   */
-  public void invalidateReadAccess(NodeId nodeId) {
-    invalidateReadAccess(ReadAccessScope.node(nodeId));
   }
 
   public OpcUaNamespace getOpcUaNamespace() {

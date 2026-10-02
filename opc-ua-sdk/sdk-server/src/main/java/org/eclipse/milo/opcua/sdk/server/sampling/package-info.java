@@ -49,12 +49,12 @@
  * <p>{@link org.eclipse.milo.opcua.sdk.server.sampling.ReadAccessPolicy#perCycle()}, the default,
  * asks the {@code AccessController} once per Session per refresh and needs nothing from the
  * application. {@link org.eclipse.milo.opcua.sdk.server.sampling.ReadAccessPolicy#cached()} answers
- * from the server-wide {@link org.eclipse.milo.opcua.sdk.server.sampling.ReadAccessCache}, keyed by
+ * from the server-wide {@link org.eclipse.milo.opcua.sdk.server.access.ReadAccessCache}, keyed by
  * Session, Node, and Attribute, and checks only misses. Nothing in the server observes every input
  * of an access decision, so a cached answer stays until an invalidation drops it: {@link
- * org.eclipse.milo.opcua.sdk.server.OpcUaServer#invalidateReadAccess} takes a {@link
- * org.eclipse.milo.opcua.sdk.server.sampling.ReadAccessScope}, drops the matching entries, and
- * posts a {@link org.eclipse.milo.opcua.sdk.server.sampling.ReadAccessChangedEvent} for components
+ * org.eclipse.milo.opcua.sdk.server.access.AccessControlManager#invalidateReadAccess} takes a
+ * {@link org.eclipse.milo.opcua.sdk.server.access.ReadAccessScope}, drops the matching entries, and
+ * tells every {@link org.eclipse.milo.opcua.sdk.server.access.ReadAccessListener}, for components
  * that refresh results on their own. The SDK invalidates for a Session whose identity or endpoint
  * changed and for the Nodes of a transferred Subscription; an application on the cached policy
  * invalidates for its own security configuration changes.
@@ -82,8 +82,8 @@
  * {@link java.util.concurrent.CompletionStage} so a protocol that delivers asynchronously can keep
  * its own execution model; the next cycle is timed from the stage's completion. The cache is safe
  * to use from any thread; invalidations run on the caller's thread and hold the cache's write lock
- * while they scan, so a scope's predicate must be cheap, and the event is delivered synchronously
- * on the same thread.
+ * while they scan, so a scope's predicate must be cheap, and listeners are called synchronously on
+ * the same thread.
  *
  * <h2>Extension points</h2>
  *
@@ -91,7 +91,7 @@
  * factory that creates it. Use {@code SamplingManagerConfig} for the bucket size, the minimum
  * interval a revised interval of zero becomes, the initial sample debounce, and the policy. A
  * server whose AddressSpaces sample without the framework keeps results current with {@link
- * org.eclipse.milo.opcua.sdk.server.DataItemListener} and the invalidation event instead.
+ * org.eclipse.milo.opcua.sdk.server.DataItemListener} and a {@code ReadAccessListener} instead.
  */
 @NullMarked
 package org.eclipse.milo.opcua.sdk.server.sampling;
