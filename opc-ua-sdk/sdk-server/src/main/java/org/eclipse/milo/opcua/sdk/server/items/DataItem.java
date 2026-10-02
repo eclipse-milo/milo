@@ -49,10 +49,12 @@ public interface DataItem extends MonitoredItem {
    *
    * <p>The server must keep this result current, with the result of {@code
    * AccessController.checkReadAccess} for {@link #getSession()}, so that access rights that change
-   * after the item was created reach the client as Part 4 §5.13.2.1 requires. {@link
-   * org.eclipse.milo.opcua.sdk.server.util.SubscriptionModel} does so on every sampling cycle. A
-   * server may instead keep it current from a component of its own, for example on configuration,
-   * identity, or transfer events, on any schedule that bounds how stale a result can be. An item
+   * after the item was created reach the client as Part 4 §5.13.2.1 requires. The sampling
+   * framework, {@link org.eclipse.milo.opcua.sdk.server.sampling.SamplingManager}, does so before
+   * every sample. A server may instead keep it current from a component of its own, for example on
+   * configuration, identity, or transfer events, on any schedule that bounds how stale a result can
+   * be, using the server's {@link org.eclipse.milo.opcua.sdk.server.DataItemListener} and {@link
+   * org.eclipse.milo.opcua.sdk.server.OpcUaServer#invalidateReadAccess} to learn when. An item
    * whose result is never refreshed is stale, not unsafe: it keeps enforcing the result it was
    * created with.
    *

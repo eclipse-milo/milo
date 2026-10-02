@@ -24,7 +24,7 @@ import java.util.function.Predicate;
  * A scheduler whose tasks run only when a test says so, so a test can step through sampling cycles
  * and initial sample timers deterministically.
  */
-final class ManualScheduler {
+public final class ManualScheduler {
 
   final List<Scheduled> scheduled = new ArrayList<>();
 
@@ -35,17 +35,17 @@ final class ManualScheduler {
     }
   }
 
-  ScheduledExecutorService executor() {
+  public ScheduledExecutorService executor() {
     return new Executor();
   }
 
   /** The delays of the tasks that are still pending, in scheduling order. */
-  synchronized List<Long> pendingDelays() {
+  public synchronized List<Long> pendingDelays() {
     return scheduled.stream().filter(Scheduled::isPending).map(Scheduled::delayMillis).toList();
   }
 
   /** Run and remove every pending task whose delay matches {@code delay}. */
-  void run(Predicate<Long> delay) {
+  public void run(Predicate<Long> delay) {
     List<Scheduled> due;
     synchronized (this) {
       due = scheduled.stream().filter(s -> s.isPending() && delay.test(s.delayMillis())).toList();
@@ -55,7 +55,7 @@ final class ManualScheduler {
   }
 
   /** Run and remove every pending task. */
-  void runAll() {
+  public void runAll() {
     run(delay -> true);
   }
 

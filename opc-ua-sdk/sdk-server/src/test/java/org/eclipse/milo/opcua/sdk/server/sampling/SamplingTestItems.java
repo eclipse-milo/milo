@@ -30,17 +30,17 @@ import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 /**
  * Real {@link MonitoredDataItem}s for the sampling tests, so the read access gate is the real one.
  */
-final class SamplingTestItems {
+public final class SamplingTestItems {
 
   private static final AtomicLong IDS = new AtomicLong(1);
 
   private SamplingTestItems() {}
 
-  static MonitoredDataItem item(OpcUaServer server, Session session, String name) {
+  public static MonitoredDataItem item(OpcUaServer server, Session session, String name) {
     return item(server, session, name, 100.0);
   }
 
-  static MonitoredDataItem item(
+  public static MonitoredDataItem item(
       OpcUaServer server, Session session, String name, double samplingInterval) {
 
     long id = IDS.getAndIncrement();
@@ -68,7 +68,7 @@ final class SamplingTestItems {
     return item;
   }
 
-  static List<DataValue> drain(MonitoredDataItem item) {
+  public static List<DataValue> drain(MonitoredDataItem item) {
     var notifications = new ArrayList<UaStructuredType>();
     item.getNotifications(notifications, Integer.MAX_VALUE);
 
