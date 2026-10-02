@@ -43,11 +43,16 @@
  * satisfy. Part 4 §5.13.2.1 requires an item the Session may not read to be created anyway and to
  * report {@code Bad_UserAccessDenied} or {@code Bad_NotReadable} in the Publish response, including
  * when access rights change later. A MonitoredDataItem therefore carries the result of the most
- * recent read access check and replaces the values it is given with the denial status while access
- * is denied; this package seeds that result at create time. Refreshing it belongs to whatever
- * samples the item, because only the sampler knows when a value is about to be produced and for
- * which Session: {@link org.eclipse.milo.opcua.sdk.server.util.SubscriptionModel} checks on every
- * sampling cycle, and an AddressSpace that samples on its own calls {@link
- * org.eclipse.milo.opcua.sdk.server.items.DataItem#setReadAccessResult} itself.
+ * recent read access check, exposes it through {@link
+ * org.eclipse.milo.opcua.sdk.server.items.DataItem#getReadAccessResult}, and replaces the values it
+ * is given with the denial status while access is denied; this package seeds that result at create
+ * time. Keeping it current is the server's responsibility, and the server chooses where that
+ * happens: {@link org.eclipse.milo.opcua.sdk.server.util.SubscriptionModel} refreshes it on every
+ * sampling cycle, an AddressSpace that samples on its own can do the same through {@link
+ * org.eclipse.milo.opcua.sdk.server.items.DataItem#setReadAccessResult}, or a component of the
+ * server's own can refresh every item it knows of on configuration, identity, or transfer events,
+ * on any schedule that bounds how stale a result can be. That method is safe to call from any
+ * thread alongside the sampler's {@code setValue} and is idempotent. An item whose result is never
+ * refreshed is stale, not unsafe: it keeps enforcing the result it was created with.
  */
 package org.eclipse.milo.opcua.sdk.server.subscriptions;

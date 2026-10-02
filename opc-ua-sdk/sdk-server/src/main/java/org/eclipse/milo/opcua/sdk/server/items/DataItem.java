@@ -47,10 +47,17 @@ public interface DataItem extends MonitoredItem {
    * nothing is queued until the first call after monitoring resumes. Once access is allowed again,
    * the next value passed to {@link #setValue(DataValue)} is always reported.
    *
-   * <p>Whatever samples this item is expected to call this with the result of {@code
-   * AccessController.checkReadAccess} for {@link #getSession()} on every sampling cycle, so that
-   * access rights that change after the item was created reach the client as Part 4 §5.13.2.1
-   * requires. {@link org.eclipse.milo.opcua.sdk.server.util.SubscriptionModel} does this.
+   * <p>The server must keep this result current, with the result of {@code
+   * AccessController.checkReadAccess} for {@link #getSession()}, so that access rights that change
+   * after the item was created reach the client as Part 4 §5.13.2.1 requires. {@link
+   * org.eclipse.milo.opcua.sdk.server.util.SubscriptionModel} does so on every sampling cycle. A
+   * server may instead keep it current from a component of its own, for example on configuration,
+   * identity, or transfer events, on any schedule that bounds how stale a result can be. An item
+   * whose result is never refreshed is stale, not unsafe: it keeps enforcing the result it was
+   * created with.
+   *
+   * <p>This method is safe to call from any thread, concurrently with {@link #setValue(DataValue)},
+   * and is idempotent: repeating a call with the same result has no further effect.
    *
    * <p>{@link MonitoredDataItem}, the item the SDK creates for every data MonitoredItem, is the
    * implementation that enforces this. The default implementation does nothing, so an
