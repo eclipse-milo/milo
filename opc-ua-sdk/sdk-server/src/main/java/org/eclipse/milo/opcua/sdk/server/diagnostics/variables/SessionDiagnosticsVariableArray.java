@@ -41,6 +41,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelExType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SessionDiagnosticsDataType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -180,6 +181,9 @@ public class SessionDiagnosticsVariableArray extends AbstractLifecycle {
               .rootAttribute(AttributeId.AccessLevel, AccessLevel.toValue(AccessLevel.READ_ONLY))
               .rootAttribute(
                   AttributeId.UserAccessLevel, AccessLevel.toValue(AccessLevel.READ_ONLY))
+              .rootAttribute(
+                  AttributeId.AccessLevelEx,
+                  AccessLevelExType.of(AccessLevelExType.Field.CurrentRead))
               .parent(node.getNodeId(), NodeIds.HasComponent)
               .target(diagnosticsNodeManager)
               .legacyPathStrings()
