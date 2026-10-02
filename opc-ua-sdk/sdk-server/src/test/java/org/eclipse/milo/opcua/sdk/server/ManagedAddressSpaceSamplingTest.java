@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.server;
 
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -22,15 +23,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import org.eclipse.milo.opcua.sdk.server.AddressSpace.RevisedDataItemParameters;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredDataItem;
 import org.eclipse.milo.opcua.sdk.server.sampling.ManualScheduler;
 import org.eclipse.milo.opcua.sdk.server.sampling.SamplingGroupInfo;
+import org.eclipse.milo.opcua.sdk.server.sampling.SamplingManagerConfig;
 import org.eclipse.milo.opcua.sdk.server.sampling.SamplingTestItems;
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController;
+import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -86,6 +93,30 @@ class ManagedAddressSpaceSamplingTest {
     lifecycle.shutdown();
     assertFalse(addressSpace.getSamplingManager().isRunning());
     assertTrue(addressSpace.getSamplingManager().getDataItems().isEmpty());
+  }
+
+  /**
+   * Part 4 §7.21: the revised sampling interval is the one the server assigns, equal to or higher
+   * than the requested one. The default revision reports the interval the sampling manager will
+   * use, on create and on modify, so the client is never told a faster rate than it gets.
+   */
+  @Test
+  void theDefaultRevisionReportsTheIntervalTheManagerSamplesAt() {
+    ManagedAddressSpace addressSpace =
+        new ManagedAddressSpaceWithLifecycle(server) {
+          @Override
+          protected SamplingManagerConfig samplingManagerConfig() {
+            return SamplingManagerConfig.defaults().withMinimumIntervalMillis(100);
+          }
+        };
+    var readValueId = new ReadValueId(new NodeId(2, "v"), AttributeId.Value.uid(), null, null);
+
+    RevisedDataItemParameters created = addressSpace.onCreateDataItem(readValueId, 120.0, uint(5));
+    assertEquals(150.0, created.revisedSamplingInterval(), "up to the next supported interval");
+    assertEquals(uint(5), created.revisedQueueSize(), "the queue size is as requested");
+
+    RevisedDataItemParameters modified = addressSpace.onModifyDataItem(readValueId, 0.0, uint(5));
+    assertEquals(100.0, modified.revisedSamplingInterval(), "a zero request becomes the floor");
   }
 
   private static Stream<Arguments> addressSpaces() {

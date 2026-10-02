@@ -11,6 +11,7 @@
 package org.eclipse.milo.opcua.sdk.server.sampling;
 
 import com.google.common.math.DoubleMath;
+import com.google.common.math.LongMath;
 import java.math.RoundingMode;
 
 /**
@@ -26,13 +27,14 @@ import java.math.RoundingMode;
  *         .withReadAccessPolicy(ReadAccessPolicy.cached());
  * }</pre>
  *
- * @param bucketMillis the bucket size items are grouped by. An item whose revised sampling interval
- *     is at least one bucket samples at the largest multiple of the bucket that does not exceed its
- *     interval, so items at 100 ms and 100.4 ms share one group and nothing samples slower than the
- *     client was told. An interval below one bucket is kept as it is. Zero disables bucketing.
- * @param minimumIntervalMillis the slowest interval a group may be given, applied after bucketing.
- *     A revised interval of zero, which asks for the fastest sampling the server supports, becomes
- *     this rather than a 1 ms poll.
+ * @param bucketMillis the bucket size: the sampling intervals the framework supports are the
+ *     multiples of it, and a requested interval is revised up to the next one (Part 4 §7.21: the
+ *     revised interval is equal to or higher than the requested one), so items asking for 100 ms
+ *     and 120 ms sample at 100 ms and 150 ms, and nothing samples faster than the interval it was
+ *     given. Zero disables bucketing, and intervals are revised up to whole milliseconds only.
+ * @param minimumIntervalMillis the fastest interval the framework samples at, applied after
+ *     bucketing. A requested interval of zero, which asks for the fastest practical rate, is
+ *     revised to this rather than becoming a 1 ms poll.
  * @param initialSampleDelayMillis how long a new item waits for more new items before they are all
  *     sampled once, ahead of their group's next cycle.
  * @param initialSampleMaxWindowMillis the longest a steady stream of new items can postpone that
@@ -145,10 +147,11 @@ public record SamplingManagerConfig(
   }
 
   /**
-   * The interval a group samples an item at: the item's revised sampling interval rounded up to a
-   * whole millisecond, bucketed, and floored at {@link #minimumIntervalMillis()}.
+   * The interval a group samples an item at: the item's sampling interval rounded up to a whole
+   * millisecond, then up to the next multiple of {@link #bucketMillis()}, then floored at {@link
+   * #minimumIntervalMillis()}. Never faster than the interval given.
    *
-   * @param samplingIntervalMillis an item's revised sampling interval, as {@link
+   * @param samplingIntervalMillis an item's sampling interval, as {@link
    *     org.eclipse.milo.opcua.sdk.server.items.DataItem#getSamplingInterval()} reports it.
    * @return the interval of the group the item belongs in.
    */
@@ -158,10 +161,27 @@ public record SamplingManagerConfig(
             ? DoubleMath.roundToLong(samplingIntervalMillis, RoundingMode.UP)
             : 0;
 
-    if (bucketMillis > 0 && millis >= bucketMillis) {
-      millis = (millis / bucketMillis) * bucketMillis;
+    if (bucketMillis > 0) {
+      millis = LongMath.divide(millis, bucketMillis, RoundingMode.CEILING) * bucketMillis;
     }
 
     return Math.max(minimumIntervalMillis, millis);
+  }
+
+  /**
+   * The revised sampling interval to report for a requested one: the interval the framework will
+   * actually sample at, from {@link #groupIntervalMillis(double)}.
+   *
+   * <p>{@link org.eclipse.milo.opcua.sdk.server.ManagedAddressSpace} returns this from {@code
+   * onCreateDataItem} and {@code onModifyDataItem}, so that the client is told the interval its
+   * item is sampled at (Part 4 §7.21). An AddressSpace that wires a {@link SamplingManager} itself
+   * should do the same.
+   *
+   * @param requestedSamplingInterval the requested sampling interval, after the server's limits and
+   *     the Node's MinimumSamplingInterval have been applied.
+   * @return the revised sampling interval, in milliseconds.
+   */
+  public double reviseSamplingInterval(double requestedSamplingInterval) {
+    return (double) groupIntervalMillis(requestedSamplingInterval);
   }
 }

@@ -23,9 +23,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 class SamplingManagerConfigTest {
 
   /**
-   * Bucketing collapses near intervals into one group without ever sampling slower than the revised
-   * interval the client was told; an interval below one bucket is kept; the floor applies last, so
-   * a zero interval becomes the floor rather than a 1 ms poll.
+   * Part 4 §7.21: the revised interval is equal to or higher than the requested one. Bucketing
+   * rounds up to the next supported interval and never down; the floor applies last, so a zero
+   * interval, which asks for the fastest practical rate, becomes the floor rather than a 1 ms poll.
    */
   @ParameterizedTest(name = "{0} ms with bucket {1} and floor {2} samples at {3} ms")
   @MethodSource("groupIntervals")
@@ -43,15 +43,25 @@ class SamplingManagerConfigTest {
   private static Stream<Arguments> groupIntervals() {
     return Stream.of(
         Arguments.of(100.0, 50, 1, 100),
-        Arguments.of(100.4, 50, 1, 100),
-        Arguments.of(149.0, 50, 1, 100),
+        Arguments.of(100.4, 50, 1, 150),
+        Arguments.of(149.0, 50, 1, 150),
         Arguments.of(150.0, 50, 1, 150),
-        Arguments.of(20.0, 50, 1, 20),
+        Arguments.of(20.0, 50, 1, 50),
         Arguments.of(0.0, 50, 1, 1),
         Arguments.of(-1.0, 50, 1, 1),
         Arguments.of(0.0, 50, 200, 200),
         Arguments.of(100.4, 0, 1, 101),
         Arguments.of(Double.NaN, 50, 1, 1));
+  }
+
+  // What the client is told is what the framework samples at.
+  @Test
+  void theRevisedIntervalIsTheGroupInterval() {
+    SamplingManagerConfig config = SamplingManagerConfig.defaults().withMinimumIntervalMillis(100);
+
+    assertEquals(150.0, config.reviseSamplingInterval(120.0));
+    assertEquals(100.0, config.reviseSamplingInterval(0.0));
+    assertEquals(1000.0, config.reviseSamplingInterval(1000.0));
   }
 
   @Test

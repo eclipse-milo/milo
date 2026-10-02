@@ -73,15 +73,15 @@ class SamplingManagerTest {
     return new SamplingManager(server, factory, config.withReadAccessPolicy(policy));
   }
 
-  // Groups are keyed on the bucketed interval, so 100.0 and 100.4 no longer make two groups
-  // with the same period.
+  // Groups are keyed on the bucketed interval, rounded up, so items whose intervals were not
+  // revised by their AddressSpace still land in the supported interval at or above their own.
   @Test
   void itemsWithIntervalsInTheSameBucketShareAGroup() {
     manager.onDataItemsCreated(
         List.of(item("a", 100.0), item("b", 100.4), item("c", 149.0), item("d", 150.0)));
 
     assertEquals(
-        List.of(new SamplingGroupInfo(100, 3, 0), new SamplingGroupInfo(150, 1, 0)),
+        List.of(new SamplingGroupInfo(100, 1, 0), new SamplingGroupInfo(150, 3, 0)),
         manager.getGroups());
   }
 
@@ -121,7 +121,7 @@ class SamplingManagerTest {
     MonitoredDataItem item = item("a", 100.0);
     manager.onDataItemsCreated(List.of(item));
 
-    modifyInterval(item, 120.0);
+    modifyInterval(item, 100.0);
     manager.onDataItemsModified(List.of(item));
 
     RecordingGroup group = groups.get(100L);

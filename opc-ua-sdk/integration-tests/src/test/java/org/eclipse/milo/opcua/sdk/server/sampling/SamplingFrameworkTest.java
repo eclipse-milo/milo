@@ -27,8 +27,6 @@ import org.eclipse.milo.opcua.sdk.client.subscriptions.OpcUaSubscription;
 import org.eclipse.milo.opcua.sdk.core.AccessLevel;
 import org.eclipse.milo.opcua.sdk.server.ManagedNamespaceWithLifecycle;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
-import org.eclipse.milo.opcua.sdk.server.items.DataItem;
-import org.eclipse.milo.opcua.sdk.server.items.MonitoredItem;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
 import org.eclipse.milo.opcua.sdk.test.AbstractClientServerTest;
 import org.eclipse.milo.opcua.sdk.test.TestNamespace;
@@ -50,8 +48,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * The sampling framework seen through a namespace that wires its own {@link SamplingManager}: a
- * cached read access policy, a floor on the sampling interval, and a sampler that fails.
+ * The sampling framework seen through a namespace that configures its {@link SamplingManager}
+ * through {@code ManagedAddressSpace.samplingManagerConfig()}: a cached read access policy, a floor
+ * on the sampling interval that the client is told about, and a sampler that fails.
  */
 public class SamplingFrameworkTest extends AbstractClientServerTest {
 
@@ -148,16 +147,16 @@ public class SamplingFrameworkTest extends AbstractClientServerTest {
   }
 
   /**
-   * A revised sampling interval of 0 asks for the fastest the server supports, which used to be a 1
-   * ms poll. The manager floors it at the configured minimum. The revised interval the client is
-   * told is unchanged; this is a sampling floor, not a protocol change.
+   * A requested sampling interval of 0 asks for the fastest practical rate, which used to be a 1 ms
+   * poll. The manager floors it at the configured minimum, and the client is told that interval
+   * (Part 4 §7.21), not the 0 it asked for.
    */
   @Test
-  void aZeroRevisedIntervalSamplesAtTheFloor() throws Exception {
+  void aZeroRequestedIntervalIsRevisedToTheFloorAndSampledThere() throws Exception {
     var values = new LinkedBlockingQueue<DataValue>();
     OpcUaMonitoredItem item = monitor(namespace.variable.getNodeId(), 0.0, values);
 
-    assertEquals(0.0, item.getRevisedSamplingInterval().orElseThrow());
+    assertEquals((double) FLOOR_MILLIS, item.getRevisedSamplingInterval().orElseThrow());
     assertNotNull(values.poll(5, TimeUnit.SECONDS));
 
     AtomicInteger reads = namespace.readCounts.get(namespace.variable.getNodeId());
@@ -169,6 +168,17 @@ public class SamplingFrameworkTest extends AbstractClientServerTest {
     assertTrue(
         during <= 2 * (1_000 / FLOOR_MILLIS),
         "the item is sampled no faster than the floor allows: " + during + " reads in a second");
+  }
+
+  // Part 4 §7.21: the server revises up to an interval it supports, never down. With 50 ms buckets
+  // a request between two supported intervals gets the slower one.
+  @Test
+  void aRequestedIntervalIsRevisedUpToTheNextSupportedOne() throws Exception {
+    var values = new LinkedBlockingQueue<DataValue>();
+    OpcUaMonitoredItem item = monitor(namespace.variable.getNodeId(), 320.0, values);
+
+    assertEquals(350.0, item.getRevisedSamplingInterval().orElseThrow());
+    assertNotNull(values.poll(5, TimeUnit.SECONDS));
   }
 
   private OpcUaMonitoredItem monitor(
@@ -189,7 +199,6 @@ public class SamplingFrameworkTest extends AbstractClientServerTest {
   /** A namespace on the cached policy with a 200 ms floor, whose reads can be made to fail. */
   private static final class FrameworkNamespace extends ManagedNamespaceWithLifecycle {
 
-    private final SamplingManager samplingManager;
     private final Map<NodeId, AtomicInteger> readCounts = new ConcurrentHashMap<>();
 
     private volatile boolean failReads = false;
@@ -197,16 +206,6 @@ public class SamplingFrameworkTest extends AbstractClientServerTest {
 
     FrameworkNamespace(OpcUaServer server) {
       super(server, "urn:eclipse:milo:test:sampling-framework");
-
-      samplingManager =
-          new SamplingManager(
-              server,
-              (s, intervalMillis) -> new AddressSpaceSamplingGroup(s, this, intervalMillis),
-              SamplingManagerConfig.defaults()
-                  .withMinimumIntervalMillis(FLOOR_MILLIS)
-                  .withReadAccessPolicy(ReadAccessPolicy.cached()));
-
-      getLifecycleManager().addLifecycle(samplingManager);
 
       getLifecycleManager()
           .addStartupTask(
@@ -221,11 +220,20 @@ public class SamplingFrameworkTest extends AbstractClientServerTest {
                             b.setDataType(NodeIds.Int32);
                             b.setAccessLevel(AccessLevel.READ_WRITE);
                             b.setUserAccessLevel(AccessLevel.READ_WRITE);
-                            // Report-by-exception is allowed, so a requested 0 is revised to 0.
+                            // Report-by-exception is allowed, so a requested 0 reaches the floor.
                             b.setMinimumSamplingInterval(0.0);
                             b.setValue(new DataValue(new Variant(INITIAL_VALUE)));
                             return b.buildAndAdd();
                           }));
+    }
+
+    // The base class samples and revises through this configuration; the four data item callbacks
+    // need no override.
+    @Override
+    protected SamplingManagerConfig samplingManagerConfig() {
+      return SamplingManagerConfig.defaults()
+          .withMinimumIntervalMillis(FLOOR_MILLIS)
+          .withReadAccessPolicy(ReadAccessPolicy.cached());
     }
 
     @Override
@@ -249,26 +257,6 @@ public class SamplingFrameworkTest extends AbstractClientServerTest {
                       .incrementAndGet());
 
       return super.read(context, maxAge, timestamps, readValueIds);
-    }
-
-    @Override
-    public void onDataItemsCreated(List<DataItem> dataItems) {
-      samplingManager.onDataItemsCreated(dataItems);
-    }
-
-    @Override
-    public void onDataItemsModified(List<DataItem> dataItems) {
-      samplingManager.onDataItemsModified(dataItems);
-    }
-
-    @Override
-    public void onDataItemsDeleted(List<DataItem> dataItems) {
-      samplingManager.onDataItemsDeleted(dataItems);
-    }
-
-    @Override
-    public void onMonitoringModeChanged(List<MonitoredItem> monitoredItems) {
-      samplingManager.onMonitoringModeChanged(monitoredItems);
     }
   }
 }

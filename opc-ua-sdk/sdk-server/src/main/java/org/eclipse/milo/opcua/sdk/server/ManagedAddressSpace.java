@@ -38,6 +38,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodResult;
@@ -53,8 +54,11 @@ import org.slf4j.LoggerFactory;
  * reading, writing, browsing, and calling its Nodes need.
  *
  * <p>Data MonitoredItems are sampled by a {@link SamplingManager} of this AddressSpace's own, which
- * the four data item callbacks forward to by default; see {@link #getSamplingManager()}. A subclass
- * that samples some other way overrides the four callbacks instead.
+ * the four data item callbacks forward to by default; see {@link #getSamplingManager()}. The
+ * sampling interval of a created or modified item is revised to the one that manager samples at, so
+ * the client is told the interval in effect. A subclass that samples some other way overrides the
+ * four callbacks, and {@link #onCreateDataItem} and {@link #onModifyDataItem} if its intervals
+ * differ, instead.
  */
 public abstract class ManagedAddressSpace implements AddressSpace {
 
@@ -139,6 +143,11 @@ public abstract class ManagedAddressSpace implements AddressSpace {
    * ManagedAddressSpace} without one of those lifecycles must start and stop it itself, since items
    * that arrive before it starts are kept but not sampled.
    *
+   * <p>Configure this manager through the two hooks rather than wiring another {@link
+   * SamplingManager} beside it: {@link #onCreateDataItem} and {@link #onModifyDataItem} revise
+   * sampling intervals with this manager's configuration, so a manager wired separately would
+   * sample at intervals other than the ones the client is told.
+   *
    * @return the {@link SamplingManager} for this AddressSpace.
    */
   public SamplingManager getSamplingManager() {
@@ -181,6 +190,39 @@ public abstract class ManagedAddressSpace implements AddressSpace {
    */
   protected SamplingManagerConfig samplingManagerConfig() {
     return SamplingManagerConfig.defaults();
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * <p>Revises the sampling interval to the one {@link #getSamplingManager()} samples at: rounded
+   * up to the next interval its {@link SamplingManagerConfig} supports, and never faster than
+   * requested (Part 4 §7.21). The queue size is returned as requested.
+   */
+  @Override
+  public RevisedDataItemParameters onCreateDataItem(
+      ReadValueId itemToMonitor, Double requestedSamplingInterval, UInteger requestedQueueSize) {
+
+    return new RevisedDataItemParameters(
+        reviseSamplingInterval(requestedSamplingInterval), requestedQueueSize);
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * <p>Revises the sampling interval the same way as {@link #onCreateDataItem}, so an item whose
+   * interval a ModifyMonitoredItems changes is told the interval it is sampled at from then on.
+   */
+  @Override
+  public RevisedDataItemParameters onModifyDataItem(
+      ReadValueId itemToModify, Double requestedSamplingInterval, UInteger requestedQueueSize) {
+
+    return new RevisedDataItemParameters(
+        reviseSamplingInterval(requestedSamplingInterval), requestedQueueSize);
+  }
+
+  private Double reviseSamplingInterval(Double requestedSamplingInterval) {
+    return getSamplingManager().getConfig().reviseSamplingInterval(requestedSamplingInterval);
   }
 
   @Override
