@@ -29,6 +29,21 @@ public interface SessionListener {
   default void onSessionCreated(Session session) {}
 
   /**
+   * Called after ActivateSession has replaced the user identity of an active Session on the
+   * Session's existing SecureChannel (Part 4 §5.7.3.1).
+   *
+   * <p>The first activation of a Session is not reported here, since {@link
+   * #onSessionCreated(Session)} already covers that Session, and neither is re-activation on a
+   * replacement SecureChannel, which requires the same identity. The new identity may represent the
+   * same user as before, so a listener that caches anything derived from the identity should
+   * refresh it either way.
+   *
+   * @param session the Session whose identity changed; {@link Session#getIdentity()} returns the
+   *     new identity.
+   */
+  default void onSessionIdentityChanged(Session session) {}
+
+  /**
    * Called after a Session has been closed and removed from the {@link SessionManager}.
    *
    * @param session the closed Session.
