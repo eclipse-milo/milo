@@ -57,6 +57,9 @@ Releases are published to Maven Central and snapshots to Sonatype.
 </dependency>
 ```
 
+Server guides: [sampling framework](docs/features/sampling.md) and
+[access control, roles, and permissions](docs/features/access-control.md) (1.2.0 and later).
+
 #### GDS Client (1.2.0 and later)
 
 Registers an application with a Global Discovery Server, requests certificates through the Pull
