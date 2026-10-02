@@ -264,6 +264,11 @@ public interface AddressSpace {
    * component that keeps results current on its own schedule can use this callback to check the
    * items for their new Session without waiting for its next refresh. Sampling is unaffected.
    *
+   * <p>This is called outside the Subscription's lock, so a further transfer of the same
+   * Subscription, or a scheduled refresh, can run at the same time. A component that checks read
+   * access from here must order those checks per item against its other triggers; see {@link
+   * DataItem#setReadAccessResult}.
+   *
    * <p>The default implementation does nothing.
    *
    * @param dataItems the {@link DataItem}s that were transferred.

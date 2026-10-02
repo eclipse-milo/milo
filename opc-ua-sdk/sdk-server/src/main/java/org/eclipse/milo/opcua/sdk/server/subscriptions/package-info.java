@@ -52,8 +52,9 @@
  * org.eclipse.milo.opcua.sdk.server.items.DataItem#setReadAccessResult}, or a component of the
  * server's own can refresh every item it knows of on configuration, identity, or transfer events,
  * on any schedule that bounds how stale a result can be. That method is safe to call from any
- * thread alongside the sampler's {@code setValue} and is idempotent. An item whose result is never
- * refreshed is stale, not unsafe: it keeps enforcing the result it was created with.
+ * thread alongside the sampler's {@code setValue} and is idempotent, and results apply in call
+ * order, so a refresher with several triggers must order its checks per item. An item whose result
+ * is never refreshed is stale, not unsafe: it keeps enforcing the result it was created with.
  *
  * <p>A component that refreshes on its own schedule can learn of the events that change a result
  * between refreshes: {@link org.eclipse.milo.opcua.sdk.server.AddressSpace#onDataItemsTransferred}

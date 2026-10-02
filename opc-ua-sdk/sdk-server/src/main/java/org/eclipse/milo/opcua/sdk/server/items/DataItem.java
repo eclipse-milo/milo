@@ -57,7 +57,11 @@ public interface DataItem extends MonitoredItem {
    * created with.
    *
    * <p>This method is safe to call from any thread, concurrently with {@link #setValue(DataValue)},
-   * and is idempotent: repeating a call with the same result has no further effect.
+   * and is idempotent: repeating a call with the same result has no further effect. Results apply
+   * in the order the calls arrive, and the item does not know which Session or which check a result
+   * came from. A refresher with more than one trigger, for example a schedule and {@link
+   * org.eclipse.milo.opcua.sdk.server.AddressSpace#onDataItemsTransferred}, must order its own
+   * checks per item so that the result of an older check never lands after a newer one.
    *
    * <p>{@link MonitoredDataItem}, the item the SDK creates for every data MonitoredItem, is the
    * implementation that enforces this. The default implementation does nothing, so an
