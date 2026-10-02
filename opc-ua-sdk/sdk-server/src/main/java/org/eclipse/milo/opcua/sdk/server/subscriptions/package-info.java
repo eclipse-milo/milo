@@ -54,5 +54,12 @@
  * on any schedule that bounds how stale a result can be. That method is safe to call from any
  * thread alongside the sampler's {@code setValue} and is idempotent. An item whose result is never
  * refreshed is stale, not unsafe: it keeps enforcing the result it was created with.
+ *
+ * <p>A component that refreshes on its own schedule can learn of the events that change a result
+ * between refreshes: {@link org.eclipse.milo.opcua.sdk.server.AddressSpace#onDataItemsTransferred}
+ * when items move to another Session, {@link
+ * org.eclipse.milo.opcua.sdk.server.SessionListener#onSessionIdentityChanged} when a Session's user
+ * changes, and {@link org.eclipse.milo.opcua.sdk.server.Session#isClosed} to skip a Session that
+ * has closed since it was last seen.
  */
 package org.eclipse.milo.opcua.sdk.server.subscriptions;
