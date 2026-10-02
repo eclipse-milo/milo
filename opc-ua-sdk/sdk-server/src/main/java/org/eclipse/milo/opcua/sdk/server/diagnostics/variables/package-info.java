@@ -13,15 +13,20 @@
  * Attribute filters obtain current diagnostic values when a Variable is read; the runtime objects
  * remain the source of those values.
  *
- * <p>Array lifecycle components create typed child graphs through the node instantiator and store
- * them in their supplied diagnostics node manager. They observe the diagnostics enabled flag and
- * retire children as their owning Sessions or Subscriptions leave. Each array allocates child
- * identifiers independently of its current element count, so removing an earlier entry does not
- * reuse the identifier of a surviving child. These identifiers describe node identity, not an
- * element's current position in the array Value.
+ * <p>Each SubscriptionDiagnosticsArray component, the server-wide one and one per Session Object,
+ * creates typed child graphs through the node instantiator and stores them in its supplied
+ * diagnostics node manager. It observes the diagnostics enabled flag and retires children as their
+ * Subscriptions leave. It allocates child identifiers independently of its current element count,
+ * so removing an earlier entry does not reuse the identifier of a surviving child. These
+ * identifiers describe node identity, not an element's current position in the array Value.
  *
- * <p>Security diagnostics also carry the standard array's access metadata into each child graph. In
- * restricted access mode, their attribute filters derive caller-visible access from the current
- * Session's roles.
+ * <p>The two Session array components only publish the array Values. Their elements are the
+ * Variables of the per-Session diagnostics Objects, which the {@code
+ * org.eclipse.milo.opcua.sdk.server.diagnostics.objects} package creates and references from the
+ * arrays.
+ *
+ * <p>Each Session's security diagnostics Variables carry the standard security array's access
+ * metadata. In restricted access mode, their attribute filters derive caller-visible access from
+ * the current Session's roles.
  */
 package org.eclipse.milo.opcua.sdk.server.diagnostics.variables;

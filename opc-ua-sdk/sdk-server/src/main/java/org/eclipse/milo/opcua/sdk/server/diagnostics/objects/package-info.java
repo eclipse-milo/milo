@@ -21,6 +21,15 @@
  * Variable and array components themselves live in {@code
  * org.eclipse.milo.opcua.sdk.server.diagnostics.variables}.
  *
+ * <h2>Session array elements</h2>
+ *
+ * <p>Part 5 §7.13 and §7.15 make the elements of SessionDiagnosticsArray and
+ * SessionSecurityDiagnosticsArray the same Variables that each Session Object holds. The summary
+ * Object adds a HasComponent Reference from each array to the Object's SessionDiagnostics and
+ * SessionSecurityDiagnostics Variables, so one node per Session serves both browse paths. The
+ * References are stored with the Variables in the diagnostics node manager, and deleting the
+ * Variables with their Object removes them.
+ *
  * <h2>EnabledFlag</h2>
  *
  * <p>The ServerDiagnostics EnabledFlag Property gates everything dynamic. Static diagnostics

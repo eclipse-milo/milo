@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
+import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.server.AbstractLifecycle;
 import org.eclipse.milo.opcua.sdk.server.NodeManager;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
@@ -51,9 +52,13 @@ import org.slf4j.LoggerFactory;
  * browses SessionsDiagnosticsSummary while diagnostics are disabled sees no Session Objects (Part 5
  * §6.3.3).
  *
+ * <p>The elements of SessionDiagnosticsArray and SessionSecurityDiagnosticsArray are each Session
+ * Object's own SessionDiagnostics and SessionSecurityDiagnostics Variables, referenced from the
+ * arrays with HasComponent (Part 5 §7.13 and §7.15). They appear and disappear with the Object.
+ *
  * <p>Ordinary session diagnostics and security diagnostics share a lifecycle but retain distinct
- * authorization policies. Security metadata is propagated only to each dynamically instantiated
- * security diagnostics subtree.
+ * authorization policies. The security array's access metadata is applied only to each Object's
+ * security diagnostics subtree, which is also what the security array exposes.
  */
 public class SessionsDiagnosticsSummaryObject extends AbstractLifecycle {
 
@@ -96,13 +101,11 @@ public class SessionsDiagnosticsSummaryObject extends AbstractLifecycle {
   @Override
   protected void onStartup() {
     sessionDiagnosticsVariableArray =
-        new SessionDiagnosticsVariableArray(
-            node.getSessionDiagnosticsArrayNode(), diagnosticsNodeManager);
+        new SessionDiagnosticsVariableArray(node.getSessionDiagnosticsArrayNode());
     sessionDiagnosticsVariableArray.startup();
 
     sessionSecurityDiagnosticsVariableArray =
-        new SessionSecurityDiagnosticsVariableArray(
-            node.getSessionSecurityDiagnosticsArrayNode(), diagnosticsNodeManager);
+        new SessionSecurityDiagnosticsVariableArray(node.getSessionSecurityDiagnosticsArrayNode());
     sessionSecurityDiagnosticsVariableArray.startup();
 
     ServerDiagnosticsTypeNode diagnosticsNode = getServerDiagnosticsNode();
@@ -222,10 +225,29 @@ public class SessionsDiagnosticsSummaryObject extends AbstractLifecycle {
           new SessionDiagnosticsObject(sdoNode, session, diagnosticsNodeManager);
       sdo.startup();
 
+      addArrayElement(node.getSessionDiagnosticsArrayNode(), sdoNode.getSessionDiagnosticsNode());
+      addArrayElement(
+          node.getSessionSecurityDiagnosticsArrayNode(),
+          sdoNode.getSessionSecurityDiagnosticsNode());
+
       sessionDiagnosticsObjects.put(sessionId, sdo);
     } catch (UaException e) {
       logger.warn("Failed to create SessionDiagnosticsObject", e);
     }
+  }
+
+  /**
+   * Make {@code element}, a Variable of a Session Object, an element of {@code array}.
+   *
+   * <p>The HasComponent Reference and its inverse are stored in the diagnostics NodeManager that
+   * holds {@code element}, so deleting {@code element} when its Session Object is removed also
+   * removes it from {@code array}.
+   */
+  private void addArrayElement(UaVariableNode array, UaVariableNode element) {
+    diagnosticsNodeManager.addReferences(
+        new Reference(
+            array.getNodeId(), NodeIds.HasComponent, element.getNodeId().expanded(), true),
+        server.getNamespaceTable());
   }
 
   private void removeSessionDiagnosticsObject(NodeId sessionId) {
