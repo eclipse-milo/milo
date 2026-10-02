@@ -52,9 +52,13 @@ public interface DataItem extends MonitoredItem {
    * access rights that change after the item was created reach the client as Part 4 §5.13.2.1
    * requires. {@link org.eclipse.milo.opcua.sdk.server.util.SubscriptionModel} does this.
    *
+   * <p>{@link MonitoredDataItem}, the item the SDK creates for every data MonitoredItem, is the
+   * implementation that enforces this. The default implementation does nothing, so an
+   * implementation of this interface outside the SDK is not required to take part.
+   *
    * @param accessResult the result of the read access check.
    */
-  void setReadAccessResult(AccessResult accessResult);
+  default void setReadAccessResult(AccessResult accessResult) {}
 
   /**
    * Get the result of the most recent read access check applied to this item.
@@ -63,8 +67,13 @@ public interface DataItem extends MonitoredItem {
    * component that refreshes results can use it to see the state an item is enforcing without
    * tracking that state itself.
    *
+   * <p>The default implementation always returns {@link AccessResult#ALLOWED}, matching the default
+   * {@link #setReadAccessResult(AccessResult)}, which applies nothing.
+   *
    * @return the {@link AccessResult} most recently passed to {@link
    *     #setReadAccessResult(AccessResult)}, or {@link AccessResult#ALLOWED} if none has been.
    */
-  AccessResult getReadAccessResult();
+  default AccessResult getReadAccessResult() {
+    return AccessResult.ALLOWED;
+  }
 }
