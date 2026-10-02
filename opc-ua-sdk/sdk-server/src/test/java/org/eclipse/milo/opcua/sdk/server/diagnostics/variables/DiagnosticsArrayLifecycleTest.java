@@ -22,25 +22,21 @@ import java.util.List;
 import org.eclipse.milo.opcua.sdk.server.Lifecycle;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig;
-import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.UaNodeManager;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ServerDiagnosticsTypeNode;
-import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
+import org.eclipse.milo.opcua.sdk.server.model.variables.SubscriptionDiagnosticsArrayTypeNode;
 import org.eclipse.milo.opcua.sdk.server.subscriptions.Subscription;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateManager;
-import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.api.Test;
 
 class DiagnosticsArrayLifecycleTest {
 
   // Removing element zero from a two-element array must not make the next allocation collide with
   // the surviving element and starve all later diagnostics creation. Exercise real instantiation,
-  // field setup, node removal, and parent references for each diagnostics array implementation.
-  @ParameterizedTest
-  @ValueSource(strings = {"session", "security", "subscription"})
-  void removingAnEarlierElementDoesNotBlockLaterDiagnostics(String kind) throws Exception {
+  // field setup, node removal, and parent references.
+  @Test
+  void removingAnEarlierElementDoesNotBlockLaterDiagnostics() throws Exception {
     var config =
         OpcUaServerConfig.builder().setCertificateManager(new DefaultCertificateManager()).build();
     var server = new OpcUaServer(config, transportProfile -> null);
@@ -52,67 +48,35 @@ class DiagnosticsArrayLifecycleTest {
                 .getAddressSpaceManager()
                 .getManagedNode(NodeIds.Server_ServerDiagnostics)
                 .orElseThrow();
-    var summary = diagnostics.getSessionsDiagnosticsSummaryNode();
 
-    Object array;
-    UaNode parent;
-    Class<?> arrayClass;
-    String createMethod;
-    String elementsField;
-    Class<?> ownerClass;
-    switch (kind) {
-      case "session" -> {
-        parent = summary.getSessionDiagnosticsArrayNode();
-        array =
-            new SessionDiagnosticsVariableArray(summary.getSessionDiagnosticsArrayNode(), target);
-        arrayClass = SessionDiagnosticsVariableArray.class;
-        createMethod = "createSessionDiagnosticsVariable";
-        elementsField = "sessionDiagnosticsVariables";
-        ownerClass = Session.class;
-      }
-      case "security" -> {
-        parent = summary.getSessionSecurityDiagnosticsArrayNode();
-        array =
-            new SessionSecurityDiagnosticsVariableArray(
-                summary.getSessionSecurityDiagnosticsArrayNode(), target);
-        arrayClass = SessionSecurityDiagnosticsVariableArray.class;
-        createMethod = "createSessionSecurityDiagnosticsVariable";
-        elementsField = "sessionSecurityDiagnosticsVariables";
-        ownerClass = Session.class;
-      }
-      case "subscription" -> {
-        parent = diagnostics.getSubscriptionDiagnosticsArrayNode();
-        array =
-            new SubscriptionDiagnosticsVariableArray(
-                diagnostics.getSubscriptionDiagnosticsArrayNode(), target) {
-              @Override
-              protected List<Subscription> getSubscriptions() {
-                return List.of();
-              }
-            };
-        arrayClass = SubscriptionDiagnosticsVariableArray.class;
-        createMethod = "createSubscriptionDiagnosticsNode";
-        elementsField = "subscriptionDiagnosticsVariables";
-        ownerClass = Subscription.class;
-      }
-      default -> throw new AssertionError(kind);
-    }
+    SubscriptionDiagnosticsArrayTypeNode parent = diagnostics.getSubscriptionDiagnosticsArrayNode();
+    var array =
+        new SubscriptionDiagnosticsVariableArray(parent, target) {
+          @Override
+          protected List<Subscription> getSubscriptions() {
+            return List.of();
+          }
+        };
 
-    // Isolate allocation from event delivery: invoke the same creation entry point the listeners
-    // call, then retire the first element exactly as their close callbacks do.
-    Method create = arrayClass.getDeclaredMethod(createMethod, ownerClass);
+    // Isolate allocation from event delivery: invoke the same creation entry point the event
+    // subscriber calls, then retire the first element exactly as its deletion callback does.
+    Method create =
+        SubscriptionDiagnosticsVariableArray.class.getDeclaredMethod(
+            "createSubscriptionDiagnosticsNode", Subscription.class);
     create.setAccessible(true);
-    Field field = arrayClass.getDeclaredField(elementsField);
+    Field field =
+        SubscriptionDiagnosticsVariableArray.class.getDeclaredField(
+            "subscriptionDiagnosticsVariables");
     field.setAccessible(true);
     @SuppressWarnings("unchecked")
     List<Lifecycle> elements = (List<Lifecycle>) field.get(array);
     try {
-      create.invoke(array, owner(ownerClass, 0));
-      create.invoke(array, owner(ownerClass, 1));
+      create.invoke(array, subscription(0));
+      create.invoke(array, subscription(1));
       assertEquals(2, elements.size(), "both initial elements must be created");
       elements.remove(0).shutdown();
-      create.invoke(array, owner(ownerClass, 2));
-      create.invoke(array, owner(ownerClass, 3));
+      create.invoke(array, subscription(2));
+      create.invoke(array, subscription(3));
       assertEquals(
           3, elements.size(), "creation must continue after an earlier element is retired");
       var references =
@@ -132,12 +96,7 @@ class DiagnosticsArrayLifecycleTest {
     }
   }
 
-  private static Object owner(Class<?> ownerClass, int index) {
-    if (ownerClass == Session.class) {
-      var session = mock(Session.class);
-      when(session.getSessionId()).thenReturn(new NodeId(1, "Session" + index));
-      return session;
-    }
+  private static Subscription subscription(int index) {
     var subscription = mock(Subscription.class);
     when(subscription.getId()).thenReturn(uint(index + 1));
     return subscription;

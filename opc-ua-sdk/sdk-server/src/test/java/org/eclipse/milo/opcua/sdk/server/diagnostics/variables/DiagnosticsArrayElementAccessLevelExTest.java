@@ -25,9 +25,9 @@ import org.eclipse.milo.opcua.sdk.server.AttributeReader;
 import org.eclipse.milo.opcua.sdk.server.Lifecycle;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig;
-import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.UaNodeManager;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ServerDiagnosticsTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.variables.SubscriptionDiagnosticsArrayTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
 import org.eclipse.milo.opcua.sdk.server.subscriptions.Subscription;
@@ -37,22 +37,19 @@ import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateManager;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelExType;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.api.Test;
 
 class DiagnosticsArrayElementAccessLevelExTest {
 
   /**
    * Part 3 §5.6.2 makes AccessLevelEx mandatory for Variables in profiles from version 1.04 on, and
-   * its low eight bits must mirror AccessLevel. The element Variables of the three diagnostics
-   * arrays are instantiated from a VariableType, which carries no AccessLevelEx, so the array
-   * classes must supply it as a root attribute alongside AccessLevel. Without it, reading
-   * AccessLevelEx on an element returns Bad_AttributeIdInvalid while the array itself reports
-   * CurrentRead.
+   * its low eight bits must mirror AccessLevel. SubscriptionDiagnosticsArray elements are
+   * instantiated from a VariableType, which carries no AccessLevelEx, so the array class must
+   * supply it as a root attribute alongside AccessLevel. Without it, reading AccessLevelEx on an
+   * element returns Bad_AttributeIdInvalid while the array itself reports CurrentRead.
    */
-  @ParameterizedTest
-  @ValueSource(strings = {"session", "security", "subscription"})
-  void arrayElementReportsAccessLevelExMatchingAccessLevel(String kind) throws Exception {
+  @Test
+  void arrayElementReportsAccessLevelExMatchingAccessLevel() throws Exception {
     var config =
         OpcUaServerConfig.builder().setCertificateManager(new DefaultCertificateManager()).build();
     var server = new OpcUaServer(config, transportProfile -> null);
@@ -64,61 +61,33 @@ class DiagnosticsArrayElementAccessLevelExTest {
                 .getAddressSpaceManager()
                 .getManagedNode(NodeIds.Server_ServerDiagnostics)
                 .orElseThrow();
-    var summary = diagnostics.getSessionsDiagnosticsSummaryNode();
 
-    Object array;
-    UaVariableNode arrayNode;
-    Class<?> arrayClass;
-    String createMethod;
-    String elementsField;
-    Class<?> ownerClass;
-    switch (kind) {
-      case "session" -> {
-        var sessionArrayNode = summary.getSessionDiagnosticsArrayNode();
-        arrayNode = sessionArrayNode;
-        array = new SessionDiagnosticsVariableArray(sessionArrayNode, target);
-        arrayClass = SessionDiagnosticsVariableArray.class;
-        createMethod = "createSessionDiagnosticsVariable";
-        elementsField = "sessionDiagnosticsVariables";
-        ownerClass = Session.class;
-      }
-      case "security" -> {
-        var securityArrayNode = summary.getSessionSecurityDiagnosticsArrayNode();
-        arrayNode = securityArrayNode;
-        array = new SessionSecurityDiagnosticsVariableArray(securityArrayNode, target);
-        arrayClass = SessionSecurityDiagnosticsVariableArray.class;
-        createMethod = "createSessionSecurityDiagnosticsVariable";
-        elementsField = "sessionSecurityDiagnosticsVariables";
-        ownerClass = Session.class;
-      }
-      case "subscription" -> {
-        var subscriptionArrayNode = diagnostics.getSubscriptionDiagnosticsArrayNode();
-        arrayNode = subscriptionArrayNode;
-        array =
-            new SubscriptionDiagnosticsVariableArray(subscriptionArrayNode, target) {
-              @Override
-              protected List<Subscription> getSubscriptions() {
-                return List.of();
-              }
-            };
-        arrayClass = SubscriptionDiagnosticsVariableArray.class;
-        createMethod = "createSubscriptionDiagnosticsNode";
-        elementsField = "subscriptionDiagnosticsVariables";
-        ownerClass = Subscription.class;
-      }
-      default -> throw new AssertionError(kind);
-    }
+    SubscriptionDiagnosticsArrayTypeNode arrayNode =
+        diagnostics.getSubscriptionDiagnosticsArrayNode();
+    var array =
+        new SubscriptionDiagnosticsVariableArray(arrayNode, target) {
+          @Override
+          protected List<Subscription> getSubscriptions() {
+            return List.of();
+          }
+        };
 
-    // Invoke the same creation entry point the session and subscription listeners call, so the
-    // element goes through real instantiation with the array class's root attribute overrides.
-    Method create = arrayClass.getDeclaredMethod(createMethod, ownerClass);
+    // Invoke the same creation entry point the subscription event subscriber calls, so the element
+    // goes through real instantiation with the array class's root attribute overrides.
+    Method create =
+        SubscriptionDiagnosticsVariableArray.class.getDeclaredMethod(
+            "createSubscriptionDiagnosticsNode", Subscription.class);
     create.setAccessible(true);
-    Field field = arrayClass.getDeclaredField(elementsField);
+    Field field =
+        SubscriptionDiagnosticsVariableArray.class.getDeclaredField(
+            "subscriptionDiagnosticsVariables");
     field.setAccessible(true);
     @SuppressWarnings("unchecked")
     List<Lifecycle> elements = (List<Lifecycle>) field.get(array);
     try {
-      create.invoke(array, owner(ownerClass));
+      var subscription = mock(Subscription.class);
+      when(subscription.getId()).thenReturn(uint(1));
+      create.invoke(array, subscription);
       assertEquals(1, elements.size(), "the element must be created");
 
       UaVariableNode element = singleElement(server, target, arrayNode);
@@ -155,16 +124,5 @@ class DiagnosticsArrayElementAccessLevelExTest {
     assertEquals(1, elementIds.size(), "exactly one element must hang off the array");
 
     return (UaVariableNode) target.getNode(elementIds.get(0)).orElseThrow();
-  }
-
-  private static Object owner(Class<?> ownerClass) {
-    if (ownerClass == Session.class) {
-      var session = mock(Session.class);
-      when(session.getSessionId()).thenReturn(new NodeId(1, "Session0"));
-      return session;
-    }
-    var subscription = mock(Subscription.class);
-    when(subscription.getId()).thenReturn(uint(1));
-    return subscription;
   }
 }

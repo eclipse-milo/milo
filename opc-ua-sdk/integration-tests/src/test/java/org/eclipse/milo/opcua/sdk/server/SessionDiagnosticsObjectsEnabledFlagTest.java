@@ -15,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -31,6 +32,7 @@ import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.BrowseDirection;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.BrowseResultMask;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
@@ -44,7 +46,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Per-Session diagnostics Objects beneath SessionsDiagnosticsSummary must exist only while the
  * server's diagnostics EnabledFlag is true (Part 5 §6.3.3: dynamic diagnostic Nodes such as the
- * Session Nodes do not appear in the AddressSpace while diagnostics are turned off).
+ * Session Nodes do not appear in the AddressSpace while diagnostics are turned off). Their
+ * SessionDiagnostics Variables are also the SessionDiagnosticsArray elements.
  *
  * <p>Session listener callbacks run on a queue, so a test that needs a callback to arrive after a
  * flag change stalls the queue with a listener of its own, registered after the server starts so it
@@ -202,6 +205,45 @@ class SessionDiagnosticsObjectsEnabledFlagTest {
             .toList();
 
     assertEquals(List.of(SESSION_A, SESSION_B), names, "exactly one Object per Session");
+  }
+
+  // Part 5 §7.13: each SessionDiagnosticsArray element is a Session Object's SessionDiagnostics
+  // Variable, with its standard namespace 0 BrowseName, not a separate copy with its own NodeId.
+  @Test
+  void sessionDiagnosticsArrayElementsAreTheSessionObjectsVariables() throws Exception {
+    clientA = connect(SESSION_A);
+    clientB = connect(SESSION_B);
+    probe.awaitCreated(SESSION_A);
+    probe.awaitCreated(SESSION_B);
+
+    NodeId array =
+        NodeIds.Server_ServerDiagnostics_SessionsDiagnosticsSummary_SessionDiagnosticsArray;
+    assertEquals(List.of(), browse(clientA, array), "no elements while disabled");
+
+    diagnosticsNode.setEnabledFlag(true);
+
+    Set<NodeId> objectVariables = new HashSet<>();
+    for (NodeId object : sessionObjects(clientA).values()) {
+      objectVariables.add(child(clientA, object, "SessionDiagnostics"));
+    }
+    assertEquals(2, objectVariables.size(), "one SessionDiagnostics Variable per Session Object");
+
+    List<ReferenceDescription> elements = browse(clientA, array);
+
+    assertEquals(
+        objectVariables,
+        elements.stream()
+            .map(r -> r.getNodeId().toNodeId(clientA.getNamespaceTable()).orElseThrow())
+            .collect(Collectors.toSet()),
+        "the array elements are the Session Objects' Variables");
+    assertEquals(
+        List.of(new QualifiedName(0, "SessionDiagnostics")),
+        elements.stream().map(ReferenceDescription::getBrowseName).distinct().toList(),
+        "element BrowseName");
+
+    diagnosticsNode.setEnabledFlag(false);
+
+    assertEquals(List.of(), browse(clientA, array), "elements are removed when disabled again");
   }
 
   private OpcUaClient connect(String sessionName) throws Exception {
