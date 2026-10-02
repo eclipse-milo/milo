@@ -24,8 +24,6 @@ import org.eclipse.milo.opcua.sdk.server.Lifecycle;
 import org.eclipse.milo.opcua.sdk.server.ManagedNamespaceWithLifecycle;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.UaNodeManager;
-import org.eclipse.milo.opcua.sdk.server.items.DataItem;
-import org.eclipse.milo.opcua.sdk.server.items.MonitoredItem;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
 import org.eclipse.milo.opcua.sdk.server.methods.InvalidArgumentException;
 import org.eclipse.milo.opcua.sdk.server.model.objects.BaseEventTypeNode;
@@ -39,7 +37,6 @@ import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaObjectNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.InstantiationRequest;
-import org.eclipse.milo.opcua.sdk.server.util.SubscriptionModel;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
@@ -76,8 +73,6 @@ public class TestNamespace extends ManagedNamespaceWithLifecycle {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TestNamespace.class);
 
-  private final SubscriptionModel subscriptionModel;
-
   private volatile Thread eventThread;
   private volatile boolean keepPostingEvents = true;
 
@@ -89,9 +84,6 @@ public class TestNamespace extends ManagedNamespaceWithLifecycle {
 
   public TestNamespace(OpcUaServer server) {
     super(server, NAMESPACE_URI);
-
-    subscriptionModel = new SubscriptionModel(server, this);
-    getLifecycleManager().addLifecycle(subscriptionModel);
 
     getLifecycleManager()
         .addLifecycle(
@@ -636,26 +628,6 @@ public class TestNamespace extends ManagedNamespaceWithLifecycle {
             Reference.Direction.INVERSE));
 
     getNodeManager().addNode(dataTypeEncodingNode);
-  }
-
-  @Override
-  public void onDataItemsCreated(List<DataItem> dataItems) {
-    subscriptionModel.onDataItemsCreated(dataItems);
-  }
-
-  @Override
-  public void onDataItemsModified(List<DataItem> dataItems) {
-    subscriptionModel.onDataItemsModified(dataItems);
-  }
-
-  @Override
-  public void onDataItemsDeleted(List<DataItem> dataItems) {
-    subscriptionModel.onDataItemsDeleted(dataItems);
-  }
-
-  @Override
-  public void onMonitoringModeChanged(List<MonitoredItem> monitoredItems) {
-    subscriptionModel.onMonitoringModeChanged(monitoredItems);
   }
 
   public void configure(BiConsumer<UaNodeContext, UaNodeManager> consumer) {

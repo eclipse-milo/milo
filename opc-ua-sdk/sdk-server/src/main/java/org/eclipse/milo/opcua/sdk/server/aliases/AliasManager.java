@@ -31,8 +31,6 @@ import org.eclipse.milo.opcua.sdk.server.ManagedAddressSpaceFragmentWithLifecycl
 import org.eclipse.milo.opcua.sdk.server.NodeManager;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.SimpleAddressSpaceFilter;
-import org.eclipse.milo.opcua.sdk.server.items.DataItem;
-import org.eclipse.milo.opcua.sdk.server.items.MonitoredItem;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
 import org.eclipse.milo.opcua.sdk.server.methods.MethodInvocationHandler;
 import org.eclipse.milo.opcua.sdk.server.model.objects.AliasNameCategoryType;
@@ -45,7 +43,6 @@ import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.BrowsePath;
 import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.InstantiationRequest;
 import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.InstantiationResult;
 import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.NodeInstantiator;
-import org.eclipse.milo.opcua.sdk.server.util.SubscriptionModel;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
@@ -2105,8 +2102,8 @@ public final class AliasManager extends AbstractLifecycle {
    * regardless of NodeId namespace.
    *
    * <p>Startup registers the fragment and its NodeManager with the server's AddressSpaceManager;
-   * shutdown unregisters both. A SubscriptionModel provides sampling for MonitoredItems created on
-   * hosted Nodes.
+   * shutdown unregisters both. The base class's SamplingManager provides sampling for
+   * MonitoredItems created on hosted Nodes.
    *
    * <p>The fragment registers itself <em>first</em> in the composite: service routing picks the
    * first registered AddressSpace whose filter matches, and hosted Nodes have NodeIds allocated in
@@ -2119,14 +2116,8 @@ public final class AliasManager extends AbstractLifecycle {
     private final AddressSpaceFilter filter =
         SimpleAddressSpaceFilter.create(getNodeManager()::containsNode);
 
-    private final SubscriptionModel subscriptionModel;
-
     AliasFragment(OpcUaServer server) {
       super(server);
-
-      subscriptionModel = new SubscriptionModel(server, this);
-
-      getLifecycleManager().addLifecycle(subscriptionModel);
     }
 
     @Override
@@ -2137,26 +2128,6 @@ public final class AliasManager extends AbstractLifecycle {
     @Override
     protected void registerWithComposite(AddressSpaceComposite composite) {
       composite.registerFirst(this);
-    }
-
-    @Override
-    public void onDataItemsCreated(List<DataItem> dataItems) {
-      subscriptionModel.onDataItemsCreated(dataItems);
-    }
-
-    @Override
-    public void onDataItemsModified(List<DataItem> dataItems) {
-      subscriptionModel.onDataItemsModified(dataItems);
-    }
-
-    @Override
-    public void onDataItemsDeleted(List<DataItem> dataItems) {
-      subscriptionModel.onDataItemsDeleted(dataItems);
-    }
-
-    @Override
-    public void onMonitoringModeChanged(List<MonitoredItem> monitoredItems) {
-      subscriptionModel.onMonitoringModeChanged(monitoredItems);
     }
   }
 }

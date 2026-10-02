@@ -16,7 +16,6 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 
 import java.lang.reflect.Array;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 import org.eclipse.milo.examples.server.methods.GenerateEventMethod;
@@ -38,8 +37,6 @@ import org.eclipse.milo.opcua.sdk.server.Lifecycle;
 import org.eclipse.milo.opcua.sdk.server.ManagedNamespaceWithLifecycle;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.identity.Identity;
-import org.eclipse.milo.opcua.sdk.server.items.DataItem;
-import org.eclipse.milo.opcua.sdk.server.items.MonitoredItem;
 import org.eclipse.milo.opcua.sdk.server.model.objects.BaseEventTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.DataTypeEncodingTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ServerTypeNode;
@@ -53,7 +50,6 @@ import org.eclipse.milo.opcua.sdk.server.nodes.UaObjectTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.filters.AttributeFilters;
 import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.InstantiationRequest;
-import org.eclipse.milo.opcua.sdk.server.util.SubscriptionModel;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.UaException;
@@ -79,14 +75,8 @@ public class ExampleNamespace extends ManagedNamespaceWithLifecycle {
 
   private final Random random = new Random();
 
-  private final SubscriptionModel subscriptionModel;
-
   ExampleNamespace(OpcUaServer server) {
     super(server, NAMESPACE_URI);
-
-    subscriptionModel = new SubscriptionModel(server, this);
-
-    getLifecycleManager().addLifecycle(subscriptionModel);
 
     getLifecycleManager().addStartupTask(this::createAndAddNodes);
 
@@ -1260,25 +1250,5 @@ public class ExampleNamespace extends ManagedNamespaceWithLifecycle {
             NodeIds.Organizes,
             rootFolder.getNodeId().expanded(),
             false));
-  }
-
-  @Override
-  public void onDataItemsCreated(List<DataItem> dataItems) {
-    subscriptionModel.onDataItemsCreated(dataItems);
-  }
-
-  @Override
-  public void onDataItemsModified(List<DataItem> dataItems) {
-    subscriptionModel.onDataItemsModified(dataItems);
-  }
-
-  @Override
-  public void onDataItemsDeleted(List<DataItem> dataItems) {
-    subscriptionModel.onDataItemsDeleted(dataItems);
-  }
-
-  @Override
-  public void onMonitoringModeChanged(List<MonitoredItem> monitoredItems) {
-    subscriptionModel.onMonitoringModeChanged(monitoredItems);
   }
 }
